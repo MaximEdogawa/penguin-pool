@@ -1,4 +1,6 @@
-// Common utility types
+// Common utility types and interfaces for the application
+
+// Basic utility types
 export type Nullable<T> = T | null
 export type Optional<T> = T | undefined
 export type DeepPartial<T> = {
@@ -13,30 +15,29 @@ export interface BaseEntity {
 }
 
 // API response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T> {
   success: boolean
   data?: T
   error?: string
   message?: string
 }
 
-export interface PaginatedResponse<T> extends ApiResponse<T[]> {
-  pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
+export interface PaginatedResponse<T> {
+  data: T[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
 }
 
 // Form types
 export interface FormField {
   name: string
   label: string
-  type: 'text' | 'email' | 'password' | 'number' | 'select' | 'textarea' | 'date'
+  type: 'text' | 'email' | 'password' | 'number' | 'select' | 'textarea' | 'checkbox' | 'radio'
   required?: boolean
   placeholder?: string
-  options?: Array<{ value: string | number; label: string }>
+  options?: Array<{ value: string; label: string }>
   validation?: {
     min?: number
     max?: number
@@ -46,67 +47,68 @@ export interface FormField {
 }
 
 export interface FormData {
-  [key: string]: any
+  [key: string]: string | number | boolean | string[]
 }
 
 // Theme types
 export type Theme = 'light' | 'dark' | 'auto'
 
-// Loading states
+// Loading and error states
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error'
 
-// Error types
 export interface AppError {
   code: string
   message: string
-  details?: any
+  details?: Record<string, unknown>
   timestamp: Date
 }
 
 // Notification types
-export type NotificationType = 'info' | 'success' | 'warning' | 'error'
-
 export interface Notification {
   id: string
-  type: NotificationType
+  type: 'info' | 'success' | 'warning' | 'error'
   title: string
   message: string
-  duration?: number
   timestamp: Date
   read: boolean
+  action?: {
+    label: string
+    handler: () => void
+  }
 }
 
 // User preferences
 export interface UserPreferences {
   theme: Theme
   language: string
+  currency: Currency
   notifications: {
     email: boolean
     push: boolean
-    inApp: boolean
+    sms: boolean
   }
   privacy: {
-    dataSharing: boolean
-    analytics: boolean
+    shareAnalytics: boolean
+    shareUsageData: boolean
   }
 }
 
 // Currency and amount types
-export type Currency = 'XCH' | 'USD' | 'EUR' | 'BTC' | 'ETH'
+export type Currency = 'USD' | 'EUR' | 'GBP' | 'XCH' | 'BTC' | 'ETH'
 
 export interface Amount {
   value: number
   currency: Currency
-  decimals: number
+  formatted?: string
 }
 
-// Date range types
+// Date and time types
 export interface DateRange {
   start: Date
   end: Date
 }
 
-// Sort and filter types
+// Sorting and filtering
 export type SortDirection = 'asc' | 'desc'
 
 export interface SortOption {
@@ -116,22 +118,10 @@ export interface SortOption {
 
 export interface FilterOption {
   field: string
-  operator:
-    | 'eq'
-    | 'ne'
-    | 'gt'
-    | 'gte'
-    | 'lt'
-    | 'lte'
-    | 'in'
-    | 'nin'
-    | 'contains'
-    | 'startsWith'
-    | 'endsWith'
-  value: any
+  operator: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'nin' | 'contains' | 'startsWith'
+  value: string | number | boolean | string[] | number[]
 }
 
-// Pagination types
 export interface PaginationParams {
   page: number
   limit: number
@@ -139,25 +129,23 @@ export interface PaginationParams {
   filters?: FilterOption[]
 }
 
-// Result types
+// Result types for better error handling
 export type Result<T, E = Error> = { success: true; data: T } | { success: false; error: E }
 
-// Async result types
 export type AsyncResult<T, E = Error> = Promise<Result<T, E>>
 
-// Event types
-export interface AppEvent<T = any> {
+// Event system types
+export interface AppEvent {
   type: string
-  payload: T
+  payload?: Record<string, unknown>
   timestamp: Date
-  source: string
+  source?: string
 }
 
-// Event emitter types
-export type EventListener<T = any> = (event: AppEvent<T>) => void
+export type EventListener<T = Record<string, unknown>> = (event: AppEvent & { payload: T }) => void
 
 export interface EventEmitter {
-  on<T>(eventType: string, listener: EventListener<T>): void
-  off<T>(eventType: string, listener: EventListener<T>): void
-  emit<T>(event: AppEvent<T>): void
+  on<T>(event: string, listener: EventListener<T>): void
+  off<T>(event: string, listener: EventListener<T>): void
+  emit<T>(event: string, payload?: T): void
 }

@@ -6,11 +6,11 @@
 </template>
 
 <script setup lang="ts">
-// Piggy bank page - coming soon
+  // Piggy bank page - coming soon
 </script>
 
 <style scoped>
-.piggy-bank {
-  @apply p-6 max-w-7xl mx-auto;
-}
+  .piggy-bank {
+    @apply p-6 max-w-7xl mx-auto;
+  }
 </style>

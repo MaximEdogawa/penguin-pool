@@ -1,4 +1,3 @@
-import { config } from '@vue/test-utils'
 import { vi } from 'vitest'
 
 // Mock localStorage
@@ -50,4 +49,4 @@ global.console = {
   // info: vi.fn(),
   // warn: vi.fn(),
   // error: vi.fn(),
-} 
+}

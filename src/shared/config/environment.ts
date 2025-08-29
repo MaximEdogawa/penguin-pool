@@ -35,8 +35,8 @@ export const environment = {
       metadata: {
         name: 'Penguin-pool',
         description: 'Decentralized lending platform',
-        url: 'https://penguin-pool.com',
-        icons: ['https://penguin-pool.com/icon.png'],
+        url: 'https://penguin.pool',
+        icons: ['https://penguin.pool/icon.png'],
       },
     },
   },
@@ -64,7 +64,7 @@ export const environment = {
 
   // PWA configuration
   pwa: {
-    name: 'Penguin-pool',
+    name: 'Penguin.pool',
     shortName: 'Penguin',
     description: 'Decentralized lending platform',
     themeColor: '#3b82f6',

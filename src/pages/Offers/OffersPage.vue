@@ -6,11 +6,11 @@
 </template>
 
 <script setup lang="ts">
-// Offers page - coming soon
+  // Offers page - coming soon
 </script>
 
 <style scoped>
-.offers {
-  @apply p-6 max-w-7xl mx-auto;
-}
+  .offers {
+    @apply p-6 max-w-7xl mx-auto;
+  }
 </style>

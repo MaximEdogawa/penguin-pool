@@ -6,11 +6,11 @@
 </template>
 
 <script setup lang="ts">
-// Login page - coming soon
+  // Login page - coming soon
 </script>
 
 <style scoped>
-.auth-login {
-  @apply p-6 max-w-7xl mx-auto;
-}
+  .auth-login {
+    @apply p-6 max-w-7xl mx-auto;
+  }
 </style>

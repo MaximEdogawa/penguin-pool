@@ -83,7 +83,7 @@
               <i class="pi pi-info-circle text-blue-500"></i>
             </div>
             <div class="activity-content">
-              <p class="activity-text">Welcome to Penguin-pool!</p>
+              <p class="activity-text">Welcome to penguin.pool!</p>
               <p class="activity-time">Just now</p>
             </div>
           </div>
@@ -94,117 +94,117 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useUserStore } from '@/entities/user/store/userStore'
+  import { ref, onMounted } from 'vue'
+  import { useUserStore } from '@/entities/user/store/userStore'
 
-const userStore = ref<any>(null)
-const userBalance = ref(0)
+  const userStore = ref<ReturnType<typeof useUserStore> | null>(null)
+  const userBalance = ref(0)
 
-onMounted(async () => {
-  try {
-    userStore.value = useUserStore()
-    userBalance.value = userStore.value.userBalance
-  } catch (error) {
-    console.error('Failed to load user data:', error)
-    userBalance.value = 0
-  }
-})
+  onMounted(async () => {
+    try {
+      userStore.value = useUserStore()
+      userBalance.value = userStore.value.userBalance
+    } catch (error) {
+      console.error('Failed to load user data:', error)
+      userBalance.value = 0
+    }
+  })
 </script>
 
 <style scoped>
-.dashboard {
-  @apply p-6 max-w-7xl mx-auto;
-}
+  .dashboard {
+    @apply p-6 max-w-7xl mx-auto;
+  }
 
-.dashboard-header {
-  @apply mb-8 text-center;
-}
+  .dashboard-header {
+    @apply mb-8 text-center;
+  }
 
-.dashboard-content {
-  @apply space-y-8;
-}
+  .dashboard-content {
+    @apply space-y-8;
+  }
 
-.stats-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6;
-}
+  .stats-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6;
+  }
 
-.stat-card {
-  @apply card p-6 flex items-center space-x-4;
-}
+  .stat-card {
+    @apply card p-6 flex items-center space-x-4;
+  }
 
-.stat-icon {
-  @apply flex-shrink-0;
-}
+  .stat-icon {
+    @apply flex-shrink-0;
+  }
 
-.stat-content {
-  @apply flex-1;
-}
+  .stat-content {
+    @apply flex-1;
+  }
 
-.stat-title {
-  @apply text-sm font-medium text-gray-600 dark:text-gray-400;
-}
+  .stat-title {
+    @apply text-sm font-medium text-gray-600 dark:text-gray-400;
+  }
 
-.stat-value {
-  @apply text-2xl font-bold text-gray-900 dark:text-white;
-}
+  .stat-value {
+    @apply text-2xl font-bold text-gray-900 dark:text-white;
+  }
 
-.quick-actions {
-  @apply card p-6;
-}
+  .quick-actions {
+    @apply card p-6;
+  }
 
-.actions-grid {
-  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
-}
+  .actions-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+  }
 
-.action-btn {
-  @apply flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 transition-colors duration-200;
-}
+  .action-btn {
+    @apply flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-500 dark:hover:border-primary-400 transition-colors duration-200;
+  }
 
-.action-btn.primary {
-  @apply border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-primary-900/20;
-}
+  .action-btn.primary {
+    @apply border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-primary-900/20;
+  }
 
-.action-btn.secondary {
-  @apply border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50;
-}
+  .action-btn.secondary {
+    @apply border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50;
+  }
 
-.action-btn:hover {
-  @apply border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-primary-900/20;
-}
+  .action-btn:hover {
+    @apply border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-primary-900/20;
+  }
 
-.action-btn i {
-  @apply mb-2 text-gray-600 dark:text-gray-400;
-}
+  .action-btn i {
+    @apply mb-2 text-gray-600 dark:text-gray-400;
+  }
 
-.action-btn span {
-  @apply text-sm font-medium text-gray-700 dark:text-gray-300;
-}
+  .action-btn span {
+    @apply text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
 
-.recent-activity {
-  @apply card p-6;
-}
+  .recent-activity {
+    @apply card p-6;
+  }
 
-.activity-list {
-  @apply space-y-4;
-}
+  .activity-list {
+    @apply space-y-4;
+  }
 
-.activity-item {
-  @apply flex items-center space-x-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50;
-}
+  .activity-item {
+    @apply flex items-center space-x-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50;
+  }
 
-.activity-icon {
-  @apply flex-shrink-0;
-}
+  .activity-icon {
+    @apply flex-shrink-0;
+  }
 
-.activity-content {
-  @apply flex-1;
-}
+  .activity-content {
+    @apply flex-1;
+  }
 
-.activity-text {
-  @apply text-sm font-medium text-gray-900 dark:text-white;
-}
+  .activity-text {
+    @apply text-sm font-medium text-gray-900 dark:text-white;
+  }
 
-.activity-time {
-  @apply text-xs text-gray-500 dark:text-gray-400;
-}
+  .activity-time {
+    @apply text-xs text-gray-500 dark:text-gray-400;
+  }
 </style>

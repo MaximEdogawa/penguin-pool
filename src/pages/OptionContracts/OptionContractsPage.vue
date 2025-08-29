@@ -6,11 +6,11 @@
 </template>
 
 <script setup lang="ts">
-// Option contracts page - coming soon
+  // Option contracts page - coming soon
 </script>
 
 <style scoped>
-.option-contracts {
-  @apply p-6 max-w-7xl mx-auto;
-}
+  .option-contracts {
+    @apply p-6 max-w-7xl mx-auto;
+  }
 </style>

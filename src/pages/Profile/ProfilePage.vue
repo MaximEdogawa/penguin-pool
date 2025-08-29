@@ -6,11 +6,11 @@
 </template>
 
 <script setup lang="ts">
-// Profile page - coming soon
+  // Profile page - coming soon
 </script>
 
 <style scoped>
-.profile {
-  @apply p-6 max-w-7xl mx-auto;
-}
+  .profile {
+    @apply p-6 max-w-7xl mx-auto;
+  }
 </style>

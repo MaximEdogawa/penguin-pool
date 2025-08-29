@@ -42,7 +42,7 @@ export const useThemeStore = defineStore('theme', () => {
       systemTheme.value = mediaQuery.matches ? 'dark' : 'light'
 
       // Listen for system theme changes
-      mediaQuery.addEventListener('change', (e) => {
+      mediaQuery.addEventListener('change', e => {
         systemTheme.value = e.matches ? 'dark' : 'light'
         if (currentTheme.value === 'auto') {
           applyTheme()

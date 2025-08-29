@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
-import AppProvider from '@/app/providers/AppProvider.vue'
+  import { RouterView } from 'vue-router'
+  import AppProvider from '@/app/providers/AppProvider.vue'
 </script>
 
 <template>
@@ -12,8 +12,8 @@ import AppProvider from '@/app/providers/AppProvider.vue'
 </template>
 
 <style scoped>
-.app-container {
-  min-height: 100vh;
-  width: 100%;
-}
+  .app-container {
+    min-height: 100vh;
+    width: 100%;
+  }
 </style>

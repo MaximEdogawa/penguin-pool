@@ -6,7 +6,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'dashboard',
-      component: () => import('@/pages/Dashboard/index.vue'),
+      component: () => import('@/pages/Dashboard/DashboardPage.vue'),
       meta: {
         title: 'Dashboard',
         requiresAuth: false,
@@ -15,7 +15,7 @@ const router = createRouter({
     {
       path: '/option-contracts',
       name: 'option-contracts',
-      component: () => import('@/pages/OptionContracts/index.vue'),
+      component: () => import('@/pages/OptionContracts/OptionContractsPage.vue'),
       meta: {
         title: 'Option Contracts',
         requiresAuth: false,
@@ -24,7 +24,7 @@ const router = createRouter({
     {
       path: '/loans',
       name: 'loans',
-      component: () => import('@/pages/Loans/index.vue'),
+      component: () => import('@/pages/Loans/LoansPage.vue'),
       meta: {
         title: 'Loans',
         requiresAuth: false,
@@ -33,7 +33,7 @@ const router = createRouter({
     {
       path: '/offers',
       name: 'offers',
-      component: () => import('@/pages/Offers/index.vue'),
+      component: () => import('@/pages/Offers/OffersPage.vue'),
       meta: {
         title: 'Offers',
         requiresAuth: false,
@@ -42,7 +42,7 @@ const router = createRouter({
     {
       path: '/piggy-bank',
       name: 'piggy-bank',
-      component: () => import('@/pages/PiggyBank/index.vue'),
+      component: () => import('@/pages/PiggyBank/PiggyBankPage.vue'),
       meta: {
         title: 'Piggy Bank',
         requiresAuth: false,
@@ -51,7 +51,7 @@ const router = createRouter({
     {
       path: '/profile',
       name: 'profile',
-      component: () => import('@/pages/Profile/index.vue'),
+      component: () => import('@/pages/Profile/ProfilePage.vue'),
       meta: {
         title: 'Profile',
         requiresAuth: true,
@@ -60,7 +60,7 @@ const router = createRouter({
     {
       path: '/auth',
       name: 'auth',
-      component: () => import('@/pages/Auth/Login.vue'),
+      component: () => import('@/pages/Auth/LoginPage.vue'),
       meta: {
         title: 'Authentication',
         requiresAuth: false,
@@ -70,7 +70,7 @@ const router = createRouter({
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
-      component: () => import('@/pages/Dashboard/index.vue'),
+      component: () => import('@/pages/Dashboard/DashboardPage.vue'),
       meta: {
         title: 'Dashboard',
         requiresAuth: false,

@@ -6,11 +6,11 @@
 </template>
 
 <script setup lang="ts">
-// Loans page - coming soon
+  // Loans page - coming soon
 </script>
 
 <style scoped>
-.loans {
-  @apply p-6 max-w-7xl mx-auto;
-}
+  .loans {
+    @apply p-6 max-w-7xl mx-auto;
+  }
 </style>
