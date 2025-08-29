@@ -12,6 +12,7 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - Set up project structure with Feature Sliced Design
   - Configure TypeScript and ESLint
   - Set up Git repository and branching strategy
+  - Define precommit hooks. format and unit test
   - **Effort**: 2 days
   - **Dependencies**: None
 

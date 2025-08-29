@@ -1,4 +1,4 @@
-# 🐧 Penguin-pool: Decentralized Lending Platform
+# 🐧 Penguin.pool: Decentralized Lending Platform
 
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)](https://vuejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)

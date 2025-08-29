@@ -4,7 +4,7 @@
 
 Penguin-pool is a revolutionary Progressive Web App (PWA) that democratizes access to decentralized lending and borrowing on the Chia Network. By leveraging cutting-edge technologies including Kurrent DB for local data storage, Wallet Connect for secure wallet integration, and a modern Vue.js architecture, Penguin-pool provides users with a seamless, offline-first experience for managing financial instruments.
 
-The platform enables users to create, manage, and participate in lending activities through option contracts, loan offers, and a unique Piggy Bank system. With its focus on user privacy, local data sovereignty, and blockchain integration, Penguin-pool represents the future of decentralized finance.
+The platform enables users to create, manage, and participate in lending activities through option contracts, loan offers, and a unique Piggy Bank system. With its focus on user privacy, local data sovereignty, and blockchain integration, Penguin.pool represents the future of decentralized finance.
 
 ## Table of Contents
 
@@ -71,26 +71,31 @@ Penguin-pool addresses these challenges through:
 ### Technology Stack
 
 #### Frontend Framework
+
 - **Vue.js 3**: Modern reactive framework with Composition API
 - **Vite**: Lightning-fast build tool and development server
 - **TypeScript**: Type-safe development with enhanced IDE support
 
 #### UI & Styling
+
 - **PrimeVue**: Comprehensive component library with 80+ components
 - **Tailwind CSS**: Utility-first CSS framework for rapid development
 - **Responsive Design**: Mobile-first approach with progressive enhancement
 
 #### State Management
+
 - **TanStack Query**: Server state management with caching and synchronization
 - **Pinia**: Vue 3 state management with TypeScript support
 - **Local Storage**: Kurrent DB for offline data persistence
 
 #### Blockchain Integration
+
 - **Chia Network**: Proof of Space and Time consensus mechanism
 - **Wallet Connect**: Secure wallet communication protocol
 - **Sage Wallet**: Chia-specific wallet integration
 
 #### Database & Storage
+
 - **Kurrent DB**: Local stream storage for offline-first functionality
 - **IndexedDB**: Browser-based storage for PWA capabilities
 - **Dexie.space**: Centralized fallback for data synchronization
@@ -98,6 +103,7 @@ Penguin-pool addresses these challenges through:
 ### Architecture Principles
 
 #### Feature Sliced Design
+
 The platform follows a modular architecture that organizes code by business features rather than technical layers:
 
 ```
@@ -111,12 +117,14 @@ src/
 ```
 
 #### Offline-First Architecture
+
 - Local data storage as primary data source
 - Blockchain synchronization as secondary operation
 - Conflict resolution for data consistency
 - Background sync for seamless user experience
 
 #### Progressive Enhancement
+
 - Core functionality works without JavaScript
 - Enhanced features with modern browser capabilities
 - Graceful degradation for older devices
@@ -127,15 +135,18 @@ src/
 ### 1. Option Contracts System
 
 #### Overview
+
 Users can create and trade financial derivatives based on underlying assets, enabling sophisticated investment strategies and risk management.
 
 #### Key Features
+
 - **Contract Creation**: Customizable strike prices, expiration dates, and contract types
 - **Asset Support**: Multiple asset pairs with real-time pricing
 - **Risk Management**: Built-in position sizing and margin requirements
 - **Settlement Options**: Cash settlement or physical delivery
 
 #### Technical Implementation
+
 - Smart contract templates on Chia Network
 - Local contract storage with blockchain verification
 - Real-time price feeds from multiple sources
@@ -144,12 +155,14 @@ Users can create and trade financial derivatives based on underlying assets, ena
 ### 2. Lending Platform
 
 #### Loan Offers
+
 - **Flexible Terms**: Customizable interest rates, loan durations, and collateral requirements
 - **Risk Assessment**: Automated credit scoring based on blockchain history
 - **Collateral Management**: Multi-asset collateral support with liquidation protection
 - **Market Discovery**: Transparent offer comparison and selection
 
 #### Loan Management
+
 - **Repayment Tracking**: Automated payment scheduling and reminders
 - **Status Monitoring**: Real-time loan status and performance metrics
 - **Default Handling**: Automated liquidation and recovery procedures
@@ -158,14 +171,17 @@ Users can create and trade financial derivatives based on underlying assets, ena
 ### 3. Piggy Bank System
 
 #### Concept
+
 A unique coin collection system where users can earn and collect special coins that provide benefits for loan settlement and platform features.
 
 #### Coin Types
+
 - **Standard Coins**: Earned through platform participation and good behavior
 - **Premium Coins**: Special coins with enhanced benefits and rarity
 - **Achievement Coins**: Rewards for completing platform milestones
 
 #### Benefits
+
 - **Loan Settlement**: Coins can be used to settle portions of loans
 - **Fee Reduction**: Discounts on platform fees and transaction costs
 - **Priority Access**: Early access to new features and offerings
@@ -174,9 +190,11 @@ A unique coin collection system where users can earn and collect special coins t
 ### 4. User Dashboard
 
 #### Overview
+
 Comprehensive dashboard providing users with complete visibility into their platform activities and financial position.
 
 #### Key Components
+
 - **Portfolio Summary**: Total assets, liabilities, and net worth
 - **Recent Activity**: Latest transactions and platform interactions
 - **Quick Actions**: Fast access to common platform functions
@@ -187,12 +205,14 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Design Philosophy
 
 #### User-Centric Design
+
 - Intuitive navigation and information architecture
 - Progressive disclosure of complexity
 - Consistent design language across all components
 - Accessibility compliance for inclusive design
 
 #### Responsive Design
+
 - Mobile-first approach with progressive enhancement
 - Touch-friendly interfaces for mobile devices
 - Adaptive layouts for various screen sizes
@@ -201,6 +221,7 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### User Journey
 
 #### Onboarding
+
 1. **Wallet Connection**: Simple wallet integration with multiple options
 2. **Identity Verification**: Chia DID verification for enhanced security
 3. **Profile Setup**: Basic profile creation with optional details
@@ -208,6 +229,7 @@ Comprehensive dashboard providing users with complete visibility into their plat
 5. **First Transaction**: Guided first contract or loan creation
 
 #### Daily Usage
+
 1. **Dashboard Review**: Quick overview of current position
 2. **Market Analysis**: Review available opportunities
 3. **Transaction Execution**: Create or manage positions
@@ -227,12 +249,14 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Security Architecture
 
 #### Multi-Layer Security
+
 1. **Application Security**: Input validation, XSS protection, CSRF prevention
 2. **Data Security**: Local encryption, secure communication protocols
 3. **Blockchain Security**: Smart contract auditing, multi-signature requirements
 4. **Network Security**: HTTPS enforcement, secure WebSocket connections
 
 #### Authentication & Authorization
+
 - **Chia DID**: Decentralized identity verification
 - **Wallet Signatures**: Cryptographic proof of ownership
 - **Session Management**: Secure session handling with automatic expiration
@@ -241,12 +265,14 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Privacy Protection
 
 #### Data Sovereignty
+
 - **Local Storage**: All user data stored locally on user devices
 - **Optional Sync**: Blockchain synchronization only with explicit consent
 - **Data Minimization**: Collection of only essential information
 - **User Control**: Complete control over data sharing and deletion
 
 #### Compliance
+
 - **GDPR Compliance**: European data protection regulation compliance
 - **CCPA Compliance**: California consumer privacy compliance
 - **Data Portability**: Easy export and transfer of user data
@@ -257,30 +283,35 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Development Phases
 
 #### Phase 1: Foundation (Weeks 1-2)
+
 - Project initialization and setup
 - Core architecture implementation
 - Development environment configuration
 - Basic routing and navigation
 
 #### Phase 2: Infrastructure (Weeks 3-4)
+
 - Database integration and setup
 - Wallet connection implementation
 - Basic data models and types
 - Core infrastructure components
 
 #### Phase 3: Core Features (Weeks 5-8)
+
 - User authentication system
 - Option contracts functionality
 - Loan offers and management
 - Basic user dashboard
 
 #### Phase 4: Advanced Features (Weeks 9-12)
+
 - Piggy Bank system implementation
 - Notification and alert systems
 - Search and analytics capabilities
 - PWA features and offline support
 
 #### Phase 5: Testing & Deployment (Weeks 13-14)
+
 - Comprehensive testing and QA
 - Performance optimization
 - Production deployment
@@ -289,12 +320,14 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Development Team
 
 #### Core Team
+
 - **Frontend Developer**: Vue.js and modern web technologies
 - **Blockchain Developer**: Chia Network and smart contract expertise
 - **QA Engineer**: Testing and quality assurance
 - **DevOps Engineer**: Deployment and infrastructure management
 
 #### External Partners
+
 - **Security Auditors**: Smart contract and application security
 - **UI/UX Designers**: User experience and interface design
 - **Legal Advisors**: Regulatory compliance and legal framework
@@ -303,11 +336,13 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Technology Risks & Mitigation
 
 #### High-Risk Areas
+
 1. **Kurrent DB Integration**: Complex local database implementation
 2. **Wallet Integration**: Multiple wallet protocol support
 3. **Smart Contract Security**: Blockchain contract vulnerabilities
 
 #### Mitigation Strategies
+
 - Early prototyping and proof-of-concept development
 - Extensive testing and security auditing
 - Fallback solutions and graceful degradation
@@ -318,12 +353,14 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Market Opportunity
 
 #### DeFi Market Size
+
 - **Total Value Locked (TVL)**: $50+ billion in DeFi protocols
 - **Lending Market**: $15+ billion in lending and borrowing
 - **Growth Rate**: 100%+ annual growth in DeFi adoption
 - **User Base**: 5+ million active DeFi users globally
 
 #### Target Market Segments
+
 1. **Retail Users**: Individual investors and borrowers
 2. **Small Businesses**: Companies seeking alternative financing
 3. **DeFi Protocols**: Integration partners and ecosystem participants
@@ -332,11 +369,13 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Competitive Landscape
 
 #### Direct Competitors
+
 - **Aave**: Established lending protocol with high TVL
 - **Compound**: Traditional DeFi lending platform
 - **MakerDAO**: Collateralized debt position platform
 
 #### Competitive Advantages
+
 - **Local Data Storage**: Unique privacy-focused approach
 - **Offline Functionality**: Unmatched user experience
 - **Chia Network**: Energy-efficient blockchain integration
@@ -345,9 +384,11 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Market Positioning
 
 #### Value Proposition
+
 "Penguin-pool provides the most user-friendly, privacy-focused decentralized lending platform, enabling users to maintain complete control over their financial data while accessing sophisticated DeFi instruments."
 
 #### Target Positioning
+
 - **Primary**: Privacy-conscious DeFi users seeking local data control
 - **Secondary**: Users requiring offline functionality and mobile access
 - **Tertiary**: Institutions seeking regulatory compliance and data sovereignty
@@ -357,16 +398,19 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Technical Risks
 
 #### High Risk
+
 - **Blockchain Integration Complexity**: Integration with Chia Network and smart contracts
 - **Local Database Performance**: Kurrent DB performance and scalability
 - **Wallet Security**: Secure handling of private keys and transactions
 
 #### Medium Risk
+
 - **Cross-Platform Compatibility**: Consistent experience across devices
 - **Data Synchronization**: Conflict resolution and data consistency
 - **Performance Optimization**: Bundle size and loading performance
 
 #### Low Risk
+
 - **UI/UX Implementation**: Component library and design system
 - **Testing Infrastructure**: Unit and integration testing setup
 - **Build and Deployment**: CI/CD pipeline and automation
@@ -374,11 +418,13 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Business Risks
 
 #### Market Risks
+
 - **Regulatory Changes**: Evolving DeFi and cryptocurrency regulations
 - **Competition**: New entrants and established players
 - **Market Volatility**: Cryptocurrency price fluctuations
 
 #### Operational Risks
+
 - **Team Scaling**: Growing development and support teams
 - **Infrastructure Costs**: Hosting, security, and maintenance expenses
 - **User Adoption**: Platform growth and user retention
@@ -386,12 +432,14 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Risk Mitigation
 
 #### Technical Mitigation
+
 - Comprehensive testing and quality assurance
 - Security audits and penetration testing
 - Performance monitoring and optimization
 - Regular dependency updates and security patches
 
 #### Business Mitigation
+
 - Diversified revenue streams and business models
 - Strong community engagement and user feedback
 - Regulatory compliance and legal framework
@@ -402,12 +450,14 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Short-Term Goals (3-6 months)
 
 #### Platform Enhancement
+
 - Advanced analytics and reporting features
 - Mobile app development for iOS and Android
 - Enhanced notification and alert systems
 - Performance optimization and scalability improvements
 
 #### Feature Expansion
+
 - Additional asset types and trading pairs
 - Advanced order types and trading tools
 - Social features and community tools
@@ -416,12 +466,14 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Medium-Term Goals (6-12 months)
 
 #### Ecosystem Development
+
 - Developer API and SDK
 - Third-party application integrations
 - DeFi protocol partnerships
 - Institutional tools and features
 
 #### Market Expansion
+
 - Geographic expansion and localization
 - Regulatory compliance in new jurisdictions
 - Enterprise and institutional adoption
@@ -430,12 +482,14 @@ Comprehensive dashboard providing users with complete visibility into their plat
 ### Long-Term Vision (1-3 years)
 
 #### Platform Evolution
+
 - Decentralized governance and DAO structure
 - Cross-chain interoperability and bridges
 - Advanced AI and machine learning features
 - Institutional-grade security and compliance
 
 #### Market Leadership
+
 - Industry standard for privacy-focused DeFi
 - Global platform for decentralized lending
 - Innovation hub for financial technology
@@ -467,4 +521,4 @@ Join us in building a more accessible, secure, and user-friendly financial futur
 
 **Version**: 1.0  
 **Date**: December 2024  
-**Status**: Draft for Review 
+**Status**: Draft for Review
