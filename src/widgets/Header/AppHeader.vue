@@ -472,6 +472,22 @@
     background: rgba(255, 255, 255, 0.04) !important;
   }
 
+  /* Remove outline from all buttons in header */
+  :deep(.p-button) {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :deep(.p-button:focus) {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :deep(.p-button:focus-visible) {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
   /* Responsive adjustments */
   @media (max-width: 1023px) {
     .header-content {
