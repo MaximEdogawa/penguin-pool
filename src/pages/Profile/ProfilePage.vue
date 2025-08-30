@@ -10,7 +10,7 @@
     <!-- Profile Tabs -->
     <div class="profile-tabs">
       <div class="tabs-header">
-        <button
+        <PrimeButton
           v-for="tab in tabs"
           :key="tab.id"
           @click="activeTab = tab.id"
@@ -19,7 +19,7 @@
         >
           <i :class="tab.icon" class="tab-icon"></i>
           <span class="tab-label">{{ tab.label }}</span>
-        </button>
+        </PrimeButton>
       </div>
 
       <!-- Tab Content -->

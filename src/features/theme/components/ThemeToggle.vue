@@ -168,47 +168,4 @@
     background: var(--red-500);
     color: white;
   }
-
-  /* Windows 95 specific styling */
-  :global(.theme-windows95) :deep(.p-button) {
-    border: 2px solid;
-    border-color: var(--theme-surface) var(--theme-border) var(--theme-border) var(--theme-surface);
-    box-shadow: var(--theme-shadow-outset);
-    background: var(--theme-surface);
-    color: var(--theme-text);
-    min-height: 23px;
-    min-width: 23px;
-  }
-
-  :global(.theme-windows95) :deep(.p-button:hover) {
-    background: var(--theme-hover);
-  }
-
-  :global(.theme-windows95) :deep(.p-button:active) {
-    border-color: var(--theme-border) var(--theme-surface) var(--theme-surface) var(--theme-border);
-    box-shadow: var(--theme-shadow-inset);
-  }
-
-  :global(.theme-windows95) :deep(.p-menu) {
-    background: var(--theme-surface);
-    border: 2px solid;
-    border-color: var(--theme-border) var(--theme-surface) var(--theme-surface) var(--theme-border);
-    box-shadow: var(--theme-shadow-outset);
-    font-family: var(--theme-font-family);
-  }
-
-  :global(.theme-windows95) :deep(.p-submenu-header) {
-    background: var(--theme-primary);
-    color: var(--theme-surface);
-    font-weight: var(--theme-font-weight-bold);
-  }
-
-  :global(.theme-windows95) :deep(.p-menuitem-link:hover) {
-    background: var(--theme-hover);
-  }
-
-  :global(.theme-windows95) :deep(.active-theme) {
-    background: var(--theme-primary);
-    color: var(--theme-surface);
-  }
 </style>

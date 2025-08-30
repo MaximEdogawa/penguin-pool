@@ -15,6 +15,13 @@ export interface ThemeColors {
   hover: string
   active: string
   disabled: string
+  highlight: string
+  shadow: string
+  titleBar: string
+  titleBarText: string
+  menuBar: string
+  scrollBar: string
+  scrollBarThumb: string
 }
 
 export interface ThemeTypography {

@@ -4,6 +4,7 @@
 .theme-windows95 {
   /* Base colors */
   --theme-primary: #000080;
+  --theme-primary: #c0c0c0;
   --theme-secondary: #c0c0c0;
   --theme-success: #008000;
   --theme-danger: #800000;
@@ -22,7 +23,7 @@
   /* Additional Windows 95 specific colors */
   --theme-highlight: #ffffff;
   --theme-shadow: #404040;
-  --theme-title-bar: #000080;
+  --theme-title-bar: #c0c0c0;
   --theme-title-bar-text: #ffffff;
   --theme-menu-bar: #c0c0c0;
   --theme-scroll-bar: #c0c0c0;
