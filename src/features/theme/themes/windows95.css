@@ -133,7 +133,8 @@
 
 .theme-windows95 .p-button:focus,
 .theme-windows95 button:focus {
-  outline: 1px dotted var(--theme-text) !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .theme-windows95 .p-button.p-button-primary,
@@ -438,6 +439,14 @@
 /* Windows 95 Focus Styles */
 .theme-windows95 *:focus {
   outline: 1px dotted var(--theme-text) !important;
+}
+
+/* Windows 95 PrimeButton specific focus override */
+.theme-windows95 .p-button:focus,
+.theme-windows95 .p-button:focus-visible,
+.theme-windows95 .p-button:active {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Windows 95 Selection Styles */

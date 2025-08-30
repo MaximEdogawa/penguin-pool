@@ -110,10 +110,18 @@
 
   .p-button {
     @apply bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white;
+    outline: none !important;
+    box-shadow: none !important;
   }
 
   .p-button:focus {
-    @apply ring-2 ring-primary-500/20;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .p-button:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
   }
 
   /* Enhanced component spacing */
@@ -349,6 +357,70 @@
 
 .p-tooltip-text {
   @apply shadow-medium;
+}
+
+/* Global PrimeButton outline removal */
+.p-button,
+.p-button:focus,
+.p-button:focus-visible,
+.p-button:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure PrimeButtons use theme colors */
+.p-button {
+  transition: all 0.2s ease;
+}
+
+/* Theme-aware PrimeButton styling */
+.p-button {
+  border: none !important;
+}
+
+/* Ensure PrimeButtons work with custom themes */
+[class*='theme-'] .p-button {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove any default PrimeVue button outlines */
+.p-button:focus,
+.p-button:focus-visible,
+.p-button:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* PrimeButton theme integration */
+.p-button {
+  /* Remove default PrimeVue styling */
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure PrimeButtons work with all themes */
+.p-button,
+.p-button:focus,
+.p-button:focus-visible,
+.p-button:active,
+.p-button:hover {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Theme-specific button styling */
+[class*='theme-'] .p-button {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Windows 95 theme specific button overrides */
+.theme-windows95 .p-button {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Animation classes */

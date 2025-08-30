@@ -26,7 +26,7 @@ app.component('PrimeMenu', Menu)
 app.component('PrimeAutoComplete', AutoComplete)
 app.use(PrimeVue, {
   ripple: true,
-  inputStyle: 'outlined',
+  inputStyle: 'filled',
   unstyled: false,
   pt: {
     // Custom PrimeVue styling

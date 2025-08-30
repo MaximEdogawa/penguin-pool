@@ -168,4 +168,20 @@
     background: var(--red-500);
     color: white;
   }
+
+  /* Ensure PrimeButtons have no outlines */
+  :deep(.p-button) {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :deep(.p-button:focus) {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :deep(.p-button:focus-visible) {
+    outline: none !important;
+    box-shadow: none !important;
+  }
 </style>
