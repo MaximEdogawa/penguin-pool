@@ -423,6 +423,22 @@
   box-shadow: none !important;
 }
 
+/* Prevent horizontal scrolling and swiping */
+html,
+body {
+  overflow-x: hidden;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent horizontal scrolling on all containers */
+.app-layout,
+.main-content,
+.page-content {
+  overflow-x: hidden;
+  touch-action: pan-y;
+}
+
 /* Animation classes */
 .fade-enter-active,
 .fade-leave-active {

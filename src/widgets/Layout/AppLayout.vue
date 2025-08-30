@@ -113,7 +113,8 @@
     @apply flex-1 p-6;
     width: 100%;
     min-width: 0;
-    overflow-x: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   /* Sidebar open state */

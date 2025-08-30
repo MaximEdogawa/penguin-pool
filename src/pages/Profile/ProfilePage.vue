@@ -79,6 +79,8 @@
 <style scoped>
   .profile {
     @apply p-4 sm:p-6 max-w-7xl mx-auto;
+    overflow-x: hidden;
+    touch-action: pan-y;
   }
 
   .profile-header {
@@ -95,10 +97,15 @@
 
   .tabs-header {
     @apply flex flex-wrap border-b border-gray-200 dark:border-gray-700;
+    overflow-x: hidden;
+    touch-action: pan-y;
   }
 
   .tab-button {
     @apply flex items-center gap-2 px-3 sm:px-6 py-3 sm:py-4 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 flex-1 sm:flex-none min-w-0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .tab-button.active {
