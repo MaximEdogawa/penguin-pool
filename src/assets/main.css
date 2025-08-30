@@ -439,6 +439,18 @@ body {
   touch-action: pan-y;
 }
 
+/* Fixed header support */
+.header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  overflow: hidden !important;
+  touch-action: none !important;
+  user-select: none !important;
+}
+
 /* Animation classes */
 .fade-enter-active,
 .fade-leave-active {

@@ -374,6 +374,13 @@
   border-bottom: 2px solid var(--theme-border) !important;
   box-shadow: var(--theme-shadow-outset) !important;
   padding: var(--theme-spacing-sm) var(--theme-spacing-md) !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  overflow: hidden !important;
+  touch-action: none !important;
 }
 
 /* Responsive header adjustments */

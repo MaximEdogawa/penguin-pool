@@ -235,18 +235,25 @@
 
 <style scoped>
   .header {
-    @apply bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-header sticky top-0 z-header;
+    @apply bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-header fixed top-0 z-header;
     height: 8vh; /* 8% of viewport height */
     width: 100%;
     min-width: 0;
     min-height: 60px; /* Minimum height for usability */
     max-height: 80px; /* Maximum height for consistency */
+    left: 0;
+    right: 0;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
   }
 
   .header-content {
     @apply flex items-center justify-between px-6 h-full;
     width: 100%;
     min-width: 0;
+    overflow: hidden;
+    touch-action: none;
   }
 
   /* Header Left */
