@@ -26,13 +26,14 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+  import { useRouter, useRoute } from 'vue-router'
   import AppHeader from '@/widgets/Header/AppHeader.vue'
   import AppSidebar from '@/widgets/Sidebar/AppSidebar.vue'
 
   // Router
   const router = useRouter()
+  const route = useRoute()
 
   // State
   const isSidebarOpen = ref(false)
@@ -60,8 +61,10 @@
   const handleResize = () => {
     if (window.innerWidth >= 1024) {
       isSidebarOpen.value = true
+      isSidebarCollapsed.value = false
     } else {
       isSidebarOpen.value = false
+      isSidebarCollapsed.value = false
     }
   }
 
@@ -75,6 +78,16 @@
 
     handleResize()
     window.addEventListener('resize', handleResize)
+
+    // Watch for route changes to close sidebar on mobile
+    watch(
+      () => route.path,
+      () => {
+        if (window.innerWidth < 1024) {
+          isSidebarOpen.value = false
+        }
+      }
+    )
   })
 
   onUnmounted(() => {
@@ -119,14 +132,17 @@
   @media (max-width: 1200px) {
     .main-content {
       left: 25% !important; /* Slightly wider sidebar on medium screens */
+      right: 0 !important;
     }
 
     .sidebar-open .main-content {
-      left: 25% !important;
+      left: 25% !important; /* Slightly wider sidebar on medium screens */
+      right: 0 !important;
     }
 
     .sidebar-collapsed .main-content {
-      left: 8% !important;
+      left: 8% !important; /* 8% when collapsed on medium screens */
+      right: 0 !important;
     }
   }
 

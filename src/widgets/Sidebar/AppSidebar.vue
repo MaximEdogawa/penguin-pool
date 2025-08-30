@@ -8,9 +8,8 @@
       <div class="sidebar-content">
         <!-- Sidebar Header -->
         <div class="sidebar-header">
-          <div class="sidebar-logo">
-            <PenguinLogo class="logo-icon" />
-            <span v-if="!isCollapsed && !isSmallScreen" class="logo-text">Penguin Pool</span>
+          <div class="sidebar-title">
+            <span v-if="!isCollapsed && !isSmallScreen" class="sidebar-title-text">Navigation</span>
           </div>
           <button
             @click="$emit('toggle-collapse')"
@@ -28,7 +27,7 @@
               <router-link
                 to="/dashboard"
                 class="nav-link"
-                :class="{ 'nav-link-active': $route.path === '/dashboard' }"
+                :class="{ 'nav-link-active': $route.path === '/' || $route.path === '/dashboard' }"
                 :title="isCollapsed || isSmallScreen ? 'Dashboard' : ''"
               >
                 <i class="pi pi-home nav-icon"></i>
@@ -91,7 +90,20 @@
 
         <!-- Sidebar Footer -->
         <div class="sidebar-footer">
-          <!-- Connection Info - Always visible -->
+          <!-- Settings Link - Above connection info -->
+          <div class="settings-section">
+            <router-link
+              to="/profile"
+              class="nav-link settings-link"
+              :class="{ 'nav-link-active': $route.path === '/profile' }"
+              :title="isCollapsed || isSmallScreen ? 'Settings' : ''"
+            >
+              <i class="pi pi-cog nav-icon"></i>
+              <span v-if="!isCollapsed && !isSmallScreen" class="nav-label">Settings</span>
+            </router-link>
+          </div>
+
+          <!-- Connection Info - Below settings -->
           <div class="connection-info">
             <div
               class="connection-status"
@@ -109,14 +121,18 @@
     </aside>
 
     <!-- Overlay for small screens - only when sidebar is open -->
-    <div v-if="isOpen && isSmallScreen" class="sidebar-overlay" @click="$emit('close')"></div>
+    <div
+      v-if="isOpen && isSmallScreen"
+      class="sidebar-overlay"
+      @click="$emit('close')"
+      @touchstart="$emit('close')"
+    ></div>
   </div>
 </template>
 
 <script setup lang="ts">
   import { computed } from 'vue'
   import { useUserStore } from '@/entities/user/store/userStore'
-  import PenguinLogo from '@/components/PenguinLogo.vue'
 
   // Props
   interface Props {
@@ -156,9 +172,10 @@
 
 <style scoped>
   .sidebar {
-    @apply fixed left-0 top-0 h-full bg-white/20 dark:bg-gray-800/20 backdrop-blur-xl border-r border-gray-200/20 dark:border-gray-700/20 shadow-sidebar z-sidebar transition-all duration-300 ease-in-out;
+    @apply fixed left-0 top-0 h-full bg-white/20 dark:bg-gray-800/20 backdrop-blur-xl border-r border-gray-200/20 dark:border-gray-700/20 shadow-sidebar transition-all duration-300 ease-in-out;
     width: 20vw; /* 20% of viewport width */
     transform: translateX(-100%);
+    z-index: 50; /* Higher than overlay */
   }
 
   .sidebar.sidebar-open {
@@ -179,15 +196,11 @@
     min-height: 8vh; /* 8% of viewport height */
   }
 
-  .sidebar-logo {
-    @apply flex items-center space-x-3;
+  .sidebar-title {
+    @apply flex items-center;
   }
 
-  .logo-icon {
-    @apply w-8 h-8 flex-shrink-0;
-  }
-
-  .logo-text {
+  .sidebar-title-text {
     @apply text-lg font-bold text-gray-900 dark:text-white;
   }
 
@@ -233,7 +246,16 @@
     @apply p-4 border-t border-gray-200/20 dark:border-gray-700/20;
   }
 
-  /* Connection Info - Always visible */
+  /* Settings Section - Above connection info */
+  .settings-section {
+    @apply mb-3;
+  }
+
+  .settings-link {
+    @apply justify-center;
+  }
+
+  /* Connection Info - Below settings */
   .connection-info {
     @apply flex justify-center;
   }
@@ -268,7 +290,10 @@
 
   /* Overlay - only for small screens */
   .sidebar-overlay {
-    @apply fixed inset-0 bg-black/20 z-sidebar lg:hidden;
+    @apply fixed inset-0 lg:hidden;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 40; /* Lower than sidebar but higher than content */
+    pointer-events: auto; /* Allow clicks to pass through */
   }
 
   /* Responsive */
@@ -349,6 +374,10 @@
     @apply justify-center p-3;
   }
 
+  .sidebar.sidebar-collapsed .sidebar-title-text {
+    @apply hidden;
+  }
+
   .sidebar.sidebar-collapsed .nav-link {
     @apply justify-center px-2 py-3;
   }
@@ -398,7 +427,7 @@
       @apply hidden;
     }
 
-    .sidebar .logo-text {
+    .sidebar .sidebar-title-text {
       @apply hidden;
     }
 

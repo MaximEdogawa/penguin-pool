@@ -3,15 +3,17 @@
 ## Frontend Framework
 
 ### Vue.js 3
+
 - **Version**: 3.x (Latest LTS)
 - **Features**: Composition API, TypeScript support, Tree-shaking
-- **Benefits**: 
+- **Benefits**:
   - Excellent performance and small bundle size
   - Strong TypeScript integration
   - Rich ecosystem and community support
   - Progressive framework for building user interfaces
 
 ### Vite
+
 - **Version**: 5.x
 - **Features**: Fast HMR, ES modules, optimized builds
 - **Benefits**:
@@ -23,6 +25,7 @@
 ## UI Components & Styling
 
 ### PrimeVue
+
 - **Version**: 3.x
 - **Components**: 80+ pre-built components
 - **Features**:
@@ -37,6 +40,7 @@
   - Overlay (Dialog, Sidebar, Toast)
 
 ### Tailwind CSS
+
 - **Version**: 3.x
 - **Features**: Utility-first CSS framework
 - **Benefits**:
@@ -53,6 +57,7 @@
 ## State Management & Data Fetching
 
 ### TanStack Query (React Query)
+
 - **Version**: 5.x
 - **Features**: Server state management, caching, synchronization
 - **Benefits**:
@@ -67,6 +72,7 @@
   - Background synchronization
 
 ### Pinia
+
 - **Version**: 2.x
 - **Features**: Vue 3 state management
 - **Benefits**:
@@ -78,6 +84,7 @@
 ## Database & Local Storage
 
 ### Kurrent DB
+
 - **Purpose**: Local stream storage for offline-first functionality
 - **Features**:
   - Stream-based data storage
@@ -90,6 +97,7 @@
   - Global user indexing
 
 ### IndexedDB (via Dexie)
+
 - **Purpose**: Local database for PWA offline support
 - **Features**:
   - Large data storage
@@ -100,6 +108,7 @@
 ## Blockchain Integration
 
 ### Chia Network
+
 - **Purpose**: Primary blockchain for smart contracts and transactions
 - **Features**:
   - Proof of Space and Time
@@ -108,6 +117,7 @@
   - Wallet integration
 
 ### Wallet Connect
+
 - **Version**: 2.x
 - **Purpose**: Wallet connection and communication
 - **Features**:
@@ -117,6 +127,7 @@
   - Session management
 
 ### Sage Wallet
+
 - **Purpose**: Chia-specific wallet integration
 - **Features**:
   - Chia wallet management
@@ -127,6 +138,7 @@
 ## External APIs & Services
 
 ### Dexie.space
+
 - **Purpose**: Centralized fallback for offer indexing
 - **Features**:
   - Offer file mirroring
@@ -135,6 +147,7 @@
   - Backup data storage
 
 ### Spacescan.io
+
 - **Purpose**: Chia blockchain explorer API
 - **Features**:
   - Transaction history
@@ -145,6 +158,7 @@
 ## Development Tools & Testing
 
 ### TypeScript
+
 - **Version**: 5.x
 - **Features**: Static type checking, modern JavaScript features
 - **Benefits**:
@@ -154,6 +168,7 @@
   - Documentation through types
 
 ### ESLint
+
 - **Purpose**: Code linting and quality enforcement
 - **Configuration**:
   - Vue.js specific rules
@@ -162,6 +177,7 @@
   - Custom rule sets
 
 ### Prettier
+
 - **Purpose**: Code formatting
 - **Configuration**:
   - Consistent code style
@@ -170,6 +186,7 @@
   - Pre-commit hooks
 
 ### Husky
+
 - **Purpose**: Git hooks for code quality
 - **Hooks**:
   - Pre-commit linting
@@ -180,6 +197,7 @@
 ## Testing Framework
 
 ### Vitest
+
 - **Purpose**: Unit and component testing
 - **Features**:
   - Vue Test Utils integration
@@ -188,6 +206,7 @@
   - Coverage reporting
 
 ### Playwright
+
 - **Purpose**: End-to-end testing
 - **Features**:
   - Cross-browser testing
@@ -196,6 +215,7 @@
   - Performance testing
 
 ### Vue Test Utils
+
 - **Purpose**: Vue component testing utilities
 - **Features**:
   - Component mounting
@@ -206,6 +226,7 @@
 ## PWA Features
 
 ### Service Workers
+
 - **Purpose**: Offline functionality and caching
 - **Features**:
   - Offline data access
@@ -214,6 +235,7 @@
   - Cache strategies
 
 ### Web App Manifest
+
 - **Purpose**: App-like experience
 - **Features**:
   - App icons
@@ -224,6 +246,7 @@
 ## Build & Deployment
 
 ### Vite Build
+
 - **Features**:
   - Tree shaking
   - Code splitting
@@ -231,6 +254,7 @@
   - PWA generation
 
 ### Environment Configuration
+
 - **Environments**:
   - Development
   - Staging
@@ -244,6 +268,7 @@
 ## Performance Optimization
 
 ### Bundle Optimization
+
 - **Features**:
   - Code splitting
   - Lazy loading
@@ -251,6 +276,7 @@
   - Asset compression
 
 ### Caching Strategies
+
 - **Features**:
   - Service worker caching
   - HTTP caching
@@ -258,6 +284,7 @@
   - Component caching
 
 ### Lazy Loading
+
 - **Features**:
   - Route-based code splitting
   - Component lazy loading
@@ -267,6 +294,7 @@
 ## Security Features
 
 ### Authentication
+
 - **Methods**:
   - Chia DID verification
   - Wallet signature verification
@@ -274,6 +302,7 @@
   - Multi-factor authentication
 
 ### Data Protection
+
 - **Features**:
   - Local data encryption
   - Secure communication
@@ -283,6 +312,7 @@
 ## Monitoring & Analytics
 
 ### Error Tracking
+
 - **Tools**:
   - Vue error boundaries
   - Global error handling
@@ -290,6 +320,7 @@
   - User analytics
 
 ### Performance Monitoring
+
 - **Metrics**:
   - Core Web Vitals
   - Bundle size analysis
@@ -299,6 +330,7 @@
 ## Browser Support
 
 ### Target Browsers
+
 - **Modern Browsers**:
   - Chrome 90+
   - Firefox 88+
@@ -306,6 +338,7 @@
   - Edge 90+
 
 ### Progressive Enhancement
+
 - **Features**:
   - Graceful degradation
   - Feature detection
@@ -315,6 +348,7 @@
 ## Development Workflow
 
 ### Version Control
+
 - **Git Flow**:
   - Feature branches
   - Development branch
@@ -322,6 +356,7 @@
   - Production branch
 
 ### CI/CD Pipeline
+
 - **Stages**:
   - Code quality checks
   - Unit testing
@@ -330,6 +365,7 @@
   - Build and deployment
 
 ### Code Review
+
 - **Process**:
   - Pull request reviews
   - Automated testing
@@ -339,6 +375,7 @@
 ## Dependencies Management
 
 ### Package Management
+
 - **Tool**: npm/yarn/pnpm
 - **Features**:
   - Lock file management
@@ -347,6 +384,7 @@
   - Version management
 
 ### Dependency Updates
+
 - **Strategy**:
   - Regular security updates
   - Major version planning
@@ -356,6 +394,7 @@
 ## Future Considerations
 
 ### Scalability
+
 - **Plans**:
   - Micro-frontend architecture
   - Service worker improvements
@@ -363,10 +402,11 @@
   - Performance enhancements
 
 ### Technology Updates
+
 - **Monitoring**:
   - Framework updates
   - Security patches
   - Performance improvements
   - New feature adoption
 
-This technical stack provides a robust foundation for building a modern, scalable, and maintainable decentralized lending platform while ensuring excellent user experience and developer productivity. 
+This technical stack provides a robust foundation for building a modern, scalable, and maintainable decentralized lending platform while ensuring excellent user experience and developer productivity.

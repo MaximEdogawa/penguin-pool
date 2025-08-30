@@ -1,16 +1,25 @@
 <template>
   <header class="header">
     <div class="header-content">
-      <!-- Left side: Burger menu for small screens -->
+      <!-- Left side: Logo and Burger menu -->
       <div class="header-left">
-        <button
+        <!-- Logo - Always visible -->
+        <div class="header-logo">
+          <PenguinLogo class="logo-icon" />
+        </div>
+
+        <!-- Burger menu for small screens only -->
+        <PrimeButton
           @click="toggleSidebar"
-          class="burger-menu lg:hidden"
+          class="burger-menu"
           :class="{ 'menu-open': isSidebarOpen }"
           aria-label="Toggle sidebar"
+          text
+          rounded
+          size="small"
         >
-          <i class="pi pi-bars text-xl"></i>
-        </button>
+          <i class="pi pi-bars text-lg"></i>
+        </PrimeButton>
       </div>
 
       <!-- Center: Search bar -->
@@ -30,27 +39,49 @@
       <!-- Right side: Actions and user menu -->
       <div class="header-right">
         <!-- Notifications -->
-        <button class="header-action" @click="toggleNotifications" aria-label="Notifications">
+        <PrimeButton
+          class="header-action"
+          @click="toggleNotifications"
+          aria-label="Notifications"
+          text
+          rounded
+          size="small"
+        >
           <i class="pi pi-bell text-lg"></i>
           <span v-if="notificationCount > 0" class="notification-badge">
             {{ notificationCount }}
           </span>
-        </button>
+        </PrimeButton>
 
         <!-- Theme toggle -->
-        <button class="header-action" @click="toggleTheme" aria-label="Toggle theme">
+        <PrimeButton
+          class="theme-toggle-btn"
+          @click="handleThemeToggle"
+          :aria-label="`Switch theme`"
+          :title="`Switch theme`"
+          text
+          rounded
+          size="small"
+        >
           <i :class="themeIcon" class="text-lg"></i>
-        </button>
+        </PrimeButton>
 
         <!-- User menu -->
         <div class="user-menu" ref="userMenuRef">
-          <button class="user-menu-trigger" @click="toggleUserMenu" aria-label="User menu">
+          <PrimeButton
+            class="user-menu-trigger"
+            @click="toggleUserMenu"
+            aria-label="User menu"
+            text
+            rounded
+            size="small"
+          >
             <div class="user-avatar">
               <i class="pi pi-user text-lg"></i>
             </div>
             <span class="user-name">{{ userName }}</span>
             <i class="pi pi-chevron-down text-sm"></i>
-          </button>
+          </PrimeButton>
 
           <!-- User dropdown -->
           <div v-if="isUserMenuOpen" class="user-dropdown">
@@ -78,10 +109,10 @@
 
             <div class="dropdown-divider"></div>
 
-            <button class="dropdown-item" @click="handleLogout">
+            <PrimeButton class="dropdown-item" @click="handleLogout" text rounded size="small">
               <i class="pi pi-sign-out text-sm"></i>
               <span>Sign Out</span>
-            </button>
+            </PrimeButton>
           </div>
         </div>
       </div>
@@ -95,6 +126,8 @@
   import { useThemeStore } from '@/features/theme/store/themeStore'
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useNotificationStore } from '@/features/notifications/store/notificationStore'
+  import PenguinLogo from '@/components/PenguinLogo.vue'
+  import PrimeButton from 'primevue/button'
 
   // Props
   interface Props {
@@ -123,7 +156,10 @@
 
   // Computed
   const themeIcon = computed(() => {
-    return themeStore.effectiveTheme === 'dark' ? 'pi pi-moon' : 'pi pi-sun'
+    if (themeStore.hasCustomTheme) {
+      return 'pi pi-palette'
+    }
+    return themeStore.isDark ? 'pi pi-sun' : 'pi pi-moon'
   })
 
   const userName = computed(() => {
@@ -147,10 +183,6 @@
     emit('toggle-sidebar')
   }
 
-  const toggleTheme = () => {
-    themeStore.toggleTheme()
-  }
-
   const toggleNotifications = () => {
     // TODO: Implement notifications panel
     console.log('Toggle notifications')
@@ -163,6 +195,16 @@
   const handleSearch = () => {
     // TODO: Implement search functionality
     console.log('Search query:', searchQuery.value)
+  }
+
+  const handleThemeToggle = () => {
+    if (themeStore.hasCustomTheme) {
+      // If custom theme is active, switch back to dark
+      themeStore.setBuiltInTheme('dark')
+    } else {
+      // Toggle between light and dark
+      themeStore.toggleTheme()
+    }
   }
 
   const handleLogout = async () => {
@@ -209,17 +251,35 @@
 
   /* Header Left */
   .header-left {
-    @apply lg:hidden;
+    @apply flex items-center space-x-4;
+  }
+
+  /* Header Logo */
+  .header-logo {
+    @apply flex items-center space-x-3;
+  }
+
+  .header-logo .logo-icon {
+    @apply w-8 h-8 flex-shrink-0;
+  }
+
+  .header-logo .logo-text {
+    @apply text-lg font-bold text-gray-900 dark:text-white;
   }
 
   .burger-menu {
     @apply rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200 border border-gray-200 dark:border-gray-600 flex items-center justify-center;
-    height: calc(8vh - 1rem); /* Slightly smaller than header height */
-    min-height: 40px; /* Minimum height for usability */
-    max-height: 50px; /* Maximum height for consistency */
-    width: calc(8vh - 1rem); /* Square aspect ratio */
-    min-width: 40px; /* Minimum width for usability */
-    max-width: 50px; /* Maximum width for consistency */
+    height: 36px; /* Smaller burger menu */
+    width: 36px; /* Square aspect ratio */
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  /* Hide burger menu on larger screens */
+  @media (min-width: 1024px) {
+    .burger-menu {
+      display: none !important;
+    }
   }
 
   .burger-menu.menu-open {
@@ -254,7 +314,7 @@
     }
 
     .header-left {
-      margin-right: 1.5rem; /* Bigger margin between burger and search */
+      margin-right: 1.5rem; /* Bigger margin between logo/burger and search */
     }
 
     .header-center {
@@ -300,6 +360,15 @@
     .search-input {
       @apply text-lg; /* Even bigger text on small mobile */
     }
+
+    /* Hide logo text on small mobile, show only icon */
+    .header-logo .logo-text {
+      @apply hidden;
+    }
+
+    .header-logo .logo-icon {
+      @apply w-6 h-6; /* Smaller logo icon on small mobile */
+    }
   }
 
   @media (min-width: 1024px) {
@@ -326,6 +395,10 @@
   }
 
   .header-action {
+    @apply relative p-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200;
+  }
+
+  .theme-toggle-btn {
     @apply relative p-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200;
   }
 
@@ -384,6 +457,19 @@
 
   .dropdown-item i {
     @apply text-gray-400;
+  }
+
+  /* PrimeButton background override to match header background */
+  :deep(.p-button.p-button-text) {
+    background: transparent !important;
+  }
+
+  :deep(.p-button.p-button-text:hover) {
+    background: rgba(0, 0, 0, 0.04) !important;
+  }
+
+  :deep(.dark .p-button.p-button-text:hover) {
+    background: rgba(255, 255, 255, 0.04) !important;
   }
 
   /* Responsive adjustments */

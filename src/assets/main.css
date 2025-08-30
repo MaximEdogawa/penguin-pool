@@ -4,6 +4,9 @@
 /* PrimeIcons CSS */
 @import 'primeicons/primeicons.css';
 
+/* Custom Themes */
+@import '../features/theme/themes/windows95.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

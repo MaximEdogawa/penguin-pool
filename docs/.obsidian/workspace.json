@@ -1,0 +1,203 @@
+{
+  "main": {
+    "id": "e10f2679e2292b8e",
+    "type": "split",
+    "children": [
+      {
+        "id": "266530cd9186ac9e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "762a427def224add",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "8e6719d1ad5b3ec5",
+    "type": "split",
+    "children": [
+      {
+        "id": "c96624b19f189985",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0f57a1a9bf49a887",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "c3df8f36a0d67624",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "bffcc043407b7649",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 200
+  },
+  "right": {
+    "id": "93457556385214d7",
+    "type": "split",
+    "children": [
+      {
+        "id": "2897d138c0e6a67c",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ea49a43049f6d2ab",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "e58fd92619d64e7c",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "73619f49d648a54a",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "622ee88c9e9eaadd",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "762a427def224add",
+  "lastOpenFiles": [
+    "implementation/TICKET-002/CUSTOM_THEMES.md",
+    "implementation/TICKET-002/WALLET_CONNECT_UI/WALLET_CONNECT_UI_UPDATE.md",
+    "implementation/TICKET-002/WALLET_CONNECT_UI/README.md",
+    "implementation/TICKET-002/WALLET_CONNECT_UI",
+    "implementation/TICKET-002/HEADER_SIDEBAR/README.md",
+    "implementation/TICKET-002/HEADER_SIDEBAR/HEADER_SIDEBAR_UPDATE.md",
+    "implementation/TICKET-002/HEADER_SIDEBAR",
+    "implementation/TICKET-002/SIDEBAR_COLLAPSE/SIDEBAR_COLLAPSE_UPDATE.md",
+    "implementation/TICKET-002/SIDEBAR_COLLAPSE/SIDEBAR_COLLAPSE_FIXES.md",
+    "implementation/TICKET-002/SIDEBAR_COLLAPSE/README.md",
+    "implementation/TICKET-002/SIDEBAR_COLLAPSE",
+    "implementation/WALLET_CONNECT_UI/README.md",
+    "implementation/HEADER_SIDEBAR/README.md",
+    "implementation/SIDEBAR_COLLAPSE/README.md",
+    "implementation/TICKET-002/README.md",
+    "implementation/WALLET_CONNECT_UI/WALLET_CONNECT_UI_UPDATE.md",
+    "implementation/HEADER_SIDEBAR/HEADER_SIDEBAR_UPDATE.md",
+    "implementation/SIDEBAR_COLLAPSE/SIDEBAR_COLLAPSE_UPDATE.md",
+    "implementation/SIDEBAR_COLLAPSE/SIDEBAR_COLLAPSE_FIXES.md",
+    "implementation/TICKET-002/TICKET-002-IMPLEMENTATION.md",
+    "implementation/WALLET_CONNECT_UI",
+    "implementation/HEADER_SIDEBAR",
+    "implementation/SIDEBAR_COLLAPSE",
+    "implementation/TICKET-002",
+    "README.md",
+    "implementation/README.md",
+    "design-technical/README.md",
+    "IMPLEMENTATION_ROADMAP.md",
+    "implementation/WALLET_CONNECT_UI_UPDATE.md",
+    "implementation/HEADER_SIDEBAR_UPDATE.md",
+    "implementation/SIDEBAR_COLLAPSE_UPDATE.md",
+    "implementation/SIDEBAR_COLLAPSE_FIXES.md",
+    "implementation/TICKET-002-IMPLEMENTATION.md",
+    "implementation",
+    "design-technical"
+  ]
+}
