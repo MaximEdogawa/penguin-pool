@@ -90,11 +90,27 @@
 
         <!-- Sidebar Footer -->
         <div class="sidebar-footer">
-          <!-- Settings Link - Above connection info -->
+          <!-- User Info Section -->
+          <div class="user-info-section">
+            <div class="user-avatar">
+              <i class="pi pi-user text-xl"></i>
+            </div>
+            <div v-if="!isCollapsed && !isSmallScreen" class="user-details">
+              <p class="user-name">{{ userName }}</p>
+              <p class="user-email">{{ userEmail }}</p>
+              <!-- Connection Status -->
+              <div class="connection-status" :class="connectionStatusClass">
+                <div class="connection-dot"></div>
+                <span class="connection-text">{{ connectionStatusText }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Settings Link -->
           <div class="settings-section">
             <router-link
               to="/profile"
-              class="nav-link settings-link"
+              class="nav-link"
               :class="{ 'nav-link-active': $route.path === '/profile' }"
               :title="isCollapsed || isSmallScreen ? 'Settings' : ''"
             >
@@ -103,18 +119,16 @@
             </router-link>
           </div>
 
-          <!-- Connection Info - Below settings -->
-          <div class="connection-info">
-            <div
-              class="connection-status"
-              :class="connectionStatusClass"
-              :title="isCollapsed || isSmallScreen ? connectionStatusText : ''"
+          <!-- Sign Out Button -->
+          <div class="signout-section">
+            <button
+              @click="handleLogout"
+              class="nav-link"
+              :title="isCollapsed || isSmallScreen ? 'Sign Out' : ''"
             >
-              <div class="connection-dot"></div>
-              <span v-if="!isCollapsed && !isSmallScreen" class="connection-text">
-                {{ connectionStatusText }}
-              </span>
-            </div>
+              <i class="pi pi-sign-out nav-icon"></i>
+              <span v-if="!isCollapsed && !isSmallScreen" class="nav-label">Sign Out</span>
+            </button>
           </div>
         </div>
       </div>
@@ -156,6 +170,14 @@
     return props.isCollapsed || isSmallScreen.value ? 'pi pi-angle-right' : 'pi pi-angle-left'
   })
 
+  const userName = computed(() => {
+    return userStore.currentUser?.username || 'Guest'
+  })
+
+  const userEmail = computed(() => {
+    return `${userStore.currentUser?.username || 'guest'}@penguinpool.com`
+  })
+
   const connectionStatusClass = computed(() => {
     return userStore.currentUser?.walletAddress ? 'connected' : 'disconnected'
   })
@@ -168,6 +190,17 @@
   const isSmallScreen = computed(() => {
     return window.innerWidth <= 1023
   })
+
+  // Methods
+  const handleLogout = async () => {
+    try {
+      await userStore.logout()
+      // Redirect to auth page after logout
+      window.location.href = '/auth'
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
+  }
 </script>
 
 <style scoped>
@@ -246,26 +279,64 @@
     @apply p-4 border-t border-gray-200/20 dark:border-gray-700/20;
   }
 
-  /* Settings Section - Above connection info */
-  .settings-section {
+  /* User Info Section */
+  .user-info-section {
+    @apply flex items-center space-x-3 mb-4 p-3 bg-gray-50/30 dark:bg-gray-700/30 rounded-lg;
+  }
+
+  .user-avatar {
+    @apply w-10 h-10 bg-primary-500 text-white rounded-full flex items-center justify-center flex-shrink-0;
+  }
+
+  .user-details {
+    @apply flex-1 min-w-0;
+  }
+
+  .user-name {
+    @apply text-sm font-semibold text-gray-900 dark:text-white truncate mb-1;
+  }
+
+  .user-email {
+    @apply text-xs text-gray-600 dark:text-gray-400 truncate mb-2;
+  }
+
+  /* Connection Status within User Section */
+  .user-info-section .connection-status {
+    @apply flex items-center space-x-2 text-xs;
+  }
+
+  .user-info-section .connection-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .user-info-section .connection-status.connected .connection-dot {
+    @apply bg-green-500;
+  }
+
+  .user-info-section .connection-status.disconnected .connection-dot {
+    @apply bg-red-500;
+  }
+
+  .user-info-section .connection-text {
+    @apply text-xs font-medium;
+  }
+
+  .user-info-section .connection-status.connected .connection-text {
+    @apply text-green-600 dark:text-green-400;
+  }
+
+  .user-info-section .connection-status.disconnected .connection-text {
+    @apply text-red-600 dark:text-red-400;
+  }
+
+  /* Sign Out Section */
+  .signout-section {
     @apply mb-3;
   }
 
-  .settings-link {
-    @apply justify-center;
-  }
-
-  /* Connection Info - Below settings */
-  .connection-info {
-    @apply flex justify-center;
-  }
-
-  .connection-status {
-    @apply flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-medium;
-  }
-
-  .connection-status.connected {
-    @apply bg-green-50/30 dark:bg-green-900/10 text-green-700 dark:text-green-300 border border-green-200/20 dark:border-green-800/20;
+  /* Settings Section - Above connection info */
+  .settings-section {
+    @apply mb-3;
   }
 
   .connection-status.disconnected {
@@ -395,6 +466,14 @@
     @apply hidden;
   }
 
+  .sidebar.sidebar-collapsed .user-details {
+    @apply hidden;
+  }
+
+  .sidebar.sidebar-collapsed .user-info-section {
+    @apply justify-center p-2;
+  }
+
   /* Hover effects for collapsed state */
   .sidebar.sidebar-collapsed .nav-link:hover {
     @apply bg-gray-100/30 dark:bg-gray-700/30;
@@ -429,6 +508,14 @@
 
     .sidebar .sidebar-title-text {
       @apply hidden;
+    }
+
+    .sidebar .user-details {
+      @apply hidden;
+    }
+
+    .sidebar .user-info-section {
+      @apply justify-center p-2;
     }
 
     .sidebar .nav-icon {

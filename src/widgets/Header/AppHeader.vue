@@ -36,7 +36,7 @@
         </div>
       </div>
 
-      <!-- Right side: Actions and user menu -->
+      <!-- Right side: Actions only -->
       <div class="header-right">
         <!-- Notifications -->
         <PrimeButton
@@ -65,69 +65,16 @@
         >
           <i :class="themeIcon" class="text-lg"></i>
         </PrimeButton>
-
-        <!-- User menu -->
-        <div class="user-menu" ref="userMenuRef">
-          <PrimeButton
-            class="user-menu-trigger"
-            @click="toggleUserMenu"
-            aria-label="User menu"
-            text
-            rounded
-            size="small"
-          >
-            <div class="user-avatar">
-              <i class="pi pi-user text-lg"></i>
-            </div>
-            <span class="user-name">{{ userName }}</span>
-            <i class="pi pi-chevron-down text-sm"></i>
-          </PrimeButton>
-
-          <!-- User dropdown -->
-          <div v-if="isUserMenuOpen" class="user-dropdown">
-            <div class="user-info">
-              <div class="user-avatar-large">
-                <i class="pi pi-user text-2xl"></i>
-              </div>
-              <div class="user-details">
-                <p class="user-full-name">{{ userFullName }}</p>
-                <p class="user-email">{{ userEmail }}</p>
-              </div>
-            </div>
-
-            <div class="dropdown-divider"></div>
-
-            <router-link to="/profile" class="dropdown-item">
-              <i class="pi pi-user text-sm"></i>
-              <span>Profile</span>
-            </router-link>
-
-            <router-link to="/dashboard" class="dropdown-item">
-              <i class="pi pi-home text-sm"></i>
-              <span>Dashboard</span>
-            </router-link>
-
-            <div class="dropdown-divider"></div>
-
-            <PrimeButton class="dropdown-item" @click="handleLogout" text rounded size="small">
-              <i class="pi pi-sign-out text-sm"></i>
-              <span>Sign Out</span>
-            </PrimeButton>
-          </div>
-        </div>
       </div>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { ref, computed } from 'vue'
   import { useThemeStore } from '@/features/theme/store/themeStore'
-  import { useUserStore } from '@/entities/user/store/userStore'
   import { useNotificationStore } from '@/features/notifications/store/notificationStore'
   import PenguinLogo from '@/components/PenguinLogo.vue'
-  import PrimeButton from 'primevue/button'
 
   // Props
   interface Props {
@@ -141,18 +88,12 @@
     'toggle-sidebar': []
   }>()
 
-  // Router
-  const router = useRouter()
-
   // Stores
   const themeStore = useThemeStore()
-  const userStore = useUserStore()
   const notificationStore = useNotificationStore()
 
   // State
   const searchQuery = ref('')
-  const isUserMenuOpen = ref(false)
-  const userMenuRef = ref<HTMLElement>()
 
   // Computed
   const themeIcon = computed(() => {
@@ -160,18 +101,6 @@
       return 'pi pi-palette'
     }
     return themeStore.isDark ? 'pi pi-sun' : 'pi pi-moon'
-  })
-
-  const userName = computed(() => {
-    return userStore.currentUser?.username || 'Guest'
-  })
-
-  const userFullName = computed(() => {
-    return userStore.currentUser?.username || 'Guest User'
-  })
-
-  const userEmail = computed(() => {
-    return `${userStore.currentUser?.username || 'guest'}@penguinpool.com`
   })
 
   const notificationCount = computed(() => {
@@ -188,10 +117,6 @@
     console.log('Toggle notifications')
   }
 
-  const toggleUserMenu = () => {
-    isUserMenuOpen.value = !isUserMenuOpen.value
-  }
-
   const handleSearch = () => {
     // TODO: Implement search functionality
     console.log('Search query:', searchQuery.value)
@@ -206,31 +131,6 @@
       themeStore.toggleTheme()
     }
   }
-
-  const handleLogout = async () => {
-    try {
-      await userStore.logout()
-      router.push('/auth')
-    } catch (error) {
-      console.error('Logout failed:', error)
-    }
-  }
-
-  // Click outside to close user menu
-  const handleClickOutside = (event: Event) => {
-    if (userMenuRef.value && !userMenuRef.value.contains(event.target as Node)) {
-      isUserMenuOpen.value = false
-    }
-  }
-
-  // Lifecycle
-  onMounted(() => {
-    document.addEventListener('click', handleClickOutside)
-  })
-
-  onUnmounted(() => {
-    document.removeEventListener('click', handleClickOutside)
-  })
 </script>
 
 <style scoped>
@@ -243,17 +143,12 @@
     max-height: 80px; /* Maximum height for consistency */
     left: 0;
     right: 0;
-    overflow: hidden;
-    touch-action: none;
-    user-select: none;
   }
 
   .header-content {
     @apply flex items-center justify-between px-6 h-full;
     width: 100%;
     min-width: 0;
-    overflow: hidden;
-    touch-action: none;
   }
 
   /* Header Left */
@@ -299,9 +194,9 @@
   }
 
   .search-container {
-    @apply relative w-full max-w-2xl;
+    @apply relative w-full max-w-4xl;
     height: calc(8vh - 1rem); /* Slightly smaller than header height */
-    max-width: 48rem; /* Expanded search bar on large screens */
+    max-width: 80rem; /* Much bigger search bar */
     min-height: 40px; /* Minimum height for usability */
     max-height: 50px; /* Maximum height for consistency */
   }
@@ -415,7 +310,8 @@
 
   /* User Menu */
   .user-menu {
-    @apply relative;
+    position: relative;
+    z-index: 1000;
   }
 
   .user-menu-trigger {
@@ -431,7 +327,19 @@
   }
 
   .user-dropdown {
-    @apply absolute right-0 top-full mt-2 w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-strong border border-gray-200 dark:border-gray-700 py-3 z-modal;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 0.5rem;
+    width: 18rem;
+    background: var(--vp-c-bg);
+    border-radius: 1rem;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--vp-c-border);
+    padding: 0.75rem;
+    z-index: 1001;
   }
 
   .user-info {
