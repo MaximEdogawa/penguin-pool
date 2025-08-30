@@ -128,6 +128,56 @@
     @apply min-h-[300px] sm:min-h-[400px];
   }
 
+  /* Fix scroll area background to match theme */
+  .tab-content {
+    background: inherit;
+  }
+
+  /* Ensure the entire profile container inherits theme background */
+  .profile {
+    background: inherit;
+  }
+
+  /* Fix any scroll area background issues */
+  .profile-tabs {
+    background: inherit;
+  }
+
+  /* Global scroll area background fixes */
+  :global(html) {
+    background: var(--color-background, #ffffff) !important;
+  }
+
+  :global(body) {
+    background: var(--color-background, #ffffff) !important;
+  }
+
+  :global(.dark html) {
+    background: var(--color-background, #0f172a) !important;
+  }
+
+  :global(.dark body) {
+    background: var(--color-background, #0f172a) !important;
+  }
+
+  /* Ensure page content area has proper background */
+  :global(.page-content) {
+    background: var(--color-background, #ffffff) !important;
+  }
+
+  :global(.dark .page-content) {
+    background: var(--color-background, #0f172a) !important;
+  }
+
+  /* Fix main content area background */
+  :global(.main-content) {
+    background: var(--color-background, #ffffff) !important;
+  }
+
+  :global(.dark .main-content) {
+    background: var(--color-background, #0f172a) !important;
+  }
+
   /* Responsive adjustments */
   @media (max-width: 640px) {
     .tabs-header {
@@ -149,6 +199,57 @@
     border: 2px solid;
     border-color: var(--theme-border) var(--theme-surface) var(--theme-surface) var(--theme-border);
     box-shadow: var(--theme-shadow-outset);
+  }
+
+  /* Windows 95 theme background fixes */
+  :global(.theme-windows95 html),
+  :global(.theme-windows95 body),
+  :global(.theme-windows95 .page-content),
+  :global(.theme-windows95 .main-content) {
+    background: var(--theme-surface) !important;
+  }
+
+  :global(.theme-windows95) .profile,
+  :global(.theme-windows95) .profile-tabs,
+  :global(.theme-windows95) .tab-content {
+    background: var(--theme-surface) !important;
+  }
+
+  /* Fix scrollbar background colors */
+  .tab-content::-webkit-scrollbar {
+    background: transparent;
+  }
+
+  .tab-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .tab-content::-webkit-scrollbar-thumb {
+    background: var(--color-border, #d1d5db);
+    border-radius: 4px;
+  }
+
+  .tab-content::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-hover, #9ca3af);
+  }
+
+  /* Firefox scrollbar styling */
+  .tab-content {
+    scrollbar-color: var(--color-border, #d1d5db) transparent;
+    scrollbar-width: thin;
+  }
+
+  /* Windows 95 theme scrollbar styling */
+  :global(.theme-windows95) .tab-content::-webkit-scrollbar-thumb {
+    background: var(--theme-border) !important;
+  }
+
+  :global(.theme-windows95) .tab-content::-webkit-scrollbar-thumb:hover {
+    background: var(--theme-hover) !important;
+  }
+
+  :global(.theme-windows95) .tab-content {
+    scrollbar-color: var(--theme-border) transparent !important;
   }
 
   :global(.theme-windows95) .tabs-header {

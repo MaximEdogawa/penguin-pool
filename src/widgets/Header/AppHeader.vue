@@ -3,11 +3,6 @@
     <div class="header-content">
       <!-- Left side: Logo and Burger menu -->
       <div class="header-left">
-        <!-- Logo - Always visible -->
-        <div class="header-logo">
-          <PenguinLogo class="logo-icon" />
-        </div>
-
         <!-- Burger menu for small screens only -->
         <PrimeButton
           @click="toggleSidebar"
@@ -20,6 +15,10 @@
         >
           <i class="pi pi-bars text-lg"></i>
         </PrimeButton>
+        <!-- Logo - Always visible -->
+        <div class="header-logo">
+          <PenguinLogo class="logo-icon" />
+        </div>
       </div>
 
       <!-- Center: Search bar -->
