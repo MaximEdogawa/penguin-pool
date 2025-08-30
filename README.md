@@ -1,4 +1,6 @@
-# 🐧 Penguin.pool: Decentralized Lending Platform
+# 🐧 Penguin Pool: Decentralized Lending Platform
+
+![Penguin Pool Logo](src/assets/penguin-pool.svg)
 
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)](https://vuejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
@@ -24,6 +26,7 @@ Penguin-pool is a modern, privacy-focused decentralized lending platform that co
 ## 📚 Documentation
 
 ### 📋 Core Documentation
+
 - **[Design Document](docs/DESIGN.md)** - Comprehensive technical specifications and architecture
 - **[Project Structure](docs/PROJECT_STRUCTURE.md)** - Feature Sliced Design implementation guide
 - **[Technical Stack](docs/TECHNICAL_STACK.md)** - Complete technology overview and dependencies
@@ -31,6 +34,7 @@ Penguin-pool is a modern, privacy-focused decentralized lending platform that co
 - **[White Paper](docs/WHITE_PAPER.md)** - Complete project overview and business case
 
 ### 🎯 Quick Start Guide
+
 1. **Review Documentation**: Start with the [Design Document](docs/DESIGN.md)
 2. **Understand Architecture**: Study the [Project Structure](docs/PROJECT_STRUCTURE.md)
 3. **Plan Implementation**: Follow the [Implementation Roadmap](docs/IMPLEMENTATION_ROADMAP.md)
@@ -39,6 +43,7 @@ Penguin-pool is a modern, privacy-focused decentralized lending platform that co
 ## 🏗️ Architecture
 
 ### Technology Stack
+
 - **Frontend**: Vue.js 3 + Composition API + TypeScript
 - **Build Tool**: Vite 5.x with optimized builds
 - **UI Components**: PrimeVue component library
@@ -49,6 +54,7 @@ Penguin-pool is a modern, privacy-focused decentralized lending platform that co
 - **Wallets**: Wallet Connect + Sage Wallet
 
 ### Architecture Principles
+
 - **Feature Sliced Design**: Modular, scalable architecture
 - **Offline-First**: Local data storage with blockchain sync
 - **Progressive Enhancement**: Core functionality without JavaScript
@@ -58,12 +64,14 @@ Penguin-pool is a modern, privacy-focused decentralized lending platform that co
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
+
+- Node.js 18+
 - npm/yarn/pnpm
 - Git
 - Modern browser with PWA support
 
 ### Development Setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/your-org/penguin-pool.git
@@ -83,6 +91,7 @@ npm run test
 ```
 
 ### Project Structure
+
 ```
 penguin-pool/
 ├── docs/                          # 📚 Documentation
@@ -100,26 +109,31 @@ penguin-pool/
 ## 📋 Development Roadmap
 
 ### Phase 1: Foundation (Weeks 1-2) 🏗️
+
 - [ ] Project initialization and setup
 - [ ] Core architecture implementation
 - [ ] Development environment configuration
 
 ### Phase 2: Infrastructure (Weeks 3-4) 🔧
+
 - [ ] Database integration and setup
 - [ ] Wallet connection implementation
 - [ ] Basic data models and types
 
 ### Phase 3: Core Features (Weeks 5-8) ⚡
+
 - [ ] User authentication system
 - [ ] Option contracts functionality
 - [ ] Loan offers and management
 
 ### Phase 4: Advanced Features (Weeks 9-12) 🚀
+
 - [ ] Piggy Bank system implementation
 - [ ] Notification and alert systems
 - [ ] PWA features and offline support
 
 ### Phase 5: Testing & Deployment (Weeks 13-14) 🎯
+
 - [ ] Comprehensive testing and QA
 - [ ] Performance optimization
 - [ ] Production deployment
@@ -127,12 +141,14 @@ penguin-pool/
 ## 🎨 UI/UX Features
 
 ### Design System
+
 - **Dark/Light Themes**: Multiple theme options
 - **Responsive Design**: Mobile-first approach
 - **Accessibility**: WCAG 2.1 AA compliance
 - **Component Library**: 80+ PrimeVue components
 
 ### User Experience
+
 - **Progressive Disclosure**: Complexity revealed gradually
 - **Intuitive Navigation**: Clear information architecture
 - **Quick Actions**: Fast access to common functions
@@ -141,12 +157,14 @@ penguin-pool/
 ## 🔒 Security & Privacy
 
 ### Security Features
+
 - **Multi-Layer Security**: Application, data, blockchain, and network layers
 - **Authentication**: Chia DID + wallet signature verification
 - **Authorization**: Role-based access control
 - **Smart Contract Auditing**: Security-focused contract development
 
 ### Privacy Protection
+
 - **Local Data Storage**: User data never leaves device without consent
 - **Optional Sync**: Blockchain synchronization only with explicit permission
 - **Data Minimization**: Collection of only essential information
@@ -155,12 +173,14 @@ penguin-pool/
 ## 🌐 Blockchain Integration
 
 ### Chia Network
+
 - **Proof of Space and Time**: Energy-efficient consensus mechanism
 - **Smart Contracts**: Programmable financial instruments
 - **DID Support**: Decentralized identity verification
 - **Wallet Integration**: Native wallet support
 
 ### External APIs
+
 - **Dexie.space**: Centralized fallback for offer indexing
 - **Spacescan.io**: Chia blockchain explorer integration
 - **Wallet Connect**: Multi-wallet protocol support
@@ -168,12 +188,14 @@ penguin-pool/
 ## 🧪 Testing Strategy
 
 ### Testing Framework
+
 - **Unit Testing**: Vitest + Vue Test Utils
 - **Integration Testing**: API and database testing
 - **E2E Testing**: Playwright for user workflows
 - **Performance Testing**: Core Web Vitals optimization
 
 ### Quality Assurance
+
 - **Code Quality**: ESLint + Prettier
 - **Git Hooks**: Husky for pre-commit validation
 - **Type Safety**: Full TypeScript coverage
@@ -182,12 +204,14 @@ penguin-pool/
 ## 📱 PWA Features
 
 ### Progressive Web App
+
 - **Service Workers**: Offline functionality and caching
 - **Web App Manifest**: Native app experience
 - **Background Sync**: Seamless data synchronization
 - **Push Notifications**: Real-time alerts and updates
 
 ### Offline Capabilities
+
 - **Local Data Access**: Full functionality without internet
 - **Background Sync**: Automatic synchronization when online
 - **Conflict Resolution**: Data consistency management
@@ -196,6 +220,7 @@ penguin-pool/
 ## 🤝 Contributing
 
 ### Development Guidelines
+
 - Follow Feature Sliced Design architecture
 - Use TypeScript for all new code
 - Write comprehensive tests
@@ -203,6 +228,7 @@ penguin-pool/
 - Update documentation for new features
 
 ### Getting Involved
+
 1. **Fork the repository**
 2. **Create a feature branch**
 3. **Make your changes**
@@ -216,11 +242,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🆘 Support
 
 ### Documentation
+
 - **Technical Issues**: Check the [Design Document](docs/DESIGN.md)
 - **Architecture Questions**: Review [Project Structure](docs/PROJECT_STRUCTURE.md)
 - **Implementation Help**: Follow the [Roadmap](docs/IMPLEMENTATION_ROADMAP.md)
 
 ### Community
+
 - **Discussions**: GitHub Discussions
 - **Issues**: GitHub Issues
 - **Contributions**: Pull Requests welcome
@@ -236,4 +264,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with ❤️ for the DeFi community**
 
-*Penguin-pool: Democratizing access to decentralized finance through privacy, usability, and innovation.*
+_Penguin-pool: Democratizing access to decentralized finance through privacy, usability, and innovation._

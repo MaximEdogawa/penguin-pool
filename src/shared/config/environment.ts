@@ -64,13 +64,25 @@ export const environment = {
 
   // PWA configuration
   pwa: {
-    name: 'Penguin.pool',
+    name: 'Penguin Pool',
     shortName: 'Penguin',
     description: 'Decentralized lending platform',
     themeColor: '#3b82f6',
     backgroundColor: '#ffffff',
     display: 'standalone',
     orientation: 'portrait',
+    icons: [
+      {
+        src: '/favicon.svg',
+        sizes: '32x32',
+        type: 'image/svg+xml',
+      },
+      {
+        src: '/src/assets/penguin-pool.svg',
+        sizes: '400x400',
+        type: 'image/svg+xml',
+      },
+    ],
   },
 } as const
 

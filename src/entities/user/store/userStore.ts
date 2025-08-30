@@ -26,6 +26,24 @@ export const useUserStore = defineStore('user', () => {
 
   const userPreferences = computed(() => currentUser.value?.preferences)
 
+  // Initialize store from localStorage
+  const initializeStore = () => {
+    try {
+      const storedUser = localStorage.getItem('penguin-pool-user')
+      if (storedUser) {
+        const user = JSON.parse(storedUser)
+        currentUser.value = user
+        isAuthenticated.value = true
+      }
+    } catch (err) {
+      console.error('Failed to restore user session:', err)
+      localStorage.removeItem('penguin-pool-user')
+    }
+  }
+
+  // Initialize store on creation
+  initializeStore()
+
   // Actions
   const login = async (walletAddress: string, username?: string) => {
     isLoading.value = true
@@ -46,14 +64,15 @@ export const useUserStore = defineStore('user', () => {
         preferences: {
           theme: 'auto',
           language: 'en',
+          currency: 'XCH',
           notifications: {
             email: false,
             push: true,
-            inApp: true,
+            sms: false,
           },
           privacy: {
-            dataSharing: false,
-            analytics: false,
+            shareAnalytics: false,
+            shareUsageData: false,
           },
         },
       }

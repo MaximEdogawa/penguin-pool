@@ -6,7 +6,6 @@ import { VueQueryPlugin } from '@tanstack/vue-query'
 
 // PrimeVue imports
 import PrimeVue from 'primevue/config'
-import 'primeicons/primeicons.css'
 
 import App from './App.vue'
 import router from './router'
@@ -20,6 +19,20 @@ app.use(VueQueryPlugin)
 app.use(PrimeVue, {
   ripple: true,
   inputStyle: 'outlined',
+  unstyled: false,
+  pt: {
+    // Custom PrimeVue styling
+    button: {
+      root: { class: 'btn-primary' },
+      secondary: { class: 'btn-secondary' },
+    },
+    card: {
+      root: { class: 'card' },
+    },
+    inputtext: {
+      root: { class: 'input-field' },
+    },
+  },
 })
 
 app.mount('#app')

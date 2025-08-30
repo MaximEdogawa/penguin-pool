@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard">
     <div class="dashboard-header">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Welcome to penguin.pool</h1>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Welcome to Penguin Pool</h1>
       <p class="text-gray-600 dark:text-gray-300 mt-2">
         Your decentralized lending platform on the Chia Network
       </p>
@@ -67,10 +67,6 @@
             <i class="pi pi-search text-lg"></i>
             <span>Browse Offers</span>
           </button>
-          <button class="action-btn secondary">
-            <i class="pi pi-wallet text-lg"></i>
-            <span>Connect Wallet</span>
-          </button>
         </div>
       </div>
 
@@ -83,7 +79,7 @@
               <i class="pi pi-info-circle text-blue-500"></i>
             </div>
             <div class="activity-content">
-              <p class="activity-text">Welcome to penguin.pool!</p>
+              <p class="activity-text">Welcome to Penguin Pool!</p>
               <p class="activity-time">Just now</p>
             </div>
           </div>
@@ -113,7 +109,7 @@
 
 <style scoped>
   .dashboard {
-    @apply p-6 max-w-7xl mx-auto;
+    @apply max-w-7xl mx-auto;
   }
 
   .dashboard-header {
@@ -153,7 +149,7 @@
   }
 
   .actions-grid {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+    @apply grid grid-cols-1 sm:grid-cols-3 gap-4;
   }
 
   .action-btn {

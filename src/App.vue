@@ -1,19 +1,28 @@
 <script setup lang="ts">
+  import { computed } from 'vue'
   import { RouterView } from 'vue-router'
   import AppProvider from '@/app/providers/AppProvider.vue'
+  import AppLayout from '@/widgets/Layout/AppLayout.vue'
+  import { useUserStore } from '@/entities/user/store/userStore'
+
+  // Get user store
+  const userStore = useUserStore()
+
+  // Check if user is authenticated using the store state
+  const isAuthenticated = computed(() => {
+    return userStore.isAuthenticated || localStorage.getItem('penguin-pool-user') !== null
+  })
 </script>
 
 <template>
   <AppProvider>
-    <div class="app-container">
+    <AppLayout v-if="isAuthenticated">
       <RouterView />
-    </div>
+    </AppLayout>
+    <RouterView v-else />
   </AppProvider>
 </template>
 
 <style scoped>
-  .app-container {
-    min-height: 100vh;
-    width: 100%;
-  }
+  /* App-level styles are now handled by AppLayout */
 </style>
