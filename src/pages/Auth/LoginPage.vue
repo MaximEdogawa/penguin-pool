@@ -158,7 +158,7 @@
 
 <style scoped>
   .login-page {
-    @apply min-h-screen w-full;
+    @apply min-h-screen w-full mt-10 sm:mt-10 md:mt-10 lg:mt-1 xl:mt-1;
     background-color: var(--surface-ground);
     min-height: 100vh;
     display: flex;

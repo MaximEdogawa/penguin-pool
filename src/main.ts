@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { VueQueryPlugin } from '@tanstack/vue-query'
+import Aura from '@primeuix/themes/aura'
 
 // PrimeVue imports
 import PrimeVue from 'primevue/config'
@@ -27,22 +28,11 @@ app.use(createPinia())
 app.use(router)
 app.use(VueQueryPlugin)
 
-// Register global components
 app.use(PrimeVue, {
-  ripple: true,
-  inputStyle: 'filled',
-  unstyled: false,
-  pt: {
-    // Custom PrimeVue styling
-    button: {
-      root: { class: 'btn-primary' },
-      secondary: { class: 'btn-secondary' },
-    },
-    card: {
-      root: { class: 'card' },
-    },
-    inputtext: {
-      root: { class: 'input-field' },
+  theme: {
+    preset: Aura,
+    options: {
+      darkModeSelector: '.penguin-pool-dark',
     },
   },
 })

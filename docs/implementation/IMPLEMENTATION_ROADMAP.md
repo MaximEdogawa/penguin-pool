@@ -25,7 +25,7 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - Configure Vite build optimization
   - **Effort**: 1 day
   - **Dependencies**: TICKET-001
-- [ ] **TICKET-003**: Refactor Layout with primevue and sakai
+- [x] **TICKET-003**: Refactor Layout with primevue and sakai
   - Refactor all components with this style https://github.com/primefaces/sakai-vue/tree/master/src
   - Change all button and icons to primevue
   - Add the same side layout as sakai theme
