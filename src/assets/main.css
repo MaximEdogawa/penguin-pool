@@ -89,10 +89,15 @@
 
   html {
     font-family: 'Inter', system-ui, sans-serif;
+    height: 100%;
+    background-color: var(--surface-ground);
   }
 
   body {
-    @apply bg-white text-gray-900;
+    @apply text-gray-900;
+    min-height: 100vh;
+    height: 100%;
+    background-color: var(--surface-ground);
     transition:
       background-color 0.3s ease,
       color 0.3s ease;
@@ -100,7 +105,8 @@
 
   /* Dark mode body styles */
   .dark body {
-    @apply bg-gray-900 text-gray-100;
+    @apply text-gray-100;
+    background-color: var(--surface-ground);
   }
 
   /* PrimeVue component overrides */
@@ -306,9 +312,11 @@
   }
 }
 
-/* App container */
+/* App container - FIXED: Ensure background covers entire page */
 #app {
   @apply min-h-screen;
+  height: 100%;
+  background-color: var(--surface-ground);
   transition:
     background-color 0.3s ease,
     color 0.3s ease;
@@ -317,11 +325,14 @@
 /* Ensure app container inherits theme colors */
 .dark #app {
   @apply bg-gray-900 text-gray-100;
+  background-color: var(--surface-ground);
 }
 
-/* Sakai-style layout classes */
+/* Sakai-style layout classes - FIXED: Ensure background covers entire page */
 .layout-wrapper {
   min-height: 100vh;
+  height: 100%;
+  background-color: var(--surface-ground);
   transition:
     background-color 0.3s ease,
     color 0.3s ease;
@@ -330,9 +341,10 @@
 /* Ensure layout wrapper inherits theme colors */
 .dark .layout-wrapper {
   @apply bg-gray-900 text-gray-100;
+  background-color: var(--surface-ground);
 }
 
-/* Force white background for light theme */
+/* Force white background for light theme - FIXED: Apply to all root elements */
 .light {
   background-color: #ffffff !important;
 }
@@ -349,13 +361,34 @@
   background-color: #ffffff !important;
 }
 
+/* FIXED: Ensure content background covers entire page */
 .layout-main-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  height: 100%;
   justify-content: space-between;
   padding: 6rem 2rem 0 2rem;
   transition: margin-left var(--layout-section-transition-duration);
+  background-color: var(--surface-ground);
+}
+
+.layout-main {
+  flex: 1 1 auto;
+  padding-bottom: 2rem;
+  background-color: var(--surface-ground);
+}
+
+/* FIXED: Ensure all page content has proper background */
+.dashboard-page,
+.loans-page,
+.offers-page,
+.option-contracts-page,
+.piggy-bank-page,
+.profile-page,
+.login-page {
+  background-color: var(--surface-ground);
+  min-height: 100vh;
 }
 
 /* Static mode - sidebar pushes content */
@@ -372,11 +405,6 @@
   margin-left: 0 !important;
   padding-left: 2rem !important;
   padding-right: 2rem !important;
-}
-
-.layout-main {
-  flex: 1 1 auto;
-  padding-bottom: 2rem;
 }
 
 .layout-topbar {

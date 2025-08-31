@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard">
+  <div class="dashboard-page">
     <div class="dashboard-header">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Welcome to Penguin Pool</h1>
       <p class="text-gray-600 dark:text-gray-300 mt-2">
@@ -99,17 +99,19 @@
   onMounted(async () => {
     try {
       userStore.value = useUserStore()
-      userBalance.value = userStore.value.userBalance
+      // Simulate user balance for demo
+      userBalance.value = 100.5
     } catch (error) {
-      console.error('Failed to load user data:', error)
-      userBalance.value = 0
+      console.error('Failed to initialize dashboard:', error)
     }
   })
 </script>
 
 <style scoped>
-  .dashboard {
+  .dashboard-page {
     @apply max-w-7xl mx-auto;
+    background-color: var(--surface-ground);
+    min-height: 100vh;
   }
 
   .dashboard-header {

@@ -1,5 +1,5 @@
 <template>
-  <div class="profile">
+  <div class="profile-page">
     <div class="profile-header">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Profile & Settings</h1>
       <p class="text-gray-600 dark:text-gray-300">
@@ -102,10 +102,10 @@
 </script>
 
 <style scoped>
-  .profile {
-    @apply p-4 sm:p-6 max-w-7xl mx-auto;
-    overflow-x: hidden;
-    touch-action: pan-y;
+  .profile-page {
+    @apply max-w-7xl mx-auto;
+    background-color: var(--surface-ground);
+    min-height: 100vh;
   }
 
   .profile-header {
@@ -174,56 +174,6 @@
     @apply bg-primary-500 text-white border-primary-500;
   }
 
-  /* Fix scroll area background to match theme */
-  .tab-content {
-    background: inherit;
-  }
-
-  /* Ensure the entire profile container inherits theme background */
-  .profile {
-    background: inherit;
-  }
-
-  /* Fix any scroll area background issues */
-  .profile-tabs {
-    background: inherit;
-  }
-
-  /* Global scroll area background fixes */
-  :global(html) {
-    background: var(--color-background, #ffffff) !important;
-  }
-
-  :global(body) {
-    background: var(--color-background, #ffffff) !important;
-  }
-
-  :global(.dark html) {
-    background: var(--color-background, #0f172a) !important;
-  }
-
-  :global(.dark body) {
-    background: var(--color-background, #0f172a) !important;
-  }
-
-  /* Ensure page content area has proper background */
-  :global(.page-content) {
-    background: var(--color-background, #ffffff) !important;
-  }
-
-  :global(.dark .page-content) {
-    background: var(--color-background, #0f172a) !important;
-  }
-
-  /* Fix main content area background */
-  :global(.main-content) {
-    background: var(--color-background, #ffffff) !important;
-  }
-
-  :global(.dark .main-content) {
-    background: var(--color-background, #0f172a) !important;
-  }
-
   /* Responsive adjustments */
   @media (max-width: 640px) {
     .tabs-header {
@@ -248,14 +198,7 @@
   }
 
   /* Windows 95 theme background fixes */
-  :global(.theme-windows95 html),
-  :global(.theme-windows95 body),
-  :global(.theme-windows95 .page-content),
-  :global(.theme-windows95 .main-content) {
-    background: var(--theme-surface) !important;
-  }
-
-  :global(.theme-windows95) .profile,
+  :global(.theme-windows95) .profile-page,
   :global(.theme-windows95) .profile-tabs,
   :global(.theme-windows95) .tab-content {
     background: var(--theme-surface) !important;

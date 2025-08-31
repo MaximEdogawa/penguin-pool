@@ -67,17 +67,25 @@
 <style scoped>
   .layout-wrapper {
     @apply min-h-screen;
+    height: 100vh;
+    background-color: var(--surface-ground);
+    transition: background-color 0.3s ease;
   }
 
   .layout-main-container {
     @apply flex flex-col min-h-screen justify-between;
     padding: 6rem 2rem 0 2rem;
     transition: margin-left 0.2s;
+    background-color: var(--surface-ground);
+    min-height: 100vh;
+    height: 100%;
   }
 
   .layout-main {
     @apply flex-1;
     padding-bottom: 2rem;
+    background-color: var(--surface-ground);
+    min-height: calc(100vh - 8rem);
   }
 
   .layout-mask {
@@ -110,5 +118,18 @@
     .layout-main-container {
       padding: 6rem 0.5rem 0 0.5rem;
     }
+  }
+
+  /* Ensure dark mode support */
+  :global(.dark) .layout-wrapper {
+    background-color: var(--surface-ground);
+  }
+
+  :global(.dark) .layout-main-container {
+    background-color: var(--surface-ground);
+  }
+
+  :global(.dark) .layout-main {
+    background-color: var(--surface-ground);
   }
 </style>

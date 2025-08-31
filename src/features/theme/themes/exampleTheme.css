@@ -1,0 +1,494 @@
+/* Example Theme CSS - Safe Theming Demonstration */
+/* This theme shows how to style without breaking layout functionality */
+
+.theme-example {
+  /* Define CSS custom properties for consistent theming */
+  --theme-primary: #6366f1;
+  --theme-secondary: #8b5cf6;
+  --theme-success: #10b981;
+  --theme-danger: #ef4444;
+  --theme-warning: #f59e0b;
+  --theme-info: #06b6d4;
+
+  --theme-background: #f8fafc;
+  --theme-surface: #ffffff;
+  --theme-text: #0f172a;
+  --theme-text-secondary: #475569;
+  --theme-border: #e2e8f0;
+  --theme-hover: #f1f5f9;
+  --theme-active: #4f46e5;
+  --theme-disabled: #94a3b8;
+
+  --theme-highlight: #fef3c7;
+  --theme-shadow: #1e293b;
+  --theme-title-bar: #6366f1;
+  --theme-title-bar-text: #ffffff;
+  --theme-menu-bar: #f8fafc;
+  --theme-scroll-bar: #cbd5e1;
+  --theme-scroll-bar-thumb: #94a3b8;
+
+  /* Typography */
+  --theme-font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  --theme-font-size-base: 14px;
+  --theme-font-size-small: 12px;
+  --theme-font-size-large: 16px;
+  --theme-line-height: 1.5;
+  --theme-font-weight-normal: 400;
+  --theme-font-weight-medium: 500;
+  --theme-font-weight-bold: 600;
+
+  /* Spacing */
+  --theme-spacing-unit: 4px;
+  --theme-spacing-xs: 2px;
+  --theme-spacing-sm: 4px;
+  --theme-spacing-md: 8px;
+  --theme-spacing-lg: 16px;
+  --theme-spacing-xl: 24px;
+
+  /* Shadows */
+  --theme-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --theme-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --theme-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --theme-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* Border radius */
+  --theme-border-radius-sm: 4px;
+  --theme-border-radius-md: 8px;
+  --theme-border-radius-lg: 12px;
+  --theme-border-radius-xl: 16px;
+}
+
+/* Apply theme styles - ONLY VISUAL, NO LAYOUT */
+.theme-example {
+  background: var(--theme-background);
+  color: var(--theme-text);
+  font-family: var(--theme-font-family);
+  font-size: var(--theme-font-size-base);
+  line-height: var(--theme-line-height);
+}
+
+/* Button styling - Safe properties only */
+.theme-example .p-button,
+.theme-example button {
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--theme-border-radius-md);
+  box-shadow: var(--theme-shadow-sm);
+  font-family: var(--theme-font-family);
+  font-size: var(--theme-font-size-base);
+  font-weight: var(--theme-font-weight-medium);
+  /* DON'T modify: padding, margin, width, height, position, display */
+}
+
+.theme-example .p-button:hover,
+.theme-example button:hover {
+  background: var(--theme-hover);
+  box-shadow: var(--theme-shadow-md);
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+.theme-example .p-button:active,
+.theme-example button:active {
+  background: var(--theme-active);
+  color: var(--theme-title-bar-text);
+  box-shadow: var(--theme-shadow-sm);
+  transform: translateY(0);
+}
+
+.theme-example .p-button:focus,
+.theme-example button:focus {
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 2px;
+}
+
+.theme-example .p-button.p-button-primary,
+.theme-example button.primary {
+  background: var(--theme-primary);
+  color: var(--theme-title-bar-text);
+  border-color: var(--theme-primary);
+}
+
+/* Sidebar styling - Safe properties only */
+.theme-example .sidebar {
+  background: var(--theme-surface);
+  border-right: 1px solid var(--theme-border);
+  box-shadow: var(--theme-shadow-md);
+  /* DON'T modify: position, width, height, transform, z-index */
+}
+
+.theme-example .sidebar .sidebar-header {
+  background: var(--theme-title-bar);
+  color: var(--theme-title-bar-text);
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.theme-example .sidebar .nav-link {
+  color: var(--theme-text);
+  background: transparent;
+  border-radius: var(--theme-border-radius-md);
+  font-family: var(--theme-font-family);
+  font-size: var(--theme-font-size-base);
+  /* DON'T modify: padding, margin, width, height */
+}
+
+.theme-example .sidebar .nav-link:hover {
+  background: var(--theme-hover);
+  color: var(--theme-active);
+}
+
+.theme-example .sidebar .nav-link.nav-link-active {
+  background: var(--theme-primary);
+  color: var(--theme-title-bar-text);
+  box-shadow: var(--theme-shadow-sm);
+}
+
+/* Header styling - Safe properties only */
+.theme-example .app-header,
+.theme-example .header {
+  background: var(--theme-title-bar);
+  color: var(--theme-title-bar-text);
+  border-bottom: 1px solid var(--theme-border);
+  box-shadow: var(--theme-shadow-sm);
+  /* DON'T modify: padding, margin, width, height, position */
+}
+
+/* Input styling - Safe properties only */
+.theme-example .p-inputtext,
+.theme-example input[type='text'],
+.theme-example input[type='password'],
+.theme-example input[type='email'],
+.theme-example input[type='number'],
+.theme-example textarea,
+.theme-example select {
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--theme-border-radius-md);
+  box-shadow: var(--theme-shadow-sm);
+  font-family: var(--theme-font-family);
+  font-size: var(--theme-font-size-base);
+  /* DON'T modify: padding, margin, width, height */
+}
+
+.theme-example .p-inputtext:focus,
+.theme-example input:focus,
+.theme-example textarea:focus,
+.theme-example select:focus {
+  border-color: var(--theme-primary);
+  box-shadow: var(--theme-shadow-md);
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 2px;
+}
+
+/* Card styling - Safe properties only */
+.theme-example .p-card,
+.theme-example .card {
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--theme-border-radius-lg);
+  box-shadow: var(--theme-shadow-sm);
+  /* DON'T modify: padding, margin, width, height */
+}
+
+.theme-example .p-card .p-card-header,
+.theme-example .card .card-header {
+  background: var(--theme-menu-bar);
+  color: var(--theme-text);
+  border-bottom: 1px solid var(--theme-border);
+  border-radius: var(--theme-border-radius-lg) var(--theme-border-radius-lg) 0 0;
+  font-weight: var(--theme-font-weight-bold);
+  font-size: var(--theme-font-size-large);
+}
+
+/* Table styling - Safe properties only */
+.theme-example .p-datatable,
+.theme-example table {
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--theme-border-radius-md);
+  box-shadow: var(--theme-shadow-sm);
+  /* DON'T modify: margin, width, height */
+}
+
+.theme-example .p-datatable .p-datatable-header,
+.theme-example table thead {
+  background: var(--theme-menu-bar);
+  color: var(--theme-text);
+  border-bottom: 1px solid var(--theme-border);
+  font-weight: var(--theme-font-weight-bold);
+}
+
+.theme-example .p-datatable .p-datatable-thead > tr > th,
+.theme-example table th {
+  background: var(--theme-menu-bar);
+  color: var(--theme-text);
+  border: 1px solid var(--theme-border);
+  font-weight: var(--theme-font-weight-bold);
+}
+
+.theme-example .p-datatable .p-datatable-tbody > tr > td,
+.theme-example table td {
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  border: 1px solid var(--theme-border);
+}
+
+.theme-example .p-datatable .p-datatable-tbody > tr:hover > td,
+.theme-example table tbody tr:hover td {
+  background: var(--theme-hover);
+}
+
+/* Dropdown styling - Safe properties only */
+.theme-example .p-dropdown,
+.theme-example select {
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--theme-border-radius-md);
+  box-shadow: var(--theme-shadow-sm);
+  font-family: var(--theme-font-family);
+  font-size: var(--theme-font-size-base);
+  /* DON'T modify: padding, margin, width, height */
+}
+
+.theme-example .p-dropdown:focus,
+.theme-example select:focus {
+  border-color: var(--theme-primary);
+  box-shadow: var(--theme-shadow-md);
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 2px;
+}
+
+.theme-example .p-dropdown-panel {
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--theme-border-radius-md);
+  box-shadow: var(--theme-shadow-lg);
+}
+
+/* Menu styling - Safe properties only */
+.theme-example .p-menu,
+.theme-example .menu {
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--theme-border-radius-md);
+  box-shadow: var(--theme-shadow-lg);
+  /* DON'T modify: padding, margin, width, height */
+}
+
+.theme-example .p-menuitem-link,
+.theme-example .menu-item {
+  color: var(--theme-text);
+  font-family: var(--theme-font-family);
+  font-size: var(--theme-font-size-base);
+  /* DON'T modify: padding, margin, width, height */
+}
+
+.theme-example .p-menuitem-link:hover,
+.theme-example .menu-item:hover {
+  background: var(--theme-primary);
+  color: var(--theme-title-bar-text);
+}
+
+/* Scrollbar styling - Safe properties only */
+.theme-example ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.theme-example ::-webkit-scrollbar-track {
+  background: var(--theme-scroll-bar);
+  border-radius: var(--theme-border-radius-sm);
+}
+
+.theme-example ::-webkit-scrollbar-thumb {
+  background: var(--theme-scroll-bar-thumb);
+  border-radius: var(--theme-border-radius-sm);
+  border: 1px solid var(--theme-border);
+}
+
+.theme-example ::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-hover);
+}
+
+/* Focus styles - Safe properties only */
+.theme-example *:focus {
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 2px;
+}
+
+/* Selection styles - Safe properties only */
+.theme-example ::selection {
+  background: var(--theme-primary);
+  color: var(--theme-title-bar-text);
+}
+
+.theme-example ::-moz-selection {
+  background: var(--theme-primary);
+  color: var(--theme-title-bar-text);
+}
+
+/* Link styling - Safe properties only */
+.theme-example .nav-link,
+.theme-example a {
+  color: var(--theme-primary);
+  text-decoration: none;
+  /* DON'T modify: display, position, width, height */
+}
+
+.theme-example .nav-link:hover,
+.theme-example a:hover {
+  color: var(--theme-active);
+  text-decoration: underline;
+}
+
+/* Form element styling - Safe properties only */
+.theme-example label {
+  color: var(--theme-text);
+  font-family: var(--theme-font-family);
+  font-size: var(--theme-font-size-base);
+  font-weight: var(--theme-font-weight-medium);
+  /* DON'T modify: display, position, width, height, margin, padding */
+}
+
+/* Modal/Dialog styling - Safe properties only */
+.theme-example .p-dialog,
+.theme-example .modal {
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--theme-border-radius-lg);
+  box-shadow: var(--theme-shadow-xl);
+  /* DON'T modify: position, width, height, margin, padding */
+}
+
+.theme-example .p-dialog .p-dialog-header,
+.theme-example .modal .modal-header {
+  background: var(--theme-title-bar);
+  color: var(--theme-title-bar-text);
+  border-bottom: 1px solid var(--theme-border);
+  border-radius: var(--theme-border-radius-lg) var(--theme-border-radius-lg) 0 0;
+}
+
+/* Tooltip styling - Safe properties only */
+.theme-example .p-tooltip,
+.theme-example .tooltip {
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--theme-border-radius-md);
+  box-shadow: var(--theme-shadow-md);
+  font-family: var(--theme-font-family);
+  font-size: var(--theme-font-size-small);
+  /* DON'T modify: position, width, height, margin, padding */
+}
+
+/* Progress bar styling - Safe properties only */
+.theme-example .p-progressbar,
+.theme-example .progress-bar {
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--theme-border-radius-md);
+  box-shadow: var(--theme-shadow-sm);
+  /* DON'T modify: width, height, margin, padding */
+}
+
+.theme-example .p-progressbar .p-progressbar-value,
+.theme-example .progress-bar .progress-value {
+  background: var(--theme-primary);
+  border-radius: var(--theme-border-radius-sm);
+}
+
+/* Checkbox and Radio styling - Safe properties only */
+.theme-example input[type='checkbox'],
+.theme-example input[type='radio'] {
+  accent-color: var(--theme-primary);
+  /* DON'T modify: width, height, margin, padding */
+}
+
+/* List styling - Safe properties only */
+.theme-example ul,
+.theme-example ol {
+  color: var(--theme-text);
+  font-family: var(--theme-font-family);
+  /* DON'T modify: margin, padding, list-style-position */
+}
+
+.theme-example li {
+  color: var(--theme-text);
+  font-family: var(--theme-font-family);
+  /* DON'T modify: margin, padding, display */
+}
+
+/* Code block styling - Safe properties only */
+.theme-example code,
+.theme-example pre {
+  background: var(--theme-highlight);
+  color: var(--theme-text);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--theme-border-radius-sm);
+  font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+  font-size: var(--theme-font-size-small);
+  /* DON'T modify: margin, padding, width, height */
+}
+
+/* CRITICAL: Ensure layout properties are preserved */
+.theme-example .sidebar {
+  /* Preserve all original layout properties */
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  height: 100% !important;
+  z-index: 50 !important;
+  transition: all 0.3s ease-in-out !important;
+}
+
+.theme-example .sidebar.sidebar-open {
+  transform: translateX(0) !important;
+}
+
+.theme-example .sidebar.sidebar-collapsed {
+  width: 5vw !important;
+}
+
+/* Preserve responsive behavior */
+@media (max-width: 1023px) {
+  .theme-example .sidebar {
+    transform: translateX(-100%) !important;
+  }
+
+  .theme-example .sidebar.sidebar-open {
+    transform: translateX(0) !important;
+  }
+}
+
+/* Success message for developers */
+.theme-example::before {
+  content: '✅ Example theme loaded successfully - Layout functionality preserved!';
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: var(--theme-success);
+  color: white;
+  padding: 8px 12px;
+  border-radius: var(--theme-border-radius-md);
+  font-size: var(--theme-font-size-small);
+  font-weight: var(--theme-font-weight-medium);
+  z-index: 9999;
+  box-shadow: var(--theme-shadow-md);
+  animation: fadeInOut 3s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  20%,
+  80% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -35,8 +35,20 @@
 <style scoped>
   #app {
     min-height: 100vh;
+    height: 100vh;
+    background-color: var(--surface-ground);
     transition:
       background-color 0.3s ease,
       color 0.3s ease;
+  }
+
+  /* Ensure dark mode support */
+  :global(.dark) #app {
+    background-color: var(--surface-ground);
+  }
+
+  /* Ensure light mode support */
+  :global(.light) #app {
+    background-color: #ffffff;
   }
 </style>
