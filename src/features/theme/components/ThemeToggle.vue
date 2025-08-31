@@ -4,8 +4,8 @@
     <PrimeButton
       class="theme-toggle-btn p-button-text"
       @click="toggleTheme"
-      :aria-label="`Switch to ${isDark ? 'light' : 'dark'} theme`"
-      :title="`Switch to ${isDark ? 'light' : 'dark'} theme`"
+      :aria-label="`Switch to ${isDark ? 'light' : 'dark'} variant`"
+      :title="`Switch to ${isDark ? 'light' : 'dark'} variant`"
     >
       <template #icon>
         <i :class="themeIcon" class="theme-icon"></i>
@@ -48,11 +48,18 @@
 
   const isDark = computed(() => themeStore.isDark)
   const hasCustomTheme = computed(() => themeStore.hasCustomTheme)
+  const isPrimeUI = computed(() => themeStore.isPrimeUI)
   const currentTheme = computed(() => themeStore.currentTheme)
+  const currentPrimeUITheme = computed(() => themeStore.currentPrimeUITheme)
+  const currentThemeVariant = computed(() => themeStore.currentThemeVariant)
   const availableCustomThemes = computed(() => themeStore.availableCustomThemes)
+  const availablePrimeUIThemes = computed(() => themeStore.availablePrimeUIThemes)
 
   const themeIcon = computed(() => {
     if (hasCustomTheme.value) {
+      return 'pi pi-palette'
+    }
+    if (isPrimeUI.value) {
       return 'pi pi-palette'
     }
     return isDark.value ? 'pi pi-sun' : 'pi pi-moon'
@@ -60,8 +67,13 @@
 
   const toggleTheme = () => {
     if (hasCustomTheme.value) {
-      // If custom theme is active, clear it and go back to built-in
-      clearCustomTheme()
+      // If custom theme is active, cycle through variants
+      const newVariant = currentThemeVariant.value === 'light' ? 'dark' : 'light'
+      themeStore.switchThemeVariant(newVariant)
+    } else if (isPrimeUI.value && currentPrimeUITheme.value) {
+      // If PrimeUI theme is active, cycle through variants
+      const newVariant = currentThemeVariant.value === 'light' ? 'dark' : 'light'
+      themeStore.setPrimeUITheme(currentPrimeUITheme.value, newVariant)
     } else {
       // Toggle between light and dark
       themeStore.toggleTheme()
@@ -80,22 +92,54 @@
           {
             label: 'Light',
             icon: 'pi pi-sun',
-            class: !hasCustomTheme.value && currentTheme.value === 'light' ? 'active-theme' : '',
+            class:
+              !hasCustomTheme.value && !isPrimeUI.value && currentTheme.value === 'light'
+                ? 'active-theme'
+                : '',
             command: () => themeStore.setBuiltInTheme('light'),
           },
           {
             label: 'Dark',
             icon: 'pi pi-moon',
-            class: !hasCustomTheme.value && currentTheme.value === 'dark' ? 'active-theme' : '',
+            class:
+              !hasCustomTheme.value && !isPrimeUI.value && currentTheme.value === 'dark'
+                ? 'active-theme'
+                : '',
             command: () => themeStore.setBuiltInTheme('dark'),
           },
           {
             label: 'Auto (System)',
             icon: 'pi pi-desktop',
-            class: !hasCustomTheme.value && currentTheme.value === 'auto' ? 'active-theme' : '',
+            class:
+              !hasCustomTheme.value && !isPrimeUI.value && currentTheme.value === 'auto'
+                ? 'active-theme'
+                : '',
             command: () => themeStore.setBuiltInTheme('auto'),
           },
         ],
+      },
+      {
+        label: 'PrimeUI Themes',
+        items: availablePrimeUIThemes.value.map(theme => ({
+          label: `${theme.charAt(0).toUpperCase() + theme.slice(1)} ${currentPrimeUITheme.value === theme ? `(${currentThemeVariant.value})` : ''}`,
+          icon: 'pi pi-palette',
+          class:
+            !hasCustomTheme.value && isPrimeUI.value && currentPrimeUITheme.value === theme
+              ? 'active-theme'
+              : '',
+          command: () => {
+            // If this theme is already active, toggle its variant
+            if (currentPrimeUITheme.value === theme) {
+              const currentVariant = currentThemeVariant.value
+              const newVariant = currentVariant === 'light' ? 'dark' : 'light'
+              themeStore.setPrimeUITheme(theme, newVariant)
+            } else {
+              // If it's a new theme, set it with current variant preference
+              const preferredVariant = currentThemeVariant.value
+              themeStore.setPrimeUITheme(theme, preferredVariant)
+            }
+          },
+        })),
       },
     ]
 
@@ -105,32 +149,31 @@
         items: availableCustomThemes.value.map(theme => ({
           label: theme.name,
           icon: 'pi pi-palette',
-          class:
-            hasCustomTheme.value && themeStore.currentCustomTheme?.id === theme.id
-              ? 'active-theme'
-              : '',
-          command: () => themeStore.setCustomTheme(theme.id),
         })),
       })
     }
 
-    if (hasCustomTheme.value) {
+    if (hasCustomTheme.value || isPrimeUI.value) {
       items.push({
-        label: 'Clear Custom Theme',
+        label: 'Clear Theme',
         icon: 'pi pi-times',
         class: 'clear-theme',
-        command: clearCustomTheme,
+        command: clearTheme,
       })
     }
 
     return items
   })
 
-  const clearCustomTheme = async () => {
+  const clearTheme = async () => {
     try {
-      await themeStore.clearCustomTheme()
+      if (hasCustomTheme.value) {
+        await themeStore.clearCustomTheme()
+      } else if (isPrimeUI.value) {
+        await themeStore.setBuiltInTheme('light')
+      }
     } catch (error) {
-      console.error('Failed to clear custom theme:', error)
+      console.error('Failed to clear theme:', error)
     }
   }
 </script>

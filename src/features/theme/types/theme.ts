@@ -61,7 +61,7 @@ export interface ThemeBorderRadius {
 export interface CustomTheme {
   id: string
   name: string
-  category: 'retro' | 'modern' | 'professional' | 'minimal'
+  category: 'retro' | 'modern' | 'professional' | 'minimal' | 'primeui'
   version: string
   author: string
   description: string
@@ -74,13 +74,22 @@ export interface CustomTheme {
 }
 
 export type BuiltInTheme = 'light' | 'dark' | 'auto'
-export type ThemeMode = BuiltInTheme | string // string for custom theme IDs
+export type PrimeUITheme = 'aura' | 'material' | 'lara' | 'nora'
+export type ThemeVariant = 'light' | 'dark'
+export type ThemeMode = BuiltInTheme | `${PrimeUITheme}-${ThemeVariant}` | string // string for custom theme IDs
 
 export interface ThemeState {
   currentTheme: ThemeMode
   availableThemes: CustomTheme[]
   customThemes: CustomTheme[]
   systemTheme: 'light' | 'dark'
+}
+
+export interface PrimeUIThemeConfig {
+  theme: PrimeUITheme
+  variant: ThemeVariant
+  primaryColor: string
+  surfaceColor: string
 }
 
 // Legacy interface for backward compatibility

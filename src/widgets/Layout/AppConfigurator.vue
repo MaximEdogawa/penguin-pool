@@ -141,8 +141,6 @@
 
       // Store in localStorage for persistence
       localStorage.setItem('penguin-pool-primary-color', color)
-
-      console.log(`Primary color applied: ${color} (${colorValue})`)
     } else {
       console.error(`Color not found: ${color}`)
     }

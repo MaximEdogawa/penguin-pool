@@ -15,8 +15,22 @@
             <h5>{{ currentCustomTheme?.name }}</h5>
             <p>{{ currentCustomTheme?.description }}</p>
             <span class="theme-category">{{ currentCustomTheme?.category }}</span>
+            <span class="theme-variant">{{ currentThemeVariant }} variant</span>
           </div>
           <button class="clear-theme-btn" @click="clearCustomTheme">
+            <i class="pi pi-times"></i>
+            Clear Theme
+          </button>
+        </div>
+        <div v-else-if="isPrimeUI" class="primeui-theme-info">
+          <div class="theme-preview" :style="getPrimeUIThemePreview()"></div>
+          <div class="theme-details">
+            <h5>{{ getPrimeUIThemeName() }}</h5>
+            <p>PrimeUI {{ currentPrimeUITheme }} theme</p>
+            <span class="theme-category">PrimeUI</span>
+            <span class="theme-variant">{{ currentThemeVariant }} variant</span>
+          </div>
+          <button class="clear-theme-btn" @click="clearPrimeUITheme">
             <i class="pi pi-times"></i>
             Clear Theme
           </button>
@@ -28,6 +42,76 @@
             <p>Built-in {{ currentTheme }} theme</p>
             <span class="theme-category">Built-in</span>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme Variant Toggle -->
+    <div v-if="isPrimeUI || hasCustomTheme" class="theme-variant-section">
+      <h4>Theme Variant</h4>
+      <div class="variant-toggle">
+        <button
+          class="variant-btn"
+          :class="{ active: currentThemeVariant === 'light' }"
+          @click="switchToVariant('light')"
+        >
+          <i class="pi pi-sun"></i>
+          Light
+        </button>
+        <button
+          class="variant-btn"
+          :class="{ active: currentThemeVariant === 'dark' }"
+          @click="switchToVariant('dark')"
+        >
+          <i class="pi pi-moon"></i>
+          Dark
+        </button>
+      </div>
+    </div>
+
+    <!-- PrimeUI Theme Settings -->
+    <div v-if="isPrimeUI" class="primeui-settings-section">
+      <h4>PrimeUI Theme Customization</h4>
+      <div class="primeui-settings-grid">
+        <div class="color-picker-group">
+          <label for="primary-color">Primary Color:</label>
+          <div class="color-input-group">
+            <input
+              type="color"
+              id="primary-color"
+              v-model="primaryColor"
+              @change="updatePrimaryColor"
+              class="color-picker"
+            />
+            <input
+              type="text"
+              v-model="primaryColor"
+              @input="updatePrimaryColor"
+              class="color-text-input"
+              placeholder="#6366f1"
+            />
+          </div>
+          <p class="color-help">Click the color picker or type a hex color to test</p>
+        </div>
+        <div class="color-picker-group">
+          <label for="surface-color">Surface Color:</label>
+          <div class="color-input-group">
+            <input
+              type="color"
+              id="surface-color"
+              v-model="surfaceColor"
+              @change="updateSurfaceColor"
+              class="color-picker"
+            />
+            <input
+              type="text"
+              v-model="surfaceColor"
+              @input="updateSurfaceColor"
+              class="color-text-input"
+              placeholder="#ffffff"
+            />
+          </div>
+          <p class="color-help">Click the color picker or type a hex color to test</p>
         </div>
       </div>
     </div>
@@ -108,10 +192,15 @@
 
   const exportThemeId = ref('')
   const importFile = ref<File | null>(null)
+  const primaryColor = ref(themeStore.currentPrimaryColor)
+  const surfaceColor = ref(themeStore.currentSurfaceColor)
 
   const currentTheme = computed(() => themeStore.currentTheme)
   const hasCustomTheme = computed(() => themeStore.hasCustomTheme)
+  const isPrimeUI = computed(() => themeStore.isPrimeUI)
   const currentCustomTheme = computed(() => themeStore.currentCustomTheme)
+  const currentPrimeUITheme = computed(() => themeStore.currentPrimeUITheme)
+  const currentThemeVariant = computed(() => themeStore.currentThemeVariant)
   const availableCustomThemes = computed(() => themeStore.availableCustomThemes)
 
   const getThemePreview = (theme: CustomTheme) => {
@@ -119,6 +208,14 @@
       background: theme.colors.background,
       border: `1px solid ${theme.colors.border}`,
       color: theme.colors.text,
+    }
+  }
+
+  const getPrimeUIThemePreview = () => {
+    return {
+      background: surfaceColor.value,
+      border: `1px solid ${primaryColor.value}`,
+      color: primaryColor.value,
     }
   }
 
@@ -142,6 +239,12 @@
     }
   }
 
+  const getPrimeUIThemeName = () => {
+    return currentPrimeUITheme.value
+      ? currentPrimeUITheme.value.charAt(0).toUpperCase() + currentPrimeUITheme.value.slice(1)
+      : 'No Theme'
+  }
+
   const applyCustomTheme = async (themeId: string) => {
     try {
       await themeStore.setCustomTheme(themeId)
@@ -155,6 +258,42 @@
       await themeStore.clearCustomTheme()
     } catch (error) {
       console.error('Failed to clear custom theme:', error)
+    }
+  }
+
+  const clearPrimeUITheme = async () => {
+    try {
+      await themeStore.setBuiltInTheme('light')
+    } catch (error) {
+      console.error('Failed to clear PrimeUI theme:', error)
+    }
+  }
+
+  const switchToVariant = async (variant: 'light' | 'dark') => {
+    try {
+      if (isPrimeUI.value && currentPrimeUITheme.value) {
+        await themeStore.setPrimeUITheme(currentPrimeUITheme.value, variant)
+      } else if (hasCustomTheme.value) {
+        await themeStore.switchThemeVariant(variant)
+      }
+    } catch (error) {
+      console.error('Failed to switch theme variant:', error)
+    }
+  }
+
+  const updatePrimaryColor = async () => {
+    try {
+      await themeStore.updatePrimeUIColors(primaryColor.value, surfaceColor.value)
+    } catch (error) {
+      console.error('Failed to update primary color:', error)
+    }
+  }
+
+  const updateSurfaceColor = async () => {
+    try {
+      await themeStore.updatePrimeUIColors(primaryColor.value, surfaceColor.value)
+    } catch (error) {
+      console.error('Failed to update surface color:', error)
     }
   }
 
@@ -196,6 +335,21 @@
       console.error('Failed to import theme:', error)
     }
   }
+
+  // Watch for theme changes to update color inputs
+  import { watch } from 'vue'
+  watch(
+    () => themeStore.currentPrimaryColor,
+    newColor => {
+      primaryColor.value = newColor
+    }
+  )
+  watch(
+    () => themeStore.currentSurfaceColor,
+    newColor => {
+      surfaceColor.value = newColor
+    }
+  )
 </script>
 
 <style scoped>
@@ -252,6 +406,8 @@
   }
 
   .current-theme-section,
+  .theme-variant-section,
+  .primeui-settings-section,
   .available-themes-section,
   .theme-import-export {
     margin-bottom: 24px;
@@ -261,12 +417,16 @@
 
   /* Theme-specific backgrounds for sections */
   :global(.dark) .current-theme-section,
-  :global(.dark) .available-themes-section {
+  :global(.dark) .available-themes-section,
+  :global(.dark) .primeui-settings-section,
+  :global(.dark) .theme-variant-section {
     background: #1a4731; /* Dark green for dark theme */
   }
 
   :global(.theme-windows95) .current-theme-section,
-  :global(.theme-windows95) .available-themes-section {
+  :global(.theme-windows95) .available-themes-section,
+  :global(.theme-windows95) .primeui-settings-section,
+  :global(.theme-windows95) .theme-variant-section {
     background: #ffffff; /* White for Windows 95 theme */
     border: 2px solid;
     border-color: var(--theme-border) var(--theme-surface) var(--theme-surface) var(--theme-border);
@@ -275,11 +435,15 @@
 
   /* Default light theme */
   .current-theme-section,
-  .available-themes-section {
+  .available-themes-section,
+  .primeui-settings-section,
+  .theme-variant-section {
     background: #374151; /* Dark color for light theme */
   }
 
   .current-theme-section h4,
+  .theme-variant-section h4,
+  .primeui-settings-section h4,
   .available-themes-section h4,
   .theme-import-export h4 {
     font-size: 16px;
@@ -293,25 +457,33 @@
   /* Theme-specific adjustments for section headers */
   :global(.dark) .current-theme-section h4,
   :global(.dark) .available-themes-section h4,
-  :global(.dark) .theme-import-export h4 {
+  :global(.dark) .theme-import-export h4,
+  :global(.dark) .primeui-settings-section h4,
+  :global(.dark) .theme-variant-section h4 {
     color: #ffffff;
     border-bottom-color: #2d6a4f;
   }
 
   :global(.theme-windows95) .current-theme-section h4,
-  :global(.theme-windows95) .available-themes-section h4 {
+  :global(.theme-windows95) .available-themes-section h4,
+  :global(.theme-windows95) .primeui-settings-section h4,
+  :global(.theme-windows95) .theme-variant-section h4 {
     color: var(--theme-text);
     border-bottom-color: var(--theme-border);
   }
 
   @media (min-width: 640px) {
     .current-theme-section,
+    .theme-variant-section,
+    .primeui-settings-section,
     .available-themes-section,
     .theme-import-export {
       margin-bottom: 32px;
     }
 
     .current-theme-section h4,
+    .theme-variant-section h4,
+    .primeui-settings-section h4,
     .available-themes-section h4,
     .theme-import-export h4 {
       font-size: 18px;
@@ -340,6 +512,7 @@
   }
 
   .custom-theme-info,
+  .primeui-theme-info,
   .built-in-theme-info {
     display: flex;
     align-items: center;
@@ -352,11 +525,13 @@
 
   /* Theme specific backgrounds for theme info */
   :global(.dark) .custom-theme-info,
+  :global(.dark) .primeui-theme-info,
   :global(.dark) .built-in-theme-info {
     background: #1f2937;
   }
 
   :global(.theme-windows95) .custom-theme-info,
+  :global(.theme-windows95) .primeui-theme-info,
   :global(.theme-windows95) .built-in-theme-info {
     background: #c0c0c0;
     border: 2px solid;
@@ -369,6 +544,7 @@
     }
 
     .custom-theme-info,
+    .primeui-theme-info,
     .built-in-theme-info {
       gap: 16px;
     }
@@ -428,10 +604,23 @@
     font-size: 11px;
     font-weight: 500;
     text-transform: capitalize;
+    margin-right: 8px;
+  }
+
+  .theme-variant {
+    display: inline-block;
+    background: var(--secondary-color);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: capitalize;
   }
 
   @media (min-width: 640px) {
-    .theme-category {
+    .theme-category,
+    .theme-variant {
       padding: 2px 8px;
       border-radius: 12px;
       font-size: 12px;
@@ -462,6 +651,109 @@
 
   .clear-theme-btn:hover {
     background: var(--danger-color-hover);
+  }
+
+  /* Theme Variant Toggle */
+  .variant-toggle {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .variant-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: 2px solid var(--surface-border);
+    border-radius: 8px;
+    background: var(--surface-ground);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+  }
+
+  .variant-btn:hover {
+    border-color: var(--primary-color);
+    background: var(--surface-hover);
+  }
+
+  .variant-btn.active {
+    background: var(--primary-color);
+    color: var(--primary-color-text);
+    border-color: var(--primary-color);
+  }
+
+  .variant-btn i {
+    font-size: 16px;
+  }
+
+  /* PrimeUI Settings Styles */
+  .primeui-settings-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  @media (min-width: 640px) {
+    .primeui-settings-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+  }
+
+  .color-picker-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .color-picker-group label {
+    font-weight: 500;
+    color: var(--text-color);
+    font-size: 14px;
+  }
+
+  .color-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .color-picker {
+    width: 50px;
+    height: 40px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: none;
+  }
+
+  .color-text-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--surface-border);
+    border-radius: 6px;
+    background: var(--surface-ground);
+    color: var(--text-color);
+    font-size: 14px;
+    font-family: monospace;
+  }
+
+  .color-text-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    ring: 2px;
+    ring-color: var(--primary-color);
+    ring-opacity: 0.2;
+  }
+
+  .color-help {
+    font-size: 12px;
+    color: var(--text-color-secondary);
+    margin: 0;
+    font-style: italic;
   }
 
   .themes-grid {

@@ -43,13 +43,7 @@
       </button>
 
       <!-- Theme toggle -->
-      <button
-        type="button"
-        class="layout-topbar-action"
-        @click="handleThemeToggle"
-        :aria-label="`Switch theme`"
-        :title="`Switch theme`"
-      >
+      <button type="button" class="layout-topbar-action" @click="handleThemeToggle">
         <i :class="themeIcon"></i>
       </button>
 
@@ -60,7 +54,7 @@
           class="layout-topbar-action layout-topbar-action-highlight"
           @click="toggleConfigPanel"
         >
-          <i class="pi pi-palette"></i>
+          <i class="pi pi-palette text-gray-600 dark:text-gray-300"></i>
         </button>
         <div v-show="isConfigPanelVisible" class="config-panel-overlay">
           <AppConfigurator />
@@ -89,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed } from 'vue'
+  import { ref, computed, onMounted } from 'vue'
   import { useRouter } from 'vue-router'
   import { useThemeStore } from '@/features/theme/store/themeStore'
   import { useNotificationStore } from '@/features/notifications/store/notificationStore'
@@ -107,10 +101,20 @@
   // Layout composable
   const { toggleMenu, layoutState } = useLayout()
 
+  // Initialize theme store when component mounts
+  onMounted(async () => {
+    try {
+      await themeStore.initializeTheme()
+    } catch (error) {
+      console.error('Failed to initialize theme store:', error)
+    }
+  })
+
   // State
   const searchQuery = ref('')
   const isUserMenuVisible = ref(false)
   const isConfigPanelVisible = ref(false)
+  const isThemeToggle = ref(false)
 
   // Computed
   const themeIcon = computed(() => {
@@ -127,16 +131,15 @@
   // Methods
   const toggleNotifications = () => {
     // TODO: Implement notifications panel
-    console.log('Toggle notifications')
   }
 
   const handleSearch = () => {
     // TODO: Implement search functionality
-    console.log('Search query:', searchQuery.value)
   }
 
   const handleThemeToggle = () => {
-    themeStore.toggleTheme()
+    isThemeToggle.value = !isThemeToggle.value
+    themeStore.setBuiltInTheme(isThemeToggle.value ? 'light' : 'dark')
   }
 
   const toggleConfigPanel = () => {
