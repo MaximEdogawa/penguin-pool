@@ -171,6 +171,8 @@
   },
   "active": "762a427def224add",
   "lastOpenFiles": [
+    "implementation/TICKET-003/README.md",
+    "implementation/TICKET-003",
     "implementation/IMMEDIATE_NEXT_STEPS.md",
     "implementation/TICKET-002/CUSTOM_THEMES.md",
     "implementation/TICKET-002/WALLET_CONNECT_UI/WALLET_CONNECT_UI_UPDATE.md",
@@ -202,8 +204,6 @@
     "IMPLEMENTATION_ROADMAP.md",
     "implementation/WALLET_CONNECT_UI_UPDATE.md",
     "implementation/HEADER_SIDEBAR_UPDATE.md",
-    "implementation/SIDEBAR_COLLAPSE_UPDATE.md",
-    "implementation/SIDEBAR_COLLAPSE_FIXES.md",
     "implementation",
     "design-technical"
   ]

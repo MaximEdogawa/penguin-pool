@@ -26,6 +26,16 @@
     --text-color-secondary: #64748b;
     --primary-color-hover: #2563eb;
     --primary-color-active: #1d4ed8;
+
+    /* Sakai-style layout variables */
+    --layout-section-transition-duration: 0.2s;
+    --element-transition-duration: 0.2s;
+    --content-border-radius: 0.5rem;
+    --focus-ring-width: 2px;
+    --focus-ring-style: solid;
+    --focus-ring-color: var(--primary-color);
+    --focus-ring-offset: 2px;
+    --focus-ring-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
   }
 
   .dark {
@@ -41,6 +51,41 @@
     --text-color-secondary: #94a3b8;
     --primary-color-hover: #93c5fd;
     --primary-color-active: #bfdbfe;
+
+    /* Sakai-style layout variables for dark mode */
+    --focus-ring-color: var(--primary-color);
+  }
+
+  /* Ensure primary color variables are always defined */
+  :root {
+    --primary-color: #10b981;
+    --primary-color-hover: #059669;
+    --primary-color-active: #047857;
+  }
+
+  /* Theme Preset Classes */
+  .theme-aura {
+    --primary-color: #10b981;
+    --primary-color-hover: #059669;
+    --primary-color-active: #047857;
+  }
+
+  .theme-saga {
+    --primary-color: #8b5cf6;
+    --primary-color-hover: #7c3aed;
+    --primary-color-active: #6d28d9;
+  }
+
+  .theme-vela {
+    --primary-color: #f97316;
+    --primary-color-hover: #ea580c;
+    --primary-color-active: #dc2626;
+  }
+
+  .theme-arya {
+    --primary-color: #ef4444;
+    --primary-color-hover: #dc2626;
+    --primary-color-active: #b91c1c;
   }
 
   /* Enhanced white mode styling */
@@ -288,6 +333,190 @@
 /* App container */
 #app {
   @apply min-h-screen;
+}
+
+/* Sakai-style layout classes */
+.layout-wrapper {
+  min-height: 100vh;
+}
+
+.layout-main-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  justify-content: space-between;
+  padding: 6rem 2rem 0 2rem;
+  transition: margin-left var(--layout-section-transition-duration);
+}
+
+/* Static mode - sidebar pushes content */
+.layout-static .layout-main-container {
+  margin-left: 22rem; /* 20rem sidebar + 2rem spacing */
+}
+
+.layout-static-inactive .layout-main-container {
+  margin-left: 2rem; /* Only spacing when sidebar collapsed */
+}
+
+/* Mobile mode - content NEVER changes position */
+.layout-mobile-active .layout-main-container {
+  margin-left: 0 !important;
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+}
+
+.layout-main {
+  flex: 1 1 auto;
+  padding-bottom: 2rem;
+}
+
+.layout-topbar {
+  position: fixed;
+  height: 4rem;
+  z-index: 997;
+  left: 0;
+  top: 0;
+  width: 100%;
+  padding: 0 2rem;
+  background-color: var(--surface-card);
+  transition: left var(--layout-section-transition-duration);
+  display: flex;
+  align-items: center;
+}
+
+.layout-sidebar {
+  position: fixed;
+  width: 20rem;
+  height: calc(100vh - 8rem);
+  z-index: 999;
+  overflow-y: auto;
+  user-select: none;
+  top: 6rem;
+  left: 2rem;
+  transition:
+    transform var(--layout-section-transition-duration),
+    left var(--layout-section-transition-duration);
+  background-color: var(--surface-overlay);
+  border-radius: var(--content-border-radius);
+  padding: 0.5rem 1.5rem;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Static mode - sidebar is always visible */
+.layout-static .layout-sidebar {
+  transform: translateX(0);
+  left: 2rem;
+}
+
+.layout-static-inactive .layout-sidebar {
+  transform: translateX(-100%);
+  left: 2rem;
+}
+
+/* Mobile mode - sidebar overlays content */
+.layout-mobile-active .layout-sidebar {
+  transform: translateX(0);
+  left: 0;
+  width: 20rem;
+}
+
+.layout-footer {
+  background-color: var(--surface-card);
+  border-top: 1px solid var(--surface-border);
+  padding: 1rem 0;
+}
+
+.layout-static .layout-sidebar {
+  transform: translateX(0);
+}
+
+.layout-static-inactive .layout-sidebar {
+  transform: translateX(-100%);
+}
+
+.layout-mobile-active .layout-sidebar {
+  transform: translateX(0);
+}
+
+/* Layout mask */
+.layout-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: none;
+  transition: opacity 0.2s ease;
+}
+
+.layout-mobile-active .layout-mask {
+  display: block;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991px) {
+  .layout-main-container {
+    margin-left: 0 !important;
+    padding: 6rem 1rem 0 1rem;
+  }
+
+  .layout-sidebar {
+    width: 20rem;
+    left: 0;
+    transform: translateX(-100%);
+    z-index: 1000;
+  }
+
+  .layout-mobile-active .layout-sidebar {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 767px) {
+  .layout-main-container {
+    margin-left: 0 !important;
+    padding: 6rem 0.5rem 0 0.5rem;
+  }
+
+  .layout-sidebar {
+    width: 20rem;
+    left: 0;
+    transform: translateX(-100%);
+    padding: 0.5rem 1.5rem;
+    z-index: 1000;
+    position: fixed;
+  }
+
+  /* Mobile active state - show sidebar */
+  .layout-mobile-active .layout-sidebar {
+    transform: translateX(0);
+  }
+
+  /* Mobile mode - hide text elements when sidebar is shown */
+  .layout-mobile-active .layout-sidebar .layout-menuitem-text,
+  .layout-mobile-active .layout-sidebar .layout-menuitem-root-text,
+  .layout-mobile-active .layout-sidebar .layout-menuitem-badge {
+    display: none;
+  }
+
+  .layout-mobile-active .layout-sidebar .nav-link {
+    justify-content: center;
+    padding: 0.75rem;
+  }
+
+  .layout-mobile-active .layout-sidebar .layout-menuitem-icon {
+    margin-right: 0;
+    font-size: 1.25rem;
+  }
+}
+
+/* Extra small mobile devices - icon only mode */
+@media (max-width: 480px) {
+  .layout-mobile-active .layout-sidebar {
+    width: 4rem;
+    padding: 0.5rem 0.75rem;
+  }
 }
 
 /* Dark mode toggle */

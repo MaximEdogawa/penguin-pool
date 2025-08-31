@@ -6,9 +6,11 @@ import { VueQueryPlugin } from '@tanstack/vue-query'
 
 // PrimeVue imports
 import PrimeVue from 'primevue/config'
-import Button from 'primevue/button'
-import Menu from 'primevue/menu'
-import AutoComplete from 'primevue/autocomplete'
+import ToastService from 'primevue/toastservice'
+import Aura from '@/primevue/themes/aura'
+// import Aura from './primevue/themes/aura'
+import ConfirmationService from 'primevue/confirmationservice'
+import '@/assets/styles.scss'
 
 import App from './App.vue'
 import router from './router'
@@ -21,26 +23,16 @@ app.use(router)
 app.use(VueQueryPlugin)
 
 // Register global components
-app.component('PrimeButton', Button)
-app.component('PrimeMenu', Menu)
-app.component('PrimeAutoComplete', AutoComplete)
+
+app.use(router)
 app.use(PrimeVue, {
-  ripple: true,
-  inputStyle: 'filled',
-  unstyled: false,
-  pt: {
-    // Custom PrimeVue styling
-    button: {
-      root: { class: 'btn-primary' },
-      secondary: { class: 'btn-secondary' },
-    },
-    card: {
-      root: { class: 'card' },
-    },
-    inputtext: {
-      root: { class: 'input-field' },
+  theme: {
+    preset: Aura,
+    options: {
+      darkModeSelector: '.app-dark',
     },
   },
 })
-
+app.use(ToastService)
+app.use(ConfirmationService)
 app.mount('#app')

@@ -1,70 +1,61 @@
 <template>
-  <div
-    v-if="isAuthenticated"
-    class="app-layout"
-    :class="{ 'sidebar-open': isSidebarOpen, 'sidebar-collapsed': isSidebarCollapsed }"
-  >
+  <div v-if="isAuthenticated" class="layout-wrapper" :class="containerClass">
+    <!-- Topbar -->
+    <AppTopbar />
+
     <!-- Sidebar -->
-    <AppSidebar
-      :is-open="isSidebarOpen"
-      :is-collapsed="isSidebarCollapsed"
-      @toggle-collapse="toggleSidebarCollapse"
-      @close="closeSidebar"
-    />
+    <AppSidebar />
 
-    <!-- Main Content Area - Positioned next to sidebar -->
-    <div class="main-content">
-      <!-- Header - Full width and sticky -->
-      <AppHeader :is-sidebar-open="isSidebarOpen" @toggle-sidebar="toggleSidebar" />
-
-      <!-- Page Content - Full width -->
-      <main class="page-content">
-        <slot />
-      </main>
+    <!-- Main Content Area -->
+    <div class="layout-main-container">
+      <div class="layout-main">
+        <router-view />
+      </div>
+      <AppFooter />
     </div>
+
+    <!-- Layout Mask for overlay mode -->
+    <div class="layout-mask animate-fadein" @click="handleMaskClick"></div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+  import { computed, onMounted, onUnmounted, watch } from 'vue'
   import { useRouter, useRoute } from 'vue-router'
-  import AppHeader from '@/widgets/Header/AppHeader.vue'
-  import AppSidebar from '@/widgets/Sidebar/AppSidebar.vue'
+  import { useLayout } from './composables/layout'
 
   // Router
   const router = useRouter()
   const route = useRoute()
 
-  // State
-  const isSidebarOpen = ref(false)
-  const isSidebarCollapsed = ref(false)
+  // Layout composable
+  const { layoutState, toggleMenu } = useLayout()
 
   // Computed
   const isAuthenticated = computed(() => {
     return localStorage.getItem('penguin-pool-user') !== null
   })
 
-  // Methods
-  const toggleSidebar = () => {
-    isSidebarOpen.value = !isSidebarOpen.value
-  }
-
-  const toggleSidebarCollapse = () => {
-    isSidebarCollapsed.value = !isSidebarCollapsed.value
-  }
-
-  const closeSidebar = () => {
-    isSidebarOpen.value = false
-  }
+  const containerClass = computed(() => {
+    return {
+      'layout-static': true,
+      'layout-static-inactive': layoutState.staticMenuDesktopInactive,
+      'layout-mobile-active': layoutState.staticMenuMobileActive,
+    }
+  })
 
   // Handle window resize
   const handleResize = () => {
     if (window.innerWidth >= 1024) {
-      isSidebarOpen.value = true
-      isSidebarCollapsed.value = false
-    } else {
-      isSidebarOpen.value = false
-      isSidebarCollapsed.value = false
+      layoutState.staticMenuDesktopInactive = false
+      layoutState.staticMenuMobileActive = false
+    }
+  }
+
+  // Handle mask click to close sidebar
+  const handleMaskClick = () => {
+    if (layoutState.overlayMenuActive || layoutState.staticMenuMobileActive) {
+      toggleMenu()
     }
   }
 
@@ -84,7 +75,8 @@
       () => route.path,
       () => {
         if (window.innerWidth < 1024) {
-          isSidebarOpen.value = false
+          layoutState.staticMenuMobileActive = false
+          layoutState.overlayMenuActive = false
         }
       }
     )
@@ -96,109 +88,49 @@
 </script>
 
 <style scoped>
-  .app-layout {
-    @apply min-h-screen bg-gray-50 dark:bg-gray-900;
+  .layout-wrapper {
+    @apply min-h-screen;
   }
 
-  .main-content {
-    @apply flex flex-col min-h-screen transition-all duration-300 ease-in-out;
-    position: absolute;
-    left: 20%; /* Sidebar takes 20% of viewport width */
-    right: 0; /* Extend to right edge */
-    top: 8vh; /* Start below the fixed header */
-    bottom: 0;
+  .layout-main-container {
+    @apply flex flex-col min-h-screen justify-between;
+    padding: 6rem 2rem 0 2rem;
+    transition: margin-left 0.2s;
   }
 
-  .page-content {
-    @apply flex-1 p-6;
-    width: 100%;
-    min-width: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
+  .layout-main {
+    @apply flex-1;
+    padding-bottom: 2rem;
   }
 
-  /* Sidebar open state */
-  .sidebar-open .main-content {
-    left: 20%; /* 20% of viewport width */
-    right: 0;
+  .layout-mask {
+    @apply fixed inset-0 z-50 bg-black bg-opacity-50;
+    display: none;
   }
 
-  /* Sidebar collapsed state */
-  .sidebar-collapsed .main-content {
-    left: 5%; /* 5% of viewport width when collapsed */
-    right: 0;
+  /* Layout modes */
+  .layout-overlay .layout-mask {
+    display: block;
+  }
+
+  .layout-overlay-active .layout-mask {
+    display: block;
+  }
+
+  .layout-mobile-active .layout-mask {
+    display: block;
   }
 
   /* Responsive adjustments */
-  @media (max-width: 1200px) {
-    .main-content {
-      left: 25% !important; /* Slightly wider sidebar on medium screens */
-      right: 0 !important;
-    }
-
-    .sidebar-open .main-content {
-      left: 25% !important; /* Slightly wider sidebar on medium screens */
-      right: 0 !important;
-    }
-
-    .sidebar-collapsed .main-content {
-      left: 8% !important; /* 8% when collapsed on medium screens */
-      right: 0 !important;
-    }
-  }
-
   @media (max-width: 1023px) {
-    .main-content {
-      left: 0 !important; /* Full width on small screens - no sidebar push */
-      right: 0 !important;
-      top: 8vh !important; /* Start below the fixed header */
-    }
-
-    .sidebar-open .main-content {
-      left: 0 !important; /* Content stays full width, sidebar overlays */
-      right: 0 !important;
-      top: 8vh !important; /* Start below the fixed header */
-    }
-
-    .sidebar-collapsed .main-content {
-      left: 0 !important; /* Content stays full width, sidebar overlays */
-      right: 0 !important;
-      top: 8vh !important; /* Start below the fixed header */
-    }
-
-    .page-content {
-      @apply p-4;
+    .layout-main-container {
+      padding: 6rem 1rem 0 1rem;
     }
   }
 
   @media (max-width: 768px) {
-    .main-content {
-      left: 0 !important; /* Full width on mobile */
-      right: 0 !important;
-      top: 8vh !important; /* Start below the fixed header */
+    .layout-main-container {
+      padding: 6rem 0.5rem 0 0.5rem;
     }
-
-    .sidebar-open .main-content {
-      left: 0 !important; /* Content stays full width, sidebar overlays */
-      right: 0 !important;
-      top: 8vh !important; /* Start below the fixed header */
-    }
-
-    .sidebar-collapsed .main-content {
-      left: 0 !important; /* Content stays full width, sidebar overlays */
-      right: 0 !important;
-      top: 8vh !important; /* Start below the fixed header */
-    }
-
-    .page-content {
-      @apply p-3;
-    }
-  }
-
-  /* Smooth transitions */
-  .app-layout * {
-    transition-property: left, right, transform;
-    transition-duration: 300ms;
-    transition-timing-function: ease-in-out;
   }
 </style>
