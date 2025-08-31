@@ -27,7 +27,7 @@ app.use(VueQueryPlugin)
 app.use(router)
 app.use(PrimeVue, {
   options: {
-    darkModeSelector: '.app-dark',
+    darkModeSelector: '.dark',
   },
 })
 app.use(ToastService)

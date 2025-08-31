@@ -114,8 +114,8 @@
 
   // Computed
   const themeIcon = computed(() => {
-    if (themeStore.hasCustomTheme) {
-      return 'pi pi-palette'
+    if (themeStore.isWindows95) {
+      return 'pi pi-desktop'
     }
     return themeStore.isDark ? 'pi pi-sun' : 'pi pi-moon'
   })
@@ -136,13 +136,7 @@
   }
 
   const handleThemeToggle = () => {
-    if (themeStore.hasCustomTheme) {
-      // If custom theme is active, switch back to dark
-      themeStore.setBuiltInTheme('dark')
-    } else {
-      // Toggle between light and dark
-      themeStore.toggleTheme()
-    }
+    themeStore.toggleTheme()
   }
 
   const toggleConfigPanel = () => {

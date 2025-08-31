@@ -4,7 +4,7 @@
 /* PrimeIcons CSS */
 @import 'primeicons/primeicons.css';
 
-/* Custom Themes */
+/* Windows 95 Theme */
 @import '../features/theme/themes/windows95.css';
 
 @tailwind base;
@@ -63,47 +63,20 @@
     --primary-color-active: #047857;
   }
 
-  /* Theme Preset Classes */
-  .theme-aura {
-    --primary-color: #10b981;
-    --primary-color-hover: #059669;
-    --primary-color-active: #047857;
-  }
-
-  .theme-saga {
-    --primary-color: #8b5cf6;
-    --primary-color-hover: #7c3aed;
-    --primary-color-active: #6d28d9;
-  }
-
-  .theme-vela {
-    --primary-color: #f97316;
-    --primary-color-hover: #ea580c;
-    --primary-color-active: #dc2626;
-  }
-
-  .theme-arya {
-    --primary-color: #ef4444;
-    --primary-color-hover: #dc2626;
-    --primary-color-active: #b91c1c;
-  }
-
-  /* Enhanced white mode styling */
-  :root {
-    --surface-ground: #f8fafc;
-    --surface-section: #ffffff;
-    --surface-card: #ffffff;
-    --surface-overlay: #ffffff;
-    --surface-border: #e2e8f0;
-    --surface-hover: #f1f5f9;
-  }
-
   html {
     font-family: 'Inter', system-ui, sans-serif;
   }
 
   body {
-    @apply bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+    @apply bg-white text-gray-900;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+  /* Dark mode body styles */
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
   }
 
   /* PrimeVue component overrides */
@@ -123,7 +96,7 @@
     @apply shadow-card border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800;
   }
 
-  /* Enhanced light mode styling */
+  /* Enhanced styling */
   .p-datatable {
     @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm;
   }
@@ -144,7 +117,7 @@
     @apply bg-gray-50 dark:bg-gray-700/50;
   }
 
-  /* Enhanced light mode form elements */
+  /* Form elements */
   .p-inputtext {
     @apply bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100;
   }
@@ -167,27 +140,6 @@
   .p-button:focus-visible {
     outline: none !important;
     box-shadow: none !important;
-  }
-
-  /* Enhanced component spacing */
-  .p-datatable {
-    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden;
-  }
-
-  .p-datatable-header {
-    @apply bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 p-4;
-  }
-
-  .p-datatable-thead > tr > th {
-    @apply bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 p-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100;
-  }
-
-  .p-datatable-tbody > tr > td {
-    @apply p-4 border-b border-gray-100 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300;
-  }
-
-  .p-datatable-tbody > tr:hover > td {
-    @apply bg-gray-50 dark:bg-gray-700/50;
   }
 }
 
@@ -333,11 +285,27 @@
 /* App container */
 #app {
   @apply min-h-screen;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+/* Ensure app container inherits theme colors */
+.dark #app {
+  @apply bg-gray-900 text-gray-100;
 }
 
 /* Sakai-style layout classes */
 .layout-wrapper {
   min-height: 100vh;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+/* Ensure layout wrapper inherits theme colors */
+.dark .layout-wrapper {
+  @apply bg-gray-900 text-gray-100;
 }
 
 .layout-main-container {
@@ -529,127 +497,6 @@
   #app {
     @apply max-w-7xl mx-auto;
   }
-}
-
-/* PrimeVue specific overrides */
-.p-component-overlay {
-  @apply backdrop-blur-sm;
-}
-
-.p-dialog {
-  @apply shadow-strong;
-}
-
-.p-dialog-header {
-  @apply border-b border-gray-200 dark:border-gray-700;
-}
-
-.p-dialog-content {
-  @apply p-0;
-}
-
-.p-dialog-footer {
-  @apply border-t border-gray-200 dark:border-gray-700;
-}
-
-.p-dropdown {
-  @apply w-full;
-}
-
-.p-dropdown-panel {
-  @apply shadow-strong border border-gray-200 dark:border-gray-700;
-}
-
-.p-multiselect {
-  @apply w-full;
-}
-
-.p-multiselect-panel {
-  @apply shadow-strong border border-gray-200 dark:border-gray-700;
-}
-
-.p-calendar {
-  @apply w-full;
-}
-
-.p-calendar-w-btn .p-datepicker-trigger {
-  @apply border-l-0;
-}
-
-.p-datepicker-panel {
-  @apply shadow-strong border border-gray-200 dark:border-gray-700;
-}
-
-.p-tooltip {
-  @apply z-tooltip;
-}
-
-.p-tooltip-text {
-  @apply shadow-medium;
-}
-
-/* Global PrimeButton outline removal */
-.p-button,
-.p-button:focus,
-.p-button:focus-visible,
-.p-button:active {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Ensure PrimeButtons use theme colors */
-.p-button {
-  transition: all 0.2s ease;
-}
-
-/* Theme-aware PrimeButton styling */
-.p-button {
-  border: none !important;
-}
-
-/* Ensure PrimeButtons work with custom themes */
-[class*='theme-'] .p-button {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Remove any default PrimeVue button outlines */
-.p-button:focus,
-.p-button:focus-visible,
-.p-button:active {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* PrimeButton theme integration */
-.p-button {
-  /* Remove default PrimeVue styling */
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Ensure PrimeButtons work with all themes */
-.p-button,
-.p-button:focus,
-.p-button:focus-visible,
-.p-button:active,
-.p-button:hover {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Theme-specific button styling */
-[class*='theme-'] .p-button {
-  outline: none !important;
-  box-shadow: none !important;
-  border: none !important;
-}
-
-/* Windows 95 theme specific button overrides */
-.theme-windows95 .p-button {
-  outline: none !important;
-  box-shadow: none !important;
 }
 
 /* Prevent horizontal scrolling and swiping */

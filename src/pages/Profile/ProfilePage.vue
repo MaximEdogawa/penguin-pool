@@ -34,7 +34,19 @@
 
         <!-- Themes Tab -->
         <div v-if="activeTab === 'themes'" class="tab-panel">
-          <ThemeSettings />
+          <div class="theme-settings">
+            <h2 class="text-xl font-semibold mb-4">Theme Settings</h2>
+            <div class="theme-options">
+              <button
+                v-for="theme in availableThemes"
+                :key="theme.id"
+                :class="['theme-option', { active: currentTheme === theme.id }]"
+                @click="setTheme(theme.id)"
+              >
+                {{ theme.name }}
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Security Tab -->
@@ -58,14 +70,27 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { ref, computed } from 'vue'
   import { useRoute } from 'vue-router'
-  import ThemeSettings from '@/features/theme/components/ThemeSettings.vue'
+  import { useThemeStore } from '@/features/theme/store/themeStore'
 
   const route = useRoute()
+  const themeStore = useThemeStore()
 
   // Check if there's a tab query parameter
   const activeTab = ref((route.query.tab as string) || 'profile')
+
+  // Theme logic
+  const currentTheme = computed(() => themeStore.currentTheme)
+  const availableThemes = [
+    { id: 'light' as const, name: 'Light' },
+    { id: 'dark' as const, name: 'Dark' },
+    { id: 'windows95' as const, name: 'Windows 95' },
+  ]
+
+  const setTheme = async (themeId: 'light' | 'dark' | 'windows95') => {
+    await themeStore.setTheme(themeId)
+  }
 
   // Available tabs
   const tabs = [
@@ -126,6 +151,27 @@
 
   .tab-panel {
     @apply min-h-[300px] sm:min-h-[400px];
+  }
+
+  .theme-settings {
+    @apply space-y-4;
+  }
+
+  .theme-options {
+    @apply flex flex-wrap gap-3;
+  }
+
+  .theme-option {
+    @apply px-4 py-2 rounded-lg border transition-all duration-200;
+    @apply bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600;
+  }
+
+  .theme-option:hover {
+    @apply bg-gray-50 dark:bg-gray-600;
+  }
+
+  .theme-option.active {
+    @apply bg-primary-500 text-white border-primary-500;
   }
 
   /* Fix scroll area background to match theme */
