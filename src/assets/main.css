@@ -328,14 +328,17 @@
   background-color: var(--surface-ground);
 }
 
-/* Sakai-style layout classes - FIXED: Ensure background covers entire page */
+/* Layout wrapper - ensure proper flex structure */
 .layout-wrapper {
   min-height: 100vh;
-  height: 100%;
+  height: 100vh;
   background-color: var(--surface-ground);
   transition:
     background-color 0.3s ease,
     color 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Ensure layout wrapper inherits theme colors */
@@ -365,116 +368,133 @@
 .layout-main-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  height: 100%;
-  justify-content: space-between;
-  padding: 6rem 2rem 0 2rem;
+  flex: 1;
+  margin-top: 4rem; /* Account for topbar height */
   transition: margin-left var(--layout-section-transition-duration);
   background-color: var(--surface-ground);
+  height: calc(100vh - 4rem);
+  position: relative;
+  overflow: hidden;
 }
 
 .layout-main {
-  flex: 1 1 auto;
-  padding-bottom: 2rem;
+  flex: 1;
+  height: 100%;
+  background-color: var(--surface-ground);
+  overflow: hidden;
+}
+
+/* Global Content Page Styles - Using Tailwind Classes */
+.content-page {
+  @apply w-full h-full flex flex-col overflow-hidden;
   background-color: var(--surface-ground);
 }
 
-/* FIXED: Ensure all page content has proper background */
-.dashboard-page,
-.loans-page,
-.offers-page,
-.option-contracts-page,
-.piggy-bank-page,
-.profile-page,
-.login-page {
+.content-header {
+  @apply mb-8 text-center p-6 flex-shrink-0;
   background-color: var(--surface-ground);
-  min-height: 100vh;
+}
+
+.content-header h1 {
+  @apply text-3xl font-bold text-gray-900 dark:text-white mb-2;
+}
+
+.content-header p {
+  @apply text-gray-600 dark:text-gray-300;
+}
+
+.content-body {
+  @apply flex-1 p-6 space-y-8;
+  background-color: var(--surface-ground);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.content-footer {
+  @apply mt-auto flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 w-full;
+}
+
+.footer-content {
+  @apply flex items-center justify-between px-6;
+}
+
+.footer-text {
+  @apply text-sm text-gray-600 dark:text-gray-400;
+}
+
+.footer-version {
+  @apply text-sm text-gray-500 dark:text-gray-500 font-mono;
+}
+
+/* Profile Page Specific Styles */
+.profile-tabs {
+  @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex-1;
+  background-color: var(--surface-ground);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.profile-tabs-header {
+  @apply flex flex-wrap border-b border-gray-200 dark:border-gray-700 overflow-x-hidden touch-pan-y flex-shrink-0;
+  background-color: var(--surface-ground);
+}
+
+.profile-tab-button {
+  @apply flex items-center gap-2 px-3 sm:px-6 py-3 sm:py-4 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 flex-1 sm:flex-none min-w-0 overflow-hidden whitespace-nowrap text-ellipsis;
+}
+
+.profile-tab-button.active {
+  @apply text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400 bg-primary-50/30 dark:bg-primary-900/10;
+}
+
+.profile-tab-content {
+  @apply p-3 sm:p-6 flex-1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--surface-ground);
+}
+
+.profile-tab-panel {
+  @apply min-h-[300px] sm:min-h-[400px];
 }
 
 /* Static mode - sidebar pushes content */
 .layout-static .layout-main-container {
-  margin-left: 22rem; /* 20rem sidebar + 2rem spacing */
+  margin-left: 20vw; /* 20% for sidebar */
 }
 
 .layout-static-inactive .layout-main-container {
-  margin-left: 2rem; /* Only spacing when sidebar collapsed */
+  margin-left: 5vw; /* 5% for collapsed sidebar */
 }
 
 /* Mobile mode - content NEVER changes position */
 .layout-mobile-active .layout-main-container {
   margin-left: 0 !important;
-  padding-left: 2rem !important;
-  padding-right: 2rem !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
-.layout-topbar {
-  position: fixed;
-  height: 4rem;
-  z-index: 997;
-  left: 0;
-  top: 0;
-  width: 100%;
-  padding: 0 2rem;
-  background-color: var(--surface-card);
-  transition: left var(--layout-section-transition-duration);
-  display: flex;
-  align-items: center;
+/* Responsive Footer */
+@media (max-width: 768px) {
+  .footer-content {
+    @apply flex-col gap-2 text-center;
+  }
 }
 
-.layout-sidebar {
-  position: fixed;
-  width: 20rem;
-  height: calc(100vh - 8rem);
-  z-index: 999;
-  overflow-y: auto;
-  user-select: none;
-  top: 6rem;
-  left: 2rem;
-  transition:
-    transform var(--layout-section-transition-duration),
-    left var(--layout-section-transition-duration);
-  background-color: var(--surface-overlay);
-  border-radius: var(--content-border-radius);
-  padding: 0.5rem 1.5rem;
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
+/* Profile Page Responsive */
+@media (max-width: 640px) {
+  .profile-tabs-header {
+    @apply flex-col;
+  }
 
-/* Static mode - sidebar is always visible */
-.layout-static .layout-sidebar {
-  transform: translateX(0);
-  left: 2rem;
-}
+  .profile-tab-button {
+    @apply justify-center text-center border-b-0 border-r-0 border-l-2 border-l-transparent;
+  }
 
-.layout-static-inactive .layout-sidebar {
-  transform: translateX(-100%);
-  left: 2rem;
-}
-
-/* Mobile mode - sidebar overlays content */
-.layout-mobile-active .layout-sidebar {
-  transform: translateX(0);
-  left: 0;
-  width: 20rem;
-}
-
-.layout-footer {
-  background-color: var(--surface-card);
-  border-top: 1px solid var(--surface-border);
-  padding: 1rem 0;
-}
-
-.layout-static .layout-sidebar {
-  transform: translateX(0);
-}
-
-.layout-static-inactive .layout-sidebar {
-  transform: translateX(-100%);
-}
-
-.layout-mobile-active .layout-sidebar {
-  transform: translateX(0);
+  .profile-tab-button.active {
+    @apply border-l-2 border-l-primary-600 dark:border-l-primary-400 border-b-0;
+  }
 }
 
 /* Layout mask */

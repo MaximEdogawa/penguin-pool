@@ -24,6 +24,8 @@
   .layout-footer {
     @apply bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700;
     padding: 1rem 0;
+    margin-top: auto; /* Push to bottom */
+    flex-shrink: 0; /* Don't shrink */
   }
 
   .layout-footer-content {

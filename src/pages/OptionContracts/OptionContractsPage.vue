@@ -1,32 +1,19 @@
 <template>
-  <div class="option-contracts-page">
-    <div class="option-contracts-header">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Option Contracts</h1>
-      <p class="text-gray-600 dark:text-gray-300">Option contracts functionality coming soon...</p>
+  <div class="content-page">
+    <div class="content-header">
+      <h1>Option Contracts</h1>
+      <p>Option contracts functionality coming soon...</p>
     </div>
 
-    <div class="option-contracts-content">
+    <div class="content-body">
       <!-- Content will be added here -->
     </div>
+
+    <!-- Page Footer -->
+    <PageFooter />
   </div>
 </template>
 
 <script setup lang="ts">
-  // Option contracts page - coming soon
+  import PageFooter from '@/components/PageFooter.vue'
 </script>
-
-<style scoped>
-  .option-contracts-page {
-    @apply max-w-7xl mx-auto;
-    background-color: var(--surface-ground);
-    min-height: 100vh;
-  }
-
-  .option-contracts-header {
-    @apply mb-8 text-center;
-  }
-
-  .option-contracts-content {
-    @apply space-y-8;
-  }
-</style>

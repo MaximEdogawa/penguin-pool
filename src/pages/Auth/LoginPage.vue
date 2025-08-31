@@ -135,11 +135,7 @@
       await new Promise(resolve => setTimeout(resolve, 2000))
 
       // For demo purposes, simulate successful connection
-      await userStore.login({
-        username: 'demo-user',
-        walletAddress: 'xch1demo123456789',
-        email: 'demo@penguinpool.com',
-      })
+      await userStore.login('xch1demo123456789', 'demo-user')
 
       connectionStatus.value = 'Wallet connected successfully!'
       statusType.value = 'success'
@@ -162,13 +158,16 @@
 
 <style scoped>
   .login-page {
-    @apply min-h-screen;
+    @apply min-h-screen w-full;
     background-color: var(--surface-ground);
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
 
   .auth-container {
     @apply min-h-screen flex items-center justify-center p-4;
+    flex: 1;
   }
 
   .auth-card {

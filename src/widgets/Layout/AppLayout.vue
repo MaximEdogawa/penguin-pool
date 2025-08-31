@@ -19,7 +19,6 @@
       <div class="layout-main">
         <router-view />
       </div>
-      <AppFooter />
     </div>
 
     <!-- Layout Mask for overlay mode -->
@@ -37,7 +36,6 @@
   import { useLayout } from './composables/layout'
   import AppTopbar from './AppTopbar.vue'
   import AppSidebar from './AppSidebar.vue'
-  import AppFooter from './AppFooter.vue'
 
   // Router
   const route = useRoute()
@@ -70,22 +68,27 @@
     height: 100vh;
     background-color: var(--surface-ground);
     transition: background-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent body scrolling */
   }
 
   .layout-main-container {
-    @apply flex flex-col min-h-screen justify-between;
-    padding: 6rem 2rem 0 2rem;
+    @apply flex flex-col;
+    flex: 1;
+    margin-top: 4rem; /* Account for topbar height */
     transition: margin-left 0.2s;
     background-color: var(--surface-ground);
-    min-height: 100vh;
-    height: 100%;
+    height: calc(100vh - 4rem);
+    position: relative;
+    overflow: hidden; /* Prevent container scrolling */
   }
 
   .layout-main {
     @apply flex-1;
-    padding-bottom: 2rem;
+    height: 100%;
     background-color: var(--surface-ground);
-    min-height: calc(100vh - 8rem);
+    overflow: hidden; /* Let individual pages handle their own scrolling */
   }
 
   .layout-mask {
@@ -109,14 +112,7 @@
   /* Responsive adjustments */
   @media (max-width: 1023px) {
     .layout-main-container {
-      padding: 6rem 1rem 0 1rem;
       margin-left: 0 !important; /* No margin on mobile */
-    }
-  }
-
-  @media (max-width: 768px) {
-    .layout-main-container {
-      padding: 6rem 0.5rem 0 0.5rem;
     }
   }
 
