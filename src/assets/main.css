@@ -1,19 +1,58 @@
-/* Custom base styles */
-@import './base.css';
-
-/* PrimeIcons CSS */
+/* Import PrimeIcons CSS */
 @import 'primeicons/primeicons.css';
 
-/* Custom Themes */
+/* Import custom theme CSS */
 @import '../features/theme/themes/windows95.css';
 
+/* PrimeUI Theme Styles */
+.primeui-theme-aura {
+  --theme-primary: var(--primeui-primary-color, #6366f1);
+  --theme-surface: var(--primeui-surface-color, #ffffff);
+  --theme-text: var(--primeui-text-color, #1e293b);
+  --theme-border: var(--primeui-border-color, #e2e8f0);
+}
+
+.primeui-theme-lara {
+  --theme-primary: var(--primeui-primary-color, #3b82f6);
+  --theme-surface: var(--primeui-surface-color, #ffffff);
+  --theme-text: var(--primeui-text-color, #1e293b);
+  --theme-border: var(--primeui-border-color, #e2e8f0);
+}
+
+.primeui-theme-nora {
+  --theme-primary: var(--primeui-primary-color, #8b5cf6);
+  --theme-surface: var(--primeui-surface-color, #ffffff);
+  --theme-text: var(--primeui-text-color, #1e293b);
+  --theme-border: var(--primeui-border-color, #e2e8f0);
+}
+
+.primeui-theme-material {
+  --theme-primary: var(--primeui-primary-color, #1976d2);
+  --theme-surface: var(--primeui-surface-color, #ffffff);
+  --theme-text: var(--primeui-text-color, #1e293b);
+  --theme-border: var(--primeui-border-color, #e2e8f0);
+}
+
+/* Dark variants */
+.primeui-theme-aura-dark,
+.primeui-theme-lara-dark,
+.primeui-theme-nora-dark,
+.primeui-theme-material-dark {
+  --theme-primary: var(--primeui-primary-color, #60a5fa);
+  --theme-surface: var(--primeui-surface-color, #1e293b);
+  --theme-text: var(--primeui-text-color, #f1f5f9);
+  --theme-border: var(--primeui-border-color, #334155);
+}
+
+/* Import Tailwind CSS */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* PrimeVue theme overrides */
+/* Base layer - Global CSS variables and root styles */
 @layer base {
   :root {
+    /* PrimeVue theme variables */
     --primary-color: #3b82f6;
     --primary-color-text: #ffffff;
     --surface-ground: #f8fafc;
@@ -26,6 +65,28 @@
     --text-color-secondary: #64748b;
     --primary-color-hover: #2563eb;
     --primary-color-active: #1d4ed8;
+
+    /* Additional theme colors */
+    --secondary-color: #6b7280;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #3b82f6;
+    --danger-color-hover: #dc2626;
+    --success-color-hover: #059669;
+    --warning-color-hover: #d97706;
+    --info-color-hover: #2563eb;
+    --primary-color-alpha-20: rgba(59, 130, 246, 0.2);
+
+    /* Layout variables */
+    --layout-section-transition-duration: 0.2s;
+    --element-transition-duration: 0.2s;
+    --content-border-radius: 0.5rem;
+    --focus-ring-width: 2px;
+    --focus-ring-style: solid;
+    --focus-ring-color: var(--primary-color);
+    --focus-ring-offset: 2px;
+    --focus-ring-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
   }
 
   .dark {
@@ -41,112 +102,149 @@
     --text-color-secondary: #94a3b8;
     --primary-color-hover: #93c5fd;
     --primary-color-active: #bfdbfe;
+
+    /* Additional theme colors for dark mode */
+    --secondary-color: #9ca3af;
+    --success-color: #34d399;
+    --danger-color: #f87171;
+    --warning-color: #fbbf24;
+    --info-color: #60a5fa;
+    --danger-color-hover: #fca5a5;
+    --success-color-hover: #6ee7b7;
+    --warning-color-hover: #fcd34d;
+    --info-color-hover: #93c5fd;
+    --primary-color-alpha-20: rgba(96, 165, 250, 0.2);
+
+    --focus-ring-color: var(--primary-color);
   }
 
-  /* Enhanced white mode styling */
+  /* Ensure primary color variables are always defined */
   :root {
-    --surface-ground: #f8fafc;
-    --surface-section: #ffffff;
-    --surface-card: #ffffff;
-    --surface-overlay: #ffffff;
-    --surface-border: #e2e8f0;
-    --surface-hover: #f1f5f9;
+    --primary-color: #10b981;
+    --primary-color-hover: #059669;
+    --primary-color-active: #047857;
   }
 
   html {
+    @apply h-full font-sans;
     font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--surface-ground);
   }
 
   body {
-    @apply bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+    @apply min-h-screen h-full text-gray-900 dark:text-gray-100;
+    background-color: var(--surface-ground);
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
   }
 
-  /* PrimeVue component overrides */
-  .p-component {
-    @apply font-sans;
+  /* App container */
+  #app {
+    @apply min-h-screen h-full;
+    background-color: var(--surface-ground);
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
   }
 
-  .p-button {
-    @apply font-medium;
+  .dark #app {
+    @apply bg-gray-900 text-gray-100;
+    background-color: var(--surface-ground);
   }
 
-  .p-inputtext {
-    @apply font-sans;
+  /* Layout wrapper */
+  .layout-wrapper {
+    @apply min-h-screen h-screen flex flex-col overflow-hidden;
+    background-color: var(--surface-ground);
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
   }
 
-  .p-card {
-    @apply shadow-card border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800;
+  .dark .layout-wrapper {
+    @apply bg-gray-900 text-gray-100;
+    background-color: var(--surface-ground);
   }
 
-  /* Enhanced light mode styling */
-  .p-datatable {
-    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm;
+  /* Layout main */
+  .layout-main {
+    @apply flex-1 h-full overflow-hidden;
+    background-color: var(--surface-ground);
   }
 
-  .p-datatable-header {
-    @apply bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 p-4;
+  /* Force white background for light theme */
+  .light {
+    @apply bg-white;
+    background-color: #ffffff !important;
   }
 
-  .p-datatable-thead > tr > th {
-    @apply bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 p-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100;
+  .light body,
+  .light html {
+    @apply bg-white;
+    background-color: #ffffff !important;
   }
 
-  .p-datatable-tbody > tr > td {
-    @apply p-4 border-b border-gray-100 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300;
+  .light #app,
+  .light .layout-wrapper,
+  .light .layout-main-container,
+  .light .layout-main {
+    @apply bg-white;
+    background-color: #ffffff !important;
   }
 
-  .p-datatable-tbody > tr:hover > td {
-    @apply bg-gray-50 dark:bg-gray-700/50;
+  /* Static mode - sidebar pushes content */
+  .layout-static .layout-main-container {
+    margin-left: 20vw; /* 20% for sidebar */
   }
 
-  /* Enhanced light mode form elements */
-  .p-inputtext {
-    @apply bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100;
+  .layout-static-inactive .layout-main-container {
+    margin-left: 5vw; /* 5% for collapsed sidebar */
   }
 
-  .p-inputtext:focus {
-    @apply border-primary-500 dark:border-primary-400 ring-2 ring-primary-500/20;
+  /* Mobile mode - content NEVER changes position */
+  .layout-mobile-active .layout-main-container {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 
-  .p-button {
-    @apply bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white;
-    outline: none !important;
-    box-shadow: none !important;
+  /* Layout mask */
+  .layout-mask {
+    @apply fixed inset-0 z-[998] bg-black/50 hidden transition-opacity duration-200;
   }
 
-  .p-button:focus {
-    outline: none !important;
-    box-shadow: none !important;
+  .layout-mobile-active .layout-mask {
+    display: block;
   }
 
-  .p-button:focus-visible {
-    outline: none !important;
-    box-shadow: none !important;
+  /* Prevent horizontal scrolling */
+  html,
+  body {
+    @apply overflow-x-hidden;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Enhanced component spacing */
-  .p-datatable {
-    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden;
+  .app-layout,
+  .main-content,
+  .page-content {
+    @apply overflow-x-hidden;
+    touch-action: pan-y;
   }
 
-  .p-datatable-header {
-    @apply bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 p-4;
-  }
-
-  .p-datatable-thead > tr > th {
-    @apply bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 p-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100;
-  }
-
-  .p-datatable-tbody > tr > td {
-    @apply p-4 border-b border-gray-100 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300;
-  }
-
-  .p-datatable-tbody > tr:hover > td {
-    @apply bg-gray-50 dark:bg-gray-700/50;
+  /* Fixed header support */
+  .header {
+    @apply fixed top-0 left-0 right-0 z-[1000] overflow-hidden;
+    position: fixed !important;
+    touch-action: none !important;
+    user-select: none !important;
   }
 }
 
+/* Components layer - Reusable component styles */
 @layer components {
+  /* Button components */
   .btn-primary {
     @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
   }
@@ -159,6 +257,7 @@
     @apply border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
   }
 
+  /* Card components */
   .card {
     @apply bg-white dark:bg-gray-800 rounded-lg shadow-soft border border-gray-200 dark:border-gray-700;
   }
@@ -175,6 +274,7 @@
     @apply px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50;
   }
 
+  /* Form components */
   .input-field {
     @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100;
   }
@@ -191,6 +291,7 @@
     @apply text-sm text-red-600 dark:text-red-400;
   }
 
+  /* Badge components */
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
@@ -215,7 +316,7 @@
     @apply bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400;
   }
 
-  /* Table styles */
+  /* Table components */
   .table {
     @apply w-full border-collapse;
   }
@@ -225,16 +326,16 @@
   }
 
   .table td {
-    @apply px-4 py-3 text-sm text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700;
+    @apply px-4 py-3 text-sm text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700;
   }
 
   .table tbody tr:hover {
     @apply bg-gray-50 dark:bg-gray-800/50;
   }
 
-  /* Modal styles */
+  /* Modal components */
   .modal-overlay {
-    @apply fixed inset-0 bg-black bg-opacity-50 z-modal flex items-center justify-center p-4;
+    @apply fixed inset-0 bg-black/50 z-modal flex items-center justify-center p-4;
   }
 
   .modal-content {
@@ -252,8 +353,167 @@
   .modal-footer {
     @apply px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3;
   }
+
+  /* PrimeVue component overrides */
+  .p-component {
+    @apply font-sans;
+  }
+
+  .p-button {
+    @apply font-medium bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .p-button:focus,
+  .p-button:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .p-inputtext {
+    @apply font-sans bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100;
+  }
+
+  .p-inputtext:focus {
+    @apply border-primary-500 dark:border-primary-400 ring-2 ring-primary-500/20;
+  }
+
+  .p-card {
+    @apply shadow-card border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800;
+  }
+
+  /* PrimeVue DataTable styling */
+  .p-datatable {
+    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm;
+  }
+
+  .p-datatable-header {
+    @apply bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 p-4;
+  }
+
+  .p-datatable-thead > tr > th {
+    @apply bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 p-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100;
+  }
+
+  .p-datatable-tbody > tr > td {
+    @apply p-4 border-b border-gray-100 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300;
+  }
+
+  .p-datatable-tbody > tr:hover > td {
+    @apply bg-gray-50 dark:bg-gray-800/50;
+  }
+
+  /* PrimeVue TabView styling */
+  .p-tabview {
+    @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex-1;
+    background-color: var(--surface-ground);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .p-tabview-nav {
+    @apply border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-lg;
+  }
+
+  .p-tabview-nav-content {
+    @apply flex flex-col lg:flex-row;
+  }
+
+  .p-tabview-ink-bar {
+    @apply bg-primary-500 dark:bg-primary-400;
+  }
+
+  .p-tabview-nav-item {
+    @apply flex-none lg:flex-1;
+  }
+
+  .p-tabview-nav-link {
+    @apply flex items-center justify-center lg:justify-start gap-2 px-4 lg:px-6 py-3 lg:py-4 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 min-w-0 overflow-hidden whitespace-nowrap text-ellipsis justify-center text-center lg:justify-start lg:text-left border-b-0 lg:border-b-2 lg:border-b-transparent border-l-2 lg:border-l-0 border-l-transparent;
+  }
+
+  .p-tabview-nav-link.p-highlight {
+    @apply text-primary-600 dark:text-primary-400 bg-primary-50/30 dark:bg-primary-900/10 border-l-2 lg:border-l-0 lg:border-b-2 border-l-primary-600 dark:border-l-primary-400 lg:border-b-primary-600 dark:lg:border-b-primary-400;
+  }
+
+  .p-tabview-panels {
+    @apply p-4 lg:p-6 bg-white dark:bg-gray-800 rounded-b-lg border border-t-0 border-gray-200 dark:border-gray-700;
+  }
+
+  /* Content page styles */
+  .content-page {
+    @apply w-full h-full flex flex-col overflow-hidden mt-16 sm:mt-18 md:mt-18 lg:mt-1 xl:mt-0;
+    background-color: var(--surface-ground);
+  }
+
+  .content-header {
+    @apply mb-8 text-center p-6 flex-shrink-0;
+    background-color: var(--surface-ground);
+  }
+
+  .content-header h1 {
+    @apply text-3xl font-bold text-gray-900 dark:text-white mb-2;
+  }
+
+  .content-header p {
+    @apply text-gray-600 dark:text-gray-300;
+  }
+
+  .content-body {
+    @apply flex-1 p-6 space-y-8 overflow-y-auto overflow-x-hidden;
+    background-color: var(--surface-ground);
+  }
+
+  .content-footer {
+    @apply mt-auto flex-shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 w-full;
+  }
+
+  .footer-content {
+    @apply flex items-center justify-between px-6;
+  }
+
+  .footer-text {
+    @apply text-sm text-gray-600 dark:text-gray-400;
+  }
+
+  .footer-version {
+    @apply text-sm text-gray-500 dark:text-gray-500 font-mono;
+  }
+
+  /* Profile page specific styles */
+  .profile-tabs {
+    @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex-1;
+    background-color: var(--surface-ground);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .profile-tabs-header {
+    @apply flex flex-wrap border-b border-gray-200 dark:border-gray-700 overflow-x-hidden touch-pan-y flex-shrink-0;
+    background-color: var(--surface-ground);
+  }
+
+  .profile-tab-button {
+    @apply flex items-center gap-2 px-3 sm:px-6 py-3 sm:py-4 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 flex-1 sm:flex-none min-w-0 overflow-hidden whitespace-nowrap text-ellipsis;
+  }
+
+  .profile-tab-button.active {
+    @apply text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400 bg-primary-50/30 dark:bg-primary-900/10;
+  }
+
+  .profile-tab-content {
+    @apply p-3 sm:p-6 flex-1 overflow-y-auto overflow-x-hidden;
+    background-color: var(--surface-ground);
+  }
+
+  .profile-tab-panel {
+    @apply min-h-[300px] sm:min-h-[400px];
+  }
 }
 
+/* Utilities layer - Custom utility classes */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -285,205 +545,39 @@
   }
 }
 
-/* App container */
-#app {
-  @apply min-h-screen;
-}
-
-/* Dark mode toggle */
-.dark-mode-toggle {
-  @apply fixed top-4 right-4 z-50;
-}
-
-/* Responsive adjustments */
-@media (min-width: 1024px) {
-  #app {
-    @apply max-w-7xl mx-auto;
-  }
-}
-
-/* PrimeVue specific overrides */
-.p-component-overlay {
-  @apply backdrop-blur-sm;
-}
-
-.p-dialog {
-  @apply shadow-strong;
-}
-
-.p-dialog-header {
-  @apply border-b border-gray-200 dark:border-gray-700;
-}
-
-.p-dialog-content {
-  @apply p-0;
-}
-
-.p-dialog-footer {
-  @apply border-t border-gray-200 dark:border-gray-700;
-}
-
-.p-dropdown {
-  @apply w-full;
-}
-
-.p-dropdown-panel {
-  @apply shadow-strong border border-gray-200 dark:border-gray-700;
-}
-
-.p-multiselect {
-  @apply w-full;
-}
-
-.p-multiselect-panel {
-  @apply shadow-strong border border-gray-200 dark:border-gray-700;
-}
-
-.p-calendar {
-  @apply w-full;
-}
-
-.p-calendar-w-btn .p-datepicker-trigger {
-  @apply border-l-0;
-}
-
-.p-datepicker-panel {
-  @apply shadow-strong border border-gray-200 dark:border-gray-700;
-}
-
-.p-tooltip {
-  @apply z-tooltip;
-}
-
-.p-tooltip-text {
-  @apply shadow-medium;
-}
-
-/* Global PrimeButton outline removal */
-.p-button,
-.p-button:focus,
-.p-button:focus-visible,
-.p-button:active {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Ensure PrimeButtons use theme colors */
-.p-button {
-  transition: all 0.2s ease;
-}
-
-/* Theme-aware PrimeButton styling */
-.p-button {
-  border: none !important;
-}
-
-/* Ensure PrimeButtons work with custom themes */
-[class*='theme-'] .p-button {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Remove any default PrimeVue button outlines */
-.p-button:focus,
-.p-button:focus-visible,
-.p-button:active {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* PrimeButton theme integration */
-.p-button {
-  /* Remove default PrimeVue styling */
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Ensure PrimeButtons work with all themes */
-.p-button,
-.p-button:focus,
-.p-button:focus-visible,
-.p-button:active,
-.p-button:hover {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Theme-specific button styling */
-[class*='theme-'] .p-button {
-  outline: none !important;
-  box-shadow: none !important;
-  border: none !important;
-}
-
-/* Windows 95 theme specific button overrides */
-.theme-windows95 .p-button {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Prevent horizontal scrolling and swiping */
-html,
-body {
-  overflow-x: hidden;
-  touch-action: pan-y;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Prevent horizontal scrolling on all containers */
-.app-layout,
-.main-content,
-.page-content {
-  overflow-x: hidden;
-  touch-action: pan-y;
-}
-
-/* Fixed header support */
-.header {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  z-index: 1000 !important;
-  overflow: hidden !important;
-  touch-action: none !important;
-  user-select: none !important;
-}
-
 /* Animation classes */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  @apply transition-opacity duration-300 ease-in-out;
 }
 
 .fade-enter-from,
 .fade-leave-to {
-  opacity: 0;
+  @apply opacity-0;
 }
 
 .slide-enter-active,
 .slide-leave-active {
-  transition: transform 0.3s ease;
+  @apply transition-transform duration-300 ease-in-out;
 }
 
 .slide-enter-from {
-  transform: translateX(-100%);
+  @apply -translate-x-full;
 }
 
 .slide-leave-to {
-  transform: translateX(100%);
+  @apply translate-x-full;
 }
 
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: transform 0.3s ease;
+  @apply transition-transform duration-300 ease-in-out;
 }
 
 .slide-up-enter-from {
-  transform: translateY(20px);
+  @apply translate-y-5;
 }
 
 .slide-up-leave-to {
-  transform: translateY(-20px);
+  @apply -translate-y-5;
 }

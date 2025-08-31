@@ -23,7 +23,7 @@
   /* Additional Windows 95 specific colors */
   --theme-highlight: #ffffff;
   --theme-shadow: #404040;
-  --theme-title-bar: #c0c0c0;
+  --theme-title-bar: #000080;
   --theme-title-bar-text: #ffffff;
   --theme-menu-bar: #c0c0c0;
   --theme-scroll-bar: #c0c0c0;
@@ -63,8 +63,6 @@
   color: var(--theme-text) !important;
   font-family: var(--theme-font-family) !important;
   font-size: var(--theme-font-size-base) !important;
-  overflow-x: hidden !important;
-  touch-action: pan-y !important;
 }
 
 /* Ensure Windows 95 theme covers the entire viewport */
@@ -135,8 +133,7 @@
 
 .theme-windows95 .p-button:focus,
 .theme-windows95 button:focus {
-  outline: none !important;
-  box-shadow: none !important;
+  outline: 1px dotted var(--theme-text) !important;
 }
 
 .theme-windows95 .p-button.p-button-primary,
@@ -331,11 +328,46 @@
   box-shadow: var(--theme-shadow-outset) !important;
 }
 
+/* Windows 95 Sidebar Button Styles - Smaller buttons with bigger icons */
+.theme-windows95 .app-sidebar .p-button,
+.theme-windows95 .sidebar .p-button,
+.theme-windows95 .app-sidebar button,
+.theme-windows95 .sidebar button {
+  padding: 4px 6px !important;
+  min-height: 16px !important;
+  min-width: 40px !important;
+  font-size: var(--theme-font-size-small) !important;
+}
+
+.theme-windows95 .app-sidebar .p-button i,
+.theme-windows95 .sidebar .p-button i,
+.theme-windows95 .app-sidebar button i,
+.theme-windows95 .sidebar button i {
+  font-size: 16px !important;
+  line-height: 1 !important;
+}
+
 /* Responsive sidebar adjustments */
 @media (max-width: 768px) {
   .theme-windows95 .app-sidebar,
   .theme-windows95 .sidebar {
     font-size: var(--theme-font-size-small) !important;
+  }
+
+  .theme-windows95 .app-sidebar .p-button,
+  .theme-windows95 .sidebar .p-button,
+  .theme-windows95 .app-sidebar button,
+  .theme-windows95 .sidebar button {
+    padding: 3px 5px !important;
+    min-height: 14px !important;
+    min-width: 36px !important;
+  }
+
+  .theme-windows95 .app-sidebar .p-button i,
+  .theme-windows95 .sidebar .p-button i,
+  .theme-windows95 .app-sidebar button i,
+  .theme-windows95 .sidebar button i {
+    font-size: 14px !important;
   }
 }
 
@@ -343,6 +375,22 @@
   .theme-windows95 .app-sidebar,
   .theme-windows95 .sidebar {
     font-size: var(--theme-font-size-large) !important;
+  }
+
+  .theme-windows95 .app-sidebar .p-button,
+  .theme-windows95 .sidebar .p-button,
+  .theme-windows95 .app-sidebar button,
+  .theme-windows95 .sidebar button {
+    padding: 5px 7px !important;
+    min-height: 18px !important;
+    min-width: 44px !important;
+  }
+
+  .theme-windows95 .app-sidebar .p-button i,
+  .theme-windows95 .sidebar .p-button i,
+  .theme-windows95 .app-sidebar button i,
+  .theme-windows95 .sidebar button i {
+    font-size: 18px !important;
   }
 }
 
@@ -374,13 +422,6 @@
   border-bottom: 2px solid var(--theme-border) !important;
   box-shadow: var(--theme-shadow-outset) !important;
   padding: var(--theme-spacing-sm) var(--theme-spacing-md) !important;
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  z-index: 1000 !important;
-  overflow: hidden !important;
-  touch-action: none !important;
 }
 
 /* Responsive header adjustments */
@@ -448,14 +489,6 @@
 /* Windows 95 Focus Styles */
 .theme-windows95 *:focus {
   outline: 1px dotted var(--theme-text) !important;
-}
-
-/* Windows 95 PrimeButton specific focus override */
-.theme-windows95 .p-button:focus,
-.theme-windows95 .p-button:focus-visible,
-.theme-windows95 .p-button:active {
-  outline: none !important;
-  box-shadow: none !important;
 }
 
 /* Windows 95 Selection Styles */

@@ -1,4 +1,4 @@
-import type { CustomTheme } from '@/app/types/theme'
+import type { CustomTheme } from '../types/theme'
 
 export const windows95Theme: CustomTheme = {
   id: 'windows95',

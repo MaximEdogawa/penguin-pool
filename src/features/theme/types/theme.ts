@@ -1,0 +1,110 @@
+// Theme system types and interfaces
+
+export interface ThemeColors {
+  primary: string
+  secondary: string
+  success: string
+  danger: string
+  warning: string
+  info: string
+  background: string
+  surface: string
+  text: string
+  textSecondary: string
+  border: string
+  hover: string
+  active: string
+  disabled: string
+  highlight: string
+  shadow: string
+  titleBar: string
+  titleBarText: string
+  menuBar: string
+  scrollBar: string
+  scrollBarThumb: string
+}
+
+export interface ThemeTypography {
+  fontFamily: string
+  fontSizeBase: string
+  fontSizeSmall: string
+  fontSizeLarge: string
+  lineHeight: string
+  fontWeightNormal: string
+  fontWeightMedium: string
+  fontWeightBold: string
+}
+
+export interface ThemeSpacing {
+  unit: string
+  xs: string
+  sm: string
+  md: string
+  lg: string
+  xl: string
+}
+
+export interface ThemeShadows {
+  sm: string
+  md: string
+  lg: string
+  xl: string
+}
+
+export interface ThemeBorderRadius {
+  sm: string
+  md: string
+  lg: string
+  xl: string
+}
+
+export interface CustomTheme {
+  id: string
+  name: string
+  category: 'retro' | 'modern' | 'professional' | 'minimal' | 'primeui'
+  version: string
+  author: string
+  description: string
+  colors: ThemeColors
+  typography: ThemeTypography
+  spacing: ThemeSpacing
+  shadows: ThemeShadows
+  borderRadius: ThemeBorderRadius
+  isActive: boolean
+}
+
+export type BuiltInTheme = 'light' | 'dark' | 'auto'
+export type PrimeUITheme = 'aura' | 'material' | 'lara' | 'nora'
+export type ThemeVariant = 'light' | 'dark'
+export type ThemeMode = BuiltInTheme | `${PrimeUITheme}-${ThemeVariant}` | string // string for custom theme IDs
+
+export interface ThemeState {
+  currentTheme: ThemeMode
+  availableThemes: CustomTheme[]
+  customThemes: CustomTheme[]
+  systemTheme: 'light' | 'dark'
+}
+
+export interface PrimeUIThemeConfig {
+  theme: PrimeUITheme
+  variant: ThemeVariant
+  primaryColor: string
+  surfaceColor: string
+}
+
+// Legacy interface for backward compatibility
+export interface Windows95Theme {
+  id: string
+  name: string
+  description: string
+  category: 'retro'
+  colors: {
+    primary: string
+    secondary: string
+    background: string
+    surface: string
+    text: string
+    border: string
+    accent: string
+  }
+}

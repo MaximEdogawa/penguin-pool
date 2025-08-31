@@ -1,25 +1,14 @@
 <template>
-  <div id="app" :class="themeClass">
+  <div id="app">
     <slot />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, ref } from 'vue'
+  import { onMounted } from 'vue'
   import { useThemeStore } from '@/features/theme/store/themeStore'
   import { useNotificationStore } from '@/features/notifications/store/notificationStore'
   import { useUserStore } from '@/entities/user/store/userStore'
-
-  // State
-  const isInitialized = ref(false)
-  const currentTheme = ref('light')
-
-  // Computed
-  const themeClass = computed(() => ({
-    'theme-light': currentTheme.value === 'light',
-    'theme-dark': currentTheme.value === 'dark',
-    'theme-auto': currentTheme.value === 'auto',
-  }))
 
   // Lifecycle
   onMounted(async () => {
@@ -31,19 +20,14 @@
 
       // Initialize theme
       await themeStore.initializeTheme()
-      currentTheme.value = themeStore.effectiveTheme
 
       // Initialize notifications
       await notificationStore.initialize()
 
       // Check for existing user session
       await userStore.checkSession()
-
-      isInitialized.value = true
     } catch (error) {
       console.error('Failed to initialize app:', error)
-      // Fallback to light theme
-      currentTheme.value = 'light'
     }
   })
 </script>
@@ -51,20 +35,20 @@
 <style scoped>
   #app {
     min-height: 100vh;
+    height: 100vh;
+    background-color: var(--surface-ground);
     transition:
       background-color 0.3s ease,
       color 0.3s ease;
   }
 
-  .theme-light {
-    @apply bg-gray-50 text-gray-900;
+  /* Ensure dark mode support */
+  :global(.dark) #app {
+    background-color: var(--surface-ground);
   }
 
-  .theme-dark {
-    @apply bg-gray-900 text-gray-100;
-  }
-
-  .theme-auto {
-    /* Auto theme will be handled by CSS media queries */
+  /* Ensure light mode support */
+  :global(.light) #app {
+    background-color: #ffffff;
   }
 </style>

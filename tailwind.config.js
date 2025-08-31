@@ -1,5 +1,6 @@
 import forms from '@tailwindcss/forms'
 import typography from '@tailwindcss/typography'
+import primeui from 'tailwindcss-primeui'
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -156,6 +157,6 @@ export default {
       },
     },
   },
-  plugins: [forms, typography],
+  plugins: [forms, typography, primeui],
   darkMode: 'class',
 }

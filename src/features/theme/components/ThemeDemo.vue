@@ -1,156 +1,218 @@
 <template>
   <div class="theme-demo">
-    <h2 class="demo-title">Windows 95 Theme Demo</h2>
-
-    <div class="demo-section">
-      <h3>Buttons</h3>
-      <div class="demo-buttons">
-        <button class="p-button">Default Button</button>
-        <button class="p-button p-button-primary">Primary Button</button>
-        <button class="p-button p-button-secondary">Secondary Button</button>
-        <button class="p-button" disabled>Disabled Button</button>
-      </div>
+    <div class="demo-header">
+      <h3>Theme Demo</h3>
+      <p>Preview how different themes look with various UI elements</p>
     </div>
 
-    <div class="demo-section">
-      <h3>Form Elements</h3>
-      <div class="demo-form">
-        <div class="form-group">
-          <label>Text Input:</label>
-          <input type="text" class="p-inputtext" placeholder="Enter text here..." />
-        </div>
-        <div class="form-group">
-          <label>Dropdown:</label>
-          <select class="p-dropdown">
-            <option>Option 1</option>
-            <option>Option 2</option>
-            <option>Option 3</option>
-          </select>
+    <div class="demo-sections">
+      <!-- Buttons Demo -->
+      <div class="demo-section">
+        <h4>Buttons</h4>
+        <div class="demo-buttons">
+          <PrimeButton class="p-button-primary">Primary Button</PrimeButton>
+          <PrimeButton class="p-button-secondary">Secondary Button</PrimeButton>
+          <PrimeButton class="p-button-outlined">Outlined Button</PrimeButton>
+          <PrimeButton class="p-button-text">Text Button</PrimeButton>
         </div>
       </div>
-    </div>
 
-    <div class="demo-section">
-      <h3>Cards</h3>
-      <div class="demo-cards">
-        <div class="p-card">
-          <div class="p-card-header">Card Header</div>
-          <div class="p-card-body">
-            <p>
-              This is a sample card with Windows 95 styling. Notice the 3D borders and classic gray
-              colors.
-            </p>
+      <!-- Cards Demo -->
+      <div class="demo-section">
+        <h4>Cards</h4>
+        <div class="demo-cards">
+          <div class="demo-card">
+            <div class="card-header">
+              <h5>Sample Card</h5>
+            </div>
+            <div class="card-body">
+              <p>This is a sample card to demonstrate theme styling.</p>
+            </div>
+            <div class="card-footer">
+              <PrimeButton size="small">Action</PrimeButton>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="demo-section">
-      <h3>Table</h3>
-      <div class="demo-table">
-        <table class="p-datatable">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Contract A</td>
-              <td>Loan</td>
-              <td>Active</td>
-            </tr>
-            <tr>
-              <td>Contract B</td>
-              <td>Option</td>
-              <td>Pending</td>
-            </tr>
-            <tr>
-              <td>Contract C</td>
-              <td>Pool</td>
-              <td>Completed</td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Form Elements Demo -->
+      <div class="demo-section">
+        <h4>Form Elements</h4>
+        <div class="demo-forms">
+          <div class="form-group">
+            <label for="demo-input">Input Field</label>
+            <input type="text" id="demo-input" class="input-field" placeholder="Enter text..." />
+          </div>
+          <div class="form-group">
+            <label for="demo-select">Select Field</label>
+            <select id="demo-select" class="input-field">
+              <option>Option 1</option>
+              <option>Option 2</option>
+              <option>Option 3</option>
+            </select>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="demo-section">
-      <h3>Theme Information</h3>
-      <div class="theme-info">
-        <p><strong>Current Theme:</strong> {{ currentThemeName }}</p>
-        <p><strong>Category:</strong> {{ currentThemeCategory }}</p>
-        <p><strong>Description:</strong> {{ currentThemeDescription }}</p>
+      <!-- Table Demo -->
+      <div class="demo-section">
+        <h4>Table</h4>
+        <div class="demo-table">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Sample Item 1</td>
+                <td><span class="badge badge-success">Active</span></td>
+                <td><PrimeButton size="small">Edit</PrimeButton></td>
+              </tr>
+              <tr>
+                <td>Sample Item 2</td>
+                <td><span class="badge badge-warning">Pending</span></td>
+                <td><PrimeButton size="small">Edit</PrimeButton></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Colors Demo -->
+      <div class="demo-section">
+        <h4>Theme Colors</h4>
+        <div class="demo-colors">
+          <div class="color-swatch primary">
+            <span class="color-name">Primary</span>
+          </div>
+          <div class="color-swatch secondary">
+            <span class="color-name">Secondary</span>
+          </div>
+          <div class="color-swatch success">
+            <span class="color-name">Success</span>
+          </div>
+          <div class="color-swatch danger">
+            <span class="color-name">Danger</span>
+          </div>
+          <div class="color-swatch warning">
+            <span class="color-name">Warning</span>
+          </div>
+          <div class="color-swatch info">
+            <span class="color-name">Info</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
-  import { useThemeStore } from '../store/themeStore'
-
-  const themeStore = useThemeStore()
-
-  const currentThemeName = computed(() => {
-    if (themeStore.currentCustomTheme) {
-      return themeStore.currentCustomTheme.name
-    }
-    return themeStore.currentTheme === 'dark' ? 'Dark Theme' : 'Light Theme'
-  })
-
-  const currentThemeCategory = computed(() => {
-    if (themeStore.currentCustomTheme) {
-      return themeStore.currentCustomTheme.category
-    }
-    return 'built-in'
-  })
-
-  const currentThemeDescription = computed(() => {
-    if (themeStore.currentCustomTheme) {
-      return themeStore.currentCustomTheme.description
-    }
-    return 'Default system theme'
-  })
+  // ThemeDemo component for showcasing theme elements
 </script>
 
 <style scoped>
   .theme-demo {
     padding: 24px;
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
   }
 
-  .demo-title {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 24px;
+  .demo-header {
     text-align: center;
-  }
-
-  .demo-section {
     margin-bottom: 32px;
   }
 
-  .demo-section h3 {
+  .demo-header h3 {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: var(--text-color);
+  }
+
+  .demo-header p {
+    color: var(--text-color-secondary);
+    font-size: 16px;
+  }
+
+  .demo-sections {
+    display: grid;
+    gap: 32px;
+  }
+
+  .demo-section {
+    padding: 24px;
+    border-radius: 12px;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .demo-section h4 {
     font-size: 18px;
     font-weight: 600;
     margin-bottom: 16px;
+    color: var(--text-color);
+    border-bottom: 2px solid var(--primary-color);
     padding-bottom: 8px;
-    border-bottom: 1px solid #e5e7eb;
   }
 
+  /* Buttons Demo */
   .demo-buttons {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
   }
 
-  .demo-form {
+  /* Cards Demo */
+  .demo-cards {
+    display: grid;
+    gap: 16px;
+  }
+
+  .demo-card {
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-header {
+    background: var(--surface-section);
+    padding: 16px;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .card-header h5 {
+    margin: 0;
+    color: var(--text-color);
+    font-weight: 600;
+  }
+
+  .card-body {
+    padding: 16px;
+  }
+
+  .card-body p {
+    margin: 0;
+    color: var(--text-color-secondary);
+  }
+
+  .card-footer {
+    padding: 16px;
+    background: var(--surface-ground);
+    border-top: 1px solid var(--surface-border);
     display: flex;
-    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  /* Form Elements Demo */
+  .demo-forms {
+    display: grid;
     gap: 16px;
   }
 
@@ -162,51 +224,184 @@
 
   .form-group label {
     font-weight: 500;
+    color: var(--text-color);
+  }
+
+  .input-field {
+    padding: 8px 12px;
+    border: 1px solid var(--surface-border);
+    border-radius: 6px;
+    background: var(--surface-ground);
+    color: var(--text-color);
     font-size: 14px;
   }
 
-  .demo-cards {
-    display: flex;
-    gap: 16px;
+  .input-field:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-color-alpha-20);
   }
 
+  /* Table Demo */
   .demo-table {
     overflow-x: auto;
   }
 
-  .theme-info {
-    background: #f9fafb;
-    padding: 16px;
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .table th,
+  .table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .table th {
+    background: var(--surface-section);
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  .table td {
+    color: var(--text-color);
+  }
+
+  .table tbody tr:hover {
+    background: var(--surface-hover);
+  }
+
+  .badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .badge-success {
+    background: var(--success-color);
+    color: white;
+  }
+
+  .badge-warning {
+    background: var(--warning-color);
+    color: white;
+  }
+
+  /* Colors Demo */
+  .demo-colors {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 16px;
+  }
+
+  .color-swatch {
+    height: 80px;
     border-radius: 8px;
-    border: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    border: 1px solid var(--surface-border);
   }
 
-  .theme-info p {
-    margin: 8px 0;
+  .color-swatch.primary {
+    background: var(--primary-color);
   }
 
-  /* Windows 95 specific styling */
-  :global(.theme-windows95) .theme-demo {
-    font-family: 'MS Sans Serif', 'Microsoft Sans Serif', sans-serif;
-    background: var(--theme-background);
+  .color-swatch.secondary {
+    background: var(--secondary-color);
+  }
+
+  .color-swatch.success {
+    background: var(--success-color);
+  }
+
+  .color-swatch.danger {
+    background: var(--danger-color);
+  }
+
+  .color-swatch.warning {
+    background: var(--warning-color);
+  }
+
+  .color-swatch.info {
+    background: var(--info-color);
+  }
+
+  .color-name {
+    color: white;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .theme-demo {
+      padding: 16px;
+    }
+
+    .demo-section {
+      padding: 16px;
+    }
+
+    .demo-buttons {
+      flex-direction: column;
+    }
+
+    .demo-colors {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* Windows 95 Theme Specific Styling */
+  :global(.theme-windows95) .demo-section {
+    background: var(--theme-surface);
+    border: 2px solid;
+    border-color: var(--theme-highlight) var(--theme-shadow) var(--theme-shadow)
+      var(--theme-highlight);
+    box-shadow: var(--theme-shadow-outset);
+  }
+
+  :global(.theme-windows95) .demo-section h4 {
+    background: var(--theme-title-bar);
+    color: var(--theme-title-bar-text);
+    margin: -24px -24px 16px -24px;
+    padding: 8px 24px;
+    border-bottom: 2px solid var(--theme-border);
+  }
+
+  :global(.theme-windows95) .demo-card {
+    background: var(--theme-surface);
+    border: 2px solid;
+    border-color: var(--theme-shadow) var(--theme-highlight) var(--theme-highlight)
+      var(--theme-shadow);
+    box-shadow: var(--theme-shadow-inset);
+  }
+
+  :global(.theme-windows95) .card-header {
+    background: var(--theme-title-bar);
+    color: var(--theme-title-bar-text);
+  }
+
+  :global(.theme-windows95) .input-field {
+    background: var(--theme-highlight);
+    border: 2px solid;
+    border-color: var(--theme-shadow) var(--theme-highlight) var(--theme-highlight)
+      var(--theme-shadow);
+    box-shadow: var(--theme-shadow-inset);
+    font-family: var(--theme-font-family);
+  }
+
+  :global(.theme-windows95) .table th {
+    background: var(--theme-menu-bar);
     color: var(--theme-text);
   }
 
-  :global(.theme-windows95) .demo-title {
-    color: var(--theme-primary);
-    border-bottom: 2px solid var(--theme-border);
-    padding-bottom: 8px;
-  }
-
-  :global(.theme-windows95) .demo-section h3 {
-    color: var(--theme-primary);
-    border-bottom: 1px solid var(--theme-border);
-  }
-
-  :global(.theme-windows95) .theme-info {
+  :global(.theme-windows95) .table td {
     background: var(--theme-surface);
-    border: 2px solid;
-    border-color: var(--theme-border) var(--theme-surface) var(--theme-surface) var(--theme-border);
-    box-shadow: var(--theme-shadow-inset);
+    color: var(--theme-text);
   }
 </style>

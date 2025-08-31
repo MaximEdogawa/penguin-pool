@@ -22,6 +22,8 @@ export type {
   ThemeSpacing,
   ThemeShadows,
   ThemeBorderRadius,
+  BuiltInTheme,
   ThemeMode,
   ThemeState,
-} from '@/app/types/theme'
+  Windows95Theme,
+} from './types/theme'

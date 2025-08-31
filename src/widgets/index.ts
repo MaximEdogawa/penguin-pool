@@ -1,8 +1,8 @@
-// Header components
-export { default as AppHeader } from './Header/AppHeader.vue'
-
-// Sidebar components
-export { default as AppSidebar } from './Sidebar/AppSidebar.vue'
-
 // Layout components
 export { default as AppLayout } from './Layout/AppLayout.vue'
+export { default as AppTopbar } from './Layout/AppTopbar.vue'
+export { default as AppSidebar } from './Layout/AppSidebar.vue'
+export { default as AppMenu } from './Layout/AppMenu.vue'
+export { default as AppMenuItem } from './Layout/AppMenuItem.vue'
+export { default as AppFooter } from './Layout/AppFooter.vue'
+export { default as AppConfigurator } from './Layout/AppConfigurator.vue'
