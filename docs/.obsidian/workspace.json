@@ -11,10 +11,14 @@
             "id": "762a427def224add",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "implementation/IMPLEMENTATION_ROADMAP.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "IMPLEMENTATION_ROADMAP"
             }
           }
         ]
@@ -90,6 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "implementation/IMPLEMENTATION_ROADMAP.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -99,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks"
+              "title": "Backlinks for IMPLEMENTATION_ROADMAP"
             }
           },
           {
@@ -108,11 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "implementation/IMPLEMENTATION_ROADMAP.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links"
+              "title": "Outgoing links from IMPLEMENTATION_ROADMAP"
             }
           },
           {
@@ -136,12 +142,13 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "implementation/IMPLEMENTATION_ROADMAP.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline"
+              "title": "Outline of IMPLEMENTATION_ROADMAP"
             }
           }
         ]
@@ -164,6 +171,7 @@
   },
   "active": "762a427def224add",
   "lastOpenFiles": [
+    "implementation/IMMEDIATE_NEXT_STEPS.md",
     "implementation/TICKET-002/CUSTOM_THEMES.md",
     "implementation/TICKET-002/WALLET_CONNECT_UI/WALLET_CONNECT_UI_UPDATE.md",
     "implementation/TICKET-002/WALLET_CONNECT_UI/README.md",
@@ -196,7 +204,6 @@
     "implementation/HEADER_SIDEBAR_UPDATE.md",
     "implementation/SIDEBAR_COLLAPSE_UPDATE.md",
     "implementation/SIDEBAR_COLLAPSE_FIXES.md",
-    "implementation/TICKET-002-IMPLEMENTATION.md",
     "implementation",
     "design-technical"
   ]
