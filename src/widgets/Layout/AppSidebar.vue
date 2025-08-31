@@ -17,7 +17,58 @@
 
       <!-- Navigation Menu -->
       <nav class="sidebar-nav">
-        <AppMenu />
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <router-link
+              to="/dashboard"
+              class="nav-link"
+              :class="{ 'nav-link-active': $route.path === '/' || $route.path === '/dashboard' }"
+            >
+              <i class="pi pi-home nav-icon"></i>
+              <span v-if="!isCollapsed" class="nav-label">Dashboard</span>
+            </router-link>
+          </li>
+          <li class="nav-item">
+            <router-link
+              to="/loans"
+              class="nav-link"
+              :class="{ 'nav-link-active': $route.path === '/loans' }"
+            >
+              <i class="pi pi-credit-card nav-icon"></i>
+              <span v-if="!isCollapsed" class="nav-label">Loans</span>
+            </router-link>
+          </li>
+          <li class="nav-item">
+            <router-link
+              to="/offers"
+              class="nav-link"
+              :class="{ 'nav-link-active': $route.path === '/offers' }"
+            >
+              <i class="pi pi-shopping-bag nav-icon"></i>
+              <span v-if="!isCollapsed" class="nav-label">Offers</span>
+            </router-link>
+          </li>
+          <li class="nav-item">
+            <router-link
+              to="/option-contracts"
+              class="nav-link"
+              :class="{ 'nav-link-active': $route.path === '/option-contracts' }"
+            >
+              <i class="pi pi-file-edit nav-icon"></i>
+              <span v-if="!isCollapsed" class="nav-label">Option Contracts</span>
+            </router-link>
+          </li>
+          <li class="nav-item">
+            <router-link
+              to="/piggy-bank"
+              class="nav-link"
+              :class="{ 'nav-link-active': $route.path === '/piggy-bank' }"
+            >
+              <i class="pi pi-money-bill nav-icon"></i>
+              <span v-if="!isCollapsed" class="nav-label">Piggy Bank</span>
+            </router-link>
+          </li>
+        </ul>
       </nav>
 
       <!-- Sidebar Footer -->
@@ -243,6 +294,17 @@
     @apply mb-3;
   }
 
+  .nav-menu {
+    @apply space-y-1;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .nav-item {
+    @apply mx-2 mb-1;
+  }
+
   .nav-link {
     @apply flex items-center space-x-3 px-3 py-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200 cursor-pointer;
   }
@@ -257,6 +319,12 @@
 
   .nav-label {
     @apply text-sm font-medium flex-1;
+  }
+
+  .nav-badge {
+    @apply bg-primary-100/30 dark:bg-primary-900/10 text-primary-600 dark:text-primary-400 text-xs px-2 py-1 rounded-full font-medium;
+    margin-left: auto;
+    flex-shrink: 0;
   }
 
   /* Mobile mode adjustments */

@@ -1,5 +1,3 @@
-import './assets/main.css'
-
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { VueQueryPlugin } from '@tanstack/vue-query'
@@ -7,10 +5,12 @@ import { VueQueryPlugin } from '@tanstack/vue-query'
 // PrimeVue imports
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
-import Aura from '@/primevue/themes/aura'
-// import Aura from './primevue/themes/aura'
+import Aura from '@primeuix/themes/aura'
 import ConfirmationService from 'primevue/confirmationservice'
-import '@/assets/styles.scss'
+import 'primeicons/primeicons.css'
+import './assets/main.css'
+import Button from 'primevue/button'
+import Menu from 'primevue/menu'
 
 import App from './App.vue'
 import router from './router'
@@ -35,4 +35,6 @@ app.use(PrimeVue, {
 })
 app.use(ToastService)
 app.use(ConfirmationService)
+app.component('PrimeButton', Button)
+app.component('PrimeMenu', Menu)
 app.mount('#app')

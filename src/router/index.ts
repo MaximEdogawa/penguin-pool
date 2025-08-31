@@ -84,6 +84,31 @@ router.beforeEach((to, from, next) => {
   // Set page title
   document.title = `${to.meta.title} - Penguin-pool`
 
+  // Development mode: Skip authentication for now
+  if (import.meta.env.DEV) {
+    // Create mock user for development
+    if (!localStorage.getItem('penguin-pool-user')) {
+      const mockUser = {
+        id: 'dev-user-1',
+        username: 'Developer',
+        walletAddress: 'xch1dev123456789',
+        balance: 1000,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        preferences: {
+          theme: 'auto',
+          language: 'en',
+          currency: 'XCH',
+          notifications: { email: false, push: true, sms: false },
+          privacy: { shareAnalytics: false, shareUsageData: false },
+        },
+      }
+      localStorage.setItem('penguin-pool-user', JSON.stringify(mockUser))
+    }
+    next()
+    return
+  }
+
   // Check if user is authenticated
   const isAuthenticated = localStorage.getItem('penguin-pool-user') !== null
 

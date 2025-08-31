@@ -7,83 +7,33 @@
     >
       <div class="sidebar-content">
         <!-- Sidebar Header -->
+
         <div class="sidebar-header">
           <div class="sidebar-title">
             <span v-if="!isCollapsed && !isSmallScreen" class="sidebar-title-text">Navigation</span>
           </div>
-          <button
+          <PrimeButton
             @click="$emit('toggle-collapse')"
-            class="collapse-toggle"
+            :icon="collapseIcon"
             :title="isCollapsed || isSmallScreen ? 'Expand sidebar' : 'Collapse sidebar'"
-          >
-            <i :class="collapseIcon" class="text-lg"></i>
-          </button>
+            text
+            rounded
+            class="collapse-toggle p-button-text"
+          />
         </div>
-
         <!-- Navigation Menu -->
         <nav class="sidebar-nav">
           <ul class="nav-menu">
-            <li class="nav-item">
-              <router-link
-                to="/dashboard"
-                class="nav-link"
-                :class="{ 'nav-link-active': $route.path === '/' || $route.path === '/dashboard' }"
-                :title="isCollapsed || isSmallScreen ? 'Dashboard' : ''"
+            <li v-for="item in navigationItems" :key="item.label || item.icon" class="nav-item">
+              <PrimeButton
+                @click="item.command"
+                :icon="item.icon"
+                :label="item.label"
+                :title="item.title || item.label"
+                :class="['nav-link w-full justify-start p-button-text', item.class]"
+                text
               >
-                <i class="pi pi-home nav-icon"></i>
-                <span v-if="!isCollapsed && !isSmallScreen" class="nav-label">Dashboard</span>
-              </router-link>
-            </li>
-
-            <li class="nav-item">
-              <router-link
-                to="/loans"
-                class="nav-link"
-                :class="{ 'nav-link-active': $route.path === '/loans' }"
-                :title="isCollapsed || isSmallScreen ? 'Loans' : ''"
-              >
-                <i class="pi pi-credit-card nav-icon"></i>
-                <span v-if="!isCollapsed && !isSmallScreen" class="nav-label">Loans</span>
-                <span v-if="!isCollapsed && !isSmallScreen" class="nav-badge">New</span>
-              </router-link>
-            </li>
-
-            <li class="nav-item">
-              <router-link
-                to="/offers"
-                class="nav-link"
-                :class="{ 'nav-link-active': $route.path === '/offers' }"
-                :title="isCollapsed || isSmallScreen ? 'Offers' : ''"
-              >
-                <i class="pi pi-shopping-bag nav-icon"></i>
-                <span v-if="!isCollapsed && !isSmallScreen" class="nav-label">Offers</span>
-              </router-link>
-            </li>
-
-            <li class="nav-item">
-              <router-link
-                to="/option-contracts"
-                class="nav-link"
-                :class="{ 'nav-link-active': $route.path === '/option-contracts' }"
-                :title="isCollapsed || isSmallScreen ? 'Option Contracts' : ''"
-              >
-                <i class="pi pi-file-edit nav-icon"></i>
-                <span v-if="!isCollapsed && !isSmallScreen" class="nav-label"
-                  >Option Contracts</span
-                >
-              </router-link>
-            </li>
-
-            <li class="nav-item">
-              <router-link
-                to="/piggy-bank"
-                class="nav-link"
-                :class="{ 'nav-link-active': $route.path === '/piggy-bank' }"
-                :title="isCollapsed || isSmallScreen ? 'Piggy Bank' : ''"
-              >
-                <i class="pi pi-money-bill nav-icon"></i>
-                <span v-if="!isCollapsed && !isSmallScreen" class="nav-label">Piggy Bank</span>
-              </router-link>
+              </PrimeButton>
             </li>
           </ul>
         </nav>
@@ -93,7 +43,7 @@
           <!-- User Info Section -->
           <div class="user-info-section">
             <div class="user-avatar">
-              <i class="pi pi-user text-xl"></i>
+              <i class="pi pi-user text-xl text-white"></i>
             </div>
             <div v-if="!isCollapsed && !isSmallScreen" class="user-details">
               <p class="user-name">{{ userName }}</p>
@@ -108,27 +58,29 @@
 
           <!-- Settings Link -->
           <div class="settings-section">
-            <router-link
-              to="/profile"
-              class="nav-link"
-              :class="{ 'nav-link-active': $route.path === '/profile' }"
+            <PrimeButton
+              @click="navigateTo('/profile')"
+              :icon="'pi pi-cog'"
+              :label="!isCollapsed && !isSmallScreen ? 'Settings' : ''"
               :title="isCollapsed || isSmallScreen ? 'Settings' : ''"
-            >
-              <i class="pi pi-cog nav-icon"></i>
-              <span v-if="!isCollapsed && !isSmallScreen" class="nav-label">Settings</span>
-            </router-link>
+              :class="[
+                'nav-link w-full justify-start p-button-text',
+                { 'nav-link-active': $route.path === '/profile' },
+              ]"
+              text
+            />
           </div>
 
           <!-- Sign Out Button -->
           <div class="signout-section">
-            <button
+            <PrimeButton
               @click="handleLogout"
-              class="nav-link"
+              :icon="'pi pi-sign-out'"
+              :label="!isCollapsed && !isSmallScreen ? 'Sign Out' : ''"
               :title="isCollapsed || isSmallScreen ? 'Sign Out' : ''"
-            >
-              <i class="pi pi-sign-out nav-icon"></i>
-              <span v-if="!isCollapsed && !isSmallScreen" class="nav-label">Sign Out</span>
-            </button>
+              text
+              class="nav-link w-full justify-start p-button-text"
+            />
           </div>
         </div>
       </div>
@@ -146,7 +98,12 @@
 
 <script setup lang="ts">
   import { computed } from 'vue'
+  import { useRouter, useRoute } from 'vue-router'
   import { useUserStore } from '@/entities/user/store/userStore'
+
+  // Router
+  const router = useRouter()
+  const route = useRoute()
 
   // Props
   interface Props {
@@ -164,6 +121,54 @@
 
   // Store
   const userStore = useUserStore()
+
+  // Small screen detection
+  const isSmallScreen = computed(() => {
+    return window.innerWidth <= 1023
+  })
+
+  // Navigation items for PrimeVue Menu
+  const navigationItems = computed(() => {
+    const items = [
+      {
+        label: !props.isCollapsed && !isSmallScreen.value ? 'Dashboard' : '',
+        icon: 'pi pi-home',
+        command: () => navigateTo('/dashboard'),
+        class: route.path === '/' || route.path === '/dashboard' ? 'nav-link-active' : '',
+        title: 'Dashboard',
+      },
+      {
+        label: !props.isCollapsed && !isSmallScreen.value ? 'Loans' : '',
+        icon: 'pi pi-credit-card',
+        command: () => navigateTo('/loans'),
+        class: route.path === '/loans' ? 'nav-link-active' : '',
+        title: 'Loans',
+      },
+      {
+        label: !props.isCollapsed && !isSmallScreen.value ? 'Offers' : '',
+        icon: 'pi pi-shopping-bag',
+        command: () => navigateTo('/offers'),
+        class: route.path === '/offers' ? 'nav-link-active' : '',
+        title: 'Offers',
+      },
+      {
+        label: !props.isCollapsed && !isSmallScreen.value ? 'Option Contracts' : '',
+        icon: 'pi pi-file-edit',
+        command: () => navigateTo('/option-contracts'),
+        class: route.path === '/option-contracts' ? 'nav-link-active' : '',
+        title: 'Option Contracts',
+      },
+      {
+        label: !props.isCollapsed && !isSmallScreen.value ? 'Piggy Bank' : '',
+        icon: 'pi pi-money-bill',
+        command: () => navigateTo('/piggy-bank'),
+        class: route.path === '/piggy-bank' ? 'nav-link-active' : '',
+        title: 'Piggy Bank',
+      },
+    ]
+
+    return items
+  })
 
   // Computed
   const collapseIcon = computed(() => {
@@ -186,12 +191,11 @@
     return userStore.currentUser?.walletAddress ? 'Connected' : 'Disconnected'
   })
 
-  // Small screen detection
-  const isSmallScreen = computed(() => {
-    return window.innerWidth <= 1023
-  })
-
   // Methods
+  const navigateTo = (path: string) => {
+    router.push(path)
+  }
+
   const handleLogout = async () => {
     try {
       await userStore.logout()
@@ -241,37 +245,94 @@
     @apply p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-700/30 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200;
   }
 
+  /* Collapse toggle button styling */
+  .sidebar .collapse-toggle.p-button-text {
+    @apply text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .sidebar .collapse-toggle.p-button-text:hover {
+    @apply bg-gray-100/30 dark:bg-gray-700/30;
+  }
+
   /* Navigation Menu */
   .sidebar-nav {
     @apply flex-1 py-4;
   }
 
+  /* Navigation Menu */
   .nav-menu {
     @apply space-y-1;
+    list-style: none;
+    padding: 0;
+    margin: 0;
   }
 
   .nav-item {
-    @apply mx-2;
+    @apply mx-2 mb-1;
   }
 
   .nav-link {
     @apply flex items-center space-x-3 px-3 py-3 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-100/30 dark:hover:bg-gray-700/30 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200 cursor-pointer;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: inherit;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 44px;
   }
 
-  .nav-link-active {
+  .nav-link:hover {
+    @apply bg-gray-100/30 dark:bg-gray-700/30;
+    transform: translateY(-1px);
+  }
+
+  .nav-link:focus {
+    @apply ring-2 ring-primary-500/20;
+    outline: none;
+  }
+
+  /* Active State */
+  .nav-link.nav-link-active {
     @apply bg-primary-50/30 dark:bg-primary-900/10 text-primary-600 dark:text-primary-400 border border-primary-200/20 dark:border-primary-800/20;
   }
 
+  /* Navigation Icon */
   .nav-icon {
-    @apply text-lg flex-shrink-0;
+    @apply text-lg flex-shrink-0 text-primary-600 dark:text-primary-400;
+    font-family: 'primeicons' !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    font-variant: normal !important;
+    text-transform: none !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
   }
 
+  /* Navigation Label */
   .nav-label {
     @apply text-sm font-medium flex-1;
+    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
+  /* Navigation Badge */
   .nav-badge {
     @apply bg-primary-100/30 dark:bg-primary-900/10 text-primary-600 dark:text-primary-400 text-xs px-2 py-1 rounded-full font-medium;
+    margin-left: auto;
+    flex-shrink: 0;
   }
 
   /* Sidebar Footer */
@@ -332,6 +393,23 @@
   /* Sign Out Section */
   .signout-section {
     @apply mb-3;
+  }
+
+  /* PrimeVue Button overrides for sidebar */
+  .sidebar .p-button.p-button-text {
+    @apply text-left justify-start w-full;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: inherit !important;
+  }
+
+  .sidebar .p-button.p-button-text:hover {
+    @apply bg-gray-100/30 dark:bg-gray-700/30;
+  }
+
+  .sidebar .p-button.p-button-text:focus {
+    @apply ring-2 ring-primary-500/20;
   }
 
   /* Settings Section - Above connection info */
@@ -479,7 +557,7 @@
     @apply bg-gray-100/30 dark:bg-gray-700/30;
   }
 
-  .sidebar.sidebar-collapsed .nav-link-active {
+  .sidebar.sidebar-collapsed .nav-link.nav-link-active {
     @apply bg-primary-100/30 dark:bg-primary-900/10;
   }
 
@@ -520,6 +598,7 @@
 
     .sidebar .nav-icon {
       @apply text-base; /* Slightly smaller icons for narrow sidebar */
+      margin-right: 0;
     }
 
     .sidebar .collapse-toggle {
@@ -551,5 +630,26 @@
         0 16px 64px rgb(0 0 0 / 0.1),
         inset 0 1px 0 rgb(255 255 255 / 0.1) !important; /* Force enhanced dark glass shadow */
     }
+  }
+
+  /* Additional PrimeVue Menu overrides to ensure visibility */
+  .nav-menu .p-menuitem-link * {
+    pointer-events: none !important;
+  }
+
+  .nav-menu .p-menuitem-link {
+    pointer-events: auto !important;
+  }
+
+  /* Force remove any PrimeVue default styling */
+  .nav-menu .p-menuitem-link::before,
+  .nav-menu .p-menuitem-link::after {
+    display: none !important;
+  }
+
+  /* Ensure proper spacing in collapsed state */
+  .sidebar.sidebar-collapsed .nav-menu .p-menuitem-link .p-menuitem-icon {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
   }
 </style>

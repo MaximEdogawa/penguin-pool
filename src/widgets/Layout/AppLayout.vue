@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isAuthenticated" class="layout-wrapper" :class="containerClass">
+  <div class="layout-wrapper" :class="containerClass">
     <!-- Topbar -->
     <AppTopbar />
 
@@ -21,20 +21,17 @@
 
 <script setup lang="ts">
   import { computed, onMounted, onUnmounted, watch } from 'vue'
-  import { useRouter, useRoute } from 'vue-router'
+  import { useRoute } from 'vue-router'
   import { useLayout } from './composables/layout'
+  import AppTopbar from './AppTopbar.vue'
+  import AppSidebar from './AppSidebar.vue'
+  import AppFooter from './AppFooter.vue'
 
   // Router
-  const router = useRouter()
   const route = useRoute()
 
   // Layout composable
   const { layoutState, toggleMenu } = useLayout()
-
-  // Computed
-  const isAuthenticated = computed(() => {
-    return localStorage.getItem('penguin-pool-user') !== null
-  })
 
   const containerClass = computed(() => {
     return {
@@ -61,12 +58,6 @@
 
   // Lifecycle
   onMounted(() => {
-    // Check authentication
-    if (!isAuthenticated.value) {
-      router.push('/auth')
-      return
-    }
-
     handleResize()
     window.addEventListener('resize', handleResize)
 

@@ -11,14 +11,10 @@
             "id": "762a427def224add",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "implementation/IMPLEMENTATION_ROADMAP.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "IMPLEMENTATION_ROADMAP"
+              "title": "New tab"
             }
           }
         ]
@@ -94,7 +90,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "implementation/IMPLEMENTATION_ROADMAP.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +99,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for IMPLEMENTATION_ROADMAP"
+              "title": "Backlinks"
             }
           },
           {
@@ -113,12 +108,11 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "implementation/IMPLEMENTATION_ROADMAP.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from IMPLEMENTATION_ROADMAP"
+              "title": "Outgoing links"
             }
           },
           {
@@ -142,13 +136,12 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "implementation/IMPLEMENTATION_ROADMAP.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of IMPLEMENTATION_ROADMAP"
+              "title": "Outline"
             }
           }
         ]
@@ -173,38 +166,39 @@
   "lastOpenFiles": [
     "implementation/TICKET-003/README.md",
     "implementation/TICKET-003",
-    "implementation/IMMEDIATE_NEXT_STEPS.md",
-    "implementation/TICKET-002/CUSTOM_THEMES.md",
     "implementation/TICKET-002/WALLET_CONNECT_UI/WALLET_CONNECT_UI_UPDATE.md",
     "implementation/TICKET-002/WALLET_CONNECT_UI/README.md",
-    "implementation/TICKET-002/WALLET_CONNECT_UI",
-    "implementation/TICKET-002/HEADER_SIDEBAR/README.md",
-    "implementation/TICKET-002/HEADER_SIDEBAR/HEADER_SIDEBAR_UPDATE.md",
-    "implementation/TICKET-002/HEADER_SIDEBAR",
     "implementation/TICKET-002/SIDEBAR_COLLAPSE/SIDEBAR_COLLAPSE_UPDATE.md",
     "implementation/TICKET-002/SIDEBAR_COLLAPSE/SIDEBAR_COLLAPSE_FIXES.md",
     "implementation/TICKET-002/SIDEBAR_COLLAPSE/README.md",
-    "implementation/TICKET-002/SIDEBAR_COLLAPSE",
-    "implementation/WALLET_CONNECT_UI/README.md",
-    "implementation/HEADER_SIDEBAR/README.md",
-    "implementation/SIDEBAR_COLLAPSE/README.md",
-    "implementation/TICKET-002/README.md",
-    "implementation/WALLET_CONNECT_UI/WALLET_CONNECT_UI_UPDATE.md",
-    "implementation/HEADER_SIDEBAR/HEADER_SIDEBAR_UPDATE.md",
-    "implementation/SIDEBAR_COLLAPSE/SIDEBAR_COLLAPSE_UPDATE.md",
-    "implementation/SIDEBAR_COLLAPSE/SIDEBAR_COLLAPSE_FIXES.md",
+    "implementation/TICKET-002/HEADER_SIDEBAR/README.md",
+    "implementation/TICKET-002/HEADER_SIDEBAR/HEADER_SIDEBAR_UPDATE.md",
+    "implementation/TICKET-002/WALLET_CONNECT_UI",
     "implementation/TICKET-002/TICKET-002-IMPLEMENTATION.md",
+    "implementation/TICKET-002/SIDEBAR_COLLAPSE",
+    "implementation/TICKET-002/README.md",
+    "implementation/TICKET-002/HEADER_SIDEBAR",
+    "implementation/TICKET-002/CUSTOM_THEMES.md",
+    "implementation/TICKET-002",
+    "implementation/README.md",
+    "implementation/IMPLEMENTATION_ROADMAP.md",
+    "implementation/IMMEDIATE_NEXT_STEPS.md",
+    "implementation",
+    "design-technical/WHITE_PAPER.md",
+    "design-technical/TECHNICAL_STACK.md",
+    "design-technical/README.md",
+    "design-technical/PROJECT_STRUCTURE.md",
+    "design-technical/PRE_COMMIT_HOOKS.md",
+    "design-technical/DESIGN.md",
+    "design-technical",
+    "README.md",
+    "WHITE_PAPER.md",
+    "TECHNICAL_STACK.md",
+    "PROJECT_STRUCTURE.md",
+    "PRE_COMMIT_HOOKS.md",
+    "IMPLEMENTATION_ROADMAP.md",
     "implementation/WALLET_CONNECT_UI",
     "implementation/HEADER_SIDEBAR",
-    "implementation/SIDEBAR_COLLAPSE",
-    "implementation/TICKET-002",
-    "README.md",
-    "implementation/README.md",
-    "design-technical/README.md",
-    "IMPLEMENTATION_ROADMAP.md",
-    "implementation/WALLET_CONNECT_UI_UPDATE.md",
-    "implementation/HEADER_SIDEBAR_UPDATE.md",
-    "implementation",
-    "design-technical"
+    "implementation/SIDEBAR_COLLAPSE"
   ]
 }
