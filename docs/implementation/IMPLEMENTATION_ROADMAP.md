@@ -5,10 +5,12 @@
 The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each phase building upon the previous one to deliver a fully functional decentralized lending platform.
 
 ## Phase 1: Foundation & Setup (Weeks 1-2)
+
 **Priority: Critical** - Foundation for all subsequent development
 
 ### Week 1: Project Initialization
-- [ ] **TICKET-001**: Initialize Vue.js 3 + Vite project
+
+- [x] **TICKET-001**: Initialize Vue.js 3 + Vite project
   - Set up project structure with Feature Sliced Design
   - Configure TypeScript and ESLint
   - Set up Git repository and branching strategy
@@ -16,14 +18,22 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Effort**: 2 days
   - **Dependencies**: None
 
-- [ ] **TICKET-002**: Configure development environment
+- [x] **TICKET-002**: Configure development environment
   - Install and configure Tailwind CSS
   - Set up PrimeVue component library
+  - Change UI design and menu similar to https://sakai.primevue.org template
   - Configure Vite build optimization
   - **Effort**: 1 day
   - **Dependencies**: TICKET-001
+- [ ] **TICKET-003**: Refactor Layout with primevue and sakai
+  - Refactor all components with this style https://github.com/primefaces/sakai-vue/tree/master/src
+  - Change all button and icons to primevue
+  - Add the same side layout as sakai theme
+  - Theme customiser as in sakai plus Custom theme Windows95
+  - **Effort**: 1 day
+  - **Dependencies**: TICKET-002
 
-- [ ] **TICKET-003**: Set up testing infrastructure
+- [ ] **TICKET-004**: Set up testing infrastructure
   - Configure Vitest for unit testing
   - Set up Playwright for E2E testing
   - Create test utilities and mocks
@@ -31,21 +41,22 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Dependencies**: TICKET-001
 
 ### Week 2: Core Architecture
-- [ ] **TICKET-004**: Implement Feature Sliced Design structure
+
+- [ ] \*_TICKET-005_: Implement Feature Sliced Design structure
   - Create folder hierarchy (app, pages, widgets, features, entities, shared)
   - Set up absolute import paths
   - Configure build aliases
   - **Effort**: 2 days
   - **Dependencies**: TICKET-001
 
-- [ ] **TICKET-005**: Set up routing and navigation
+- [ ] **TICKET-006**: Set up routing and navigation
   - Implement Vue Router with lazy loading
   - Create navigation structure
   - Set up route guards and middleware
   - **Effort**: 1 day
   - **Dependencies**: TICKET-004
 
-- [ ] **TICKET-006**: Configure state management
+- [ ] **TICKET-007**: Configure state management
   - Set up Pinia stores
   - Configure TanStack Query for server state
   - Create global state providers
@@ -53,10 +64,12 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Dependencies**: TICKET-004
 
 ## Phase 2: Core Infrastructure (Weeks 3-4)
+
 **Priority: High** - Essential for data management and wallet integration
 
 ### Week 3: Database & Data Layer
-- [ ] **TICKET-007**: Set up Kurrent DB integration
+
+- [ ] **TICKET-008**: Set up Kurrent DB integration
   - Install and configure Kurrent DB
   - Create database connection and streams
   - Implement basic CRUD operations
@@ -71,14 +84,15 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Dependencies**: TICKET-007
 
 ### Week 4: Wallet Integration
-- [ ] **TICKET-009**: Implement Wallet Connect integration
+
+- [ ] **TICKET-0010**: Implement Wallet Connect integration
   - Set up Wallet Connect v2
   - Create wallet connection components
   - Implement session management
   - **Effort**: 2 days
   - **Dependencies**: TICKET-004
 
-- [ ] **TICKET-010**: Integrate Sage Wallet
+- [ ] **TICKET-011**: Integrate Sage Wallet
   - Connect to Chia network
   - Implement wallet operations
   - Set up transaction signing
@@ -86,17 +100,19 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Dependencies**: TICKET-009
 
 ## Phase 3: Core Features (Weeks 5-8)
+
 **Priority: High** - Main platform functionality
 
 ### Week 5: User Management
-- [ ] **TICKET-011**: Create user authentication system
+
+- [ ] **TICKET-012**: Create user authentication system
   - Implement Chia DID verification
   - Create user registration and login
   - Set up user profile management
   - **Effort**: 3 days
   - **Dependencies**: TICKET-007, TICKET-010
 
-- [ ] **TICKET-012**: Build user dashboard
+- [ ] **TICKET-013**: Build user dashboard
   - Create dashboard layout and components
   - Implement quick actions
   - Add user statistics and overview
@@ -104,14 +120,15 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Dependencies**: TICKET-011
 
 ### Week 6: Option Contracts
-- [ ] **TICKET-013**: Implement option contract creation
+
+- [ ] **TICKET-014**: Implement option contract creation
   - Build contract creation form
   - Implement contract validation
   - Create contract storage and retrieval
   - **Effort**: 3 days
   - **Dependencies**: TICKET-007, TICKET-011
 
-- [ ] **TICKET-014**: Create contract management interface
+- [ ] **TICKET-015**: Create contract management interface
   - Build contract listing and filtering
   - Implement contract status management
   - Add contract details view
@@ -119,14 +136,15 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Dependencies**: TICKET-013
 
 ### Week 7: Loan Offers System
-- [ ] **TICKET-015**: Build loan offer creation
+
+- [ ] **TICKET-016**: Build loan offer creation
   - Create offer creation form
   - Implement offer validation and pricing
   - Set up offer storage and indexing
   - **Effort**: 3 days
   - **Dependencies**: TICKET-007, TICKET-011
 
-- [ ] **TICKET-016**: Implement offer discovery and filtering
+- [ ] **TICKET-017**: Implement offer discovery and filtering
   - Create offer browsing interface
   - Add search and filter functionality
   - Implement offer comparison tools
@@ -134,14 +152,15 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Dependencies**: TICKET-015
 
 ### Week 8: Loan Management
-- [ ] **TICKET-017**: Create loan acceptance system
+
+- [ ] **TICKET-018**: Create loan acceptance system
   - Build loan acceptance workflow
   - Implement loan terms and conditions
   - Set up loan status tracking
   - **Effort**: 3 days
   - **Dependencies**: TICKET-015, TICKET-016
 
-- [ ] **TICKET-018**: Implement loan repayment tracking
+- [ ] **TICKET-019**: Implement loan repayment tracking
   - Create repayment schedule management
   - Add payment tracking and notifications
   - Implement late payment handling
@@ -149,17 +168,19 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Dependencies**: TICKET-017
 
 ## Phase 4: Advanced Features (Weeks 9-12)
+
 **Priority: Medium** - Enhanced functionality and user experience
 
 ### Week 9: Piggy Bank System
-- [ ] **TICKET-019**: Build Piggy Bank coin management
+
+- [ ] **TICKET-020**: Build Piggy Bank coin management
   - Create coin collection interface
   - Implement coin value calculation
   - Set up coin usage tracking
   - **Effort**: 3 days
   - **Dependencies**: TICKET-007, TICKET-011
 
-- [ ] **TICKET-020**: Implement loan settlement with coins
+- [ ] **TICKET-021**: Implement loan settlement with coins
   - Create coin-based loan settlement
   - Add settlement percentage calculations
   - Implement coin redemption system
@@ -167,14 +188,15 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Dependencies**: TICKET-019
 
 ### Week 10: Notifications & Alerts
-- [ ] **TICKET-021**: Create notification system
+
+- [ ] **TICKET-022**: Create notification system
   - Implement in-app notifications
   - Add push notification support
   - Create notification preferences
   - **Effort**: 2 days
   - **Dependencies**: TICKET-004
 
-- [ ] **TICKET-022**: Add alert management
+- [ ] **TICKET-023**: Add alert management
   - Create loan due date alerts
   - Implement offer expiration notifications
   - Add system status alerts
@@ -182,14 +204,15 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Dependencies**: TICKET-021
 
 ### Week 11: Search & Analytics
-- [ ] **TICKET-023**: Implement advanced search functionality
+
+- [ ] **TICKET-024**: Implement advanced search functionality
   - Create global search across all entities
   - Add advanced filtering options
   - Implement search result ranking
   - **Effort**: 2 days
   - **Dependencies**: TICKET-004
 
-- [ ] **TICKET-024**: Build analytics dashboard
+- [ ] **TICKET-025**: Build analytics dashboard
   - Create income overview charts
   - Implement performance metrics
   - Add historical data analysis
@@ -197,14 +220,15 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Dependencies**: TICKET-023
 
 ### Week 12: PWA & Offline Features
-- [ ] **TICKET-025**: Implement PWA features
+
+- [ ] **TICKET-026**: Implement PWA features
   - Create service worker for offline support
   - Add web app manifest
   - Implement background sync
   - **Effort**: 2 days
   - **Dependencies**: TICKET-004
 
-- [ ] **TICKET-026**: Add offline functionality
+- [ ] **TICKET-027**: Add offline functionality
   - Implement offline data access
   - Create offline-first data strategies
   - Add conflict resolution for sync
@@ -212,17 +236,19 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Dependencies**: TICKET-025
 
 ## Phase 5: Testing & Deployment (Weeks 13-14)
+
 **Priority: High** - Quality assurance and production readiness
 
 ### Week 13: Testing & Quality Assurance
-- [ ] **TICKET-027**: Comprehensive testing
+
+- [ ] **TICKET-028**: Comprehensive testing
   - Write unit tests for all components
   - Create integration tests for workflows
   - Implement E2E tests for critical paths
   - **Effort**: 3 days
   - **Dependencies**: All previous tickets
 
-- [ ] **TICKET-028**: Performance optimization
+- [ ] **TICKET-029**: Performance optimization
   - Optimize bundle size and loading
   - Implement lazy loading strategies
   - Add performance monitoring
@@ -230,14 +256,15 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Dependencies**: TICKET-027
 
 ### Week 14: Deployment & Launch
-- [ ] **TICKET-029**: Production deployment
+
+- [ ] **TICKET-030**: Production deployment
   - Set up production environment
   - Configure monitoring and logging
   - Implement error tracking
   - **Effort**: 2 days
   - **Dependencies**: TICKET-028
 
-- [ ] **TICKET-030**: Launch preparation
+- [ ] **TICKET-031**: Launch preparation
   - Final testing and bug fixes
   - Documentation completion
   - User onboarding preparation
@@ -247,51 +274,57 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
 ## Ticket Priority Matrix
 
 ### Critical Priority (Must Have)
+
 - TICKET-001: Project initialization
-- TICKET-004: Feature Sliced Design structure
-- TICKET-007: Kurrent DB integration
-- TICKET-009: Wallet Connect integration
-- TICKET-011: User authentication
-- TICKET-013: Option contract creation
-- TICKET-015: Loan offer creation
-- TICKET-017: Loan management
+- TICKET-005: Feature Sliced Design structure
+- TICKET-008: Kurrent DB integration
+- TICKET-010: Wallet Connect integration
+- TICKET-012: User authentication
+- TICKET-014: Option contract creation
+- TICKET-016: Loan offer creation
+- TICKET-018: Loan management
 
 ### High Priority (Should Have)
+
 - TICKET-002: Development environment setup
-- TICKET-005: Routing and navigation
-- TICKET-008: Data models and types
-- TICKET-010: Sage Wallet integration
-- TICKET-012: User dashboard
-- TICKET-014: Contract management
-- TICKET-016: Offer discovery
-- TICKET-018: Loan repayment tracking
+- TICKET-006: Routing and navigation
+- TICKET-009: Data models and types
+- TICKET-011: Sage Wallet integration
+- TICKET-013: User dashboard
+- TICKET-015: Contract management
+- TICKET-017: Offer discovery
+- TICKET-019: Loan repayment tracking
 
 ### Medium Priority (Could Have)
-- TICKET-003: Testing infrastructure
-- TICKET-006: State management
-- TICKET-019: Piggy Bank system
-- TICKET-020: Coin settlement
-- TICKET-021: Notification system
-- TICKET-023: Search functionality
-- TICKET-024: Analytics dashboard
-- TICKET-025: PWA features
+
+- TICKET-004: Testing infrastructure
+- TICKET-007: State management
+- TICKET-020: Piggy Bank system
+- TICKET-021: Coin settlement
+- TICKET-022: Notification system
+- TICKET-024: Search functionality
+- TICKET-025: Analytics dashboard
+- TICKET-026: PWA features
 
 ### Low Priority (Won't Have This Release)
-- TICKET-022: Alert management
-- TICKET-026: Offline functionality
-- TICKET-027: Comprehensive testing
-- TICKET-028: Performance optimization
-- TICKET-029: Production deployment
-- TICKET-030: Launch preparation
+
+- TICKET-023: Alert management
+- TICKET-027: Offline functionality
+- TICKET-028: Comprehensive testing
+- TICKET-029: Performance optimization
+- TICKET-030: Production deployment
+- TICKET-031: Launch preparation
 
 ## Risk Assessment
 
 ### High Risk Items
-- **TICKET-007**: Kurrent DB integration complexity
-- **TICKET-010**: Sage Wallet integration challenges
-- **TICKET-013**: Smart contract integration
+
+- **TICKET-008**: Kurrent DB integration complexity
+- **TICKET-011**: Sage Wallet integration challenges
+- **TICKET-014**: Smart contract integration
 
 ### Mitigation Strategies
+
 - Early prototyping of complex integrations
 - Fallback solutions for external dependencies
 - Extensive testing of blockchain interactions
@@ -300,29 +333,34 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
 ## Success Criteria
 
 ### Phase 1 Success
+
 - [ ] Project structure established
 - [ ] Development environment functional
 - [ ] Basic routing working
 - [ ] State management configured
 
 ### Phase 2 Success
+
 - [ ] Database connection established
 - [ ] Wallet integration functional
 - [ ] Basic data operations working
 
 ### Phase 3 Success
+
 - [ ] User authentication working
 - [ ] Option contracts functional
 - [ ] Loan offers system operational
 - [ ] Basic loan management working
 
 ### Phase 4 Success
+
 - [ ] Piggy Bank system functional
 - [ ] Notifications working
 - [ ] Search and analytics operational
 - [ ] PWA features implemented
 
 ### Phase 5 Success
+
 - [ ] All tests passing
 - [ ] Performance optimized
 - [ ] Production deployment successful
@@ -331,21 +369,24 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
 ## Resource Requirements
 
 ### Development Team
+
 - **Frontend Developer**: 1 FTE (14 weeks)
 - **Blockchain Developer**: 0.5 FTE (8 weeks)
 - **QA Engineer**: 0.5 FTE (6 weeks)
 - **DevOps Engineer**: 0.25 FTE (4 weeks)
 
 ### Infrastructure
+
 - **Development Environment**: Local development
 - **Staging Environment**: Cloud hosting
 - **Production Environment**: Cloud hosting with CDN
 - **Database**: Local Kurrent DB + cloud backup
 
 ### External Dependencies
+
 - **Wallet Connect**: API access and documentation
 - **Sage Wallet**: Integration support
 - **Chia Network**: Testnet access
 - **Dexie.space**: API access
 
-This roadmap provides a structured approach to building the Penguin-pool platform while ensuring quality, maintainability, and timely delivery of core functionality. 
+This roadmap provides a structured approach to building the Penguin-pool platform while ensuring quality, maintainability, and timely delivery of core functionality.

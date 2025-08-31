@@ -5,11 +5,15 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      redirect: '/dashboard',
+    },
+    {
+      path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/pages/Dashboard/DashboardPage.vue'),
       meta: {
         title: 'Dashboard',
-        requiresAuth: false,
+        requiresAuth: true,
       },
     },
     {
@@ -18,7 +22,7 @@ const router = createRouter({
       component: () => import('@/pages/OptionContracts/OptionContractsPage.vue'),
       meta: {
         title: 'Option Contracts',
-        requiresAuth: false,
+        requiresAuth: true,
       },
     },
     {
@@ -27,7 +31,7 @@ const router = createRouter({
       component: () => import('@/pages/Loans/LoansPage.vue'),
       meta: {
         title: 'Loans',
-        requiresAuth: false,
+        requiresAuth: true,
       },
     },
     {
@@ -36,7 +40,7 @@ const router = createRouter({
       component: () => import('@/pages/Offers/OffersPage.vue'),
       meta: {
         title: 'Offers',
-        requiresAuth: false,
+        requiresAuth: true,
       },
     },
     {
@@ -45,7 +49,7 @@ const router = createRouter({
       component: () => import('@/pages/PiggyBank/PiggyBankPage.vue'),
       meta: {
         title: 'Piggy Bank',
-        requiresAuth: false,
+        requiresAuth: true,
       },
     },
     {
@@ -70,11 +74,7 @@ const router = createRouter({
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
-      component: () => import('@/pages/Dashboard/DashboardPage.vue'),
-      meta: {
-        title: 'Dashboard',
-        requiresAuth: false,
-      },
+      redirect: '/',
     },
   ],
 })
@@ -84,13 +84,27 @@ router.beforeEach((to, from, next) => {
   // Set page title
   document.title = `${to.meta.title} - Penguin-pool`
 
+  // Check if user is authenticated
+  const isAuthenticated = localStorage.getItem('penguin-pool-user') !== null
+
   // Check authentication requirements
   if (to.meta.requiresAuth) {
-    // TODO: Implement proper authentication check
-    // For now, allow all routes
-    next()
+    if (isAuthenticated) {
+      // User is authenticated, allow access
+      next()
+    } else {
+      // User is not authenticated, redirect to auth page
+      next('/auth')
+    }
   } else {
-    next()
+    // Route doesn't require auth
+    if (to.path === '/auth' && isAuthenticated) {
+      // User is already authenticated, redirect to dashboard
+      next('/')
+    } else {
+      // Allow access to non-auth routes
+      next()
+    }
   }
 })
 

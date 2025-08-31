@@ -4,7 +4,7 @@
 
 Penguin-pool is a revolutionary Progressive Web App (PWA) that democratizes access to decentralized lending and borrowing on the Chia Network. By leveraging cutting-edge technologies including Kurrent DB for local data storage, Wallet Connect for secure wallet integration, and a modern Vue.js architecture, Penguin-pool provides users with a seamless, offline-first experience for managing financial instruments.
 
-The platform enables users to create, manage, and participate in lending activities through option contracts, loan offers, and a unique Piggy Bank system. With its focus on user privacy, local data sovereignty, and blockchain integration, Penguin.pool represents the future of decentralized finance.
+The platform enables users to create, manage, and participate in lending activities through option contracts, loan offers, and a unique Piggy Bank system. With its focus on user privacy, local data sovereignty, and blockchain integration, Penguin Pool represents the future of decentralized finance.
 
 ## Table of Contents
 

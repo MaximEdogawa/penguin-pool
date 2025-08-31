@@ -1,18 +1,148 @@
 /* Custom base styles */
 @import './base.css';
 
+/* PrimeIcons CSS */
+@import 'primeicons/primeicons.css';
+
+/* Custom Themes */
+@import '../features/theme/themes/windows95.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Penguin-pool custom styles */
+/* PrimeVue theme overrides */
 @layer base {
+  :root {
+    --primary-color: #3b82f6;
+    --primary-color-text: #ffffff;
+    --surface-ground: #f8fafc;
+    --surface-section: #ffffff;
+    --surface-card: #ffffff;
+    --surface-overlay: #ffffff;
+    --surface-border: #e2e8f0;
+    --surface-hover: #f1f5f9;
+    --text-color: #1e293b;
+    --text-color-secondary: #64748b;
+    --primary-color-hover: #2563eb;
+    --primary-color-active: #1d4ed8;
+  }
+
+  .dark {
+    --primary-color: #60a5fa;
+    --primary-color-text: #ffffff;
+    --surface-ground: #0f172a;
+    --surface-section: #1e293b;
+    --surface-card: #1e293b;
+    --surface-overlay: #1e293b;
+    --surface-border: #334155;
+    --surface-hover: #334155;
+    --text-color: #f1f5f9;
+    --text-color-secondary: #94a3b8;
+    --primary-color-hover: #93c5fd;
+    --primary-color-active: #bfdbfe;
+  }
+
+  /* Enhanced white mode styling */
+  :root {
+    --surface-ground: #f8fafc;
+    --surface-section: #ffffff;
+    --surface-card: #ffffff;
+    --surface-overlay: #ffffff;
+    --surface-border: #e2e8f0;
+    --surface-hover: #f1f5f9;
+  }
+
   html {
     font-family: 'Inter', system-ui, sans-serif;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+    @apply bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+  }
+
+  /* PrimeVue component overrides */
+  .p-component {
+    @apply font-sans;
+  }
+
+  .p-button {
+    @apply font-medium;
+  }
+
+  .p-inputtext {
+    @apply font-sans;
+  }
+
+  .p-card {
+    @apply shadow-card border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800;
+  }
+
+  /* Enhanced light mode styling */
+  .p-datatable {
+    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm;
+  }
+
+  .p-datatable-header {
+    @apply bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 p-4;
+  }
+
+  .p-datatable-thead > tr > th {
+    @apply bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 p-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100;
+  }
+
+  .p-datatable-tbody > tr > td {
+    @apply p-4 border-b border-gray-100 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300;
+  }
+
+  .p-datatable-tbody > tr:hover > td {
+    @apply bg-gray-50 dark:bg-gray-700/50;
+  }
+
+  /* Enhanced light mode form elements */
+  .p-inputtext {
+    @apply bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100;
+  }
+
+  .p-inputtext:focus {
+    @apply border-primary-500 dark:border-primary-400 ring-2 ring-primary-500/20;
+  }
+
+  .p-button {
+    @apply bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .p-button:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .p-button:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Enhanced component spacing */
+  .p-datatable {
+    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden;
+  }
+
+  .p-datatable-header {
+    @apply bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 p-4;
+  }
+
+  .p-datatable-thead > tr > th {
+    @apply bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 p-4 text-left text-sm font-semibold text-gray-900 dark:text-gray-100;
+  }
+
+  .p-datatable-tbody > tr > td {
+    @apply p-4 border-b border-gray-100 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300;
+  }
+
+  .p-datatable-tbody > tr:hover > td {
+    @apply bg-gray-50 dark:bg-gray-700/50;
   }
 }
 
@@ -25,18 +155,133 @@
     @apply bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
   }
 
+  .btn-outline {
+    @apply border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+
   .card {
     @apply bg-white dark:bg-gray-800 rounded-lg shadow-soft border border-gray-200 dark:border-gray-700;
   }
 
+  .card-header {
+    @apply px-6 py-4 border-b border-gray-200 dark:border-gray-700;
+  }
+
+  .card-body {
+    @apply px-6 py-4;
+  }
+
+  .card-footer {
+    @apply px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50;
+  }
+
   .input-field {
     @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100;
+  }
+
+  .form-group {
+    @apply space-y-2;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+
+  .form-error {
+    @apply text-sm text-red-600 dark:text-red-400;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400;
+  }
+
+  .badge-success {
+    @apply bg-success-100 text-success-800 dark:bg-success-900/20 dark:text-success-400;
+  }
+
+  .badge-warning {
+    @apply bg-warning-100 text-warning-800 dark:bg-warning-900/20 dark:text-warning-400;
+  }
+
+  .badge-error {
+    @apply bg-error-100 text-error-800 dark:bg-error-900/20 dark:text-error-400;
+  }
+
+  .badge-secondary {
+    @apply bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400;
+  }
+
+  /* Table styles */
+  .table {
+    @apply w-full border-collapse;
+  }
+
+  .table th {
+    @apply px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50;
+  }
+
+  .table td {
+    @apply px-4 py-3 text-sm text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700;
+  }
+
+  .table tbody tr:hover {
+    @apply bg-gray-50 dark:bg-gray-800/50;
+  }
+
+  /* Modal styles */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black bg-opacity-50 z-modal flex items-center justify-center p-4;
+  }
+
+  .modal-content {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-strong max-w-md w-full max-h-full overflow-auto;
+  }
+
+  .modal-header {
+    @apply px-6 py-4 border-b border-gray-200 dark:border-gray-700;
+  }
+
+  .modal-body {
+    @apply px-6 py-4;
+  }
+
+  .modal-footer {
+    @apply px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3;
   }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .transition-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+  }
+
+  .backdrop-blur-md {
+    backdrop-filter: blur(12px);
+  }
+
+  .backdrop-blur-lg {
+    backdrop-filter: blur(16px);
   }
 }
 
@@ -55,4 +300,190 @@
   #app {
     @apply max-w-7xl mx-auto;
   }
+}
+
+/* PrimeVue specific overrides */
+.p-component-overlay {
+  @apply backdrop-blur-sm;
+}
+
+.p-dialog {
+  @apply shadow-strong;
+}
+
+.p-dialog-header {
+  @apply border-b border-gray-200 dark:border-gray-700;
+}
+
+.p-dialog-content {
+  @apply p-0;
+}
+
+.p-dialog-footer {
+  @apply border-t border-gray-200 dark:border-gray-700;
+}
+
+.p-dropdown {
+  @apply w-full;
+}
+
+.p-dropdown-panel {
+  @apply shadow-strong border border-gray-200 dark:border-gray-700;
+}
+
+.p-multiselect {
+  @apply w-full;
+}
+
+.p-multiselect-panel {
+  @apply shadow-strong border border-gray-200 dark:border-gray-700;
+}
+
+.p-calendar {
+  @apply w-full;
+}
+
+.p-calendar-w-btn .p-datepicker-trigger {
+  @apply border-l-0;
+}
+
+.p-datepicker-panel {
+  @apply shadow-strong border border-gray-200 dark:border-gray-700;
+}
+
+.p-tooltip {
+  @apply z-tooltip;
+}
+
+.p-tooltip-text {
+  @apply shadow-medium;
+}
+
+/* Global PrimeButton outline removal */
+.p-button,
+.p-button:focus,
+.p-button:focus-visible,
+.p-button:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure PrimeButtons use theme colors */
+.p-button {
+  transition: all 0.2s ease;
+}
+
+/* Theme-aware PrimeButton styling */
+.p-button {
+  border: none !important;
+}
+
+/* Ensure PrimeButtons work with custom themes */
+[class*='theme-'] .p-button {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove any default PrimeVue button outlines */
+.p-button:focus,
+.p-button:focus-visible,
+.p-button:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* PrimeButton theme integration */
+.p-button {
+  /* Remove default PrimeVue styling */
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure PrimeButtons work with all themes */
+.p-button,
+.p-button:focus,
+.p-button:focus-visible,
+.p-button:active,
+.p-button:hover {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Theme-specific button styling */
+[class*='theme-'] .p-button {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Windows 95 theme specific button overrides */
+.theme-windows95 .p-button {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Prevent horizontal scrolling and swiping */
+html,
+body {
+  overflow-x: hidden;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent horizontal scrolling on all containers */
+.app-layout,
+.main-content,
+.page-content {
+  overflow-x: hidden;
+  touch-action: pan-y;
+}
+
+/* Fixed header support */
+.header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  overflow: hidden !important;
+  touch-action: none !important;
+  user-select: none !important;
+}
+
+/* Animation classes */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-enter-from {
+  transform: translateX(-100%);
+}
+
+.slide-leave-to {
+  transform: translateX(100%);
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-up-enter-from {
+  transform: translateY(20px);
+}
+
+.slide-up-leave-to {
+  transform: translateY(-20px);
 }

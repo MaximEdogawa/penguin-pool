@@ -1,0 +1,559 @@
+/* Windows 95 Theme CSS */
+/* Authentic retro computing aesthetic */
+
+.theme-windows95 {
+  /* Base colors */
+  --theme-primary: #000080;
+  --theme-primary: #c0c0c0;
+  --theme-secondary: #c0c0c0;
+  --theme-success: #008000;
+  --theme-danger: #800000;
+  --theme-warning: #808000;
+  --theme-info: #008080;
+
+  --theme-background: #008080;
+  --theme-surface: #c0c0c0;
+  --theme-text: #000000;
+  --theme-text-secondary: #404040;
+  --theme-border: #808080;
+  --theme-hover: #d4d0c8;
+  --theme-active: #000080;
+  --theme-disabled: #a0a0a0;
+
+  /* Additional Windows 95 specific colors */
+  --theme-highlight: #ffffff;
+  --theme-shadow: #404040;
+  --theme-title-bar: #c0c0c0;
+  --theme-title-bar-text: #ffffff;
+  --theme-menu-bar: #c0c0c0;
+  --theme-scroll-bar: #c0c0c0;
+  --theme-scroll-bar-thumb: #808080;
+
+  /* Typography */
+  --theme-font-family: 'MS Sans Serif', 'Microsoft Sans Serif', 'Segoe UI', 'Tahoma', sans-serif;
+  --theme-font-size-base: 11px;
+  --theme-font-size-small: 9px;
+  --theme-font-size-large: 13px;
+  --theme-line-height: 1.2;
+  --theme-font-weight-normal: 400;
+  --theme-font-weight-medium: 500;
+  --theme-font-weight-bold: 700;
+
+  /* Spacing */
+  --theme-spacing-unit: 4px;
+  --theme-spacing-xs: 2px;
+  --theme-spacing-sm: 4px;
+  --theme-spacing-md: 8px;
+  --theme-spacing-lg: 16px;
+  --theme-spacing-xl: 24px;
+
+  /* Windows 95 3D Effects */
+  --theme-shadow-inset: inset 1px 1px 0px #ffffff, inset -1px -1px 0px #808080;
+  --theme-shadow-outset: 1px 1px 0px #ffffff, -1px -1px 0px #808080;
+  --theme-shadow-inset-thick: inset 2px 2px 0px #ffffff, inset -2px -2px 0px #808080;
+  --theme-shadow-outset-thick: 2px 2px 0px #ffffff, -2px -2px 0px #808080;
+
+  /* Border radius - Windows 95 has no rounded corners */
+  --theme-border-radius: 0px;
+}
+
+/* Global Windows 95 Styling */
+.theme-windows95 {
+  background: var(--theme-background) !important;
+  color: var(--theme-text) !important;
+  font-family: var(--theme-font-family) !important;
+  font-size: var(--theme-font-size-base) !important;
+  overflow-x: hidden !important;
+  touch-action: pan-y !important;
+}
+
+/* Ensure Windows 95 theme covers the entire viewport */
+.theme-windows95 body,
+.theme-windows95 #app,
+.theme-windows95 .app-layout {
+  background: var(--theme-background) !important;
+  min-height: 100vh !important;
+}
+
+.theme-windows95 * {
+  border-radius: 0 !important;
+}
+
+/* Windows 95 Button Styles */
+.theme-windows95 .p-button,
+.theme-windows95 button {
+  font-family: var(--theme-font-family) !important;
+  font-size: var(--theme-font-size-base) !important;
+  font-weight: var(--theme-font-weight-normal) !important;
+  color: var(--theme-text) !important;
+  background: var(--theme-surface) !important;
+  border: 2px solid !important;
+  border-color: var(--theme-highlight) var(--theme-shadow) var(--theme-shadow)
+    var(--theme-highlight) !important;
+  padding: 6px 12px !important;
+  cursor: pointer !important;
+  box-shadow: var(--theme-shadow-outset) !important;
+  min-height: 20px !important;
+  min-width: 60px !important;
+  margin: 2px !important;
+}
+
+/* Responsive button sizing */
+@media (max-width: 768px) {
+  .theme-windows95 .p-button,
+  .theme-windows95 button {
+    padding: 4px 8px !important;
+    min-height: 18px !important;
+    min-width: 50px !important;
+    font-size: var(--theme-font-size-small) !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .theme-windows95 .p-button,
+  .theme-windows95 button {
+    padding: 8px 16px !important;
+    min-height: 24px !important;
+    min-width: 80px !important;
+    font-size: var(--theme-font-size-large) !important;
+  }
+}
+
+.theme-windows95 .p-button:hover,
+.theme-windows95 button:hover {
+  background: var(--theme-hover) !important;
+}
+
+.theme-windows95 .p-button:active,
+.theme-windows95 button:active {
+  border-color: var(--theme-shadow) var(--theme-highlight) var(--theme-highlight)
+    var(--theme-shadow) !important;
+  box-shadow: var(--theme-shadow-inset) !important;
+  padding-top: calc(var(--theme-spacing-sm) + 1px) !important;
+  padding-left: calc(var(--theme-spacing-md) + 1px) !important;
+}
+
+.theme-windows95 .p-button:focus,
+.theme-windows95 button:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.theme-windows95 .p-button.p-button-primary,
+.theme-windows95 button.primary {
+  background: var(--theme-primary) !important;
+  color: var(--theme-highlight) !important;
+  border-color: var(--theme-highlight) var(--theme-shadow) var(--theme-shadow)
+    var(--theme-highlight) !important;
+}
+
+/* Windows 95 Input Styles */
+.theme-windows95 .p-inputtext,
+.theme-windows95 input[type='text'],
+.theme-windows95 input[type='password'],
+.theme-windows95 input[type='email'],
+.theme-windows95 input[type='number'],
+.theme-windows95 textarea,
+.theme-windows95 select {
+  font-family: var(--theme-font-family) !important;
+  font-size: var(--theme-font-size-base) !important;
+  color: var(--theme-text) !important;
+  background: var(--theme-highlight) !important;
+  border: 2px solid !important;
+  border-color: var(--theme-shadow) var(--theme-highlight) var(--theme-highlight)
+    var(--theme-shadow) !important;
+  padding: 6px !important;
+  box-shadow: var(--theme-shadow-inset) !important;
+  min-height: 20px !important;
+  margin: 2px !important;
+}
+
+/* Responsive input sizing */
+@media (max-width: 768px) {
+  .theme-windows95 .p-inputtext,
+  .theme-windows95 input[type='text'],
+  .theme-windows95 input[type='password'],
+  .theme-windows95 input[type='email'],
+  .theme-windows95 input[type='number'],
+  .theme-windows95 textarea,
+  .theme-windows95 select {
+    padding: 4px !important;
+    min-height: 18px !important;
+    font-size: var(--theme-font-size-small) !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .theme-windows95 .p-inputtext,
+  .theme-windows95 input[type='text'],
+  .theme-windows95 input[type='password'],
+  .theme-windows95 input[type='email'],
+  .theme-windows95 input[type='number'],
+  .theme-windows95 textarea,
+  .theme-windows95 select {
+    padding: 8px !important;
+    min-height: 24px !important;
+    font-size: var(--theme-font-size-large) !important;
+  }
+}
+
+.theme-windows95 .p-inputtext:focus,
+.theme-windows95 input:focus,
+.theme-windows95 textarea:focus,
+.theme-windows95 select:focus {
+  outline: 1px dotted var(--theme-text) !important;
+  border-color: var(--theme-primary) !important;
+}
+
+/* Windows 95 Card Styles */
+.theme-windows95 .p-card,
+.theme-windows95 .card {
+  background: var(--theme-surface) !important;
+  border: 2px solid !important;
+  border-color: var(--theme-highlight) var(--theme-shadow) var(--theme-shadow)
+    var(--theme-highlight) !important;
+  box-shadow: var(--theme-shadow-outset) !important;
+  padding: var(--theme-spacing-md) !important;
+  margin: 4px !important;
+}
+
+.theme-windows95 .p-card .p-card-header,
+.theme-windows95 .card .card-header {
+  background: var(--theme-title-bar) !important;
+  color: var(--theme-title-bar-text) !important;
+  padding: var(--theme-spacing-sm) var(--theme-spacing-md) !important;
+  margin: calc(-1 * var(--theme-spacing-md)) calc(-1 * var(--theme-spacing-md))
+    var(--theme-spacing-md) calc(-1 * var(--theme-spacing-md)) !important;
+  font-weight: var(--theme-font-weight-bold) !important;
+  font-size: var(--theme-font-size-large) !important;
+}
+
+/* Windows 95 Table Styles */
+.theme-windows95 .p-datatable,
+.theme-windows95 table {
+  background: var(--theme-surface) !important;
+  border: 2px solid !important;
+  border-color: var(--theme-shadow) var(--theme-highlight) var(--theme-highlight)
+    var(--theme-shadow) !important;
+  box-shadow: var(--theme-shadow-outset) !important;
+  margin: 4px !important;
+}
+
+.theme-windows95 .p-datatable .p-datatable-header,
+.theme-windows95 table thead {
+  background: var(--theme-title-bar) !important;
+  color: var(--theme-title-bar-text) !important;
+  padding: var(--theme-spacing-sm) var(--theme-spacing-md) !important;
+  font-weight: var(--theme-font-weight-bold) !important;
+}
+
+.theme-windows95 .p-datatable .p-datatable-thead > tr > th,
+.theme-windows95 table th {
+  background: var(--theme-menu-bar) !important;
+  color: var(--theme-text) !important;
+  border: 1px solid var(--theme-border) !important;
+  padding: var(--theme-spacing-sm) !important;
+  font-weight: var(--theme-font-weight-bold) !important;
+}
+
+.theme-windows95 .p-datatable .p-datatable-tbody > tr > td,
+.theme-windows95 table td {
+  background: var(--theme-surface) !important;
+  color: var(--theme-text) !important;
+  border: 1px solid var(--theme-border) !important;
+  padding: var(--theme-spacing-sm) !important;
+}
+
+.theme-windows95 .p-datatable .p-datatable-tbody > tr:hover > td,
+.theme-windows95 table tbody tr:hover td {
+  background: var(--theme-hover) !important;
+}
+
+/* Windows 95 Dropdown Styles */
+.theme-windows95 .p-dropdown,
+.theme-windows95 select {
+  font-family: var(--theme-font-family) !important;
+  font-size: var(--theme-font-size-base) !important;
+  color: var(--theme-text) !important;
+  background: var(--theme-surface) !important;
+  border: 2px solid !important;
+  border-color: var(--theme-shadow) var(--theme-highlight) var(--theme-highlight)
+    var(--theme-shadow) !important;
+  box-shadow: var(--theme-shadow-inset) !important;
+  min-height: 23px !important;
+  margin: 2px !important;
+}
+
+.theme-windows95 .p-dropdown:focus,
+.theme-windows95 select:focus {
+  outline: 1px dotted var(--theme-text) !important;
+  border-color: var(--theme-primary) !important;
+}
+
+.theme-windows95 .p-dropdown-panel {
+  background: var(--theme-surface) !important;
+  border: 2px solid !important;
+  border-color: var(--theme-shadow) var(--theme-highlight) var(--theme-highlight)
+    var(--theme-shadow) !important;
+  box-shadow: var(--theme-shadow-outset) !important;
+}
+
+/* Windows 95 Menu Styles */
+.theme-windows95 .p-menu,
+.theme-windows95 .menu {
+  background: var(--theme-surface) !important;
+  border: 2px solid !important;
+  border-color: var(--theme-shadow) var(--theme-highlight) var(--theme-highlight)
+    var(--theme-shadow) !important;
+  box-shadow: var(--theme-shadow-outset) !important;
+  padding: var(--theme-spacing-xs) !important;
+}
+
+.theme-windows95 .p-menuitem-link,
+.theme-windows95 .menu-item {
+  color: var(--theme-text) !important;
+  padding: var(--theme-spacing-sm) var(--theme-spacing-md) !important;
+  font-family: var(--theme-font-family) !important;
+  font-size: var(--theme-font-size-base) !important;
+}
+
+.theme-windows95 .p-menuitem-link:hover,
+.theme-windows95 .menu-item:hover {
+  background: var(--theme-primary) !important;
+  color: var(--theme-highlight) !important;
+}
+
+/* Windows 95 Sidebar Styles */
+.theme-windows95 .app-sidebar,
+.theme-windows95 .sidebar {
+  background: var(--theme-menu-bar) !important;
+  border-right: 2px solid var(--theme-border) !important;
+  box-shadow: var(--theme-shadow-outset) !important;
+}
+
+/* Responsive sidebar adjustments */
+@media (max-width: 768px) {
+  .theme-windows95 .app-sidebar,
+  .theme-windows95 .sidebar {
+    font-size: var(--theme-font-size-small) !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .theme-windows95 .app-sidebar,
+  .theme-windows95 .sidebar {
+    font-size: var(--theme-font-size-large) !important;
+  }
+}
+
+.theme-windows95 .app-sidebar .sidebar-item,
+.theme-windows95 .sidebar .sidebar-item {
+  color: var(--theme-text) !important;
+  padding: var(--theme-spacing-sm) var(--theme-spacing-md) !important;
+  font-family: var(--theme-font-family) !important;
+  font-size: var(--theme-font-size-base) !important;
+  border-bottom: 1px solid var(--theme-border) !important;
+}
+
+.theme-windows95 .app-sidebar .sidebar-item:hover,
+.theme-windows95 .sidebar .sidebar-item:hover {
+  background: var(--theme-hover) !important;
+}
+
+.theme-windows95 .app-sidebar .sidebar-item.active,
+.theme-windows95 .sidebar .sidebar-item.active {
+  background: var(--theme-primary) !important;
+  color: var(--theme-highlight) !important;
+}
+
+/* Windows 95 Header Styles */
+.theme-windows95 .app-header,
+.theme-windows95 .header {
+  background: var(--theme-title-bar) !important;
+  color: var(--theme-title-bar-text) !important;
+  border-bottom: 2px solid var(--theme-border) !important;
+  box-shadow: var(--theme-shadow-outset) !important;
+  padding: var(--theme-spacing-sm) var(--theme-spacing-md) !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  overflow: hidden !important;
+  touch-action: none !important;
+}
+
+/* Responsive header adjustments */
+@media (max-width: 768px) {
+  .theme-windows95 .app-header,
+  .theme-windows95 .header {
+    padding: 4px 8px !important;
+    font-size: var(--theme-font-size-small) !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .theme-windows95 .app-header,
+  .theme-windows95 .header {
+    padding: 8px 16px !important;
+    font-size: var(--theme-font-size-large) !important;
+  }
+}
+
+/* Windows 95 Layout Styles */
+.theme-windows95 .app-layout,
+.theme-windows95 .layout {
+  background: var(--theme-background) !important;
+  color: var(--theme-text) !important;
+  font-family: var(--theme-font-family) !important;
+  font-size: var(--theme-font-size-base) !important;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 768px) {
+  .theme-windows95 .app-layout,
+  .theme-windows95 .layout {
+    font-size: var(--theme-font-size-small) !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .theme-windows95 .app-layout,
+  .theme-windows95 .layout {
+    font-size: var(--theme-font-size-large) !important;
+  }
+}
+
+/* Windows 95 Scrollbar Styles */
+.theme-windows95 ::-webkit-scrollbar {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.theme-windows95 ::-webkit-scrollbar-track {
+  background: var(--theme-scroll-bar) !important;
+  border: 1px solid var(--theme-border) !important;
+}
+
+.theme-windows95 ::-webkit-scrollbar-thumb {
+  background: var(--theme-scroll-bar-thumb) !important;
+  border: 1px solid var(--theme-border) !important;
+  box-shadow: var(--theme-shadow-inset) !important;
+}
+
+.theme-windows95 ::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-hover) !important;
+}
+
+/* Windows 95 Focus Styles */
+.theme-windows95 *:focus {
+  outline: 1px dotted var(--theme-text) !important;
+}
+
+/* Windows 95 PrimeButton specific focus override */
+.theme-windows95 .p-button:focus,
+.theme-windows95 .p-button:focus-visible,
+.theme-windows95 .p-button:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Windows 95 Selection Styles */
+.theme-windows95 ::selection {
+  background: var(--theme-primary) !important;
+  color: var(--theme-highlight) !important;
+}
+
+.theme-windows95 ::-moz-selection {
+  background: var(--theme-primary) !important;
+  color: var(--theme-highlight) !important;
+}
+
+/* Windows 95 Navigation Links */
+.theme-windows95 .nav-link,
+.theme-windows95 a {
+  color: var(--theme-primary) !important;
+  text-decoration: underline !important;
+}
+
+.theme-windows95 .nav-link:hover,
+.theme-windows95 a:hover {
+  color: var(--theme-active) !important;
+}
+
+/* Windows 95 Form Elements */
+.theme-windows95 label {
+  font-family: var(--theme-font-family) !important;
+  font-size: var(--theme-font-size-base) !important;
+  color: var(--theme-text) !important;
+  font-weight: var(--theme-font-weight-medium) !important;
+}
+
+/* Windows 95 Modal/Dialog Styles */
+.theme-windows95 .p-dialog,
+.theme-windows95 .modal {
+  background: var(--theme-surface) !important;
+  border: 2px solid !important;
+  border-color: var(--theme-highlight) var(--theme-shadow) var(--theme-shadow)
+    var(--theme-highlight) !important;
+  box-shadow: var(--theme-shadow-outset-thick) !important;
+}
+
+.theme-windows95 .p-dialog .p-dialog-header,
+.theme-windows95 .modal .modal-header {
+  background: var(--theme-title-bar) !important;
+  color: var(--theme-title-bar-text) !important;
+  border-bottom: 2px solid var(--theme-border) !important;
+  padding: var(--theme-spacing-sm) var(--theme-spacing-md) !important;
+}
+
+/* Windows 95 Tooltip Styles */
+.theme-windows95 .p-tooltip,
+.theme-windows95 .tooltip {
+  background: var(--theme-highlight) !important;
+  color: var(--theme-text) !important;
+  border: 1px solid var(--theme-border) !important;
+  font-family: var(--theme-font-family) !important;
+  font-size: var(--theme-font-size-small) !important;
+}
+
+/* Windows 95 Progress Bar */
+.theme-windows95 .p-progressbar,
+.theme-windows95 .progress-bar {
+  background: var(--theme-surface) !important;
+  border: 2px solid !important;
+  border-color: var(--theme-shadow) var(--theme-highlight) var(--theme-highlight)
+    var(--theme-shadow) !important;
+  box-shadow: var(--theme-shadow-inset) !important;
+}
+
+.theme-windows95 .p-progressbar .p-progressbar-value,
+.theme-windows95 .progress-bar .progress-value {
+  background: var(--theme-primary) !important;
+}
+
+/* Windows 95 Checkbox and Radio */
+.theme-windows95 input[type='checkbox'],
+.theme-windows95 input[type='radio'] {
+  accent-color: var(--theme-primary) !important;
+}
+
+/* Windows 95 List Styles */
+.theme-windows95 ul,
+.theme-windows95 ol {
+  padding-left: var(--theme-spacing-lg) !important;
+}
+
+.theme-windows95 li {
+  margin: var(--theme-spacing-xs) 0 !important;
+}
+
+/* Windows 95 Code Blocks */
+.theme-windows95 code,
+.theme-windows95 pre {
+  background: var(--theme-highlight) !important;
+  border: 1px solid var(--theme-border) !important;
+  padding: var(--theme-spacing-sm) !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: var(--theme-font-size-small) !important;
+}

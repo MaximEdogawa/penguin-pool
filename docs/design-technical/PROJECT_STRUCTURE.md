@@ -27,6 +27,7 @@ penguin-pool/
 ## Source Code Structure (`src/`)
 
 ### App Layer
+
 ```
 src/
 ├── app/                           # Application configuration
@@ -57,6 +58,7 @@ src/
 ```
 
 ### Pages Layer
+
 ```
 src/
 ├── pages/                         # Page components
@@ -108,6 +110,7 @@ src/
 ```
 
 ### Widgets Layer
+
 ```
 src/
 ├── widgets/                       # Complex UI combinations
@@ -139,6 +142,7 @@ src/
 ```
 
 ### Features Layer
+
 ```
 src/
 ├── features/                      # Business logic features
@@ -187,6 +191,7 @@ src/
 ```
 
 ### Entities Layer
+
 ```
 src/
 ├── entities/                      # Business entities
@@ -228,6 +233,7 @@ src/
 ```
 
 ### Shared Layer
+
 ```
 src/
 ├── shared/                        # Shared resources
@@ -282,6 +288,7 @@ tests/
 ## Configuration Files
 
 ### Package.json Scripts
+
 ```json
 {
   "scripts": {
@@ -299,6 +306,7 @@ tests/
 ```
 
 ### Vite Configuration
+
 ```typescript
 // vite.config.ts
 export default defineConfig({
@@ -311,15 +319,16 @@ export default defineConfig({
       '@features': path.resolve(__dirname, './src/features'),
       '@widgets': path.resolve(__dirname, './src/widgets'),
       '@pages': path.resolve(__dirname, './src/pages'),
-      '@app': path.resolve(__dirname, './src/app')
-    }
-  }
+      '@app': path.resolve(__dirname, './src/app'),
+    },
+  },
 })
 ```
 
 ## Import Rules
 
 ### Absolute Imports
+
 - Use absolute imports for better readability
 - Follow the Feature Sliced Design import order:
   1. External libraries
@@ -331,6 +340,7 @@ export default defineConfig({
   7. App layer
 
 ### Import Examples
+
 ```typescript
 // ✅ Correct import order
 import { ref } from 'vue'
@@ -348,19 +358,24 @@ import { Button } from '../../../shared/ui/Button'
 ## File Naming Conventions
 
 ### Components
+
 - Use PascalCase for component files: `UserProfile.vue`
 - Use kebab-case for component folders: `user-profile/`
 
 ### Hooks
+
 - Use camelCase with `use` prefix: `useWalletConnection.ts`
 
 ### Types
+
 - Use PascalCase: `UserProfile.ts`
 
 ### Utilities
+
 - Use camelCase: `formatCurrency.ts`
 
 ### Constants
+
 - Use UPPER_SNAKE_CASE: `API_ENDPOINTS.ts`
 
 ## Benefits of This Structure
@@ -371,4 +386,4 @@ import { Button } from '../../../shared/ui/Button'
 4. **Code Reusability**: Shared components and utilities are easily accessible
 5. **Testing**: Clear structure makes it easier to write and organize tests
 6. **Performance**: Lazy loading and code splitting are easier to implement
-7. **Type Safety**: Better TypeScript support with clear import paths 
+7. **Type Safety**: Better TypeScript support with clear import paths

@@ -1,0 +1,455 @@
+<template>
+  <header class="header">
+    <div class="header-content">
+      <!-- Left side: Logo and Burger menu -->
+      <div class="header-left">
+        <!-- Burger menu for small screens only -->
+        <PrimeButton
+          @click="toggleSidebar"
+          class="burger-menu"
+          :class="{ 'menu-open': isSidebarOpen }"
+          aria-label="Toggle sidebar"
+          text
+          rounded
+          size="small"
+        >
+          <i class="pi pi-bars text-lg"></i>
+        </PrimeButton>
+        <!-- Logo - Always visible -->
+        <div class="header-logo">
+          <PenguinLogo class="logo-icon" />
+        </div>
+      </div>
+
+      <!-- Center: Search bar -->
+      <div class="header-center">
+        <div class="search-container">
+          <i class="pi pi-search search-icon"></i>
+          <input
+            type="text"
+            placeholder="Search contracts, offers, users..."
+            class="search-input"
+            v-model="searchQuery"
+            @input="handleSearch"
+          />
+        </div>
+      </div>
+
+      <!-- Right side: Actions only -->
+      <div class="header-right">
+        <!-- Notifications -->
+        <PrimeButton
+          class="header-action"
+          @click="toggleNotifications"
+          aria-label="Notifications"
+          text
+          rounded
+          size="small"
+        >
+          <i class="pi pi-bell text-lg"></i>
+          <span v-if="notificationCount > 0" class="notification-badge">
+            {{ notificationCount }}
+          </span>
+        </PrimeButton>
+
+        <!-- Theme toggle -->
+        <PrimeButton
+          class="theme-toggle-btn"
+          @click="handleThemeToggle"
+          :aria-label="`Switch theme`"
+          :title="`Switch theme`"
+          text
+          rounded
+          size="small"
+        >
+          <i :class="themeIcon" class="text-lg"></i>
+        </PrimeButton>
+      </div>
+    </div>
+  </header>
+</template>
+
+<script setup lang="ts">
+  import { ref, computed } from 'vue'
+  import { useThemeStore } from '@/features/theme/store/themeStore'
+  import { useNotificationStore } from '@/features/notifications/store/notificationStore'
+  import PenguinLogo from '@/components/PenguinLogo.vue'
+
+  // Props
+  interface Props {
+    isSidebarOpen: boolean
+  }
+
+  defineProps<Props>()
+
+  // Emits
+  const emit = defineEmits<{
+    'toggle-sidebar': []
+  }>()
+
+  // Stores
+  const themeStore = useThemeStore()
+  const notificationStore = useNotificationStore()
+
+  // State
+  const searchQuery = ref('')
+
+  // Computed
+  const themeIcon = computed(() => {
+    if (themeStore.hasCustomTheme) {
+      return 'pi pi-palette'
+    }
+    return themeStore.isDark ? 'pi pi-sun' : 'pi pi-moon'
+  })
+
+  const notificationCount = computed(() => {
+    return notificationStore.unreadCount
+  })
+
+  // Methods
+  const toggleSidebar = () => {
+    emit('toggle-sidebar')
+  }
+
+  const toggleNotifications = () => {
+    // TODO: Implement notifications panel
+    console.log('Toggle notifications')
+  }
+
+  const handleSearch = () => {
+    // TODO: Implement search functionality
+    console.log('Search query:', searchQuery.value)
+  }
+
+  const handleThemeToggle = () => {
+    if (themeStore.hasCustomTheme) {
+      // If custom theme is active, switch back to dark
+      themeStore.setBuiltInTheme('dark')
+    } else {
+      // Toggle between light and dark
+      themeStore.toggleTheme()
+    }
+  }
+</script>
+
+<style scoped>
+  .header {
+    @apply bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-header fixed top-0 z-header;
+    height: 8vh; /* 8% of viewport height */
+    width: 100%;
+    min-width: 0;
+    min-height: 60px; /* Minimum height for usability */
+    max-height: 80px; /* Maximum height for consistency */
+    left: 0;
+    right: 0;
+  }
+
+  .header-content {
+    @apply flex items-center justify-between px-6 h-full;
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Header Left */
+  .header-left {
+    @apply flex items-center space-x-4;
+  }
+
+  /* Header Logo */
+  .header-logo {
+    @apply flex items-center space-x-3;
+  }
+
+  .header-logo .logo-icon {
+    @apply w-8 h-8 flex-shrink-0;
+  }
+
+  .header-logo .logo-text {
+    @apply text-lg font-bold text-gray-900 dark:text-white;
+  }
+
+  .burger-menu {
+    @apply rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200 border border-gray-200 dark:border-gray-600 flex items-center justify-center;
+    height: 36px; /* Smaller burger menu */
+    width: 36px; /* Square aspect ratio */
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  /* Hide burger menu on larger screens */
+  @media (min-width: 1024px) {
+    .burger-menu {
+      display: none !important;
+    }
+  }
+
+  .burger-menu.menu-open {
+    @apply bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 border-primary-200 dark:border-primary-800;
+  }
+
+  /* Header Center */
+  .header-center {
+    @apply flex-1 flex justify-center;
+  }
+
+  .search-container {
+    @apply relative w-full max-w-4xl;
+    height: calc(8vh - 1rem); /* Slightly smaller than header height */
+    max-width: 80rem; /* Much bigger search bar */
+    min-height: 40px; /* Minimum height for usability */
+    max-height: 50px; /* Maximum height for consistency */
+  }
+
+  .search-icon {
+    @apply absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg;
+  }
+
+  .search-input {
+    @apply w-full h-full pl-12 pr-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 1023px) {
+    .header-content {
+      @apply px-4; /* Smaller padding on mobile */
+    }
+
+    .header-left {
+      margin-right: 1.5rem; /* Bigger margin between logo/burger and search */
+    }
+
+    .header-center {
+      margin: 0 1.5rem; /* Bigger margins around search bar */
+    }
+
+    .search-container {
+      max-width: 64rem; /* Full width on mobile */
+      height: calc(8vh - 1rem); /* Keep normal height */
+      min-height: 40px; /* Keep normal minimum height */
+      max-height: 50px; /* Keep normal maximum height */
+    }
+
+    .search-input {
+      @apply text-base; /* Bigger text on mobile */
+    }
+
+    /* Hide user name on mobile, show only icon */
+    .user-name {
+      @apply hidden;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .header-content {
+      @apply px-3; /* Even smaller padding on small mobile */
+    }
+
+    .header-left {
+      margin-right: 2rem; /* Even bigger margin on small mobile */
+    }
+
+    .header-center {
+      margin: 0 2rem; /* Even bigger margins on small mobile */
+    }
+
+    .search-container {
+      height: calc(8vh - 1rem); /* Keep normal height */
+      min-height: 40px; /* Keep normal minimum height */
+      max-height: 50px; /* Keep normal maximum height */
+    }
+
+    .search-input {
+      @apply text-lg; /* Even bigger text on small mobile */
+    }
+
+    /* Hide logo text on small mobile, show only icon */
+    .header-logo .logo-text {
+      @apply hidden;
+    }
+
+    .header-logo .logo-icon {
+      @apply w-6 h-6; /* Smaller logo icon on small mobile */
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .search-container {
+      max-width: 68rem; /* Expanded search bar on large screens */
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .search-container {
+      max-width: 56rem; /* Even more expanded on extra large screens */
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .search-container {
+      max-width: 64rem; /* Maximum expansion on 2xl screens */
+    }
+  }
+
+  /* Header Right */
+  .header-right {
+    @apply flex items-center space-x-2;
+  }
+
+  .header-action {
+    @apply relative p-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200;
+  }
+
+  .theme-toggle-btn {
+    @apply relative p-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200;
+  }
+
+  .notification-badge {
+    @apply absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold shadow-sm;
+  }
+
+  /* User Menu */
+  .user-menu {
+    position: relative;
+    z-index: 1000;
+  }
+
+  .user-menu-trigger {
+    @apply flex items-center space-x-3 p-2.5 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200;
+  }
+
+  .user-avatar {
+    @apply w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 dark:from-primary-400 dark:to-primary-500 rounded-xl flex items-center justify-center text-white shadow-sm;
+  }
+
+  .user-name {
+    @apply text-sm font-semibold;
+  }
+
+  .user-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 0.5rem;
+    width: 18rem;
+    background: var(--vp-c-bg);
+    border-radius: 1rem;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--vp-c-border);
+    padding: 0.75rem;
+    z-index: 1001;
+  }
+
+  .user-info {
+    @apply px-5 py-4;
+  }
+
+  .user-avatar-large {
+    @apply w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 dark:from-primary-400 dark:to-primary-500 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 shadow-md;
+  }
+
+  .user-details {
+    @apply text-center;
+  }
+
+  .user-full-name {
+    @apply text-base font-semibold text-gray-900 dark:text-white;
+  }
+
+  .user-email {
+    @apply text-sm text-gray-500 dark:text-gray-400;
+  }
+
+  .dropdown-divider {
+    @apply border-t border-gray-200 dark:border-gray-700 my-3;
+  }
+
+  .dropdown-item {
+    @apply flex items-center space-x-3 px-5 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer rounded-xl mx-2;
+  }
+
+  .dropdown-item i {
+    @apply text-gray-400;
+  }
+
+  /* PrimeButton background override to match header background */
+  :deep(.p-button.p-button-text) {
+    background: transparent !important;
+  }
+
+  :deep(.p-button.p-button-text:hover) {
+    background: rgba(0, 0, 0, 0.04) !important;
+  }
+
+  :deep(.dark .p-button.p-button-text:hover) {
+    background: rgba(255, 255, 255, 0.04) !important;
+  }
+
+  /* Remove outline from all buttons in header */
+  :deep(.p-button) {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :deep(.p-button:focus) {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  :deep(.p-button:focus-visible) {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 1023px) {
+    .header-content {
+      @apply px-4; /* Smaller padding on mobile */
+    }
+
+    .header-left {
+      margin-right: 1.5rem; /* Bigger margin between burger and search */
+    }
+
+    .header-center {
+      margin: 0 1.5rem; /* Bigger margins around search bar */
+    }
+
+    .search-container {
+      max-width: none; /* Full width on mobile */
+    }
+  }
+
+  @media (max-width: 768px) {
+    .header-content {
+      @apply px-3; /* Even smaller padding on small mobile */
+    }
+
+    .header-left {
+      margin-right: 2rem; /* Even bigger margin on small mobile */
+    }
+
+    .header-center {
+      margin: 0 2rem; /* Even bigger margins on small mobile */
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .search-container {
+      max-width: 48rem; /* Expanded search bar on large screens */
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .search-container {
+      max-width: 56rem; /* Even more expanded on extra large screens */
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .search-container {
+      max-width: 64rem; /* Maximum expansion on 2xl screens */
+    }
+  }
+</style>
