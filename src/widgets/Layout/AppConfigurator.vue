@@ -17,30 +17,30 @@
     <div class="config-panel-section">
       <div class="config-panel-label">Primary Color</div>
       <div class="config-panel-colors">
-        <button
+        <PrimeButton
           v-for="color in primaryColors"
           :key="color.name"
           :class="['config-color-btn', { 'active-color': currentPrimary === color.name }]"
           :style="{ backgroundColor: color.value }"
           @click="setPrimaryColor(color.name)"
-        ></button>
+        ></PrimeButton>
       </div>
     </div>
 
     <div class="config-panel-section">
       <div class="config-panel-label">Custom Themes</div>
       <div class="config-panel-themes">
-        <button
+        <PrimeButton
           v-for="theme in availableThemes"
           :key="theme.id"
           :class="['config-theme-btn', { 'active-theme': currentTheme === theme.id }]"
           @click="setCustomTheme(theme.id)"
         >
           {{ theme.name }}
-        </button>
-        <button class="config-theme-btn config-theme-btn-clear" @click="clearCustomTheme">
+        </PrimeButton>
+        <PrimeButton class="config-theme-btn config-theme-btn-clear" @click="clearCustomTheme">
           Clear
-        </button>
+        </PrimeButton>
       </div>
     </div>
   </div>

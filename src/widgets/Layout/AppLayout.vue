@@ -4,10 +4,18 @@
     <AppTopbar />
 
     <!-- Sidebar -->
-    <AppSidebar />
+    <AppSidebar
+      :is-open="layoutState.staticMenuMobileActive"
+      :is-collapsed="layoutState.staticMenuDesktopInactive"
+      @close="closeMobileMenu"
+      @toggle-collapse="toggleMenu"
+    />
 
     <!-- Main Content Area -->
-    <div class="layout-main-container">
+    <div
+      class="layout-main-container"
+      :class="{ 'mobile-menu-open': layoutState.staticMenuMobileActive }"
+    >
       <div class="layout-main">
         <router-view />
       </div>
@@ -15,12 +23,16 @@
     </div>
 
     <!-- Layout Mask for overlay mode -->
-    <div class="layout-mask animate-fadein" @click="handleMaskClick"></div>
+    <div
+      v-if="layoutState.staticMenuMobileActive"
+      class="layout-mask animate-fadein"
+      @click="closeMobileMenu"
+    ></div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, onUnmounted, watch } from 'vue'
+  import { computed, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { useLayout } from './composables/layout'
   import AppTopbar from './AppTopbar.vue'
@@ -31,51 +43,25 @@
   const route = useRoute()
 
   // Layout composable
-  const { layoutState, toggleMenu } = useLayout()
+  const { layoutState, toggleMenu, closeMobileMenu } = useLayout()
 
   const containerClass = computed(() => {
     return {
       'layout-static': true,
-      'layout-static-inactive': layoutState.staticMenuDesktopInactive,
+      'layout-static-inactive': layoutState.staticMenuDesktopInactive && !layoutState.isMobile,
       'layout-mobile-active': layoutState.staticMenuMobileActive,
     }
   })
 
-  // Handle window resize
-  const handleResize = () => {
-    if (window.innerWidth >= 1024) {
-      layoutState.staticMenuDesktopInactive = false
-      layoutState.staticMenuMobileActive = false
-    }
-  }
-
-  // Handle mask click to close sidebar
-  const handleMaskClick = () => {
-    if (layoutState.overlayMenuActive || layoutState.staticMenuMobileActive) {
-      toggleMenu()
-    }
-  }
-
-  // Lifecycle
-  onMounted(() => {
-    handleResize()
-    window.addEventListener('resize', handleResize)
-
-    // Watch for route changes to close sidebar on mobile
-    watch(
-      () => route.path,
-      () => {
-        if (window.innerWidth < 1024) {
-          layoutState.staticMenuMobileActive = false
-          layoutState.overlayMenuActive = false
-        }
+  // Watch for route changes to close sidebar on mobile
+  watch(
+    () => route.path,
+    () => {
+      if (layoutState.isMobile) {
+        closeMobileMenu()
       }
-    )
-  })
-
-  onUnmounted(() => {
-    window.removeEventListener('resize', handleResize)
-  })
+    }
+  )
 </script>
 
 <style scoped>
@@ -95,27 +81,28 @@
   }
 
   .layout-mask {
-    @apply fixed inset-0 z-50 bg-black bg-opacity-50;
-    display: none;
+    @apply fixed inset-0 z-40 bg-black bg-opacity-50;
+    display: block;
   }
 
   /* Layout modes */
-  .layout-overlay .layout-mask {
-    display: block;
+  .layout-static .layout-main-container {
+    margin-left: 20vw; /* 20% for sidebar */
   }
 
-  .layout-overlay-active .layout-mask {
-    display: block;
+  .layout-static-inactive .layout-main-container {
+    margin-left: 5vw; /* 5% for collapsed sidebar */
   }
 
-  .layout-mobile-active .layout-mask {
-    display: block;
+  .mobile-menu-open .layout-main-container {
+    margin-left: 0; /* No margin on mobile when sidebar is open */
   }
 
   /* Responsive adjustments */
   @media (max-width: 1023px) {
     .layout-main-container {
       padding: 6rem 1rem 0 1rem;
+      margin-left: 0 !important; /* No margin on mobile */
     }
   }
 

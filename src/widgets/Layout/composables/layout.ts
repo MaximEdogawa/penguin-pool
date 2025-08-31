@@ -1,4 +1,4 @@
-import { computed, reactive } from 'vue'
+import { computed, reactive, onMounted, onUnmounted } from 'vue'
 
 const layoutConfig = reactive({
   preset: 'Aura',
@@ -15,6 +15,7 @@ const layoutState = reactive({
   staticMenuMobileActive: false,
   menuHoverActive: false,
   activeMenuItem: null as string | null,
+  isMobile: false,
 })
 
 export function useLayout() {
@@ -38,10 +39,33 @@ export function useLayout() {
   }
 
   const toggleMenu = () => {
-    if (window.innerWidth > 991) {
-      layoutState.staticMenuDesktopInactive = !layoutState.staticMenuDesktopInactive
-    } else {
+    if (layoutState.isMobile) {
+      // On mobile, toggle the mobile menu overlay
       layoutState.staticMenuMobileActive = !layoutState.staticMenuMobileActive
+    } else {
+      // On desktop, toggle the sidebar collapse
+      layoutState.staticMenuDesktopInactive = !layoutState.staticMenuDesktopInactive
+    }
+  }
+
+  const closeMobileMenu = () => {
+    if (layoutState.isMobile) {
+      layoutState.staticMenuMobileActive = false
+    }
+  }
+
+  const handleResize = () => {
+    const wasMobile = layoutState.isMobile
+    layoutState.isMobile = window.innerWidth < 1024
+
+    // If switching from mobile to desktop, close mobile menu
+    if (wasMobile && !layoutState.isMobile) {
+      layoutState.staticMenuMobileActive = false
+    }
+
+    // If switching from desktop to mobile, reset desktop state
+    if (!wasMobile && layoutState.isMobile) {
+      layoutState.staticMenuDesktopInactive = false
     }
   }
 
@@ -55,15 +79,27 @@ export function useLayout() {
 
   const getSurface = computed(() => layoutConfig.surface)
 
+  // Initialize on mount
+  onMounted(() => {
+    handleResize()
+    window.addEventListener('resize', handleResize)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('resize', handleResize)
+  })
+
   return {
     layoutConfig,
     layoutState,
     toggleMenu,
+    closeMobileMenu,
     isSidebarActive,
     isDarkTheme,
     getPrimary,
     getSurface,
     setActiveMenuItem,
     toggleDarkMode,
+    handleResize,
   }
 }
