@@ -11,6 +11,11 @@ import 'primeicons/primeicons.css'
 import './assets/main.css'
 import Button from 'primevue/button'
 import Menu from 'primevue/menu'
+import Tabs from 'primevue/tabs'
+import TabList from 'primevue/tablist'
+import Tab from 'primevue/tab'
+import TabPanels from 'primevue/tabpanels'
+import TabPanel from 'primevue/tabpanel'
 
 import App from './App.vue'
 import router from './router'
@@ -45,4 +50,9 @@ app.use(ToastService)
 app.use(ConfirmationService)
 app.component('PrimeButton', Button)
 app.component('PrimeMenu', Menu)
+app.component('PrimeTabList', TabList)
+app.component('PrimeTabs', Tabs)
+app.component('PrimeTab', Tab)
+app.component('PrimeTabPanel', TabPanel)
+app.component('PrimeTabPanels', TabPanels)
 app.mount('#app')

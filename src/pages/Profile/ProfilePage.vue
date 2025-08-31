@@ -5,87 +5,85 @@
       <p>Manage your account and customize your experience</p>
     </div>
 
-    <!-- Profile Tabs using PrimeVue TabView -->
-    <div class="profile-tabs-container">
-      <TabView
-        v-model:activeIndex="activeTabIndex"
-        class="profile-tabview"
-        :pt="{
-          root: { class: 'w-full h-full' },
-          nav: {
-            class:
-              'border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-lg',
-          },
-          navContent: { class: 'flex flex-wrap' },
-          inkbar: { class: 'bg-primary-500 dark:bg-primary-400' },
-          navItem: { class: 'flex-1 sm:flex-none' },
-          navLink: {
-            class:
-              'flex items-center justify-center sm:justify-start gap-2 px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 min-w-0 overflow-hidden whitespace-nowrap text-ellipsis',
-          },
-          navLinkActive: {
-            class: 'text-primary-600 dark:text-primary-400 bg-primary-50/30 dark:bg-primary-900/10',
-          },
-          content: {
-            class:
-              'p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-b-lg border border-t-0 border-gray-200 dark:border-gray-700',
-          },
-        }"
-      >
-        <!-- Profile Tab -->
-        <TabPanel header="Profile" value="profile">
-          <div class="space-y-4">
-            <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Profile Information</h2>
-            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-              Profile management coming soon...
-            </p>
-          </div>
-        </TabPanel>
+    <!-- Profile Tabs using PrimeVue Tabs with TabList and Tab -->
+    <div class="w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm flex-1 overflow-hidden">
+      <PrimeTabs v-model:activeIndex="activeTabIndex" class="w-full h-full profile-tabs">
+        <PrimeTabList>
+          <PrimeTab v-for="tab in tabs" :key="tab.label" :value="tab.id">
+            <div class="flex items-center gap-2 text-inherit">
+              <i :class="tab.icon" />
+              <span>{{ tab.label }}</span>
+            </div>
+          </PrimeTab>
+        </PrimeTabList>
 
-        <!-- Themes Tab -->
-        <TabPanel header="Themes" value="themes">
-          <div class="space-y-4">
-            <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Theme Settings</h2>
-            <div class="flex flex-wrap gap-2 sm:gap-3">
-              <button
-                v-for="theme in availableThemes"
-                :key="theme.id"
-                :class="[
-                  'px-3 sm:px-4 py-2 sm:py-2 rounded-lg border transition-all duration-200 text-sm sm:text-base',
-                  {
-                    'bg-primary-500 text-white border-primary-500': currentTheme === theme.id,
-                    'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600':
-                      currentTheme !== theme.id,
-                  },
-                ]"
-                @click="setTheme(theme.id)"
-              >
-                {{ theme.name }}
-              </button>
+        <!-- Profile Tab Content -->
+        <PrimeTabPanel value="profile">
+          <div class="space-y-6">
+            <div class="tab-header">
+              <h2 class="tab-title">Profile Information</h2>
+              <p class="tab-subtitle">Manage your personal information and account details</p>
+            </div>
+            <div class="tab-content-wrapper">
+              <p class="text-gray-600 dark:text-gray-300">Profile management coming soon...</p>
             </div>
           </div>
-        </TabPanel>
+        </PrimeTabPanel>
 
-        <!-- Security Tab -->
-        <TabPanel header="Security" value="security">
-          <div class="space-y-4">
-            <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Security Settings</h2>
-            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-              Security settings coming soon...
-            </p>
+        <!-- Themes Tab Content -->
+        <PrimeTabPanel value="themes">
+          <div class="space-y-6">
+            <div class="tab-header">
+              <h2 class="tab-title">Theme Settings</h2>
+              <p class="tab-subtitle">Customize your visual experience with different themes</p>
+            </div>
+            <div class="tab-content-wrapper">
+              <div class="theme-grid">
+                <button
+                  v-for="theme in availableThemes"
+                  :key="theme.id"
+                  :class="[
+                    'theme-button',
+                    {
+                      'theme-button-active': currentTheme === theme.id,
+                      'theme-button-inactive': currentTheme !== theme.id,
+                    },
+                  ]"
+                  @click="setTheme(theme.id)"
+                >
+                  <span class="theme-name">{{ theme.name }}</span>
+                </button>
+              </div>
+            </div>
           </div>
-        </TabPanel>
+        </PrimeTabPanel>
 
-        <!-- Preferences Tab -->
-        <TabPanel header="Preferences" value="preferences">
-          <div class="space-y-4">
-            <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">User Preferences</h2>
-            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-              User preferences coming soon...
-            </p>
+        <!-- Security Tab Content -->
+        <PrimeTabPanel value="security">
+          <div class="space-y-6">
+            <div class="tab-header">
+              <h2 class="tab-title">Security Settings</h2>
+              <p class="tab-subtitle">Manage your account security and privacy settings</p>
+            </div>
+            <div class="tab-content-wrapper">
+              <p class="text-gray-600 dark:text-gray-300">Security settings coming soon...</p>
+            </div>
           </div>
-        </TabPanel>
-      </TabView>
+        </PrimeTabPanel>
+
+        <!-- Preferences Tab Content -->
+        <PrimeTabPanel value="preferences">
+          <div class="space-y-6">
+            <div class="tab-header">
+              <h2 class="tab-title">User Preferences</h2>
+              <p class="tab-subtitle">Customize your application preferences and settings</p>
+            </div>
+            <div class="tab-content-wrapper">
+              <p class="text-gray-600 dark:text-gray-300">User preferences coming soon...</p>
+            </div>
+          </div>
+        </PrimeTabPanel>
+      </PrimeTabs>
     </div>
 
     <!-- Page Footer -->
@@ -98,8 +96,6 @@
   import { useRoute, useRouter } from 'vue-router'
   import { useThemeStore } from '@/features/theme/store/themeStore'
   import PageFooter from '@/components/PageFooter.vue'
-  import TabView from 'primevue/tabview'
-  import TabPanel from 'primevue/tabpanel'
 
   const route = useRoute()
   const router = useRouter()
@@ -107,10 +103,10 @@
 
   // Tab management
   const tabs = [
-    { id: 'profile', label: 'Profile', index: 0 },
-    { id: 'themes', label: 'Themes', index: 1 },
-    { id: 'security', label: 'Security', index: 2 },
-    { id: 'preferences', label: 'Preferences', index: 3 },
+    { id: 'profile', label: 'Profile', icon: 'pi pi-user' },
+    { id: 'themes', label: 'Themes', icon: 'pi pi-palette' },
+    { id: 'security', label: 'Security', icon: 'pi pi-shield' },
+    { id: 'preferences', label: 'Preferences', icon: 'pi pi-cog' },
   ]
 
   // Find initial tab index based on route query or default to profile
@@ -140,59 +136,76 @@
 </script>
 
 <style scoped>
-  .profile-tabs-container {
-    @apply flex-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm;
-    background-color: var(--surface-ground);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+  /* Global tab styling using Tailwind classes */
+  .profile-tabs {
+    /* Base tab container */
   }
 
-  /* Custom TabView styling */
-  .profile-tabview :deep(.p-tabview-nav) {
-    @apply border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-lg;
+  /* Tab list styling */
+  .profile-tabs :deep(.p-tabview-nav) {
+    @apply bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 px-4;
   }
 
-  .profile-tabview :deep(.p-tabview-nav-content) {
-    @apply flex flex-wrap;
+  /* Individual tab items */
+  .profile-tabs :deep(.p-tabview-nav-item) {
+    @apply flex-1;
   }
 
-  .profile-tabview :deep(.p-tabview-ink-bar) {
-    @apply bg-primary-500 dark:bg-primary-400;
+  /* Tab navigation links */
+  .profile-tabs :deep(.p-tabview-nav-link) {
+    @apply flex items-center justify-center gap-3 px-6 py-4 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white dark:hover:bg-gray-600 transition-all duration-300 ease-in-out border-b-2 border-transparent;
   }
 
-  .profile-tabview :deep(.p-tabview-nav-item) {
-    @apply flex-1 sm:flex-none;
+  /* Active tab styling */
+  .profile-tabs :deep(.p-tabview-nav-link.p-highlight) {
+    @apply text-primary-600 dark:text-primary-400 bg-white dark:bg-gray-800 shadow-sm;
   }
 
-  .profile-tabview :deep(.p-tabview-nav-link) {
-    @apply flex items-center justify-center sm:justify-start gap-2 px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 min-w-0 overflow-hidden whitespace-nowrap text-ellipsis;
+  /* Tab ink bar */
+  .profile-tabs :deep(.p-tabview-ink-bar) {
+    @apply bg-primary-500 h-0.5;
   }
 
-  .profile-tabview :deep(.p-tabview-nav-link.p-highlight) {
-    @apply text-primary-600 dark:text-primary-400 bg-primary-50/30 dark:bg-primary-900/10;
+  /* Tab panels */
+  .profile-tabs :deep(.p-tabview-panels) {
+    @apply bg-white dark:bg-gray-800 p-8;
   }
 
-  .profile-tabview :deep(.p-tabview-panels) {
-    @apply p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-b-lg border border-t-0 border-gray-200 dark:border-gray-700;
+  /* Tab content styling */
+  .tab-header {
+    @apply pb-4 mb-6;
   }
 
-  /* Mobile responsive adjustments */
-  @media (max-width: 1023px) {
-    .profile-tabview :deep(.p-tabview-nav-content) {
-      @apply flex-col;
-    }
+  .tab-title {
+    @apply text-2xl font-bold text-gray-900 dark:text-white mb-2;
+  }
 
-    .profile-tabview :deep(.p-tabview-nav-item) {
-      @apply flex-none;
-    }
+  .tab-subtitle {
+    @apply text-gray-600 dark:text-gray-300 text-base;
+  }
 
-    .profile-tabview :deep(.p-tabview-nav-link) {
-      @apply justify-center text-center border-b-0 border-r-0 border-l-2 border-l-transparent;
-    }
+  .tab-content-wrapper {
+    @apply space-y-4;
+  }
 
-    .profile-tabview :deep(.p-tabview-nav-link.p-highlight) {
-      @apply border-l-2 border-l-primary-600 dark:border-l-primary-400;
-    }
+  /* Theme buttons styling */
+  .theme-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+
+  .theme-button {
+    @apply px-6 py-4 rounded-xl  transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .theme-button-active {
+    @apply bg-primary-500 text-white  shadow-lg shadow-primary-500/25;
+  }
+
+  .theme-button-inactive {
+    @apply bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300  hover:bg-gray-50 dark:hover:bg-gray-600;
+  }
+
+  .theme-name {
+    @apply text-sm font-semibold;
   }
 </style>
