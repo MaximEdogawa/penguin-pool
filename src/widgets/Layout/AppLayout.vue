@@ -70,7 +70,7 @@
     transition: background-color 0.3s ease;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Prevent body scrolling */
+    overflow: hidden;
   }
 
   .layout-main-container {
@@ -81,7 +81,7 @@
     background-color: var(--surface-ground);
     height: calc(100vh - 4rem);
     position: relative;
-    overflow: hidden; /* Prevent container scrolling */
+    overflow: hidden;
   }
 
   .layout-main {
@@ -109,7 +109,7 @@
     margin-left: 0; /* No margin on mobile when sidebar is open */
   }
 
-  /* Responsive adjustments */
+  /* Responsive adjustments using standard media queries */
   @media (max-width: 1023px) {
     .layout-main-container {
       margin-left: 0 !important; /* No margin on mobile */

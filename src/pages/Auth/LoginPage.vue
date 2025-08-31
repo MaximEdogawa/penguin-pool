@@ -29,15 +29,15 @@
               :disabled="isConnecting"
             >
               <div class="wallet-icon">
-                <i class="pi pi-wallet text-2xl"></i>
+                <i class="pi pi-wallet text-xl sm:text-2xl"></i>
               </div>
               <div class="wallet-info">
                 <h3 class="wallet-name">Wallet Connect</h3>
                 <p class="wallet-description">Connect any compatible wallet</p>
               </div>
               <div class="wallet-status">
-                <i v-if="isConnecting" class="pi pi-spin pi-spinner text-lg"></i>
-                <i v-else class="pi pi-arrow-right text-lg"></i>
+                <i v-if="isConnecting" class="pi pi-spin pi-spinner text-base sm:text-lg"></i>
+                <i v-else class="pi pi-arrow-right text-base sm:text-lg"></i>
               </div>
             </button>
 
@@ -48,15 +48,15 @@
               :disabled="isConnecting"
             >
               <div class="wallet-icon">
-                <i class="pi pi-credit-card text-2xl"></i>
+                <i class="pi pi-credit-card text-xl sm:text-2xl"></i>
               </div>
               <div class="wallet-info">
                 <h3 class="wallet-name">Sage Wallet</h3>
                 <p class="wallet-description">Native Chia wallet integration</p>
               </div>
               <div class="wallet-status">
-                <i v-if="isConnecting" class="pi pi-spin pi-spinner text-lg"></i>
-                <i v-else class="pi pi-arrow-right text-lg"></i>
+                <i v-if="isConnecting" class="pi pi-spin pi-spinner text-base sm:text-lg"></i>
+                <i v-else class="pi pi-arrow-right text-base sm:text-lg"></i>
               </div>
             </button>
           </div>
@@ -166,7 +166,7 @@
   }
 
   .auth-container {
-    @apply min-h-screen flex items-center justify-center p-4;
+    @apply min-h-screen flex items-center justify-center p-4 sm:p-6;
     flex: 1;
   }
 
@@ -177,43 +177,43 @@
   }
 
   .auth-header {
-    @apply p-8 text-center border-b border-gray-200 dark:border-gray-700;
+    @apply p-6 sm:p-8 text-center border-b border-gray-200 dark:border-gray-700;
   }
 
   .logo-container {
-    @apply mb-6;
+    @apply mb-4 sm:mb-6;
   }
 
   .logo {
-    @apply w-16 h-16 mx-auto;
+    @apply w-12 h-12 sm:w-16 sm:h-16 mx-auto;
   }
 
   .auth-title {
-    @apply text-2xl font-bold text-gray-900 dark:text-white mb-2;
+    @apply text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2;
   }
 
   .auth-subtitle {
-    @apply text-gray-600 dark:text-gray-400;
+    @apply text-sm sm:text-base text-gray-600 dark:text-gray-400;
   }
 
   .wallet-section {
-    @apply p-8;
+    @apply p-6 sm:p-8;
   }
 
   .section-title {
-    @apply text-lg font-semibold text-gray-900 dark:text-white mb-2;
+    @apply text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2;
   }
 
   .section-description {
-    @apply text-gray-600 dark:text-gray-400 mb-6;
+    @apply text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6;
   }
 
   .wallet-options {
-    @apply space-y-4 mb-6;
+    @apply space-y-3 sm:space-y-4 mb-4 sm:mb-6;
   }
 
   .wallet-option {
-    @apply w-full flex items-center p-4 rounded-xl border-2 border-transparent transition-all duration-200;
+    @apply w-full flex items-center p-3 sm:p-4 rounded-xl border-2 border-transparent transition-all duration-200;
   }
 
   .wallet-option.primary {
@@ -229,7 +229,7 @@
   }
 
   .wallet-icon {
-    @apply w-12 h-12 bg-white dark:bg-gray-700 rounded-lg flex items-center justify-center text-primary-600 dark:text-primary-400 mr-4;
+    @apply w-10 h-10 sm:w-12 sm:h-12 bg-white dark:bg-gray-700 rounded-lg flex items-center justify-center text-primary-600 dark:text-primary-400 mr-3 sm:mr-4;
   }
 
   .wallet-info {
@@ -250,7 +250,7 @@
 
   /* Connection Status */
   .connection-status {
-    @apply flex items-center p-3 rounded-lg text-sm mb-6;
+    @apply flex items-center p-3 rounded-lg text-sm mb-4 sm:mb-6;
   }
 
   .connection-status.info {
@@ -275,11 +275,11 @@
 
   /* Help Section */
   .help-section {
-    @apply mb-6;
+    @apply mb-4 sm:mb-6;
   }
 
   .help-title {
-    @apply text-sm font-medium text-gray-700 dark:text-gray-300 mb-3;
+    @apply text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 sm:mb-3;
   }
 
   .help-links {
@@ -296,7 +296,7 @@
 
   /* Auth Footer */
   .auth-footer {
-    @apply p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700;
+    @apply p-4 sm:p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700;
   }
 
   .footer-text {
@@ -305,20 +305,5 @@
 
   .footer-link {
     @apply text-primary-600 dark:text-primary-400 hover:underline;
-  }
-
-  /* Responsive */
-  @media (max-width: 640px) {
-    .auth-card {
-      @apply mx-4;
-    }
-
-    .auth-header {
-      @apply p-6;
-    }
-
-    .wallet-section {
-      @apply p-6;
-    }
   }
 </style>

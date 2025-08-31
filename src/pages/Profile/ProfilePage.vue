@@ -25,21 +25,23 @@
         <!-- Profile Tab -->
         <div v-if="activeTab === 'profile'" class="profile-tab-panel">
           <div class="space-y-4">
-            <h2 class="text-xl font-semibold mb-4">Profile Information</h2>
-            <p class="text-gray-600 dark:text-gray-300">Profile management coming soon...</p>
+            <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Profile Information</h2>
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300">
+              Profile management coming soon...
+            </p>
           </div>
         </div>
 
         <!-- Themes Tab -->
         <div v-if="activeTab === 'themes'" class="profile-tab-panel">
           <div class="space-y-4">
-            <h2 class="text-xl font-semibold mb-4">Theme Settings</h2>
-            <div class="flex flex-wrap gap-3">
+            <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Theme Settings</h2>
+            <div class="flex flex-wrap gap-2 sm:gap-3">
               <button
                 v-for="theme in availableThemes"
                 :key="theme.id"
                 :class="[
-                  'px-4 py-2 rounded-lg border transition-all duration-200',
+                  'px-3 sm:px-4 py-2 sm:py-2 rounded-lg border transition-all duration-200 text-sm sm:text-base',
                   {
                     'bg-primary-500 text-white border-primary-500': currentTheme === theme.id,
                     'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600':
@@ -57,16 +59,20 @@
         <!-- Security Tab -->
         <div v-if="activeTab === 'security'" class="profile-tab-panel">
           <div class="space-y-4">
-            <h2 class="text-xl font-semibold mb-4">Security Settings</h2>
-            <p class="text-gray-600 dark:text-gray-300">Security settings coming soon...</p>
+            <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Security Settings</h2>
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300">
+              Security settings coming soon...
+            </p>
           </div>
         </div>
 
         <!-- Preferences Tab -->
         <div v-if="activeTab === 'preferences'" class="profile-tab-panel">
           <div class="space-y-4">
-            <h2 class="text-xl font-semibold mb-4">User Preferences</h2>
-            <p class="text-gray-600 dark:text-gray-300">User preferences coming soon...</p>
+            <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">User Preferences</h2>
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-300">
+              User preferences coming soon...
+            </p>
           </div>
         </div>
       </div>
