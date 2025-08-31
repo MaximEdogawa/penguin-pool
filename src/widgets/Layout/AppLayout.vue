@@ -113,6 +113,8 @@
   @media (max-width: 1023px) {
     .layout-main-container {
       margin-left: 0 !important; /* No margin on mobile */
+      margin-top: 0 !important; /* No top margin on mobile */
+      height: 100vh !important; /* Full height on mobile */
     }
   }
 

@@ -476,17 +476,17 @@
 
   @media (max-width: 1023px) {
     .sidebar {
-      width: 10vw; /* 10% of viewport width on small screens */
+      width: 80vw; /* 80% of viewport width on mobile */
       transform: translateX(-100%); /* Hidden by default */
-      background: rgb(255 255 255 / 0.01); /* Almost completely transparent glass effect */
-      backdrop-filter: blur(60px); /* Very strong blur for better glass effect */
-      z-index: 50; /* Higher z-index to overlay content */
-      border: 1px solid rgb(229 231 235 / 0.01); /* Almost invisible border */
+      background: rgb(255 255 255 / 0.95); /* More opaque for mobile */
+      backdrop-filter: blur(20px); /* Moderate blur for mobile */
+      z-index: 50; /* Lower than topbar */
+      border: 1px solid rgb(229 231 235 / 0.3); /* More visible border */
       box-shadow:
-        0 0 0 1px rgb(255 255 255 / 0.1),
-        0 8px 32px rgb(0 0 0 / 0.12),
-        0 16px 64px rgb(0 0 0 / 0.08),
-        inset 0 1px 0 rgb(255 255 255 / 0.2); /* Enhanced glass shadow */
+        0 8px 32px rgb(0 0 0 / 0.2),
+        0 16px 64px rgb(0 0 0 / 0.15);
+      top: 0; /* Start from top */
+      height: 100vh; /* Full height */
     }
 
     .sidebar.sidebar-open {
@@ -494,17 +494,12 @@
     }
 
     .sidebar.sidebar-collapsed {
-      width: 10vw; /* Keep 10% width when collapsed */
+      width: 80vw; /* Keep 80% width when collapsed on mobile */
     }
 
     .sidebar.dark {
-      background: rgb(31 41 55 / 0.01); /* Almost completely transparent dark mode */
-      border: 1px solid rgb(75 85 99 / 0.01);
-      box-shadow:
-        0 0 0 1px rgb(255 255 255 / 0.05),
-        0 8px 32px rgb(0 0 0 / 0.15),
-        0 16px 64px rgb(0 0 0 / 0.1),
-        inset 0 1px 0 rgb(255 255 255 / 0.1); /* Enhanced dark glass shadow */
+      background: rgb(31 41 55 / 0.95); /* More opaque dark mode */
+      border: 1px solid rgb(75 85 99 / 0.3);
     }
   }
 
@@ -594,6 +589,10 @@
 
     .sidebar .user-info-section {
       @apply justify-center p-2;
+    }
+
+    .sidebar .user-avatar {
+      @apply w-6 h-6;
     }
 
     .sidebar .nav-icon {

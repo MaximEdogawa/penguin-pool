@@ -364,19 +364,6 @@
   background-color: #ffffff !important;
 }
 
-/* FIXED: Ensure content background covers entire page */
-.layout-main-container {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  margin-top: 4rem; /* Account for topbar height */
-  transition: margin-left var(--layout-section-transition-duration);
-  background-color: var(--surface-ground);
-  height: calc(100vh - 4rem);
-  position: relative;
-  overflow: hidden;
-}
-
 .layout-main {
   flex: 1;
   height: 100%;
@@ -387,6 +374,7 @@
 /* Global Content Page Styles - Using Tailwind Classes */
 .content-page {
   @apply w-full h-full flex flex-col overflow-hidden;
+  @apply mt-16 sm:mt-18 md:mt-18 lg:mt-1 xl:mt-0;
   background-color: var(--surface-ground);
 }
 
@@ -474,107 +462,6 @@
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
-
-/* Responsive Layout Adjustments using standard media queries */
-@media (max-width: 1023px) {
-  .layout-main-container {
-    margin-left: 0 !important; /* No margin on mobile */
-  }
-}
-
-@screen sm {
-  .layout-main-container {
-    margin-top: 4rem;
-  }
-
-  .content-body {
-    @apply p-6 space-y-8;
-  }
-
-  .footer-content {
-    @apply flex-row text-left gap-0;
-  }
-}
-
-@screen md {
-  .layout-main-container {
-    margin-top: 4rem;
-  }
-}
-
-@screen lg {
-  .layout-main-container {
-    margin-top: 4rem;
-  }
-
-  .profile-tabs-header {
-    @apply flex-row;
-  }
-
-  .profile-tab-button {
-    @apply justify-start border-l-0 border-b-2 border-l-transparent;
-  }
-
-  .profile-tab-button.active {
-    @apply border-l-0 border-b-2 border-l-transparent border-b-primary-600 dark:border-b-primary-400;
-  }
-}
-
-@screen xl {
-  .layout-main-container {
-    margin-top: 4rem;
-  }
-}
-
-/* Mobile-first responsive adjustments */
-@media (max-width: 639px) {
-  .layout-main-container {
-    margin-top: 4rem;
-  }
-
-  .content-body {
-    @apply p-4 space-y-6;
-  }
-
-  .footer-content {
-    @apply flex-col text-center gap-2;
-  }
-
-  .profile-tabs-header {
-    @apply flex-col;
-  }
-
-  .profile-tab-button {
-    @apply justify-center border-b-0 border-l-2 border-l-transparent;
-  }
-
-  .profile-tab-button.active {
-    @apply border-l-2 border-l-primary-600 dark:border-l-primary-400 border-b-0;
-  }
-}
-
-/* Responsive Footer */
-@media (max-width: 768px) {
-  .footer-content {
-    @apply flex-col gap-2 text-center;
-  }
-}
-
-/* Profile Page Responsive */
-@media (max-width: 640px) {
-  .profile-tabs-header {
-    @apply flex-col;
-  }
-
-  .profile-tab-button {
-    @apply justify-center text-center border-b-0 border-r-0 border-l-2 border-l-transparent;
-  }
-
-  .profile-tab-button.active {
-    @apply border-l-2 border-l-primary-600 dark:border-l-primary-400 border-b-0;
-  }
-}
-
 /* Layout mask */
 .layout-mask {
   position: fixed;
@@ -587,83 +474,6 @@
 
 .layout-mobile-active .layout-mask {
   display: block;
-}
-
-/* Responsive adjustments */
-@media (max-width: 991px) {
-  .layout-main-container {
-    margin-left: 0 !important;
-    padding: 6rem 1rem 0 1rem;
-  }
-
-  .layout-sidebar {
-    width: 20rem;
-    left: 0;
-    transform: translateX(-100%);
-    z-index: 1000;
-  }
-
-  .layout-mobile-active .layout-sidebar {
-    transform: translateX(0);
-  }
-}
-
-@media (max-width: 767px) {
-  .layout-main-container {
-    margin-left: 0 !important;
-    padding: 6rem 0.5rem 0 0.5rem;
-  }
-
-  .layout-sidebar {
-    width: 20rem;
-    left: 0;
-    transform: translateX(-100%);
-    padding: 0.5rem 1.5rem;
-    z-index: 1000;
-    position: fixed;
-  }
-
-  /* Mobile active state - show sidebar */
-  .layout-mobile-active .layout-sidebar {
-    transform: translateX(0);
-  }
-
-  /* Mobile mode - hide text elements when sidebar is shown */
-  .layout-mobile-active .layout-sidebar .layout-menuitem-text,
-  .layout-mobile-active .layout-sidebar .layout-menuitem-root-text,
-  .layout-mobile-active .layout-sidebar .layout-menuitem-badge {
-    display: none;
-  }
-
-  .layout-mobile-active .layout-sidebar .nav-link {
-    justify-content: center;
-    padding: 0.75rem;
-  }
-
-  .layout-mobile-active .layout-sidebar .layout-menuitem-icon {
-    margin-right: 0;
-    font-size: 1.25rem;
-  }
-}
-
-/* Extra small mobile devices - icon only mode */
-@media (max-width: 480px) {
-  .layout-mobile-active .layout-sidebar {
-    width: 4rem;
-    padding: 0.5rem 0.75rem;
-  }
-}
-
-/* Dark mode toggle */
-.dark-mode-toggle {
-  @apply fixed top-4 right-4 z-50;
-}
-
-/* Responsive adjustments */
-@media (min-width: 1024px) {
-  #app {
-    @apply max-w-7xl mx-auto;
-  }
 }
 
 /* Prevent horizontal scrolling and swiping */

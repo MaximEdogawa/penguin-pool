@@ -285,9 +285,10 @@
   }
 
   /* Responsive */
-  @media (max-width: 991px) {
+  @media (max-width: 1023px) {
     .layout-topbar {
-      padding: 0 2rem;
+      padding: 0 1rem;
+      z-index: 60; /* Ensure it's above sidebar */
     }
 
     .layout-topbar-logo-container {
@@ -297,6 +298,7 @@
     .layout-menu-button {
       margin-left: 0;
       margin-right: 0.5rem;
+      display: inline-flex !important; /* Always show burger menu on mobile */
     }
 
     .layout-topbar-menu-button {
@@ -306,15 +308,23 @@
     .layout-topbar-center {
       display: none;
     }
+
+    .layout-topbar-logo span {
+      display: none; /* Hide logo text on mobile */
+    }
   }
 
   @media (max-width: 768px) {
     .layout-topbar {
-      padding: 0 1rem;
+      padding: 0 0.75rem;
     }
 
-    .layout-topbar-logo span {
-      display: none;
+    .layout-topbar-logo-container {
+      width: auto;
+    }
+
+    .layout-menu-button {
+      margin-right: 0.5rem;
     }
   }
 </style>
