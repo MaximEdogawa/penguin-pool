@@ -23,10 +23,22 @@ app.use(router)
 app.use(VueQueryPlugin)
 
 // Register global components
-app.use(router)
 app.use(PrimeVue, {
-  options: {
-    darkModeSelector: '.dark',
+  ripple: true,
+  inputStyle: 'filled',
+  unstyled: false,
+  pt: {
+    // Custom PrimeVue styling
+    button: {
+      root: { class: 'btn-primary' },
+      secondary: { class: 'btn-secondary' },
+    },
+    card: {
+      root: { class: 'card' },
+    },
+    inputtext: {
+      root: { class: 'input-field' },
+    },
   },
 })
 app.use(ToastService)

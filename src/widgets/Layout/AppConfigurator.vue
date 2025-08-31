@@ -5,24 +5,48 @@
       <div class="config-panel-themes">
         <PrimeButton
           class="config-theme-btn"
-          :class="{ 'active-theme': currentTheme === 'light' }"
+          :class="{ 'active-theme': currentTheme === 'light' && !hasCustomTheme }"
           @click="setTheme('light')"
         >
           Light
         </PrimeButton>
         <PrimeButton
           class="config-theme-btn"
-          :class="{ 'active-theme': currentTheme === 'dark' }"
+          :class="{ 'active-theme': currentTheme === 'dark' && !hasCustomTheme }"
           @click="setTheme('dark')"
         >
           Dark
         </PrimeButton>
         <PrimeButton
           class="config-theme-btn"
-          :class="{ 'active-theme': currentTheme === 'windows95' }"
-          @click="setTheme('windows95')"
+          :class="{ 'active-theme': currentTheme === 'auto' && !hasCustomTheme }"
+          @click="setTheme('auto')"
         >
-          Windows 95
+          Auto
+        </PrimeButton>
+      </div>
+    </div>
+
+    <div class="config-panel-section" v-if="availableCustomThemes.length > 0">
+      <div class="config-panel-label">Custom Themes</div>
+      <div class="config-panel-themes">
+        <PrimeButton
+          v-for="theme in availableCustomThemes"
+          :key="theme.id"
+          class="config-theme-btn"
+          :class="{ 'active-theme': currentCustomTheme?.id === theme.id }"
+          @click="setCustomTheme(theme.id)"
+        >
+          {{ theme.name }}
+        </PrimeButton>
+      </div>
+    </div>
+
+    <div class="config-panel-section" v-if="hasCustomTheme">
+      <div class="config-panel-label">Current Custom Theme</div>
+      <div class="config-panel-actions">
+        <PrimeButton class="config-clear-btn" @click="clearCustomTheme">
+          Clear Custom Theme
         </PrimeButton>
       </div>
     </div>
@@ -56,6 +80,9 @@
   // Computed
   const currentPrimary = computed(() => layoutConfig.primary)
   const currentTheme = computed(() => themeStore.currentTheme)
+  const hasCustomTheme = computed(() => themeStore.hasCustomTheme)
+  const currentCustomTheme = computed(() => themeStore.currentCustomTheme)
+  const availableCustomThemes = computed(() => themeStore.availableCustomThemes)
 
   // Primary colors
   const primaryColors = [
@@ -68,11 +95,27 @@
   ]
 
   // Methods
-  const setTheme = async (theme: 'light' | 'dark' | 'windows95') => {
+  const setTheme = async (theme: 'light' | 'dark' | 'auto') => {
     try {
-      await themeStore.setTheme(theme)
+      await themeStore.setBuiltInTheme(theme)
     } catch (error) {
       console.error('Failed to set theme:', error)
+    }
+  }
+
+  const setCustomTheme = async (themeId: string) => {
+    try {
+      await themeStore.setCustomTheme(themeId)
+    } catch (error) {
+      console.error('Failed to set custom theme:', error)
+    }
+  }
+
+  const clearCustomTheme = async () => {
+    try {
+      await themeStore.clearCustomTheme()
+    } catch (error) {
+      console.error('Failed to clear custom theme:', error)
     }
   }
 
@@ -173,6 +216,19 @@
 
   .config-theme-btn.active-theme {
     @apply bg-primary-500 text-white border-primary-500;
+  }
+
+  .config-panel-actions {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .config-clear-btn {
+    @apply px-3 py-1.5 text-xs font-medium rounded-md border transition-all duration-200;
+    @apply bg-red-500 text-white border-red-500;
+  }
+
+  .config-clear-btn:hover {
+    @apply bg-red-600 border-red-600;
   }
 
   .config-panel-colors {

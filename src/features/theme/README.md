@@ -1,193 +1,236 @@
-# Theme System
+# Theme Manager
 
-This feature provides a comprehensive theming system for the Penguin Pool application, including the Windows 95 retro theme.
+A comprehensive theme management system for the Penguin Pool application, providing advanced theming capabilities with custom theme support, import/export functionality, and seamless integration with PrimeVue components.
 
 ## Features
 
-- **Multiple Theme Support**: Built-in light/dark themes plus custom themes
-- **Windows 95 Theme**: Authentic retro computing aesthetic with 3D effects
-- **Dynamic Theme Switching**: Change themes without page reload
-- **Theme Persistence**: Themes are saved and restored across sessions
-- **Component Integration**: All PrimeVue components automatically adapt to themes
+### 🎨 **Advanced Theme System**
 
-## Available Themes
+- **Built-in Themes**: Light, Dark, and Auto (system preference detection)
+- **Custom Themes**: Create, import, export, and manage custom themes
+- **Theme Categories**: Support for 'retro', 'modern', 'professional', and 'minimal' categories
+- **Dynamic Theme Switching**: Real-time theme application with CSS custom properties
 
-### Built-in Themes
+### 🔧 **Theme Management**
 
-- **Auto**: Automatically follows system preference
-- **Light**: Modern light theme
-- **Dark**: Modern dark theme
+- **Theme Persistence**: Automatic theme saving to localStorage
+- **Theme Validation**: Structure validation for imported themes
+- **Theme Preview**: Visual preview of theme colors and styling
+- **Theme Import/Export**: JSON-based theme sharing and backup
 
-### Custom Themes
+### 🎯 **Component Integration**
 
-- **Windows 95**: Classic retro computing aesthetic
+- **ThemeToggle**: Advanced theme switcher with dropdown menu
+- **ThemeSettings**: Comprehensive theme management interface
+- **ThemeDemo**: Interactive theme preview and demonstration
+- **AppConfigurator**: Layout configuration with theme integration
+
+### 🌐 **CSS Integration**
+
+- **CSS Custom Properties**: Dynamic theme variable application
+- **PrimeVue Integration**: Seamless styling with PrimeVue components
+- **Responsive Design**: Mobile-friendly theme switching
+- **Windows 95 Theme**: Authentic retro computing aesthetic
+
+## Architecture
+
+### Core Components
+
+#### ThemeManager Service
+
+```typescript
+class ThemeManager {
+  // Singleton pattern for global theme management
+  public static getInstance(): ThemeManager
+
+  // Theme switching and management
+  public async switchTheme(themeId: ThemeMode): Promise<void>
+  public addCustomTheme(theme: CustomTheme): void
+  public removeCustomTheme(themeId: string): void
+  public exportTheme(themeId: string): string
+  public importTheme(themeJson: string): CustomTheme
+}
+```
+
+#### Theme Store (Pinia)
+
+```typescript
+export const useThemeStore = defineStore('theme', () => {
+  // State management
+  const currentTheme = ref<BuiltInTheme>('light')
+  const currentCustomTheme = ref<CustomTheme | null>(null)
+  const availableCustomThemes = ref<CustomTheme[]>([])
+
+  // Actions
+  const setBuiltInTheme = async (theme: BuiltInTheme)
+  const setCustomTheme = async (themeId: string)
+  const clearCustomTheme = async ()
+  const importTheme = async (themeJson: string)
+  const exportTheme = (themeId: string)
+})
+```
+
+### Theme Interface
+
+```typescript
+interface CustomTheme {
+  id: string
+  name: string
+  category: 'retro' | 'modern' | 'professional' | 'minimal'
+  version: string
+  author: string
+  description: string
+  colors: ThemeColors
+  typography: ThemeTypography
+  spacing: ThemeSpacing
+  shadows: ThemeShadows
+  borderRadius: ThemeBorderRadius
+  isActive: boolean
+}
+```
 
 ## Usage
 
 ### Basic Theme Switching
-
-```vue
-<template>
-  <ThemeSwitcher />
-</template>
-
-<script setup>
-  import { ThemeSwitcher } from '@/features/theme'
-</script>
-```
-
-### Programmatic Theme Control
 
 ```typescript
 import { useThemeStore } from '@/features/theme'
 
 const themeStore = useThemeStore()
 
-// Switch to Windows 95 theme
-await themeStore.setTheme('windows95')
-
 // Switch to built-in themes
-await themeStore.setTheme('light')
-await themeStore.setTheme('dark')
-await themeStore.setTheme('auto')
+await themeStore.setBuiltInTheme('light')
+await themeStore.setBuiltInTheme('dark')
+await themeStore.setBuiltInTheme('auto')
+
+// Apply custom theme
+await themeStore.setCustomTheme('windows95')
+
+// Clear custom theme
+await themeStore.clearCustomTheme()
 ```
 
-### Theme Demo Component
+### Theme Import/Export
+
+```typescript
+// Export theme
+const themeJson = themeStore.exportTheme('windows95')
+const blob = new Blob([themeJson], { type: 'application/json' })
+
+// Import theme
+const importedTheme = await themeStore.importTheme(themeJson)
+```
+
+### Component Usage
 
 ```vue
 <template>
+  <!-- Theme toggle with advanced menu -->
+  <ThemeToggle />
+
+  <!-- Theme settings panel -->
+  <ThemeSettings />
+
+  <!-- Theme demonstration -->
   <ThemeDemo />
 </template>
 
 <script setup>
-  import { ThemeDemo } from '@/features/theme'
+  import { ThemeToggle, ThemeSettings, ThemeDemo } from '@/features/theme'
 </script>
 ```
 
-## Windows 95 Theme Features
+## Available Themes
 
-The Windows 95 theme provides an authentic retro computing experience:
+### Built-in Themes
 
-### Visual Characteristics
+- **Light**: Clean, modern light theme with blue accents
+- **Dark**: Sophisticated dark theme with proper contrast
+- **Auto**: Automatically follows system preference
 
-- **Classic Gray Palette**: Authentic Windows 95 colors
-- **3D Border Effects**: Inset/outset shadows for buttons and inputs
-- **MS Sans Serif Font**: Classic Windows 95 typography
-- **No Rounded Corners**: Authentic square design
-- **Classic Scrollbars**: Windows 95 style scrollbars
+### Custom Themes
 
-### Component Styling
+- **Windows 95**: Authentic retro computing aesthetic with:
+  - Classic Windows 95 color palette
+  - 3D border effects (inset/outset)
+  - MS Sans Serif typography
+  - Authentic button and input styling
 
-- **Buttons**: 3D raised effect with proper hover/active states
-- **Inputs**: Inset borders with focus indicators
-- **Cards**: Outset borders with header styling
-- **Tables**: Classic grid layout with proper borders
-- **Dropdowns**: Windows 95 style menus
+## CSS Variables
 
-## Architecture
-
-### Theme Manager
-
-The `ThemeManager` service handles:
-
-- Theme switching and application
-- CSS custom property management
-- Theme persistence and loading
-- Custom theme management
-
-### Theme Store
-
-The Pinia store provides:
-
-- Reactive theme state
-- Theme switching actions
-- Theme metadata access
-- Integration with Vue components
-
-### CSS Implementation
-
-Themes are implemented using:
-
-- CSS custom properties (variables)
-- Theme-specific CSS classes
-- Component overrides for PrimeVue
-- Responsive design considerations
-
-## Adding New Themes
-
-To create a new custom theme:
-
-1. **Create Theme Configuration**:
-
-```typescript
-// src/features/theme/themes/mytheme.ts
-export const myTheme: CustomTheme = {
-  id: 'mytheme',
-  name: 'My Theme',
-  category: 'modern',
-  // ... theme configuration
-}
-```
-
-2. **Create CSS Theme**:
+The theme system automatically applies CSS custom properties for dynamic theming:
 
 ```css
-/* src/features/theme/themes/mytheme.css */
-.theme-mytheme {
-  --theme-primary: #your-color;
-  /* ... other variables */
+:root {
+  --theme-primary: #000080;
+  --theme-background: #008080;
+  --theme-surface: #c0c0c0;
+  --theme-text: #000000;
+  --theme-border: #808080;
+  /* ... and many more */
 }
-```
-
-3. **Register in Theme Manager**:
-
-```typescript
-// src/features/theme/services/themeManager.ts
-import { myTheme } from '../themes/mytheme'
-
-private availableThemes: CustomTheme[] = [windows95Theme, myTheme]
-```
-
-4. **Import CSS**:
-
-```css
-/* src/assets/main.css */
-@import '../features/theme/themes/mytheme.css';
 ```
 
 ## Browser Support
 
-- **Modern Browsers**: Full support for CSS custom properties
-- **Fallback Support**: Graceful degradation for older browsers
-- **Progressive Enhancement**: Enhanced experience for supported browsers
+- **Modern Browsers**: Full support for all features
+- **CSS Custom Properties**: Required for theme switching
+- **localStorage**: Required for theme persistence
+- **ES6+**: Required for async/await and modern JavaScript features
+
+## Development
+
+### Adding New Themes
+
+1. Create theme definition in `src/features/theme/themes/`
+2. Add CSS styling in corresponding `.css` file
+3. Import and register in `themeManager.ts`
+4. Update theme exports in `index.ts`
+
+### Theme Validation
+
+Themes are automatically validated for:
+
+- Required properties (id, name, category, colors, etc.)
+- Proper data types
+- Structure integrity
+
+### Testing
+
+```bash
+# Build and type check
+npm run build
+
+# Development server
+npm run dev
+
+# Unit tests
+npm run test:unit
+```
+
+## Migration from Legacy System
+
+The new theme system maintains backward compatibility:
+
+- Legacy `setTheme()` method still works
+- Windows 95 theme support preserved
+- Existing localStorage data automatically migrated
 
 ## Performance
 
-- **CSS Variables**: Efficient theme switching without DOM manipulation
-- **Lazy Loading**: Theme assets loaded on-demand
-- **Caching**: Theme configurations cached for faster switching
-- **Bundle Optimization**: Minimal impact on initial page load
+- **Lazy Loading**: Themes loaded on-demand
+- **Efficient Switching**: Minimal DOM manipulation
+- **Memory Management**: Proper cleanup of theme resources
+- **Caching**: Theme data cached in localStorage
 
-## Troubleshooting
+## Contributing
 
-### Theme Not Applying
+1. Follow the existing theme structure
+2. Ensure proper TypeScript typing
+3. Add comprehensive CSS styling
+4. Test across different themes
+5. Update documentation
 
-1. Check browser console for errors
-2. Verify CSS import paths
-3. Ensure theme classes are properly applied
-4. Check for CSS conflicts
+## License
 
-### Custom Theme Issues
-
-1. Validate theme configuration structure
-2. Check CSS custom property definitions
-3. Verify component class overrides
-4. Test in different browsers
-
-## Future Enhancements
-
-- **Theme Marketplace**: Community theme sharing
-- **Advanced Customization**: Color picker and live preview
-- **Theme Analytics**: Usage statistics and popularity metrics
-- **AI-Powered Themes**: Automatic theme generation
-- **Dynamic Themes**: Time-based and context-aware switching
+Part of the Penguin Pool application - see main LICENSE file for details.
