@@ -5,7 +5,7 @@ import { VueQueryPlugin } from '@tanstack/vue-query'
 // PrimeVue imports
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
-import Aura from '@primeuix/themes/aura'
+
 import ConfirmationService from 'primevue/confirmationservice'
 import 'primeicons/primeicons.css'
 import './assets/main.css'
@@ -26,11 +26,8 @@ app.use(VueQueryPlugin)
 
 app.use(router)
 app.use(PrimeVue, {
-  theme: {
-    preset: Aura,
-    options: {
-      darkModeSelector: '.app-dark',
-    },
+  options: {
+    darkModeSelector: '.app-dark',
   },
 })
 app.use(ToastService)
