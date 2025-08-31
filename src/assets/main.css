@@ -1,11 +1,11 @@
+/* Windows 95 Theme */
+@import '../features/theme/themes/windows95.css';
+
 /* Custom base styles */
 @import './base.css';
 
 /* PrimeIcons CSS */
 @import 'primeicons/primeicons.css';
-
-/* Windows 95 Theme */
-@import '../features/theme/themes/windows95.css';
 
 @tailwind base;
 @tailwind components;
@@ -306,6 +306,23 @@
 /* Ensure layout wrapper inherits theme colors */
 .dark .layout-wrapper {
   @apply bg-gray-900 text-gray-100;
+}
+
+/* Force white background for light theme */
+.light {
+  background-color: #ffffff !important;
+}
+
+.light body,
+.light html {
+  background-color: #ffffff !important;
+}
+
+.light #app,
+.light .layout-wrapper,
+.light .layout-main-container,
+.light .layout-main {
+  background-color: #ffffff !important;
 }
 
 .layout-main-container {

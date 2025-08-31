@@ -23,7 +23,6 @@ app.use(router)
 app.use(VueQueryPlugin)
 
 // Register global components
-
 app.use(router)
 app.use(PrimeVue, {
   options: {
