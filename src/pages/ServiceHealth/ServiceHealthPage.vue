@@ -456,6 +456,7 @@
   const wsConnecting = ref(false)
   const wsConnectionStatus = ref('Disconnected')
   const wsMessages = ref<Array<{ type: string; content: string; timestamp: Date }>>([])
+  const wsConnectionTime = ref<Date | null>(null) // Track the time when WebSocket was connected
 
   // HTTP health state
   const httpStatus = ref<string>('')
@@ -503,16 +504,42 @@
 
   // Computed properties
   const overallHealth = computed(() => {
-    if (!wsConnected.value && !httpStatus.value && !dbStatus.value) return ''
+    const services = []
 
-    const statuses = []
-    if (wsConnected.value) statuses.push('healthy')
-    if (httpStatus.value) statuses.push(httpStatus.value)
-    if (dbStatus.value) statuses.push(dbStatus.value)
+    // WebSocket health
+    if (wsConnected.value) {
+      services.push({ name: 'WebSocket', status: 'healthy' })
+    } else if (wsConnecting.value) {
+      services.push({ name: 'WebSocket', status: 'connecting' })
+    } else {
+      services.push({ name: 'WebSocket', status: 'disconnected' })
+    }
 
-    if (statuses.every(s => s === 'healthy')) return 'healthy'
-    if (statuses.some(s => s === 'healthy')) return 'healthy'
-    return 'unhealthy'
+    // HTTP Service health
+    if (httpStatus.value) {
+      services.push({ name: 'HTTP Service', status: httpStatus.value })
+    } else {
+      services.push({ name: 'HTTP Service', status: 'unknown' })
+    }
+
+    // Database health
+    if (dbStatus.value) {
+      services.push({ name: 'Database', status: dbStatus.value })
+    } else {
+      services.push({ name: 'Database', status: 'unknown' })
+    }
+
+    // Calculate overall status
+    const healthyCount = services.filter(s => s.status === 'healthy').length
+    const totalCount = services.length
+
+    if (healthyCount === totalCount) {
+      return 'healthy'
+    } else if (healthyCount > 0) {
+      return 'degraded'
+    } else {
+      return 'unhealthy'
+    }
   })
 
   const lastUpdated = computed(() => {
@@ -527,14 +554,13 @@
   })
 
   const wsUptime = computed(() => {
-    if (!wsConnected.value) return 'N/A'
+    if (!wsConnected.value || !wsConnectionTime.value) return 'N/A'
+
     const now = new Date()
-    const connectedTime = new Date(
-      ws.value?.readyState === WebSocket.OPEN ? ws.value.readyState : 0
-    )
-    const uptime = now.getTime() - connectedTime.getTime()
+    const uptime = now.getTime() - wsConnectionTime.value.getTime()
     const uptimeSeconds = uptime / 1000
-    return `${uptimeSeconds.toFixed(0)}s`
+
+    return formatUptime(uptimeSeconds)
   })
 
   const httpUptime = computed(() => {
@@ -543,7 +569,8 @@
     const lastCheckTime = new Date(httpDetails.value?.timestamp || 0)
     const uptime = now.getTime() - lastCheckTime.getTime()
     const uptimeSeconds = uptime / 1000
-    return `${uptimeSeconds.toFixed(0)}s`
+
+    return formatUptime(uptimeSeconds)
   })
 
   const dbUptime = computed(() => {
@@ -552,7 +579,8 @@
     const lastCheckTime = new Date(dbDetails.value?.timestamp || 0)
     const uptime = now.getTime() - lastCheckTime.getTime()
     const uptimeSeconds = uptime / 1000
-    return `${uptimeSeconds.toFixed(0)}s`
+
+    return formatUptime(uptimeSeconds)
   })
 
   const wsLatency = computed(() => {
@@ -582,6 +610,7 @@
         wsConnected.value = true
         wsConnecting.value = false
         wsConnectionStatus.value = 'Connected'
+        wsConnectionTime.value = new Date() // Set the connection time
         addMessage('info', 'WebSocket connected successfully')
       }
 
@@ -598,6 +627,7 @@
         wsConnected.value = false
         wsConnecting.value = false
         wsConnectionStatus.value = `Disconnected (${event.code}: ${event.reason || 'No reason'})`
+        wsConnectionTime.value = null // Reset connection time on disconnect
         addMessage('warning', `WebSocket disconnected: ${event.code} ${event.reason || ''}`)
       }
 
@@ -605,6 +635,7 @@
         wsConnected.value = false
         wsConnecting.value = false
         wsConnectionStatus.value = 'Connection error'
+        wsConnectionTime.value = null // Reset connection time on error
         addMessage('error', 'WebSocket connection error')
         console.error('WebSocket error:', event)
       }
@@ -801,6 +832,7 @@
     wsConnected.value = false
     wsConnecting.value = false
     wsConnectionStatus.value = 'Disconnected'
+    wsConnectionTime.value = null // Reset connection time
     httpStatus.value = ''
     httpChecking.value = false
     httpResponseTime.value = null
@@ -872,11 +904,38 @@
   }
 
   const getHealthScore = () => {
-    const statuses = [wsConnected.value, httpStatus.value, dbStatus.value].filter(Boolean)
-    if (statuses.length === 0) return 0
+    const services = []
 
-    const healthyCount = statuses.filter(s => s === 'healthy').length
-    return Math.round((healthyCount / statuses.length) * 100)
+    // WebSocket health
+    if (wsConnected.value) {
+      services.push('healthy')
+    } else if (wsConnecting.value) {
+      services.push('connecting') // Count as partial
+    } else {
+      services.push('unhealthy')
+    }
+
+    // HTTP Service health
+    if (httpStatus.value) {
+      services.push(httpStatus.value)
+    } else {
+      services.push('unknown')
+    }
+
+    // Database health
+    if (dbStatus.value) {
+      services.push(dbStatus.value)
+    } else {
+      services.push('unknown')
+    }
+
+    if (services.length === 0) return 0
+
+    const healthyCount = services.filter(s => s === 'healthy').length
+    const connectingCount = services.filter(s => s === 'connecting').length
+    const partialScore = connectingCount * 0.5 // Connecting services count as 50%
+
+    return Math.round(((healthyCount + partialScore) / services.length) * 100)
   }
 
   const getHealthScoreColor = () => {
@@ -896,6 +955,29 @@
         return 'bg-yellow-500'
       default:
         return 'bg-gray-500'
+    }
+  }
+
+  const formatUptime = (seconds: number): string => {
+    if (seconds < 60) {
+      return `${Math.floor(seconds)}s`
+    } else if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60)
+      const remainingSeconds = Math.floor(seconds % 60)
+      return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`
+    } else if (seconds < 86400) {
+      const hours = Math.floor(seconds / 3600)
+      const remainingMinutes = Math.floor((seconds % 3600) / 60)
+      return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
+    } else if (seconds < 2592000) {
+      // 30 days
+      const days = Math.floor(seconds / 86400)
+      const remainingHours = Math.floor((seconds % 86400) / 3600)
+      return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`
+    } else {
+      const months = Math.floor(seconds / 2592000)
+      const remainingDays = Math.floor((seconds % 2592000) / 86400)
+      return remainingDays > 0 ? `${months}mo ${remainingDays}d` : `${months}mo`
     }
   }
 
