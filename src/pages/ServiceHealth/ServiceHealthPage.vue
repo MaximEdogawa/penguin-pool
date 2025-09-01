@@ -535,6 +535,7 @@
     refreshData,
     setPeriod,
     watchAutoRefresh,
+    // WebSocket state for real-time updates (handled automatically by composable)
   } = useUptime()
 
   // WebSocket state

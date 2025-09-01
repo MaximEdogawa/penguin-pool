@@ -654,8 +654,8 @@ app.use('*', (_req, res) => {
   })
 })
 
-// WebSocket server for health monitoring (separate port)
-const wss = new WebSocketServer({ port: WS_PORT, path: '/ws/health' })
+// WebSocket server for both health and uptime monitoring
+const wss = new WebSocketServer({ port: WS_PORT })
 
 // Function to broadcast health status to all connected clients
 const broadcastHealthStatus = async () => {
@@ -704,7 +704,7 @@ const broadcastHealthStatus = async () => {
       healthData.services.kurrentdb = 'unhealthy'
     }
 
-    // Broadcast to all connected clients
+    // Broadcast to all connected health clients
     wss.clients.forEach(client => {
       if (client.readyState === 1) {
         // WebSocket.OPEN
@@ -716,50 +716,126 @@ const broadcastHealthStatus = async () => {
   }
 }
 
-wss.on('connection', ws => {
-  console.log('WebSocket client connected for health monitoring')
+wss.on('connection', (ws, req) => {
+  const url = new URL(req.url || '', `http://${req.headers.host}`)
+  const path = url.pathname
 
-  // Send initial connection message
-  ws.send(
-    JSON.stringify({
-      type: 'connection',
-      message: 'Connected to health monitoring service',
-      timestamp: new Date().toISOString(),
+  if (path === '/ws/health') {
+    console.log('WebSocket client connected for health/uptime monitoring')
+
+    // Send initial connection message
+    ws.send(
+      JSON.stringify({
+        type: 'connection',
+        message: 'Connected to health and uptime monitoring service',
+        timestamp: new Date().toISOString(),
+      })
+    )
+
+    // Handle incoming messages
+    ws.on('message', data => {
+      try {
+        const message = JSON.parse(data.toString())
+        console.log('Received health/uptime WebSocket message:', message)
+
+        // Echo back the message with timestamp
+        ws.send(
+          JSON.stringify({
+            type: 'echo',
+            originalMessage: message,
+            timestamp: new Date().toISOString(),
+          })
+        )
+      } catch {
+        console.error('Failed to parse health/uptime WebSocket message')
+      }
     })
-  )
 
-  // Handle incoming messages
-  ws.on('message', data => {
-    try {
-      const message = JSON.parse(data.toString())
-      console.log('Received WebSocket message:', message)
+    // Handle client disconnect
+    ws.on('close', () => {
+      console.log('Health/uptime WebSocket client disconnected')
+    })
 
-      // Echo back the message with timestamp
-      ws.send(
-        JSON.stringify({
-          type: 'echo',
-          originalMessage: message,
-          timestamp: new Date().toISOString(),
-        })
-      )
-    } catch {
-      console.error('Failed to parse WebSocket message')
-    }
-  })
-
-  // Handle client disconnect
-  ws.on('close', () => {
-    console.log('WebSocket client disconnected')
-  })
-
-  // Handle errors
-  ws.on('error', () => {
-    console.error('WebSocket error')
-  })
+    // Handle errors
+    ws.on('error', () => {
+      console.error('Health/uptime WebSocket error')
+    })
+  } else {
+    console.log('WebSocket client connected to unknown path:', path)
+    ws.close(1008, 'Unknown path')
+  }
 })
 
 // Broadcast health status every 30 seconds
 setInterval(broadcastHealthStatus, 30000)
+
+// Function to broadcast service status changes to all connected clients
+const broadcastServiceStatusChange = (
+  serviceName: string,
+  status: string,
+  metadata: Record<string, unknown>
+) => {
+  const statusData = {
+    type: 'service_status_change',
+    timestamp: new Date().toISOString(),
+    serviceName,
+    status,
+    metadata,
+  }
+
+  // Broadcast to all connected health clients
+  wss.clients.forEach(client => {
+    if (client.readyState === 1) {
+      // WebSocket.OPEN
+      client.send(JSON.stringify(statusData))
+    }
+  })
+}
+
+// Subscribe to KurrentDB uptime streams for real-time updates
+const setupUptimeSubscriptions = async () => {
+  try {
+    const { KurrentDBService } = await import('./services/KurrentDBService')
+    const kurrentDBService = new KurrentDBService()
+
+    const services = ['http', 'websocket', 'database']
+
+    for (const serviceName of services) {
+      const streamName = `service-uptime-${serviceName}`
+
+      try {
+        // Subscribe to the uptime stream
+        await kurrentDBService.subscribeToStream(
+          streamName,
+          {},
+          event => {
+            // Only broadcast service_status_change events
+            if (event.event?.type === 'service_status_change') {
+              console.log(`Broadcasting status change for ${serviceName}:`, event.event.data)
+              broadcastServiceStatusChange(
+                serviceName,
+                event.event.data['status'] as string,
+                event.event.data['metadata']
+              )
+            }
+          },
+          error => {
+            console.error(`Error in uptime subscription for ${serviceName}:`, error)
+          }
+        )
+
+        console.log(`Subscribed to uptime stream: ${streamName}`)
+      } catch (error) {
+        console.error(`Failed to subscribe to uptime stream ${streamName}:`, error)
+      }
+    }
+  } catch (error) {
+    console.error('Failed to setup uptime subscriptions:', error)
+  }
+}
+
+// Setup uptime subscriptions after a short delay to ensure KurrentDB is ready
+setTimeout(setupUptimeSubscriptions, 5000)
 
 // Start HTTP server
 server.listen(HTTP_PORT, () => {
@@ -774,7 +850,7 @@ server.listen(HTTP_PORT, () => {
 // Start WebSocket server
 wss.on('listening', () => {
   console.log(`WebSocket server running on port ${WS_PORT}`)
-  console.log(`WebSocket health: ws://localhost:${WS_PORT}/ws/health`)
+  console.log(`WebSocket health/uptime: ws://localhost:${WS_PORT}/ws/health`)
 })
 
 // Graceful shutdown

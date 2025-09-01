@@ -376,19 +376,44 @@ export class KurrentDBService {
 
       logger.info(`Creating stream: ${streamName}`)
 
-      // Always create real streams in KurrentDB
-
-      // In KurrentDB, streams are created implicitly when you first append events to them
-      // We'll create an initial event to establish the stream
       if (!this.client) {
         throw new Error('KurrentDB client not initialized')
       }
 
-      // Define the event type according to the official documentation pattern
-      // Note: The type is defined for documentation purposes but not used directly
-      // as the jsonEvent helper handles the typing internally
+      // Check if stream already exists by trying to read from it
+      try {
+        const existingEvents = await this.readStream(streamName, { maxCount: 1 })
+        if (existingEvents.length > 0) {
+          logger.info(`Stream ${streamName} already exists, returning existing stream`)
 
-      // Create an initial stream metadata event using the proper jsonEvent helper
+          // Return existing stream data
+          const stream: Stream = {
+            id: streamName,
+            name: request.name,
+            description: request.description || '',
+            data: request.data,
+            metadata: {
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              version: 1,
+              tags: request.tags || [],
+              owner: request.owner,
+            },
+            status: 'active',
+            permissions: {
+              read: [request.owner],
+              write: [request.owner],
+              admin: [request.owner],
+            },
+          }
+          return stream
+        }
+      } catch {
+        // Stream doesn't exist, which is expected for new streams
+        logger.debug(`Stream ${streamName} doesn't exist yet, will create it`)
+      }
+
+      // Stream doesn't exist, create it with initial StreamCreated event
       // Sanitize data to avoid BigInt serialization issues
       const sanitizedRequestData = JSON.parse(
         JSON.stringify(request.data, (_, value) =>

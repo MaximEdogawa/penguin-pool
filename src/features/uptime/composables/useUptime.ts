@@ -16,6 +16,12 @@ export function useUptime() {
   const refreshInterval = ref(30) // seconds
   const selectedPeriod = ref(0.167) // hours (10 minutes)
 
+  // WebSocket state for real-time updates
+  const ws = ref<WebSocket | null>(null)
+  const wsConnected = ref(false)
+  const wsConnecting = ref(false)
+  const wsError = ref<string>('')
+
   // Computed
   const overallHealth = computed(() => {
     const services = uptimeSummaries.value
@@ -100,6 +106,72 @@ export function useUptime() {
     refreshInterval.value = seconds
   }
 
+  // WebSocket methods for real-time updates
+  const connectWebSocket = () => {
+    if (ws.value?.readyState === WebSocket.OPEN) return
+
+    wsConnecting.value = true
+    wsError.value = ''
+
+    try {
+      const wsUrl = 'ws://localhost:3002/ws/health'
+      ws.value = new WebSocket(wsUrl)
+
+      ws.value.onopen = () => {
+        wsConnected.value = true
+        wsConnecting.value = false
+        wsError.value = ''
+        console.log('Connected to health/uptime WebSocket')
+      }
+
+      ws.value.onmessage = event => {
+        try {
+          const data = JSON.parse(event.data)
+
+          if (data.type === 'service_status_change') {
+            // Update current statuses in real-time
+            currentStatuses.value[data.serviceName] = data.status
+
+            // Trigger a refresh of the uptime data to get updated percentages
+            if (autoRefresh.value) {
+              fetchUptimeData()
+            }
+
+            console.log(`Real-time status update: ${data.serviceName} is now ${data.status}`)
+          }
+        } catch (err) {
+          console.error('Failed to parse WebSocket message:', err)
+        }
+      }
+
+      ws.value.onclose = event => {
+        wsConnected.value = false
+        wsConnecting.value = false
+        wsError.value = `WebSocket disconnected: ${event.code} ${event.reason || ''}`
+        console.log('Health/uptime WebSocket disconnected')
+      }
+
+      ws.value.onerror = error => {
+        wsConnecting.value = false
+        wsError.value = 'WebSocket connection error'
+        console.error('Health/uptime WebSocket error:', error)
+      }
+    } catch (err) {
+      wsConnecting.value = false
+      wsError.value = 'Failed to create WebSocket connection'
+      console.error('Failed to connect to health/uptime WebSocket:', err)
+    }
+  }
+
+  const disconnectWebSocket = () => {
+    if (ws.value) {
+      ws.value.close()
+      ws.value = null
+    }
+    wsConnected.value = false
+    wsConnecting.value = false
+  }
+
   // Auto-refresh setup
   let refreshTimer: number | null = null
 
@@ -126,10 +198,12 @@ export function useUptime() {
   onMounted(() => {
     fetchUptimeData()
     startAutoRefresh()
+    connectWebSocket()
   })
 
   onUnmounted(() => {
     stopAutoRefresh()
+    disconnectWebSocket()
   })
 
   // Watch for auto-refresh changes
@@ -152,6 +226,12 @@ export function useUptime() {
     refreshInterval,
     selectedPeriod,
 
+    // WebSocket state
+    ws,
+    wsConnected,
+    wsConnecting,
+    wsError,
+
     // Computed
     overallHealth,
     overallUptimePercentage,
@@ -169,6 +249,8 @@ export function useUptime() {
     startAutoRefresh,
     stopAutoRefresh,
     watchAutoRefresh,
+    connectWebSocket,
+    disconnectWebSocket,
   }
 }
 
