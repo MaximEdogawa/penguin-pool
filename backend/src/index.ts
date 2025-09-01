@@ -71,14 +71,44 @@ app.get('/health/kurrentdb', async (_req, res) => {
     // Simple health check - try to connect to KurrentDB
     const response = await fetch(`${KURRENTDB_URL}/health`)
     const endTime = Date.now()
+    const responseTime = endTime - startTime
 
     if (response.ok) {
+      // Define response time thresholds
+      const EXCELLENT_THRESHOLD = 50 // ms - excellent performance
+      const GOOD_THRESHOLD = 100 // ms - good performance
+      const ACCEPTABLE_THRESHOLD = 500 // ms - acceptable performance
+
+      let status = 'healthy'
+      let performanceGrade = 'excellent'
+
+      if (responseTime <= EXCELLENT_THRESHOLD) {
+        performanceGrade = 'excellent'
+      } else if (responseTime <= GOOD_THRESHOLD) {
+        performanceGrade = 'good'
+      } else if (responseTime <= ACCEPTABLE_THRESHOLD) {
+        performanceGrade = 'acceptable'
+      } else {
+        performanceGrade = 'slow'
+        // Only mark as degraded if response time is very slow
+        if (responseTime > 1000) {
+          // 1 second
+          status = 'degraded'
+        }
+      }
+
       res.json({
-        status: 'healthy',
+        status: status,
         connected: true,
         connectionStatus: 'connected',
         timestamp: new Date().toISOString(),
-        responseTime: endTime - startTime,
+        responseTime: responseTime,
+        performanceGrade: performanceGrade,
+        thresholds: {
+          excellent: EXCELLENT_THRESHOLD,
+          good: GOOD_THRESHOLD,
+          acceptable: ACCEPTABLE_THRESHOLD,
+        },
       })
     } else {
       res.json({
@@ -86,16 +116,20 @@ app.get('/health/kurrentdb', async (_req, res) => {
         connected: false,
         connectionStatus: 'error',
         timestamp: new Date().toISOString(),
-        responseTime: endTime - startTime,
+        responseTime: responseTime,
+        performanceGrade: 'error',
+        error: `HTTP ${response.status}: ${response.statusText}`,
       })
     }
-  } catch {
+  } catch (error) {
     res.json({
       status: 'unhealthy',
       connected: false,
       connectionStatus: 'disconnected',
       timestamp: new Date().toISOString(),
       responseTime: null,
+      performanceGrade: 'disconnected',
+      error: error instanceof Error ? error.message : 'Unknown error',
     })
   }
 })
@@ -119,6 +153,13 @@ app.get('/health/comprehensive', async (_req, res) => {
         connectionStatus?: string
         url?: string
         error?: string
+        responseTime?: number
+        performanceGrade?: string
+        thresholds?: {
+          excellent: number
+          good: number
+          acceptable: number
+        }
       }
     >
     responseTime: number
@@ -150,12 +191,51 @@ app.get('/health/comprehensive', async (_req, res) => {
 
     // Check KurrentDB connection
     try {
+      const kurrentdbStartTime = Date.now()
       const kurrentdbResponse = await fetch(`${KURRENTDB_URL}/health`)
+      const kurrentdbEndTime = Date.now()
+      const kurrentdbResponseTime = kurrentdbEndTime - kurrentdbStartTime
+
+      // Define response time thresholds (same as in /health/kurrentdb)
+      const EXCELLENT_THRESHOLD = 50 // ms - excellent performance
+      const GOOD_THRESHOLD = 100 // ms - good performance
+      const ACCEPTABLE_THRESHOLD = 500 // ms - acceptable performance
+
+      let kurrentdbStatus = 'healthy'
+      let performanceGrade = 'excellent'
+
+      if (kurrentdbResponse.ok) {
+        if (kurrentdbResponseTime <= EXCELLENT_THRESHOLD) {
+          performanceGrade = 'excellent'
+        } else if (kurrentdbResponseTime <= GOOD_THRESHOLD) {
+          performanceGrade = 'good'
+        } else if (kurrentdbResponseTime <= ACCEPTABLE_THRESHOLD) {
+          performanceGrade = 'acceptable'
+        } else {
+          performanceGrade = 'slow'
+          // Only mark as degraded if response time is very slow
+          if (kurrentdbResponseTime > 1000) {
+            // 1 second
+            kurrentdbStatus = 'degraded'
+          }
+        }
+      } else {
+        kurrentdbStatus = 'degraded'
+        performanceGrade = 'error'
+      }
+
       healthChecks.services['kurrentdb'] = {
-        status: kurrentdbResponse.ok ? 'healthy' : 'degraded',
+        status: kurrentdbStatus,
         connected: kurrentdbResponse.ok,
         connectionStatus: kurrentdbResponse.ok ? 'connected' : 'error',
         url: KURRENTDB_URL,
+        responseTime: kurrentdbResponseTime,
+        performanceGrade: performanceGrade,
+        thresholds: {
+          excellent: EXCELLENT_THRESHOLD,
+          good: GOOD_THRESHOLD,
+          acceptable: ACCEPTABLE_THRESHOLD,
+        },
       }
     } catch (error) {
       healthChecks.services['kurrentdb'] = {
@@ -164,6 +244,7 @@ app.get('/health/comprehensive', async (_req, res) => {
         connectionStatus: 'disconnected',
         url: KURRENTDB_URL,
         error: error instanceof Error ? error.message : 'Unknown error',
+        performanceGrade: 'disconnected',
       }
     }
 
@@ -239,10 +320,37 @@ const broadcastHealthStatus = async () => {
       },
     }
 
-    // Check KurrentDB health
+    // Check KurrentDB health with response time measurement
     try {
+      const startTime = Date.now()
       const response = await fetch(`${KURRENTDB_URL}/health`)
-      healthData.services.kurrentdb = response.ok ? 'healthy' : 'degraded'
+      const endTime = Date.now()
+      const responseTime = endTime - startTime
+
+      // Use the same response time thresholds
+      const EXCELLENT_THRESHOLD = 50 // ms - excellent performance
+      const GOOD_THRESHOLD = 100 // ms - good performance
+      const ACCEPTABLE_THRESHOLD = 500 // ms - acceptable performance
+
+      if (response.ok) {
+        if (responseTime <= EXCELLENT_THRESHOLD) {
+          healthData.services.kurrentdb = 'healthy'
+        } else if (responseTime <= GOOD_THRESHOLD) {
+          healthData.services.kurrentdb = 'healthy'
+        } else if (responseTime <= ACCEPTABLE_THRESHOLD) {
+          healthData.services.kurrentdb = 'healthy'
+        } else {
+          // Only mark as degraded if response time is very slow
+          if (responseTime > 1000) {
+            // 1 second
+            healthData.services.kurrentdb = 'degraded'
+          } else {
+            healthData.services.kurrentdb = 'healthy'
+          }
+        }
+      } else {
+        healthData.services.kurrentdb = 'degraded'
+      }
     } catch {
       healthData.services.kurrentdb = 'unhealthy'
     }

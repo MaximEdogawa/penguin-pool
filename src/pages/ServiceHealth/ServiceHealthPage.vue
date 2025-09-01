@@ -147,6 +147,13 @@
           <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2">
             {{ dbResponseTime ? `${dbResponseTime}ms` : 'Not checked' }}
           </p>
+          <p
+            v-if="dbDetails?.performanceGrade"
+            class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-1"
+          >
+            Performance:
+            <span class="font-medium capitalize">{{ dbDetails.performanceGrade }}</span>
+          </p>
           <div class="mt-3 text-xs text-gray-500">Port: 2113</div>
         </div>
 
@@ -197,6 +204,18 @@
               <div class="flex items-center space-x-2">
                 <div class="w-3 h-3 rounded-full bg-purple-500"></div>
                 <span class="text-sm font-medium">{{ dbResponseTime || 0 }}ms</span>
+              </div>
+            </div>
+            <div v-if="dbDetails?.performanceGrade" class="flex items-center justify-between">
+              <span class="text-sm text-gray-500 dark:text-gray-500 ml-4">Performance Grade</span>
+              <div class="flex items-center space-x-2">
+                <div
+                  class="w-2 h-2 rounded-full"
+                  :class="getPerformanceGradeColor(dbDetails.performanceGrade)"
+                ></div>
+                <span class="text-xs font-medium capitalize text-gray-600 dark:text-gray-400">{{
+                  dbDetails.performanceGrade
+                }}</span>
               </div>
             </div>
             <div class="flex items-center justify-between">
@@ -456,6 +475,13 @@
     connectionStatus: string
     responseTime: number
     timestamp: string
+    performanceGrade?: string
+    thresholds?: {
+      excellent: number
+      good: number
+      acceptable: number
+    }
+    error?: string
   } | null>(null)
 
   // Error state
@@ -795,8 +821,24 @@
     return 'bg-red-500'
   }
 
+  const getPerformanceGradeColor = (grade: string) => {
+    switch (grade) {
+      case 'excellent':
+        return 'bg-green-500'
+      case 'good':
+        return 'bg-blue-500'
+      case 'acceptable':
+        return 'bg-yellow-500'
+      default:
+        return 'bg-gray-500'
+    }
+  }
+
   // Lifecycle
   onMounted(() => {
+    // Auto-connect to WebSocket
+    connectWebSocket()
+
     // Auto-check HTTP health on mount
     checkHTTPHealth()
     checkDBHealth()
