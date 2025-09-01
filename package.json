@@ -37,7 +37,7 @@
     "kurrentDB:restart": "docker-compose restart",
     "kurrentDB:logs": "docker-compose logs -f kurrentdb",
     "kurrentDB:status": "docker-compose ps",
-    "dev:all": "concurrently \"npm run dev\" \"npm run dev:backend\" \"npm run dev:websocket\"",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:backend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:websocket": "cd backend && npm run dev:websocket"
   },

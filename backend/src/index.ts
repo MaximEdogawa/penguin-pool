@@ -7,6 +7,8 @@ import dotenv from 'dotenv'
 import { createProxyMiddleware } from 'http-proxy-middleware'
 import { WebSocketServer } from 'ws'
 import { createServer } from 'http'
+import { uptimeTrackingService } from './services/UptimeTrackingService'
+import { streamManagementRoutes } from './routes/streamManagementRoutes'
 
 // Load environment variables
 dotenv.config()
@@ -68,59 +70,44 @@ app.get('/health/kurrentdb', async (_req, res) => {
   try {
     const startTime = Date.now()
 
-    // Simple health check - try to connect to KurrentDB
-    const response = await fetch(`${KURRENTDB_URL}/health`)
+    // Use our KurrentDB service for health check
+    const { KurrentDBService } = await import('./services/KurrentDBService')
+    const kurrentDBService = new KurrentDBService()
+
+    const healthData = await kurrentDBService.checkHealth()
     const endTime = Date.now()
     const responseTime = endTime - startTime
 
-    if (response.ok) {
-      // Define response time thresholds
-      const EXCELLENT_THRESHOLD = 50 // ms - excellent performance
-      const GOOD_THRESHOLD = 100 // ms - good performance
-      const ACCEPTABLE_THRESHOLD = 500 // ms - acceptable performance
+    // Define response time thresholds
+    const EXCELLENT_THRESHOLD = 50 // ms - excellent performance
+    const GOOD_THRESHOLD = 100 // ms - good performance
+    const ACCEPTABLE_THRESHOLD = 500 // ms - acceptable performance
 
-      let status = 'healthy'
-      let performanceGrade = 'excellent'
-
-      if (responseTime <= EXCELLENT_THRESHOLD) {
-        performanceGrade = 'excellent'
-      } else if (responseTime <= GOOD_THRESHOLD) {
-        performanceGrade = 'good'
-      } else if (responseTime <= ACCEPTABLE_THRESHOLD) {
-        performanceGrade = 'acceptable'
-      } else {
-        performanceGrade = 'slow'
-        // Only mark as degraded if response time is very slow
-        if (responseTime > 1000) {
-          // 1 second
-          status = 'degraded'
-        }
-      }
-
-      res.json({
-        status: status,
-        connected: true,
-        connectionStatus: 'connected',
-        timestamp: new Date().toISOString(),
-        responseTime: responseTime,
-        performanceGrade: performanceGrade,
-        thresholds: {
-          excellent: EXCELLENT_THRESHOLD,
-          good: GOOD_THRESHOLD,
-          acceptable: ACCEPTABLE_THRESHOLD,
-        },
-      })
+    let performanceGrade = 'excellent'
+    if (responseTime <= EXCELLENT_THRESHOLD) {
+      performanceGrade = 'excellent'
+    } else if (responseTime <= GOOD_THRESHOLD) {
+      performanceGrade = 'good'
+    } else if (responseTime <= ACCEPTABLE_THRESHOLD) {
+      performanceGrade = 'acceptable'
     } else {
-      res.json({
-        status: 'degraded',
-        connected: false,
-        connectionStatus: 'error',
-        timestamp: new Date().toISOString(),
-        responseTime: responseTime,
-        performanceGrade: 'error',
-        error: `HTTP ${response.status}: ${response.statusText}`,
-      })
+      performanceGrade = 'slow'
     }
+
+    res.json({
+      status: healthData.status,
+      connected: healthData.checks.connection,
+      connectionStatus: healthData.checks.connection ? 'connected' : 'disconnected',
+      timestamp: new Date().toISOString(),
+      responseTime: responseTime,
+      performanceGrade: performanceGrade,
+      thresholds: {
+        excellent: EXCELLENT_THRESHOLD,
+        good: GOOD_THRESHOLD,
+        acceptable: ACCEPTABLE_THRESHOLD,
+      },
+      errors: healthData.errors,
+    })
   } catch (error) {
     res.json({
       status: 'unhealthy',
@@ -176,7 +163,6 @@ app.get('/health/comprehensive', async (_req, res) => {
     healthChecks.services['http'] = {
       status: 'healthy',
       port: HTTP_PORT,
-      uptime: process.uptime(),
       memory: process.memoryUsage(),
       environment: process.env['NODE_ENV'] || 'development',
     }
@@ -186,13 +172,14 @@ app.get('/health/comprehensive', async (_req, res) => {
       status: 'healthy',
       port: WS_PORT,
       connections: wss.clients.size,
-      uptime: process.uptime(),
     }
 
-    // Check KurrentDB connection
+    // Check KurrentDB connection using our service
     try {
       const kurrentdbStartTime = Date.now()
-      const kurrentdbResponse = await fetch(`${KURRENTDB_URL}/health`)
+      const { KurrentDBService } = await import('./services/KurrentDBService')
+      const kurrentDBService = new KurrentDBService()
+      const kurrentdbHealth = await kurrentDBService.checkHealth()
       const kurrentdbEndTime = Date.now()
       const kurrentdbResponseTime = kurrentdbEndTime - kurrentdbStartTime
 
@@ -201,33 +188,21 @@ app.get('/health/comprehensive', async (_req, res) => {
       const GOOD_THRESHOLD = 100 // ms - good performance
       const ACCEPTABLE_THRESHOLD = 500 // ms - acceptable performance
 
-      let kurrentdbStatus = 'healthy'
       let performanceGrade = 'excellent'
-
-      if (kurrentdbResponse.ok) {
-        if (kurrentdbResponseTime <= EXCELLENT_THRESHOLD) {
-          performanceGrade = 'excellent'
-        } else if (kurrentdbResponseTime <= GOOD_THRESHOLD) {
-          performanceGrade = 'good'
-        } else if (kurrentdbResponseTime <= ACCEPTABLE_THRESHOLD) {
-          performanceGrade = 'acceptable'
-        } else {
-          performanceGrade = 'slow'
-          // Only mark as degraded if response time is very slow
-          if (kurrentdbResponseTime > 1000) {
-            // 1 second
-            kurrentdbStatus = 'degraded'
-          }
-        }
+      if (kurrentdbResponseTime <= EXCELLENT_THRESHOLD) {
+        performanceGrade = 'excellent'
+      } else if (kurrentdbResponseTime <= GOOD_THRESHOLD) {
+        performanceGrade = 'good'
+      } else if (kurrentdbResponseTime <= ACCEPTABLE_THRESHOLD) {
+        performanceGrade = 'acceptable'
       } else {
-        kurrentdbStatus = 'degraded'
-        performanceGrade = 'error'
+        performanceGrade = 'slow'
       }
 
       healthChecks.services['kurrentdb'] = {
-        status: kurrentdbStatus,
-        connected: kurrentdbResponse.ok,
-        connectionStatus: kurrentdbResponse.ok ? 'connected' : 'error',
+        status: kurrentdbHealth.status,
+        connected: kurrentdbHealth.checks.connection,
+        connectionStatus: kurrentdbHealth.checks.connection ? 'connected' : 'disconnected',
         url: KURRENTDB_URL,
         responseTime: kurrentdbResponseTime,
         performanceGrade: performanceGrade,
@@ -236,6 +211,7 @@ app.get('/health/comprehensive', async (_req, res) => {
           good: GOOD_THRESHOLD,
           acceptable: ACCEPTABLE_THRESHOLD,
         },
+        errors: kurrentdbHealth.errors,
       }
     } catch (error) {
       healthChecks.services['kurrentdb'] = {
@@ -286,6 +262,379 @@ app.get('/api/status', (_req, res) => {
     service: 'kurrentdb-proxy',
     kurrentdb_url: KURRENTDB_URL,
   })
+})
+
+// Service uptime timeline endpoints
+app.get('/api/uptime/summary', (req, res) => {
+  try {
+    const hours = parseFloat(req.query['hours'] as string) || 24
+    const summaries = uptimeTrackingService.getAllServiceUptimeSummaries(hours)
+
+    // Format period display based on hours value
+    let periodDisplay: string
+    if (hours < 1) {
+      const minutes = Math.round(hours * 60)
+      periodDisplay = `${minutes} minutes`
+    } else if (hours === 1) {
+      periodDisplay = '1 hour'
+    } else if (hours < 24) {
+      periodDisplay = `${hours} hours`
+    } else {
+      const days = Math.round(hours / 24)
+      periodDisplay = `${days} day${days > 1 ? 's' : ''}`
+    }
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      period: periodDisplay,
+      services: summaries,
+    })
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to get uptime summary',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+app.get('/api/uptime/service/:serviceName', (req, res) => {
+  try {
+    const { serviceName } = req.params
+    const hours = parseFloat(req.query['hours'] as string) || 24
+
+    const summary = uptimeTrackingService.getServiceUptimeSummary(serviceName, hours)
+
+    if (!summary) {
+      return res.status(404).json({
+        error: 'Service not found',
+        message: `No uptime data found for service: ${serviceName}`,
+      })
+    }
+
+    // Format period display based on hours value
+    let periodDisplay: string
+    if (hours < 1) {
+      const minutes = Math.round(hours * 60)
+      periodDisplay = `${minutes} minutes`
+    } else if (hours === 1) {
+      periodDisplay = '1 hour'
+    } else if (hours < 24) {
+      periodDisplay = `${hours} hours`
+    } else {
+      const days = Math.round(hours / 24)
+      periodDisplay = `${days} day${days > 1 ? 's' : ''}`
+    }
+
+    return res.json({
+      timestamp: new Date().toISOString(),
+      period: periodDisplay,
+      service: summary,
+    })
+  } catch (error) {
+    return res.status(500).json({
+      error: 'Failed to get service uptime',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+app.get('/api/uptime/timeline/:serviceName', (req, res) => {
+  try {
+    const { serviceName } = req.params
+    const hours = parseFloat(req.query['hours'] as string) || 24
+
+    const timeline = uptimeTrackingService.getServiceUptimeTimeline(serviceName, hours)
+
+    if (!timeline) {
+      return res.status(404).json({
+        error: 'Service not found',
+        message: `No timeline data found for service: ${serviceName}`,
+      })
+    }
+
+    // Format period display based on hours value
+    let periodDisplay: string
+    if (hours < 1) {
+      const minutes = Math.round(hours * 60)
+      periodDisplay = `${minutes} minutes`
+    } else if (hours === 1) {
+      periodDisplay = '1 hour'
+    } else if (hours < 24) {
+      periodDisplay = `${hours} hours`
+    } else {
+      const days = Math.round(hours / 24)
+      periodDisplay = `${days} day${days > 1 ? 's' : ''}`
+    }
+
+    return res.json({
+      timestamp: new Date().toISOString(),
+      period: periodDisplay,
+      timeline,
+    })
+  } catch (error) {
+    return res.status(500).json({
+      error: 'Failed to get service timeline',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+app.get('/api/uptime/status', (_req, res) => {
+  try {
+    const currentStatuses = uptimeTrackingService.getCurrentServiceStatuses()
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      services: currentStatuses,
+    })
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to get current service statuses',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+app.get('/api/uptime/stats', (_req, res) => {
+  try {
+    const memoryStats = uptimeTrackingService.getMemoryStats()
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      stats: memoryStats,
+    })
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to get uptime statistics',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+app.post('/api/uptime/check', async (_req, res) => {
+  try {
+    // Manually trigger a status check
+    const timestamp = new Date()
+
+    // Check all services
+    const services = ['http', 'websocket', 'database']
+    const results = []
+
+    for (const serviceName of services) {
+      let status: 'up' | 'down' | 'degraded' = 'down'
+      const metadata: Record<string, unknown> = {}
+
+      switch (serviceName) {
+        case 'http':
+          try {
+            const startTime = Date.now()
+            const response = await fetch('http://localhost:3001/health')
+            const responseTime = Date.now() - startTime
+            metadata.responseTime = responseTime
+            status = response.ok ? 'up' : 'down'
+          } catch {
+            status = 'down'
+          }
+          break
+        case 'websocket':
+          status = 'up' // Assume WebSocket is up if the process is running
+          break
+        case 'database':
+          try {
+            const startTime = Date.now()
+            const response = await fetch('http://localhost:2113/health')
+            const responseTime = Date.now() - startTime
+            metadata.responseTime = responseTime
+            status = response.ok ? 'up' : 'down'
+          } catch {
+            status = 'down'
+          }
+          break
+      }
+
+      results.push({
+        service: serviceName,
+        status,
+        timestamp: timestamp.toISOString(),
+        metadata,
+      })
+    }
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      message: 'Manual status check completed',
+      results,
+    })
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to perform manual status check',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+app.post('/api/uptime/create-streams', async (_req, res) => {
+  try {
+    const { KurrentDBService } = await import('./services/KurrentDBService')
+    const kurrentDBService = new KurrentDBService()
+
+    const services = ['http', 'websocket', 'database']
+    const results = []
+
+    for (const serviceName of services) {
+      try {
+        const streamName = `service-uptime-${serviceName}`
+        const stream = await kurrentDBService.createStream({
+          name: streamName,
+          description: `Service uptime tracking for ${serviceName}`,
+          data: {},
+          tags: ['uptime', 'monitoring', serviceName],
+          owner: 'system',
+        })
+
+        results.push({
+          service: serviceName,
+          streamName,
+          success: true,
+          streamId: stream.id,
+        })
+      } catch (error) {
+        results.push({
+          service: serviceName,
+          streamName: `service-uptime-${serviceName}`,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
+    }
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      message: 'Stream creation completed',
+      results,
+    })
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to create streams',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+app.get('/api/uptime/test-kurrentdb', async (_req, res) => {
+  try {
+    const kurrentdbUrl = process.env['KURRENTDB_URL'] || 'http://localhost:2113'
+
+    // Test KurrentDB connection
+    const healthResponse = await fetch(`${kurrentdbUrl}/info`)
+    const healthData = healthResponse.ok ? await healthResponse.json() : null
+
+    // Test stream listing
+    const streamsResponse = await fetch(`${kurrentdbUrl}/streams`)
+    const streamsData = streamsResponse.ok ? await streamsResponse.json() : null
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      kurrentdbUrl,
+      health: {
+        status: healthResponse.status,
+        ok: healthResponse.ok,
+        data: healthData,
+      },
+      streams: {
+        status: streamsResponse.status,
+        ok: streamsResponse.ok,
+        data: streamsData,
+      },
+    })
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to test KurrentDB connection',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
+// Stream management routes
+app.use('/api/streams', streamManagementRoutes())
+
+// Test endpoint to create a test stream
+app.post('/api/test/create-stream', async (_req, res) => {
+  try {
+    const { KurrentDBService } = await import('./services/KurrentDBService')
+    const kurrentDBService = new KurrentDBService()
+
+    const testStream = await kurrentDBService.createStream({
+      name: 'test-stream',
+      description: 'A test stream for KurrentDB integration',
+      data: {
+        testData: 'Hello KurrentDB!',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+      },
+      tags: ['test', 'integration', 'demo'],
+      owner: 'test-user',
+    })
+
+    // Append a test event to the stream
+    const eventResult = await kurrentDBService.appendToStream('test-stream', {
+      type: 'TestEvent',
+      data: {
+        message: 'This is a test event',
+        timestamp: new Date().toISOString(),
+        metadata: {
+          source: 'test-endpoint',
+          version: '1.0.0',
+        },
+      },
+    })
+
+    res.json({
+      success: true,
+      message: 'Test stream created and event appended successfully',
+      stream: testStream,
+      event: eventResult,
+      timestamp: new Date().toISOString(),
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create test stream',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString(),
+    })
+  }
+})
+
+// Test endpoint to read the test stream
+app.get('/api/test/read-stream', async (_req, res) => {
+  try {
+    const { KurrentDBService } = await import('./services/KurrentDBService')
+    const { FORWARDS, START } = await import('@kurrent/kurrentdb-client')
+    const kurrentDBService = new KurrentDBService()
+
+    const events = await kurrentDBService.readStream('test-stream', {
+      direction: FORWARDS,
+      fromRevision: START,
+      maxCount: 10,
+    })
+
+    res.json({
+      success: true,
+      message: 'Test stream read successfully',
+      streamName: 'test-stream',
+      eventCount: events.length,
+      events: events,
+      timestamp: new Date().toISOString(),
+    })
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to read test stream',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString(),
+    })
+  }
 })
 
 // Error handling middleware

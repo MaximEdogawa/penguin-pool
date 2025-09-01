@@ -16,12 +16,13 @@
             <label class="flex items-center text-sm text-gray-600 dark:text-gray-400">
               <input
                 v-model="autoRefresh"
+                @change="watchAutoRefresh"
                 type="checkbox"
                 class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               Auto-refresh
             </label>
-            <span class="text-xs text-gray-500">{{ autoRefreshInterval }}s</span>
+            <span class="text-xs text-gray-500">{{ refreshInterval }}s</span>
           </div>
         </div>
       </div>
@@ -100,7 +101,15 @@
               ></div>
               <p class="text-sm font-medium text-gray-900 dark:text-white">WebSocket</p>
             </div>
-            <div class="text-xs text-gray-500">{{ wsUptime }}</div>
+            <div class="text-xs text-gray-500">
+              {{
+                getServiceUptime('websocket')?.uptimePercentage
+                  ? uptimeService.formatUptimePercentage(
+                      getServiceUptime('websocket')!.uptimePercentage
+                    )
+                  : 'N/A'
+              }}
+            </div>
           </div>
           <p
             class="text-xl sm:text-2xl font-bold"
@@ -121,7 +130,13 @@
               <div class="w-3 h-3 rounded-full" :class="getStatusColor(httpStatus)"></div>
               <p class="text-sm font-medium text-gray-900 dark:text-white">HTTP Service</p>
             </div>
-            <div class="text-xs text-gray-500">{{ httpUptime }}</div>
+            <div class="text-xs text-gray-500">
+              {{
+                getServiceUptime('http')?.uptimePercentage
+                  ? uptimeService.formatUptimePercentage(getServiceUptime('http')!.uptimePercentage)
+                  : 'N/A'
+              }}
+            </div>
           </div>
           <p class="text-xl sm:text-2xl font-bold" :class="getStatusTextColor(httpStatus)">
             {{ httpStatus || 'Unknown' }}
@@ -139,7 +154,15 @@
               <div class="w-3 h-3 rounded-full" :class="getStatusColor(dbStatus)"></div>
               <p class="text-sm font-medium text-gray-900 dark:text-white">Database</p>
             </div>
-            <div class="text-xs text-gray-500">{{ dbUptime }}</div>
+            <div class="text-xs text-gray-500">
+              {{
+                getServiceUptime('database')?.uptimePercentage
+                  ? uptimeService.formatUptimePercentage(
+                      getServiceUptime('database')!.uptimePercentage
+                    )
+                  : 'N/A'
+              }}
+            </div>
           </div>
           <p class="text-xl sm:text-2xl font-bold" :class="getStatusTextColor(dbStatus)">
             {{ dbStatus || 'Unknown' }}
@@ -161,23 +184,33 @@
         <div class="card p-4 sm:p-6">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center space-x-2">
-              <div class="w-3 h-3 rounded-full" :class="getStatusColor(overallHealth)"></div>
+              <div
+                class="w-3 h-3 rounded-full"
+                :class="uptimeService.getStatusBgColor(mapToUptimeStatus(overallHealth))"
+              ></div>
               <p class="text-sm font-medium text-gray-900 dark:text-white">Overall Health</p>
             </div>
-            <div class="text-xs text-gray-500">{{ lastUpdated }}</div>
+            <div class="text-xs text-gray-500">
+              {{
+                lastUpdated ? uptimeService.formatRelativeTime(lastUpdated.toISOString()) : 'Never'
+              }}
+            </div>
           </div>
-          <p class="text-xl sm:text-2xl font-bold" :class="getStatusTextColor(overallHealth)">
+          <p
+            class="text-xl sm:text-2xl font-bold"
+            :class="uptimeService.getStatusColor(mapToUptimeStatus(overallHealth))"
+          >
             {{ overallHealth || 'Unknown' }}
           </p>
           <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2">
-            {{ getHealthScore() }}% Healthy
+            {{ uptimeService.formatUptimePercentage(overallUptimePercentage) }} Uptime
           </p>
           <div class="mt-3">
             <div class="w-full bg-gray-200 rounded-full h-2">
               <div
                 class="h-2 rounded-full transition-all duration-300"
-                :class="getHealthScoreColor()"
-                :style="{ width: getHealthScore() + '%' }"
+                :class="healthScoreColor"
+                :style="{ width: healthScore + '%' }"
               ></div>
             </div>
           </div>
@@ -228,23 +261,58 @@
           </div>
         </div>
 
-        <!-- Service Uptime -->
+        <!-- Service Uptime Timeline -->
         <div class="card p-4 sm:p-6">
-          <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Service Uptime
-          </h2>
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+            <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2 sm:mb-0">
+              Service Uptime Timeline
+            </h2>
+            <div class="flex items-center space-x-2">
+              <select
+                v-model="selectedPeriod"
+                @change="setPeriod(selectedPeriod)"
+                class="text-sm border border-gray-300 rounded px-2 py-1 bg-white dark:bg-gray-800 dark:border-gray-600"
+              >
+                <option :value="0.167">Last 10 minutes</option>
+                <option :value="1">Last 1 hour</option>
+                <option :value="6">Last 6 hours</option>
+                <option :value="24">Last 24 hours</option>
+                <option :value="168">Last 7 days</option>
+              </select>
+            </div>
+          </div>
           <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">HTTP Service</span>
-              <span class="text-sm font-medium text-green-600">{{ httpUptime }}</span>
+            <div
+              v-for="service in uptimeSummaries"
+              :key="service.serviceName"
+              class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+            >
+              <div class="flex items-center space-x-3">
+                <div
+                  class="w-3 h-3 rounded-full"
+                  :class="uptimeService.getStatusIndicatorColor(service.currentStatus)"
+                ></div>
+                <span class="text-sm font-medium text-gray-900 dark:text-white capitalize">
+                  {{ service.serviceName }} Service
+                </span>
+              </div>
+              <div class="text-right">
+                <div
+                  class="text-sm font-medium"
+                  :class="uptimeService.getStatusColor(service.currentStatus)"
+                >
+                  {{ uptimeService.formatUptimePercentage(service.uptimePercentage) }}
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ service.totalUptime }}
+                </div>
+              </div>
             </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Database</span>
-              <span class="text-sm font-medium text-green-600">{{ dbUptime }}</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600 dark:text-gray-400">WebSocket</span>
-              <span class="text-sm font-medium text-green-600">{{ wsUptime }}</span>
+            <div
+              v-if="uptimeSummaries.length === 0"
+              class="text-center text-gray-500 dark:text-gray-400 py-4"
+            >
+              No uptime data available
             </div>
           </div>
         </div>
@@ -446,9 +514,28 @@
 
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted } from 'vue'
+  import { useUptime } from '@/features/uptime/composables/useUptime'
+  import { uptimeService } from '@/features/uptime/services/UptimeService'
 
   // Configuration
   const KURRENTDB_URL = 'http://localhost:2113'
+
+  // Uptime tracking
+  const {
+    uptimeSummaries,
+    lastUpdated,
+    autoRefresh,
+    refreshInterval,
+    selectedPeriod,
+    overallHealth,
+    overallUptimePercentage,
+    healthScore,
+    healthScoreColor,
+    getServiceUptime,
+    refreshData,
+    setPeriod,
+    watchAutoRefresh,
+  } = useUptime()
 
   // WebSocket state
   const ws = ref<WebSocket | null>(null)
@@ -498,90 +585,9 @@
   // Error state
   const error = ref<string>('')
 
-  // Auto-refresh state
-  const autoRefresh = ref(true)
-  const autoRefreshInterval = ref(5) // seconds
+  // Auto-refresh state (now managed by uptime composable)
 
-  // Computed properties
-  const overallHealth = computed(() => {
-    const services = []
-
-    // WebSocket health
-    if (wsConnected.value) {
-      services.push({ name: 'WebSocket', status: 'healthy' })
-    } else if (wsConnecting.value) {
-      services.push({ name: 'WebSocket', status: 'connecting' })
-    } else {
-      services.push({ name: 'WebSocket', status: 'disconnected' })
-    }
-
-    // HTTP Service health
-    if (httpStatus.value) {
-      services.push({ name: 'HTTP Service', status: httpStatus.value })
-    } else {
-      services.push({ name: 'HTTP Service', status: 'unknown' })
-    }
-
-    // Database health
-    if (dbStatus.value) {
-      services.push({ name: 'Database', status: dbStatus.value })
-    } else {
-      services.push({ name: 'Database', status: 'unknown' })
-    }
-
-    // Calculate overall status
-    const healthyCount = services.filter(s => s.status === 'healthy').length
-    const totalCount = services.length
-
-    if (healthyCount === totalCount) {
-      return 'healthy'
-    } else if (healthyCount > 0) {
-      return 'degraded'
-    } else {
-      return 'unhealthy'
-    }
-  })
-
-  const lastUpdated = computed(() => {
-    const timestamps = []
-    if (httpDetails.value?.timestamp) timestamps.push(new Date(httpDetails.value.timestamp))
-    if (dbDetails.value?.timestamp) timestamps.push(new Date(dbDetails.value.timestamp))
-
-    if (timestamps.length === 0) return 'Never'
-
-    const latest = new Date(Math.max(...timestamps.map(t => t.getTime())))
-    return latest.toLocaleString()
-  })
-
-  const wsUptime = computed(() => {
-    if (!wsConnected.value || !wsConnectionTime.value) return 'N/A'
-
-    const now = new Date()
-    const uptime = now.getTime() - wsConnectionTime.value.getTime()
-    const uptimeSeconds = uptime / 1000
-
-    return formatUptime(uptimeSeconds)
-  })
-
-  const httpUptime = computed(() => {
-    if (!httpStatus.value) return 'N/A'
-    const now = new Date()
-    const lastCheckTime = new Date(httpDetails.value?.timestamp || 0)
-    const uptime = now.getTime() - lastCheckTime.getTime()
-    const uptimeSeconds = uptime / 1000
-
-    return formatUptime(uptimeSeconds)
-  })
-
-  const dbUptime = computed(() => {
-    if (!dbStatus.value) return 'N/A'
-    const now = new Date()
-    const lastCheckTime = new Date(dbDetails.value?.timestamp || 0)
-    const uptime = now.getTime() - lastCheckTime.getTime()
-    const uptimeSeconds = uptime / 1000
-
-    return formatUptime(uptimeSeconds)
-  })
+  // Computed properties (uptime-related ones are now managed by the composable)
 
   const wsLatency = computed(() => {
     if (!wsConnected.value) return 0
@@ -720,7 +726,7 @@
   const checkAllServices = async () => {
     httpChecking.value = true
     dbChecking.value = true
-    await Promise.all([checkHTTPHealth(), checkDBHealth()])
+    await Promise.all([checkHTTPHealth(), checkDBHealth(), refreshData()])
     httpChecking.value = false
     dbChecking.value = false
   }
@@ -903,46 +909,20 @@
     }
   }
 
-  const getHealthScore = () => {
-    const services = []
+  // Health score functions are now managed by the uptime composable
 
-    // WebSocket health
-    if (wsConnected.value) {
-      services.push('healthy')
-    } else if (wsConnecting.value) {
-      services.push('connecting') // Count as partial
-    } else {
-      services.push('unhealthy')
+  // Helper function to map old status to new status format
+  const mapToUptimeStatus = (status: string): 'up' | 'down' | 'degraded' => {
+    switch (status) {
+      case 'healthy':
+        return 'up'
+      case 'degraded':
+        return 'degraded'
+      case 'unhealthy':
+        return 'down'
+      default:
+        return 'down'
     }
-
-    // HTTP Service health
-    if (httpStatus.value) {
-      services.push(httpStatus.value)
-    } else {
-      services.push('unknown')
-    }
-
-    // Database health
-    if (dbStatus.value) {
-      services.push(dbStatus.value)
-    } else {
-      services.push('unknown')
-    }
-
-    if (services.length === 0) return 0
-
-    const healthyCount = services.filter(s => s === 'healthy').length
-    const connectingCount = services.filter(s => s === 'connecting').length
-    const partialScore = connectingCount * 0.5 // Connecting services count as 50%
-
-    return Math.round(((healthyCount + partialScore) / services.length) * 100)
-  }
-
-  const getHealthScoreColor = () => {
-    const score = getHealthScore()
-    if (score >= 80) return 'bg-green-500'
-    if (score >= 50) return 'bg-yellow-500'
-    return 'bg-red-500'
   }
 
   const getPerformanceGradeColor = (grade: string) => {
@@ -958,28 +938,7 @@
     }
   }
 
-  const formatUptime = (seconds: number): string => {
-    if (seconds < 60) {
-      return `${Math.floor(seconds)}s`
-    } else if (seconds < 3600) {
-      const minutes = Math.floor(seconds / 60)
-      const remainingSeconds = Math.floor(seconds % 60)
-      return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`
-    } else if (seconds < 86400) {
-      const hours = Math.floor(seconds / 3600)
-      const remainingMinutes = Math.floor((seconds % 3600) / 60)
-      return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
-    } else if (seconds < 2592000) {
-      // 30 days
-      const days = Math.floor(seconds / 86400)
-      const remainingHours = Math.floor((seconds % 86400) / 3600)
-      return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`
-    } else {
-      const months = Math.floor(seconds / 2592000)
-      const remainingDays = Math.floor((seconds % 2592000) / 86400)
-      return remainingDays > 0 ? `${months}mo ${remainingDays}d` : `${months}mo`
-    }
-  }
+  // formatUptime function is now handled by the uptime service
 
   // Lifecycle
   onMounted(() => {
@@ -990,13 +949,7 @@
     checkHTTPHealth()
     checkDBHealth()
 
-    if (autoRefresh.value) {
-      const interval = setInterval(() => {
-        checkHTTPHealth()
-        checkDBHealth()
-      }, autoRefreshInterval.value * 1000)
-      onUnmounted(() => clearInterval(interval))
-    }
+    // Uptime data is automatically fetched by the composable
   })
 
   onUnmounted(() => {
