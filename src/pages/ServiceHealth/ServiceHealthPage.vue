@@ -447,6 +447,9 @@
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted } from 'vue'
 
+  // Configuration
+  const KURRENTDB_URL = 'http://localhost:2113'
+
   // WebSocket state
   const ws = ref<WebSocket | null>(null)
   const wsConnected = ref(false)
@@ -484,6 +487,11 @@
       acceptable: number
     }
     error?: string
+    dbInfo?: {
+      version: string
+      state: string
+      features: Record<string, boolean>
+    }
   } | null>(null)
 
   // Error state
@@ -692,16 +700,61 @@
     const startTime = Date.now()
 
     try {
-      const response = await fetch('http://localhost:3001/health/kurrentdb')
+      // Connect directly to KurrentDB using the /info endpoint
+      const response = await fetch(`${KURRENTDB_URL}/info`)
       const endTime = Date.now()
       const responseTime = endTime - startTime
 
       if (response.ok) {
         const data = await response.json()
-        dbStatus.value = data.status === 'healthy' ? 'healthy' : 'degraded'
+
+        // Define response time thresholds
+        const EXCELLENT_THRESHOLD = 50 // ms - excellent performance
+        const GOOD_THRESHOLD = 100 // ms - good performance
+        const ACCEPTABLE_THRESHOLD = 500 // ms - acceptable performance
+
+        let status = 'healthy'
+        let performanceGrade = 'excellent'
+
+        if (responseTime <= EXCELLENT_THRESHOLD) {
+          performanceGrade = 'excellent'
+        } else if (responseTime <= GOOD_THRESHOLD) {
+          performanceGrade = 'good'
+        } else if (responseTime <= ACCEPTABLE_THRESHOLD) {
+          performanceGrade = 'acceptable'
+        } else {
+          performanceGrade = 'slow'
+          // Only mark as degraded if response time is very slow
+          if (responseTime > 1000) {
+            // 1 second
+            status = 'degraded'
+          }
+        }
+
+        dbStatus.value = status
         dbResponseTime.value = responseTime
-        dbDetails.value = { ...data, responseTime }
-        addMessage('info', `Database health check successful: ${responseTime}ms`)
+        dbDetails.value = {
+          status: status,
+          connected: true,
+          connectionStatus: 'connected',
+          responseTime: responseTime,
+          timestamp: new Date().toISOString(),
+          performanceGrade: performanceGrade,
+          thresholds: {
+            excellent: EXCELLENT_THRESHOLD,
+            good: GOOD_THRESHOLD,
+            acceptable: ACCEPTABLE_THRESHOLD,
+          },
+          dbInfo: {
+            version: data.dbVersion,
+            state: data.state,
+            features: data.features,
+          },
+        }
+        addMessage(
+          'info',
+          `Database health check successful: ${responseTime}ms (${performanceGrade}) - ${data.state}`
+        )
       } else {
         dbStatus.value = 'unhealthy'
         dbResponseTime.value = responseTime
@@ -709,17 +762,27 @@
           status: 'unhealthy',
           connected: false,
           connectionStatus: 'error',
-          responseTime,
+          responseTime: responseTime,
           timestamp: new Date().toISOString(),
+          performanceGrade: 'error',
+          error: `HTTP ${response.status}: ${response.statusText}`,
         }
-        addMessage('error', `Database health check failed: ${response.status}`)
+        addMessage('error', `Database health check failed: HTTP ${response.status}`)
       }
     } catch (err) {
       dbStatus.value = 'unhealthy'
       dbResponseTime.value = null
-      dbDetails.value = null
+      dbDetails.value = {
+        status: 'unhealthy',
+        connected: false,
+        connectionStatus: 'disconnected',
+        responseTime: 0,
+        timestamp: new Date().toISOString(),
+        performanceGrade: 'disconnected',
+        error: err instanceof Error ? err.message : 'Connection failed',
+      }
       addMessage('error', `Database health check error: ${err}`)
-      setError(`Database health check failed: ${err}`)
+      setError(`Database connection failed: ${err}`)
     } finally {
       dbChecking.value = false
     }
