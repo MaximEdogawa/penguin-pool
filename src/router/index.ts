@@ -61,6 +61,7 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
+
     {
       path: '/auth',
       name: 'auth',

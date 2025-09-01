@@ -30,11 +30,18 @@
     "clean": "rm -rf dist node_modules/.vite",
     "dev:test": "vitest --ui --mode test",
     "pre-commit": "npm run format && npm run lint:fix && npm run test:run",
-    "lint-staged": "lint-staged"
+    "lint-staged": "lint-staged",
+    "dev:kurrentDB": "docker-compose up -d && npm run dev",
+    "kurrentDB:start": "docker-compose up -d",
+    "kurrentDB:stop": "docker-compose down",
+    "kurrentDB:restart": "docker-compose restart",
+    "kurrentDB:logs": "docker-compose logs -f kurrentdb",
+    "kurrentDB:status": "docker-compose ps"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
     "@heroicons/vue": "^2.2.0",
+    "@kurrent/kurrentdb-client": "~1.0",
     "@primeuix/themes": "^1.2.3",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.16",
