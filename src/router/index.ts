@@ -61,6 +61,15 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
+    {
+      path: '/service-health',
+      name: 'service-health',
+      component: () => import('@/pages/ServiceHealth/ServiceHealthPage.vue'),
+      meta: {
+        title: 'Service Health',
+        requiresAuth: true,
+      },
+    },
 
     {
       path: '/auth',
