@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-2 sm:p-4">
-    <div class="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+  <div class="content-page">
+    <div class="content-body">
       <!-- Header -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+      <div class="card p-4 sm:p-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -27,7 +27,7 @@
       </div>
 
       <!-- Connection Controls -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+      <div class="card p-4 sm:p-6">
         <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4">
           Connection Controls
         </h2>
@@ -91,7 +91,7 @@
       <!-- Status Overview -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <!-- WebSocket Status -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+        <div class="card p-4 sm:p-6">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center space-x-2">
               <div
@@ -115,7 +115,7 @@
         </div>
 
         <!-- HTTP Service Status -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+        <div class="card p-4 sm:p-6">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center space-x-2">
               <div class="w-3 h-3 rounded-full" :class="getStatusColor(httpStatus)"></div>
@@ -133,7 +133,7 @@
         </div>
 
         <!-- Database Status -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+        <div class="card p-4 sm:p-6">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center space-x-2">
               <div class="w-3 h-3 rounded-full" :class="getStatusColor(dbStatus)"></div>
@@ -158,7 +158,7 @@
         </div>
 
         <!-- Overall Health -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+        <div class="card p-4 sm:p-6">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center space-x-2">
               <div class="w-3 h-3 rounded-full" :class="getStatusColor(overallHealth)"></div>
@@ -187,7 +187,7 @@
       <!-- Performance Metrics -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <!-- Response Time Chart -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+        <div class="card p-4 sm:p-6">
           <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4">
             Response Times
           </h2>
@@ -229,7 +229,7 @@
         </div>
 
         <!-- Service Uptime -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+        <div class="card p-4 sm:p-6">
           <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4">
             Service Uptime
           </h2>
@@ -251,7 +251,7 @@
       </div>
 
       <!-- WebSocket Messages -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+      <div class="card p-4 sm:p-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
           <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2 sm:mb-0">
             WebSocket Messages
@@ -272,7 +272,7 @@
           </div>
         </div>
         <div
-          class="h-64 sm:h-80 overflow-y-auto bg-gray-100 dark:bg-gray-700 rounded-lg p-3 sm:p-4 font-mono text-xs sm:text-sm"
+          class="h-64 sm:h-80 overflow-y-auto overflow-x-hidden bg-gray-100 dark:bg-gray-700 rounded-lg p-3 sm:p-4 font-mono text-xs sm:text-sm"
         >
           <div
             v-if="wsMessages.length === 0"
@@ -306,7 +306,7 @@
       <!-- Health Check Details -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <!-- HTTP Service Details -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+        <div class="card p-4 sm:p-6">
           <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4">
             HTTP Service Details
           </h2>
@@ -354,7 +354,7 @@
         </div>
 
         <!-- Database Details -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+        <div class="card p-4 sm:p-6">
           <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4">
             Database Details
           </h2>
@@ -405,13 +405,15 @@
       </div>
 
       <!-- Error Display -->
-      <div
-        v-if="error"
-        class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
-      >
-        <div class="flex items-center">
+      <div v-if="error" class="card p-4 sm:p-6">
+        <div class="flex">
           <div class="flex-shrink-0">
-            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <svg
+              class="h-5 w-5 text-red-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
               <path
                 fill-rule="evenodd"
                 d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -501,7 +503,7 @@
     if (dbStatus.value) statuses.push(dbStatus.value)
 
     if (statuses.every(s => s === 'healthy')) return 'healthy'
-    if (statuses.some(s => s === 'healthy')) return 'degraded'
+    if (statuses.some(s => s === 'healthy')) return 'healthy'
     return 'unhealthy'
   })
 
