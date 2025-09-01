@@ -391,7 +391,7 @@ export class KurrentDBService {
       // Create an initial stream metadata event using the proper jsonEvent helper
       // Sanitize data to avoid BigInt serialization issues
       const sanitizedRequestData = JSON.parse(
-        JSON.stringify(request.data, (key, value) =>
+        JSON.stringify(request.data, (_, value) =>
           typeof value === 'bigint' ? value.toString() : value
         )
       )
@@ -536,14 +536,14 @@ export class KurrentDBService {
       // Create a JSON event using the official client with proper structure
       // Convert any BigInt values to strings to avoid serialization issues
       const sanitizedData = JSON.parse(
-        JSON.stringify(event.data, (key, value) =>
+        JSON.stringify(event.data, (_, value) =>
           typeof value === 'bigint' ? value.toString() : value
         )
       )
 
       const sanitizedMetadata = event.metadata
         ? JSON.parse(
-            JSON.stringify(event.metadata, (key, value) =>
+            JSON.stringify(event.metadata, (_, value) =>
               typeof value === 'bigint' ? value.toString() : value
             )
           )
@@ -612,24 +612,18 @@ export class KurrentDBService {
       logger.debug(`Reading stream: ${streamName}`)
 
       // Prepare read options with defaults
-      const readOptions: {
-        direction?: typeof FORWARDS | typeof BACKWARDS
-        fromRevision?: typeof START | typeof END | number
-        maxCount?: number
-        resolveLinkTos?: boolean
-        credentials?: { username: string; password: string }
-      } = {
+      const readOptions: Record<string, unknown> = {
         direction: options.direction || FORWARDS,
         fromRevision: options.fromRevision || START,
         maxCount: options.maxCount || 100,
       }
 
       if (options.resolveLinkTos !== undefined) {
-        readOptions.resolveLinkTos = options.resolveLinkTos
+        readOptions['resolveLinkTos'] = options.resolveLinkTos
       }
 
       if (options.credentials) {
-        readOptions.credentials = options.credentials
+        readOptions['credentials'] = options.credentials
       }
 
       // Use the official client to read the stream
@@ -641,7 +635,7 @@ export class KurrentDBService {
         data: Record<string, unknown>
         metadata: Record<string, unknown>
         position: number
-        revision: number
+        revision: bigint
         timestamp: string
         streamId: string
       }> = []
@@ -663,7 +657,7 @@ export class KurrentDBService {
                 ? (event.metadata as Record<string, unknown>)
                 : {},
             position: event.revision ? Number(event.revision) : 0,
-            revision: event.revision ? Number(event.revision) : 0,
+            revision: event.revision ? BigInt(event.revision) : BigInt(0),
             timestamp: event.created ? event.created.toISOString() : new Date().toISOString(),
             streamId: event.streamId || streamName,
           })
@@ -706,24 +700,18 @@ export class KurrentDBService {
       logger.debug('Reading from $all stream')
 
       // Prepare read options with defaults
-      const readOptions: {
-        direction?: typeof FORWARDS | typeof BACKWARDS
-        fromPosition?: typeof START | typeof END | number
-        maxCount?: number
-        resolveLinkTos?: boolean
-        credentials?: { username: string; password: string }
-      } = {
+      const readOptions: Record<string, unknown> = {
         direction: options.direction || FORWARDS,
         fromPosition: options.fromPosition || START,
         maxCount: options.maxCount || 100,
       }
 
       if (options.resolveLinkTos !== undefined) {
-        readOptions.resolveLinkTos = options.resolveLinkTos
+        readOptions['resolveLinkTos'] = options.resolveLinkTos
       }
 
       if (options.credentials) {
-        readOptions.credentials = options.credentials
+        readOptions['credentials'] = options.credentials
       }
 
       // Use the official client to read from $all stream
@@ -735,7 +723,7 @@ export class KurrentDBService {
         data: Record<string, unknown>
         metadata: Record<string, unknown>
         position: number
-        revision: number
+        revision: bigint
         timestamp: string
         streamId: string
       }> = []
@@ -761,7 +749,7 @@ export class KurrentDBService {
                 ? (event.metadata as Record<string, unknown>)
                 : {},
             position: event.revision ? Number(event.revision) : 0,
-            revision: event.revision ? Number(event.revision) : 0,
+            revision: event.revision ? BigInt(event.revision) : BigInt(0),
             timestamp: event.created ? event.created.toISOString() : new Date().toISOString(),
             streamId: event.streamId || 'unknown',
           })
@@ -838,9 +826,9 @@ export class KurrentDBService {
       const subscription = this.client.subscribeToStream(streamName, subscriptionOptions)
 
       // Handle subscription events
-      subscription.on('event', event => {
+      subscription.on('event', (event: unknown) => {
         try {
-          onEvent(event)
+          onEvent(event as KurrentDBEvent)
         } catch (error) {
           logger.error('Error processing subscription event:', error)
           if (onError) {
@@ -895,11 +883,12 @@ export class KurrentDBService {
       const subscription = this.client.subscribeToAll(subscriptionOptions)
 
       // Handle subscription events
-      subscription.on('event', (event: KurrentDBEvent) => {
+      subscription.on('event', (event: unknown) => {
         try {
+          const typedEvent = event as KurrentDBEvent
           // Filter out system events
-          if (event.event?.type && !event.event.type.startsWith('$')) {
-            onEvent(event)
+          if (typedEvent.event?.type && !typedEvent.event.type.startsWith('$')) {
+            onEvent(typedEvent)
           }
         } catch (error) {
           logger.error('Error processing subscription event:', error)

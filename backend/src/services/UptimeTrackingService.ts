@@ -213,25 +213,25 @@ export class UptimeTrackingService {
       const response = await fetch('http://localhost:3001/health')
       const responseTime = Date.now() - startTime
 
-      metadata.responseTime = responseTime
+      metadata['responseTime'] = responseTime
 
       if (response.ok) {
         if (responseTime <= 100) {
-          metadata.performanceGrade = 'excellent'
+          metadata['performanceGrade'] = 'excellent'
           return 'up'
         } else if (responseTime <= 500) {
-          metadata.performanceGrade = 'good'
+          metadata['performanceGrade'] = 'good'
           return 'up'
         } else {
-          metadata.performanceGrade = 'slow'
+          metadata['performanceGrade'] = 'slow'
           return 'degraded'
         }
       } else {
-        metadata.error = `HTTP ${response.status}`
+        metadata['error'] = `HTTP ${response.status}`
         return 'down'
       }
     } catch (error) {
-      metadata.error = error instanceof Error ? error.message : 'Connection failed'
+      metadata['error'] = error instanceof Error ? error.message : 'Connection failed'
       return 'down'
     }
   }
@@ -249,12 +249,12 @@ export class UptimeTrackingService {
 
       // Simple check - if we can resolve the port, consider it up
       // This is a simplified check; in production you'd want more sophisticated monitoring
-      metadata.responseTime = Date.now() - startTime
-      metadata.performanceGrade = 'excellent'
+      metadata['responseTime'] = Date.now() - startTime
+      metadata['performanceGrade'] = 'excellent'
 
       return 'up' // Assume WebSocket is up if the process is running
     } catch (error) {
-      metadata.error = error instanceof Error ? error.message : 'Connection failed'
+      metadata['error'] = error instanceof Error ? error.message : 'Connection failed'
       return 'down'
     }
   }
@@ -270,28 +270,28 @@ export class UptimeTrackingService {
       const response = await fetch('http://localhost:2113/health')
       const responseTime = Date.now() - startTime
 
-      metadata.responseTime = responseTime
+      metadata['responseTime'] = responseTime
 
       if (response.ok) {
         if (responseTime <= 50) {
-          metadata.performanceGrade = 'excellent'
+          metadata['performanceGrade'] = 'excellent'
           return 'up'
         } else if (responseTime <= 100) {
-          metadata.performanceGrade = 'good'
+          metadata['performanceGrade'] = 'good'
           return 'up'
         } else if (responseTime <= 500) {
-          metadata.performanceGrade = 'acceptable'
+          metadata['performanceGrade'] = 'acceptable'
           return 'up'
         } else {
-          metadata.performanceGrade = 'slow'
+          metadata['performanceGrade'] = 'slow'
           return 'degraded'
         }
       } else {
-        metadata.error = `HTTP ${response.status}`
+        metadata['error'] = `HTTP ${response.status}`
         return 'down'
       }
     } catch (error) {
-      metadata.error = error instanceof Error ? error.message : 'Connection failed'
+      metadata['error'] = error instanceof Error ? error.message : 'Connection failed'
       return 'down'
     }
   }
@@ -419,9 +419,9 @@ export class UptimeTrackingService {
       timestamp,
       ...(metadata && {
         metadata: {
-          responseTime: metadata.responseTime,
-          error: metadata.error,
-          performanceGrade: metadata.performanceGrade,
+          responseTime: metadata['responseTime'] as number,
+          error: metadata['error'] as string,
+          performanceGrade: metadata['performanceGrade'] as string,
         },
       }),
     }

@@ -211,7 +211,7 @@ app.get('/health/comprehensive', async (_req, res) => {
           good: GOOD_THRESHOLD,
           acceptable: ACCEPTABLE_THRESHOLD,
         },
-        errors: kurrentdbHealth.errors,
+        ...(kurrentdbHealth.errors.length > 0 && { error: kurrentdbHealth.errors.join(', ') }),
       }
     } catch (error) {
       healthChecks.services['kurrentdb'] = {
@@ -430,7 +430,7 @@ app.post('/api/uptime/check', async (_req, res) => {
             const startTime = Date.now()
             const response = await fetch('http://localhost:3001/health')
             const responseTime = Date.now() - startTime
-            metadata.responseTime = responseTime
+            metadata['responseTime'] = responseTime
             status = response.ok ? 'up' : 'down'
           } catch {
             status = 'down'
@@ -444,7 +444,7 @@ app.post('/api/uptime/check', async (_req, res) => {
             const startTime = Date.now()
             const response = await fetch('http://localhost:2113/health')
             const responseTime = Date.now() - startTime
-            metadata.responseTime = responseTime
+            metadata['responseTime'] = responseTime
             status = response.ok ? 'up' : 'down'
           } catch {
             status = 'down'

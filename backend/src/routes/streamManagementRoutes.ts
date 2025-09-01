@@ -236,16 +236,16 @@ export const streamManagementRoutes = () => {
           metadata,
         },
         {
-          streamState:
-            streamState === 'no-stream'
-              ? NO_STREAM
-              : streamState === 'stream-exists'
-                ? STREAM_EXISTS
-                : streamState === 'any'
-                  ? ANY
-                  : streamState
-                    ? BigInt(streamState as string)
-                    : undefined,
+          ...(streamState && {
+            streamState:
+              streamState === 'no-stream'
+                ? NO_STREAM
+                : streamState === 'stream-exists'
+                  ? STREAM_EXISTS
+                  : streamState === 'any'
+                    ? ANY
+                    : BigInt(streamState as string),
+          }),
         }
       )
 

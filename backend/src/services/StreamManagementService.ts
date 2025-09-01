@@ -460,7 +460,7 @@ export class StreamManagementService {
       return {
         streamName,
         eventId: result.eventId,
-        revision: result.revision,
+        revision: BigInt(result.revision),
       }
     } catch (error) {
       logger.error(`Failed to create stream ${streamName}:`, error)
