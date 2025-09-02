@@ -270,7 +270,7 @@ export class KurrentDBService {
   async checkHealth(): Promise<DatabaseHealth> {
     if (!this.connection?.isConnected) {
       return {
-        status: 'unhealthy',
+        status: 'degraded', // Changed from 'unhealthy' to 'degraded' when not connected
         checks: {
           connection: false,
           authentication: false,

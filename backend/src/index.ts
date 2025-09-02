@@ -473,9 +473,27 @@ app.post('/api/uptime/check', async (_req, res) => {
             const response = await fetch('http://localhost:2113/health')
             const responseTime = Date.now() - startTime
             metadata['responseTime'] = responseTime
-            status = response.ok ? 'up' : 'down'
-          } catch {
-            status = 'down'
+            if (response.ok) {
+              if (responseTime <= 50) {
+                metadata['performanceGrade'] = 'excellent'
+                status = 'up'
+              } else if (responseTime <= 100) {
+                metadata['performanceGrade'] = 'good'
+                status = 'up'
+              } else if (responseTime <= 500) {
+                metadata['performanceGrade'] = 'acceptable'
+                status = 'up'
+              } else {
+                metadata['performanceGrade'] = 'slow'
+                status = 'degraded'
+              }
+            } else {
+              metadata['error'] = `HTTP ${response.status}`
+              status = 'degraded' // Changed from 'down' to 'degraded'
+            }
+          } catch (error) {
+            metadata['error'] = error instanceof Error ? error.message : 'Connection failed'
+            status = 'degraded' // Changed from 'down' to 'degraded'
           }
           break
       }

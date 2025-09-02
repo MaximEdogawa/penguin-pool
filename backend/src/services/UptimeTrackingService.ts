@@ -362,11 +362,11 @@ export class UptimeTrackingService {
         }
       } else {
         metadata['error'] = `HTTP ${response.status}`
-        return 'down'
+        return 'degraded' // Changed from 'down' to 'degraded' for non-200 responses
       }
     } catch (error) {
       metadata['error'] = error instanceof Error ? error.message : 'Connection failed'
-      return 'down'
+      return 'degraded' // Changed from 'down' to 'degraded' for connection failures
     }
   }
 

@@ -918,7 +918,7 @@
       case 'unhealthy':
         return 'down'
       default:
-        return 'down'
+        return 'degraded' // Changed from 'down' to 'degraded' for unknown status
     }
   }
 
