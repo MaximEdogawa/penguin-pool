@@ -14,7 +14,7 @@ export function useUptime() {
   const lastUpdated = ref<Date | null>(null)
   const autoRefresh = ref(true)
   const refreshInterval = ref(30) // seconds
-  const selectedPeriod = ref(0.167) // hours (10 minutes)
+  const selectedPeriod = ref(24) // hours (1 day)
 
   // WebSocket state for real-time updates
   const ws = ref<WebSocket | null>(null)
@@ -27,13 +27,17 @@ export function useUptime() {
     const services = uptimeSummaries.value
     if (services.length === 0) return 'unknown'
 
-    const healthyCount = services.filter(s => s.currentStatus === 'up').length
-    const degradedCount = services.filter(s => s.currentStatus === 'degraded').length
-    const totalCount = services.length
+    // Calculate overall uptime percentage
+    const totalPercentage = services.reduce((sum, service) => sum + service.uptimePercentage, 0)
+    const averageUptime = totalPercentage / services.length
 
-    if (healthyCount === totalCount) {
+    // Health thresholds:
+    // - Healthy: >= 60% average uptime across all services
+    // - Degraded: >= 30% average uptime across all services
+    // - Unhealthy: < 30% average uptime across all services
+    if (averageUptime >= 60) {
       return 'healthy'
-    } else if (healthyCount + degradedCount === totalCount) {
+    } else if (averageUptime >= 30) {
       return 'degraded'
     } else {
       return 'unhealthy'
@@ -54,9 +58,9 @@ export function useUptime() {
 
   const healthScoreColor = computed(() => {
     const score = healthScore.value
-    if (score >= 95) return 'bg-green-500'
-    if (score >= 80) return 'bg-yellow-500'
-    return 'bg-red-500'
+    if (score >= 60) return 'bg-green-500' // Healthy threshold
+    if (score >= 30) return 'bg-yellow-500' // Degraded threshold
+    return 'bg-red-500' // Unhealthy
   })
 
   // Methods

@@ -205,6 +205,9 @@
           <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2">
             {{ uptimeService.formatUptimePercentage(overallUptimePercentage) }} Uptime
           </p>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            Healthy: ≥60% • Degraded: ≥30% • Unhealthy: &lt;30%
+          </p>
           <div class="mt-3">
             <div class="w-full bg-gray-200 rounded-full h-2">
               <div
@@ -273,11 +276,11 @@
                 @change="setPeriod(selectedPeriod)"
                 class="text-sm border border-gray-300 rounded px-2 py-1 bg-white dark:bg-gray-800 dark:border-gray-600"
               >
-                <option :value="0.167">Last 10 minutes</option>
-                <option :value="1">Last 1 hour</option>
-                <option :value="6">Last 6 hours</option>
-                <option :value="24">Last 24 hours</option>
-                <option :value="168">Last 7 days</option>
+                <option :value="24">Last 1 day</option>
+                <option :value="168">Last 1 week</option>
+                <option :value="720">Last 1 month</option>
+                <option :value="8760">Last 1 year</option>
+                <option :value="-1">All time</option>
               </select>
             </div>
           </div>

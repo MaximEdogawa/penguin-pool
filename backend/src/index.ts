@@ -169,9 +169,9 @@ app.get('/health/comprehensive', async (_req, res) => {
 
     // Check WebSocket service
     healthChecks.services['websocket'] = {
-      status: 'healthy',
-      port: WS_PORT,
-      connections: wss.clients.size,
+      status: wss ? 'healthy' : 'down',
+      port: actualWSPort,
+      connections: wss ? wss.clients.size : 0,
     }
 
     // Check KurrentDB connection using our service
@@ -272,16 +272,30 @@ app.get('/api/uptime/summary', (req, res) => {
 
     // Format period display based on hours value
     let periodDisplay: string
-    if (hours < 1) {
+    if (hours === -1) {
+      periodDisplay = 'All time'
+    } else if (hours < 1) {
       const minutes = Math.round(hours * 60)
       periodDisplay = `${minutes} minutes`
     } else if (hours === 1) {
       periodDisplay = '1 hour'
     } else if (hours < 24) {
       periodDisplay = `${hours} hours`
-    } else {
+    } else if (hours < 168) {
+      // Less than 1 week
       const days = Math.round(hours / 24)
       periodDisplay = `${days} day${days > 1 ? 's' : ''}`
+    } else if (hours < 720) {
+      // Less than 1 month
+      const weeks = Math.round(hours / 168)
+      periodDisplay = `${weeks} week${weeks > 1 ? 's' : ''}`
+    } else if (hours < 8760) {
+      // Less than 1 year
+      const months = Math.round(hours / 720)
+      periodDisplay = `${months} month${months > 1 ? 's' : ''}`
+    } else {
+      const years = Math.round(hours / 8760)
+      periodDisplay = `${years} year${years > 1 ? 's' : ''}`
     }
 
     res.json({
@@ -354,16 +368,30 @@ app.get('/api/uptime/timeline/:serviceName', (req, res) => {
 
     // Format period display based on hours value
     let periodDisplay: string
-    if (hours < 1) {
+    if (hours === -1) {
+      periodDisplay = 'All time'
+    } else if (hours < 1) {
       const minutes = Math.round(hours * 60)
       periodDisplay = `${minutes} minutes`
     } else if (hours === 1) {
       periodDisplay = '1 hour'
     } else if (hours < 24) {
       periodDisplay = `${hours} hours`
-    } else {
+    } else if (hours < 168) {
+      // Less than 1 week
       const days = Math.round(hours / 24)
       periodDisplay = `${days} day${days > 1 ? 's' : ''}`
+    } else if (hours < 720) {
+      // Less than 1 month
+      const weeks = Math.round(hours / 168)
+      periodDisplay = `${weeks} week${weeks > 1 ? 's' : ''}`
+    } else if (hours < 8760) {
+      // Less than 1 year
+      const months = Math.round(hours / 720)
+      periodDisplay = `${months} month${months > 1 ? 's' : ''}`
+    } else {
+      const years = Math.round(hours / 8760)
+      periodDisplay = `${years} year${years > 1 ? 's' : ''}`
     }
 
     return res.json({
@@ -655,7 +683,49 @@ app.use('*', (_req, res) => {
 })
 
 // WebSocket server for both health and uptime monitoring
-const wss = new WebSocketServer({ port: WS_PORT })
+let wss: WebSocketServer
+let actualWSPort = WS_PORT
+
+// Function to create WebSocket server with port fallback
+const createWebSocketServer = (port: number): Promise<WebSocketServer> => {
+  return new Promise((resolve, reject) => {
+    const server = new WebSocketServer({ port })
+
+    server.on('listening', () => {
+      console.log(`WebSocket server running on port ${port}`)
+      console.log(`WebSocket health/uptime: ws://localhost:${port}/ws/health`)
+      resolve(server)
+    })
+
+    server.on('error', (error: Error) => {
+      if (error.message.includes('EADDRINUSE')) {
+        console.warn(`Port ${port} is already in use, trying next port...`)
+        // Try next port
+        const nextPort = port + 1
+        if (nextPort <= port + 10) {
+          // Try up to 10 ports
+          createWebSocketServer(nextPort).then(resolve).catch(reject)
+        } else {
+          reject(new Error(`Could not find available port starting from ${WS_PORT}`))
+        }
+      } else {
+        reject(error)
+      }
+    })
+  })
+}
+
+// Create WebSocket server with port fallback
+createWebSocketServer(WS_PORT)
+  .then(server => {
+    wss = server
+    actualWSPort = server.options.port || WS_PORT
+    setupWebSocketHandlers()
+  })
+  .catch(error => {
+    console.error('Failed to create WebSocket server:', error)
+    process.exit(1)
+  })
 
 // Function to broadcast health status to all connected clients
 const broadcastHealthStatus = async () => {
@@ -705,66 +775,73 @@ const broadcastHealthStatus = async () => {
     }
 
     // Broadcast to all connected health clients
-    wss.clients.forEach(client => {
-      if (client.readyState === 1) {
-        // WebSocket.OPEN
-        client.send(JSON.stringify(healthData))
-      }
-    })
+    if (wss) {
+      wss.clients.forEach(client => {
+        if (client.readyState === 1) {
+          // WebSocket.OPEN
+          client.send(JSON.stringify(healthData))
+        }
+      })
+    }
   } catch {
     console.error('Error broadcasting health status')
   }
 }
 
-wss.on('connection', (ws, req) => {
-  const url = new URL(req.url || '', `http://${req.headers.host}`)
-  const path = url.pathname
+// Set up WebSocket connection handling after server is created
+const setupWebSocketHandlers = () => {
+  if (!wss) return
 
-  if (path === '/ws/health') {
-    console.log('WebSocket client connected for health/uptime monitoring')
+  wss.on('connection', (ws, req) => {
+    const url = new URL(req.url || '', `http://${req.headers.host}`)
+    const path = url.pathname
 
-    // Send initial connection message
-    ws.send(
-      JSON.stringify({
-        type: 'connection',
-        message: 'Connected to health and uptime monitoring service',
-        timestamp: new Date().toISOString(),
+    if (path === '/ws/health') {
+      console.log('WebSocket client connected for health/uptime monitoring')
+
+      // Send initial connection message
+      ws.send(
+        JSON.stringify({
+          type: 'connection',
+          message: 'Connected to health and uptime monitoring service',
+          timestamp: new Date().toISOString(),
+        })
+      )
+
+      // Handle incoming messages
+      ws.on('message', data => {
+        try {
+          const message = JSON.parse(data.toString())
+          console.log('Received health/uptime WebSocket message:', message)
+
+          // Echo back the message with timestamp
+          ws.send(
+            JSON.stringify({
+              type: 'echo',
+              originalMessage: message,
+              timestamp: new Date().toISOString(),
+            })
+          )
+        } catch {
+          console.error('Failed to parse health/uptime WebSocket message')
+        }
       })
-    )
 
-    // Handle incoming messages
-    ws.on('message', data => {
-      try {
-        const message = JSON.parse(data.toString())
-        console.log('Received health/uptime WebSocket message:', message)
+      // Handle client disconnect
+      ws.on('close', () => {
+        console.log('Health/uptime WebSocket client disconnected')
+      })
 
-        // Echo back the message with timestamp
-        ws.send(
-          JSON.stringify({
-            type: 'echo',
-            originalMessage: message,
-            timestamp: new Date().toISOString(),
-          })
-        )
-      } catch {
-        console.error('Failed to parse health/uptime WebSocket message')
-      }
-    })
-
-    // Handle client disconnect
-    ws.on('close', () => {
-      console.log('Health/uptime WebSocket client disconnected')
-    })
-
-    // Handle errors
-    ws.on('error', () => {
-      console.error('Health/uptime WebSocket error')
-    })
-  } else {
-    console.log('WebSocket client connected to unknown path:', path)
-    ws.close(1008, 'Unknown path')
-  }
-})
+      // Handle errors
+      ws.on('error', () => {
+        console.error('Health/uptime WebSocket error')
+      })
+    } else {
+      console.log('WebSocket client connected to unknown path:', path)
+      ws.close(1008, 'Unknown path')
+    }
+  })
+}
 
 // Broadcast health status every 30 seconds
 setInterval(broadcastHealthStatus, 30000)
@@ -784,12 +861,14 @@ const broadcastServiceStatusChange = (
   }
 
   // Broadcast to all connected health clients
-  wss.clients.forEach(client => {
-    if (client.readyState === 1) {
-      // WebSocket.OPEN
-      client.send(JSON.stringify(statusData))
-    }
-  })
+  if (wss) {
+    wss.clients.forEach(client => {
+      if (client.readyState === 1) {
+        // WebSocket.OPEN
+        client.send(JSON.stringify(statusData))
+      }
+    })
+  }
 }
 
 // Subscribe to KurrentDB uptime streams for real-time updates
@@ -847,21 +926,31 @@ server.listen(HTTP_PORT, () => {
   console.log(`Proxy routes: http://localhost:${HTTP_PORT}/kurrentdb/*`)
 })
 
-// Start WebSocket server
-wss.on('listening', () => {
-  console.log(`WebSocket server running on port ${WS_PORT}`)
-  console.log(`WebSocket health/uptime: ws://localhost:${WS_PORT}/ws/health`)
-})
+// WebSocket server startup is now handled in createWebSocketServer function
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully')
-  process.exit(0)
-})
+const gracefulShutdown = async (signal: string) => {
+  console.log(`${signal} received, shutting down gracefully`)
+  try {
+    // Close WebSocket server
+    if (wss) {
+      console.log('Closing WebSocket server...')
+      wss.close()
+    }
 
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully')
+    // Close HTTP server
+    console.log('Closing HTTP server...')
+    server.close()
+
+    // Give uptime tracking service time to record shutdown status
+    await new Promise(resolve => setTimeout(resolve, 2000))
+  } catch (error) {
+    console.error('Error during shutdown:', error)
+  }
   process.exit(0)
-})
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))
 
 export default app

@@ -1,6 +1,7 @@
 import { createLogger } from 'winston'
 import { format, transports } from 'winston'
 import { KurrentDBService } from './KurrentDBService'
+import { WebSocket } from 'ws'
 import { BACKWARDS, FORWARDS } from '@kurrent/kurrentdb-client'
 
 const logger = createLogger({
@@ -76,6 +77,11 @@ export class UptimeTrackingService {
   constructor() {
     this.kurrentDBService = new KurrentDBService()
     this.initialize()
+
+    // Handle graceful shutdown
+    process.on('SIGTERM', () => this.shutdown())
+    process.on('SIGINT', () => this.shutdown())
+    process.on('exit', () => this.shutdown())
   }
 
   private async initialize(): Promise<void> {
@@ -288,16 +294,39 @@ export class UptimeTrackingService {
     metadata: Record<string, unknown>
   ): Promise<'up' | 'down' | 'degraded'> {
     try {
-      // For WebSocket, we'll check if the server is running by trying to connect
-      // In a real implementation, you might want to track active connections
       const startTime = Date.now()
 
-      // Simple check - if we can resolve the port, consider it up
-      // This is a simplified check; in production you'd want more sophisticated monitoring
-      metadata['responseTime'] = Date.now() - startTime
-      metadata['performanceGrade'] = 'excellent'
+      // Quick check - try to connect to WebSocket server
+      // Use environment variable or default to 3002
+      const wsPort = process.env['WS_PORT'] || '3002'
+      const ws = new WebSocket(`ws://localhost:${wsPort}/ws/health`)
 
-      return 'up' // Assume WebSocket is up if the process is running
+      return new Promise(resolve => {
+        const timeout = setTimeout(() => {
+          ws.close()
+          const responseTime = Date.now() - startTime
+          metadata['responseTime'] = responseTime
+          metadata['error'] = 'WebSocket connection timeout'
+          resolve('down')
+        }, 2000) // 2 second timeout
+
+        ws.onopen = () => {
+          clearTimeout(timeout)
+          const responseTime = Date.now() - startTime
+          metadata['responseTime'] = responseTime
+          metadata['performanceGrade'] = responseTime <= 100 ? 'excellent' : 'good'
+          ws.close()
+          resolve('up')
+        }
+
+        ws.onerror = () => {
+          clearTimeout(timeout)
+          const responseTime = Date.now() - startTime
+          metadata['responseTime'] = responseTime
+          metadata['error'] = 'WebSocket connection failed'
+          resolve('down')
+        }
+      })
     } catch (error) {
       metadata['error'] = error instanceof Error ? error.message : 'Connection failed'
       return 'down'
@@ -479,26 +508,35 @@ export class UptimeTrackingService {
       }
 
       const eventData = event.data
-      if (!eventData || !eventData.serviceName || !eventData.status || !eventData.timestamp) {
+      if (
+        !eventData ||
+        !eventData['serviceName'] ||
+        !eventData['status'] ||
+        !eventData['timestamp']
+      ) {
         logger.warn(`Invalid event data for ${serviceName}:`, eventData)
         return
       }
 
       // Create a new uptime record from the stream event
       const newRecord: ServiceUptimeRecord = {
-        id: eventData.id || event.id,
-        serviceName: eventData.serviceName,
-        status: eventData.status,
-        timestamp: new Date(eventData.timestamp),
-        duration: eventData.duration,
-        metadata: eventData.metadata,
+        id: (eventData['id'] as string) || event.id,
+        serviceName: eventData['serviceName'] as string,
+        status: eventData['status'] as 'up' | 'down' | 'degraded',
+        timestamp: new Date(eventData['timestamp'] as string),
+        duration: eventData['duration'] as number,
+        metadata: eventData['metadata'] as {
+          responseTime?: number
+          error?: string
+          performanceGrade?: string
+        },
       }
 
       // Update local state with the new record
       await this.updateLocalStateFromStreamEvent(newRecord)
 
       logger.debug(
-        `Processed stream event for ${serviceName}: ${eventData.status} at ${eventData.timestamp}`
+        `Processed stream event for ${serviceName}: ${eventData['status']} at ${eventData['timestamp']}`
       )
     } catch (error) {
       logger.error(`Error processing stream event for ${serviceName}:`, error)
@@ -655,17 +693,33 @@ export class UptimeTrackingService {
       return null
     }
 
-    // Convert hours to milliseconds (support fractional hours like 0.167 for 10 minutes)
-    const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000)
-    const filteredRecords = records.filter(record => record.timestamp >= cutoffTime)
+    // Handle special case for "all time" (use -1 or very large number)
+    let filteredRecords: ServiceUptimeRecord[]
+    if (hours === -1 || hours > 8760) {
+      // -1 or more than 1 year (8760 hours)
+      // All time - use all records
+      filteredRecords = records
+    } else {
+      // Convert hours to milliseconds (support fractional hours like 0.5 for 30 minutes)
+      const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000)
+      filteredRecords = records.filter(record => record.timestamp >= cutoffTime)
+    }
 
     if (filteredRecords.length === 0) {
       return null
     }
 
-    const startTime = filteredRecords[0]?.timestamp
-    const endTime = filteredRecords[filteredRecords.length - 1]?.timestamp
+    // Filter out records with null timestamps
+    const validRecords = filteredRecords.filter(record => record.timestamp)
 
+    if (validRecords.length === 0) {
+      return null
+    }
+
+    const startTime = validRecords[0]?.timestamp
+    const endTime = validRecords[validRecords.length - 1]?.timestamp
+
+    // Ensure we have valid timestamps
     if (!startTime || !endTime) {
       return null
     }
@@ -677,18 +731,42 @@ export class UptimeTrackingService {
     let totalUptime = 0
     let totalDowntime = 0
 
-    filteredRecords.forEach(record => {
+    // Process each record to calculate durations
+    for (let i = 0; i < validRecords.length; i++) {
+      const record = validRecords[i]
+      if (!record) continue
+
+      let recordDuration = 0
+
       if (record.duration) {
+        // Record has explicit duration
+        recordDuration = record.duration
+      } else {
+        // Record has no duration - calculate from next record or current time
+        const nextRecord = validRecords[i + 1]
+        const recordEndTime = nextRecord ? nextRecord.timestamp : new Date()
+        recordDuration = recordEndTime.getTime() - record.timestamp.getTime()
+      }
+
+      // Ensure duration is valid and positive
+      if (recordDuration > 0 && !isNaN(recordDuration)) {
         if (record.status === 'up') {
-          totalUptime += record.duration
+          totalUptime += recordDuration
         } else {
-          totalDowntime += record.duration
+          totalDowntime += recordDuration
         }
       }
-    })
+    }
 
     const totalTime = totalUptime + totalDowntime
     const uptimePercentage = totalTime > 0 ? (totalUptime / totalTime) * 100 : 0
+
+    // Debug logging for WebSocket service
+    if (serviceName === 'websocket') {
+      logger.info(
+        `WebSocket uptime calculation: totalUptime=${totalUptime}, totalDowntime=${totalDowntime}, totalTime=${totalTime}, percentage=${uptimePercentage}, validRecords=${validRecords.length}`
+      )
+    }
 
     return {
       serviceName,
@@ -697,7 +775,7 @@ export class UptimeTrackingService {
       uptimePercentage,
       currentStatus,
       lastStatusChange,
-      timeline: filteredRecords,
+      timeline: validRecords,
       startTime,
       endTime,
     }
@@ -823,6 +901,49 @@ export class UptimeTrackingService {
   public resetStreamErrorCounts(): void {
     this.streamErrorCounts.clear()
     logger.info('Stream error counts reset')
+  }
+
+  /**
+   * Graceful shutdown - record all services as down
+   */
+  private async shutdown(): Promise<void> {
+    try {
+      logger.info('Shutting down uptime tracking service...')
+
+      // Stop all intervals
+      if (this.trackingInterval) {
+        clearInterval(this.trackingInterval)
+        this.trackingInterval = null
+      }
+
+      if (this.streamReadingInterval) {
+        clearInterval(this.streamReadingInterval)
+        this.streamReadingInterval = null
+      }
+
+      // Record all services as down
+      const timestamp = new Date()
+      const services = ['http', 'websocket', 'database']
+
+      for (const serviceName of services) {
+        const currentStatus = this.currentStatuses.get(serviceName)
+        if (currentStatus && currentStatus !== 'down') {
+          // Only record if service was not already down
+          this.recordStatusChange(serviceName, 'down', timestamp, {
+            reason: 'Service shutdown',
+            shutdown: true,
+          })
+          logger.info(`Recorded ${serviceName} service as down due to shutdown`)
+        }
+      }
+
+      // Wait a moment for records to be saved
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      logger.info('Uptime tracking service shutdown complete')
+    } catch (error) {
+      logger.error('Error during shutdown:', error)
+    }
   }
 
   /**
