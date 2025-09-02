@@ -635,7 +635,12 @@ export class KurrentDBService {
       // Prepare read options with defaults
       const readOptions: Record<string, unknown> = {
         direction: options.direction || FORWARDS,
-        fromRevision: options.fromRevision || START,
+        fromRevision:
+          options.fromRevision === undefined
+            ? START
+            : typeof options.fromRevision === 'number'
+              ? BigInt(options.fromRevision)
+              : options.fromRevision,
         maxCount: options.maxCount || 100,
       }
 

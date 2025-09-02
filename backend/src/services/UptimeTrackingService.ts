@@ -1,7 +1,7 @@
 import { createLogger } from 'winston'
 import { format, transports } from 'winston'
 import { KurrentDBService } from './KurrentDBService'
-import { BACKWARDS } from '@kurrent/kurrentdb-client'
+import { BACKWARDS, FORWARDS } from '@kurrent/kurrentdb-client'
 
 const logger = createLogger({
   level: 'info',
@@ -44,18 +44,34 @@ export interface ServiceUptimeSummary {
   isCurrentlyUp: boolean
 }
 
+export interface KurrentDBEvent {
+  id: string
+  type: string
+  data: Record<string, unknown>
+  metadata: Record<string, unknown>
+  position: number
+  revision: bigint
+  timestamp: string
+  streamId: string
+}
+
 export class UptimeTrackingService {
   private uptimeRecords: Map<string, ServiceUptimeRecord[]> = new Map()
   private serviceStartTimes: Map<string, Date> = new Map()
   private currentStatuses: Map<string, 'up' | 'down' | 'degraded'> = new Map()
   private lastStatusChange: Map<string, Date> = new Map()
   private trackingInterval: NodeJS.Timeout | null = null
+  private streamReadingInterval: NodeJS.Timeout | null = null
   private readonly TRACKING_INTERVAL = 30000 // 30 seconds
+  private readonly STREAM_READING_INTERVAL = 10000 // 10 seconds - read from streams more frequently
   private readonly MAX_RECORDS_PER_SERVICE = 1000 // Keep last 1000 records per service
   private readonly CLEANUP_INTERVAL = 3600000 // 1 hour
   private readonly MAX_AGE_HOURS = 168 // 7 days - keep records for 1 week
   private readonly kurrentDBService: KurrentDBService
   private readonly STREAM_PREFIX = 'service-uptime'
+  private lastReadPositions: Map<string, number> = new Map() // Track last read position for each stream
+  private streamErrorCounts: Map<string, number> = new Map() // Track consecutive errors per stream
+  private readonly MAX_STREAM_ERRORS = 5 // Max consecutive errors before backing off
 
   constructor() {
     this.kurrentDBService = new KurrentDBService()
@@ -70,11 +86,14 @@ export class UptimeTrackingService {
       // Load existing uptime data from KurrentDB
       await this.loadUptimeDataFromDB()
 
-      // Start tracking and cleanup
+      // Start tracking, stream reading, and cleanup
       this.startTracking()
+      this.startStreamReading()
       this.startCleanup()
 
-      logger.info('Uptime tracking service initialized with KurrentDB persistence')
+      logger.info(
+        'Uptime tracking service initialized with KurrentDB persistence and stream reading'
+      )
     } catch (error) {
       logger.error('Failed to initialize uptime tracking service:', error)
       // Continue with in-memory tracking even if DB fails
@@ -107,6 +126,32 @@ export class UptimeTrackingService {
       this.trackingInterval = null
     }
     logger.info('Service uptime tracking stopped')
+  }
+
+  /**
+   * Start reading from KurrentDB streams for real-time updates
+   */
+  public startStreamReading(): void {
+    if (this.streamReadingInterval) {
+      clearInterval(this.streamReadingInterval)
+    }
+
+    this.streamReadingInterval = setInterval(() => {
+      this.readNewStreamEvents()
+    }, this.STREAM_READING_INTERVAL)
+
+    logger.info('Stream reading started for real-time uptime updates')
+  }
+
+  /**
+   * Stop reading from KurrentDB streams
+   */
+  public stopStreamReading(): void {
+    if (this.streamReadingInterval) {
+      clearInterval(this.streamReadingInterval)
+      this.streamReadingInterval = null
+    }
+    logger.info('Stream reading stopped')
   }
 
   /**
@@ -338,6 +383,14 @@ export class UptimeTrackingService {
             }
 
             logger.info(`Loaded ${records.length} uptime records for ${serviceName} from KurrentDB`)
+
+            // Initialize the last read position for this stream
+            if (events.length > 0) {
+              const lastEvent = events[events.length - 1]
+              if (lastEvent && typeof lastEvent.position === 'number') {
+                this.lastReadPositions.set(streamName, lastEvent.position)
+              }
+            }
           }
         } catch (error) {
           logger.warn(`Failed to load uptime data for ${serviceName}:`, error)
@@ -346,6 +399,145 @@ export class UptimeTrackingService {
     } catch (error) {
       logger.error('Failed to load uptime data from KurrentDB:', error)
     }
+  }
+
+  /**
+   * Read new events from KurrentDB streams since last read position
+   */
+  private async readNewStreamEvents(): Promise<void> {
+    try {
+      const services = ['http', 'websocket', 'database']
+
+      for (const serviceName of services) {
+        const streamName = `${this.STREAM_PREFIX}-${serviceName}`
+        const lastPosition = this.lastReadPositions.get(streamName) || 0
+
+        try {
+          // Check if this stream is in error backoff
+          const errorCount = this.streamErrorCounts.get(streamName) || 0
+          if (errorCount >= this.MAX_STREAM_ERRORS) {
+            logger.debug(`Skipping ${streamName} due to error backoff (${errorCount} errors)`)
+            continue
+          }
+
+          // Read events from the last known position
+          const events = await this.kurrentDBService.readStream(streamName, {
+            fromRevision: lastPosition + 1, // Start from next position
+            maxCount: 100, // Read up to 100 new events
+            direction: FORWARDS, // Read forwards from the position
+          })
+
+          if (events.length > 0) {
+            logger.debug(`Read ${events.length} new events from ${streamName}`)
+
+            // Process each new event
+            for (const event of events) {
+              await this.processStreamEvent(serviceName, event)
+            }
+
+            // Update the last read position
+            const lastEvent = events[events.length - 1]
+            if (lastEvent && typeof lastEvent.position === 'number') {
+              this.lastReadPositions.set(streamName, lastEvent.position)
+            }
+          }
+
+          // Reset error count on successful read
+          if (errorCount > 0) {
+            this.streamErrorCounts.set(streamName, 0)
+            logger.info(`Stream ${streamName} recovered from errors`)
+          }
+        } catch (error) {
+          const newErrorCount = (this.streamErrorCounts.get(streamName) || 0) + 1
+          this.streamErrorCounts.set(streamName, newErrorCount)
+
+          if (newErrorCount >= this.MAX_STREAM_ERRORS) {
+            logger.error(
+              `Stream ${streamName} has ${newErrorCount} consecutive errors, entering backoff period`
+            )
+          } else {
+            logger.warn(
+              `Failed to read new events from ${streamName} (${newErrorCount}/${this.MAX_STREAM_ERRORS}):`,
+              error
+            )
+          }
+        }
+      }
+    } catch (error) {
+      logger.error('Error reading new stream events:', error)
+    }
+  }
+
+  /**
+   * Process a single event from a KurrentDB stream
+   */
+  private async processStreamEvent(serviceName: string, event: KurrentDBEvent): Promise<void> {
+    try {
+      // Only process service status change events
+      if (event.type !== 'service_status_change') {
+        return
+      }
+
+      const eventData = event.data
+      if (!eventData || !eventData.serviceName || !eventData.status || !eventData.timestamp) {
+        logger.warn(`Invalid event data for ${serviceName}:`, eventData)
+        return
+      }
+
+      // Create a new uptime record from the stream event
+      const newRecord: ServiceUptimeRecord = {
+        id: eventData.id || event.id,
+        serviceName: eventData.serviceName,
+        status: eventData.status,
+        timestamp: new Date(eventData.timestamp),
+        duration: eventData.duration,
+        metadata: eventData.metadata,
+      }
+
+      // Update local state with the new record
+      await this.updateLocalStateFromStreamEvent(newRecord)
+
+      logger.debug(
+        `Processed stream event for ${serviceName}: ${eventData.status} at ${eventData.timestamp}`
+      )
+    } catch (error) {
+      logger.error(`Error processing stream event for ${serviceName}:`, error)
+    }
+  }
+
+  /**
+   * Update local state based on a stream event
+   */
+  private async updateLocalStateFromStreamEvent(record: ServiceUptimeRecord): Promise<void> {
+    const serviceName = record.serviceName
+    const records = this.uptimeRecords.get(serviceName) || []
+
+    // Check if this record already exists (avoid duplicates)
+    const existingRecord = records.find(r => r.id === record.id)
+    if (existingRecord) {
+      return // Skip duplicate
+    }
+
+    // Add the new record
+    records.push(record)
+
+    // Keep only the last MAX_RECORDS_PER_SERVICE records
+    if (records.length > this.MAX_RECORDS_PER_SERVICE) {
+      records.splice(0, records.length - this.MAX_RECORDS_PER_SERVICE)
+    }
+
+    this.uptimeRecords.set(serviceName, records)
+
+    // Update current status and last status change
+    this.currentStatuses.set(serviceName, record.status)
+    this.lastStatusChange.set(serviceName, record.timestamp)
+
+    // Initialize service start time if not set
+    if (!this.serviceStartTimes.has(serviceName)) {
+      this.serviceStartTimes.set(serviceName, record.timestamp)
+    }
+
+    logger.info(`Updated local state from stream: ${serviceName} is now ${record.status}`)
   }
 
   /**
@@ -620,7 +812,17 @@ export class UptimeTrackingService {
     this.serviceStartTimes.clear()
     this.currentStatuses.clear()
     this.lastStatusChange.clear()
+    this.lastReadPositions.clear()
+    this.streamErrorCounts.clear()
     logger.info('All uptime tracking data cleared')
+  }
+
+  /**
+   * Reset error counts for all streams (useful for recovery)
+   */
+  public resetStreamErrorCounts(): void {
+    this.streamErrorCounts.clear()
+    logger.info('Stream error counts reset')
   }
 
   /**

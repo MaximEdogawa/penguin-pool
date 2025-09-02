@@ -815,7 +815,7 @@ const setupUptimeSubscriptions = async () => {
               broadcastServiceStatusChange(
                 serviceName,
                 event.event.data['status'] as string,
-                event.event.data['metadata']
+                event.event.data['metadata'] as Record<string, unknown>
               )
             }
           },
