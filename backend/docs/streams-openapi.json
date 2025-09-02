@@ -1,0 +1,443 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Penguin Pool KurrentDB Streams API",
+    "description": "API specification for all KurrentDB streams used by the Penguin Pool backend service",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Penguin Pool Team",
+      "email": "team@penguinpool.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "uptime-streams",
+      "description": "Service uptime tracking streams"
+    },
+    {
+      "name": "user-streams",
+      "description": "User data streams"
+    },
+    {
+      "name": "system-streams",
+      "description": "System and health check streams"
+    }
+  ],
+  "paths": {
+    "/api/uptime/create-streams": {
+      "post": {
+        "tags": ["uptime-streams"],
+        "summary": "Create uptime tracking streams",
+        "description": "Creates streams for tracking HTTP, WebSocket, and Database service uptime",
+        "responses": {
+          "200": {
+            "description": "Stream creation completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamCreationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to create streams",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/uptime/test-kurrentdb": {
+      "get": {
+        "tags": ["system-streams"],
+        "summary": "Test KurrentDB connection",
+        "description": "Tests the connection to KurrentDB and returns health status",
+        "responses": {
+          "200": {
+            "description": "Connection test completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionTestResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Connection test failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Stream": {
+        "type": "object",
+        "required": ["id", "name", "data", "metadata", "status", "permissions"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique stream identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Stream name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Stream description"
+          },
+          "data": {
+            "type": "object",
+            "description": "Stream data payload"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/StreamMetadata"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "archived", "deleted"],
+            "description": "Stream status"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/StreamPermissions"
+          }
+        }
+      },
+      "StreamMetadata": {
+        "type": "object",
+        "required": ["createdAt", "updatedAt", "version", "tags", "owner"],
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Stream creation timestamp"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          },
+          "version": {
+            "type": "integer",
+            "description": "Stream version number"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Stream tags for categorization"
+          },
+          "owner": {
+            "type": "string",
+            "description": "Stream owner identifier"
+          }
+        }
+      },
+      "StreamPermissions": {
+        "type": "object",
+        "required": ["read", "write", "admin"],
+        "properties": {
+          "read": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Users/roles with read access"
+          },
+          "write": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Users/roles with write access"
+          },
+          "admin": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Users/roles with admin access"
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "required": ["id", "type", "data", "position", "timestamp"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique event identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Event type"
+          },
+          "data": {
+            "type": "object",
+            "description": "Event data payload"
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Event metadata"
+          },
+          "position": {
+            "type": "integer",
+            "description": "Event position in stream"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Event timestamp"
+          }
+        }
+      },
+      "ServiceUptimeEvent": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Event"
+          },
+          {
+            "type": "object",
+            "required": ["type", "data"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["ServiceStatusChanged"],
+                "description": "Service uptime event type"
+              },
+              "data": {
+                "$ref": "#/components/schemas/ServiceUptimeEventData"
+              }
+            }
+          }
+        ]
+      },
+      "ServiceUptimeEventData": {
+        "type": "object",
+        "required": ["serviceName", "status", "timestamp", "eventId"],
+        "properties": {
+          "serviceName": {
+            "type": "string",
+            "enum": ["http", "websocket", "database"],
+            "description": "Name of the service being tracked"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["up", "down", "degraded"],
+            "description": "Service status"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Status change timestamp"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Duration of this status in milliseconds"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/ServiceUptimeMetadata"
+          },
+          "eventId": {
+            "type": "string",
+            "description": "Unique event identifier"
+          }
+        }
+      },
+      "ServiceUptimeMetadata": {
+        "type": "object",
+        "properties": {
+          "responseTime": {
+            "type": "integer",
+            "description": "Service response time in milliseconds"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if status is down"
+          },
+          "performanceGrade": {
+            "type": "string",
+            "enum": ["excellent", "good", "acceptable", "slow"],
+            "description": "Performance grade based on response time"
+          }
+        }
+      },
+      "UserDataEvent": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Event"
+          },
+          {
+            "type": "object",
+            "required": ["type", "data"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["UserDataUpdated"],
+                "description": "User data event type"
+              },
+              "data": {
+                "$ref": "#/components/schemas/UserDataEventData"
+              }
+            }
+          }
+        ]
+      },
+      "UserDataEventData": {
+        "type": "object",
+        "required": ["userId", "type", "category", "data", "isPublic", "timestamp", "eventId"],
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "User identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Data type (profile, preferences, activity, etc.)"
+          },
+          "category": {
+            "type": "string",
+            "description": "Data category"
+          },
+          "data": {
+            "type": "object",
+            "description": "User data payload"
+          },
+          "isPublic": {
+            "type": "boolean",
+            "description": "Whether the data is public"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Data update timestamp"
+          },
+          "eventId": {
+            "type": "string",
+            "description": "Unique event identifier"
+          }
+        }
+      },
+      "StreamCreationResult": {
+        "type": "object",
+        "required": ["service", "streamName", "success"],
+        "properties": {
+          "service": {
+            "type": "string",
+            "enum": ["http", "websocket", "database"],
+            "description": "Service name"
+          },
+          "streamName": {
+            "type": "string",
+            "description": "Created stream name"
+          },
+          "success": {
+            "type": "boolean",
+            "description": "Whether stream creation was successful"
+          },
+          "streamId": {
+            "type": "string",
+            "description": "Stream identifier (if successful)"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message (if failed)"
+          }
+        }
+      },
+      "StreamCreationResponse": {
+        "type": "object",
+        "required": ["timestamp", "message", "results"],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Response timestamp"
+          },
+          "message": {
+            "type": "string",
+            "description": "Response message"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StreamCreationResult"
+            },
+            "description": "Stream creation results"
+          }
+        }
+      },
+      "ConnectionTestResponse": {
+        "type": "object",
+        "required": ["timestamp", "message", "results"],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Response timestamp"
+          },
+          "message": {
+            "type": "string",
+            "description": "Response message"
+          },
+          "results": {
+            "type": "object",
+            "required": ["connection", "health", "responseTime"],
+            "properties": {
+              "connection": {
+                "type": "string",
+                "enum": ["success", "failed"],
+                "description": "Connection status"
+              },
+              "health": {
+                "type": "string",
+                "enum": ["healthy", "degraded", "unhealthy"],
+                "description": "Health status"
+              },
+              "responseTime": {
+                "type": "integer",
+                "description": "Response time in milliseconds"
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error", "message"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error type"
+          },
+          "message": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      }
+    }
+  }
+}

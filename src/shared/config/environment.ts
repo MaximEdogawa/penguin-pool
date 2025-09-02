@@ -44,9 +44,11 @@ export const environment = {
   // Database configuration
   database: {
     kurrent: {
-      enabled: true,
-      syncInterval: 5000, // 5 seconds
-      maxRetries: 3,
+      enabled: import.meta.env.VITE_KURRENT_DB_ENABLED === 'true',
+      environment: import.meta.env.VITE_KURRENT_DB_ENVIRONMENT || 'dev',
+      syncInterval: parseInt(import.meta.env.VITE_KURRENT_DB_SYNC_INTERVAL || '5000'),
+      maxRetries: parseInt(import.meta.env.VITE_KURRENT_DB_MAX_RETRIES || '3'),
+      timeout: parseInt(import.meta.env.VITE_KURRENT_DB_TIMEOUT || '30000'),
     },
     indexedDB: {
       name: 'penguin-pool-db',

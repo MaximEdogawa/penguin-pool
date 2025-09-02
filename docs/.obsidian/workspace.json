@@ -166,8 +166,11 @@
       "bases:Create new base": false
     }
   },
-  "active": "0f57a1a9bf49a887",
+  "active": "762a427def224add",
   "lastOpenFiles": [
+    "implementation/TICKET-008/TICKET-008-IMPLEMENTATION.md",
+    "implementation/TICKET-008/README.md",
+    "implementation/TICKET-008",
     "implementation/TICKET-004",
     "implementation/IMMEDIATE_NEXT_STEPS.md",
     "implementation/TICKET-003/README.md",
@@ -200,9 +203,6 @@
     "WHITE_PAPER.md",
     "TECHNICAL_STACK.md",
     "PROJECT_STRUCTURE.md",
-    "PRE_COMMIT_HOOKS.md",
-    "implementation/WALLET_CONNECT_UI",
-    "implementation/HEADER_SIDEBAR",
-    "implementation/SIDEBAR_COLLAPSE"
+    "implementation/WALLET_CONNECT_UI"
   ]
 }

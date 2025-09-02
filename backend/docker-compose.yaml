@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # KurrentDB Database
+  kurrentdb:
+    image: docker.kurrent.io/kurrent-latest/kurrentdb:latest
+    container_name: kurrentdb
+    environment:
+      - KURRENTDB_CLUSTER_SIZE=1
+      - KURRENTDB_RUN_PROJECTIONS=All
+      - KURRENTDB_START_STANDARD_PROJECTIONS=true
+      - KURRENTDB_NODE_PORT=2113
+      - KURRENTDB_INSECURE=true
+      - KURRENTDB_ENABLE_ATOM_PUB_OVER_HTTP=true
+    ports:
+      - "2113:2113"  # gRPC and HTTP API
+    volumes:
+      - type: volume
+        source: kurrentdb-volume-data
+        target: /var/lib/kurrentdb
+      - type: volume
+        source: kurrentdb-volume-logs
+        target: /var/log/kurrentdb
+    networks:
+      - kurrentdb-network
+    restart: unless-stopped
+
+  # Backend API Service
+  backend:
+    build: .
+    container_name: kurrentdb-backend
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - KURRENTDB_HOST=kurrentdb
+      - KURRENTDB_PORT=2113
+      - KURRENTDB_API_KEY=demo-key
+      - KURRENTDB_SECRET_KEY=demo-secret
+      - KURRENTDB_USE_TLS=false
+      - KURRENTDB_VERIFY_CERT=false
+      - LOG_LEVEL=info
+      - ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - kurrentdb
+    networks:
+      - kurrentdb-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: kurrentdb-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - kurrentdb
+    networks:
+      - kurrentdb-network
+    restart: unless-stopped
+
+volumes:
+  kurrentdb-volume-data:
+    driver: local
+  kurrentdb-volume-logs:
+    driver: local
+
+networks:
+  kurrentdb-network:
+    driver: bridge

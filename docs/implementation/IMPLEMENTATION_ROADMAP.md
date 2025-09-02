@@ -33,7 +33,7 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Effort**: 1 day
   - **Dependencies**: TICKET-002
 
-- [ ] **TICKET-004**: Set up testing infrastructure
+- [x] **TICKET-004**: Set up testing infrastructure
   - Configure Vitest for unit testing
   - Set up Playwright for E2E testing
   - Create test utilities and mocks
@@ -42,21 +42,21 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
 
 ### Week 2: Core Architecture
 
-- [ ] \*_TICKET-005_: Implement Feature Sliced Design structure
+- [x] \*_TICKET-005_: Implement Feature Sliced Design structure
   - Create folder hierarchy (app, pages, widgets, features, entities, shared)
   - Set up absolute import paths
   - Configure build aliases
   - **Effort**: 2 days
   - **Dependencies**: TICKET-001
 
-- [ ] **TICKET-006**: Set up routing and navigation
+- [x] **TICKET-006**: Set up routing and navigation
   - Implement Vue Router with lazy loading
   - Create navigation structure
   - Set up route guards and middleware
   - **Effort**: 1 day
   - **Dependencies**: TICKET-004
 
-- [ ] **TICKET-007**: Configure state management
+- [x] **TICKET-007**: Configure state management
   - Set up Pinia stores
   - Configure TanStack Query for server state
   - Create global state providers

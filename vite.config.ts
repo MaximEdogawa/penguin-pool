@@ -20,6 +20,33 @@ export default defineConfig({
   build: {
     target: 'esnext',
     rollupOptions: {
+      external: [
+        'fs',
+        'path',
+        'stream',
+        'events',
+        'http',
+        'https',
+        'url',
+        'tls',
+        'net',
+        'dns',
+        'zlib',
+        'util',
+        'os',
+        'http2',
+        'crypto',
+        'buffer',
+        'querystring',
+        'child_process',
+        'cluster',
+        'dgram',
+        'module',
+        'process',
+        'v8',
+        'vm',
+        'worker_threads',
+      ],
       output: {
         manualChunks: {
           'vue-vendor': ['vue', 'vue-router', 'pinia'],
@@ -28,6 +55,9 @@ export default defineConfig({
         },
       },
     },
+  },
+  optimizeDeps: {
+    exclude: ['@kurrent/kurrentdb-client'],
   },
   server: {
     port: 3000,
