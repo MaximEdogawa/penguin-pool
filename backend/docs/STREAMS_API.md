@@ -53,22 +53,6 @@ service-uptime-{serviceName}
 
 #### Event Types
 
-##### StreamCreated Event
-
-```typescript
-{
-  type: "StreamCreated"
-  data: {
-    streamName: string
-    description: string
-    tags: string[]
-    owner: string
-    createdAt: string
-    data: Record<string, unknown>
-  }
-}
-```
-
 ##### ServiceStatusChanged Event
 
 ```typescript

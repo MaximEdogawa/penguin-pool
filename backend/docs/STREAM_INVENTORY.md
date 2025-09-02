@@ -37,24 +37,6 @@ This document provides a complete inventory of all streams that will be opened a
 
 ## Stream Event Types
 
-### Service Uptime Events
-
-#### StreamCreated
-
-```json
-{
-  "type": "StreamCreated",
-  "data": {
-    "streamName": "service-uptime-http",
-    "description": "Service uptime tracking for http",
-    "tags": ["uptime", "monitoring", "http"],
-    "owner": "system",
-    "createdAt": "2024-01-15T10:30:00.000Z",
-    "data": {}
-  }
-}
-```
-
 #### ServiceStatusChanged
 
 ```json

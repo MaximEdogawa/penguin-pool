@@ -513,7 +513,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted } from 'vue'
+  import { ref, computed, onMounted, onUnmounted, type Ref } from 'vue'
   import { useUptime } from '@/features/uptime/composables/useUptime'
   import { uptimeService } from '@/features/uptime/services/UptimeService'
 
@@ -583,18 +583,13 @@
     }
   } | null>(null)
 
-  // Error state
   const error = ref<string>('')
-
-  // Auto-refresh state (now managed by uptime composable)
-
-  // Computed properties (uptime-related ones are now managed by the composable)
+  const lastSendWSMessageTime: Ref<Date> = ref(new Date())
 
   const wsLatency = computed(() => {
     if (!wsConnected.value) return 0
-    const now = new Date()
     const lastMessageTime = new Date(wsMessages.value[wsMessages.value.length - 1]?.timestamp || 0)
-    const latency = now.getTime() - lastMessageTime.getTime()
+    const latency = lastSendWSMessageTime.value.getTime() - lastMessageTime.getTime()
     return latency
   })
 
@@ -667,6 +662,7 @@
       content,
       timestamp: new Date(),
     })
+    lastSendWSMessageTime.value = new Date()
 
     // Keep only last 100 messages
     if (wsMessages.value.length > 100) {
@@ -910,9 +906,6 @@
     }
   }
 
-  // Health score functions are now managed by the uptime composable
-
-  // Helper function to map old status to new status format
   const mapToUptimeStatus = (status: string): 'up' | 'down' | 'degraded' => {
     switch (status) {
       case 'healthy':
@@ -939,18 +932,10 @@
     }
   }
 
-  // formatUptime function is now handled by the uptime service
-
-  // Lifecycle
   onMounted(() => {
-    // Auto-connect to WebSocket
     connectWebSocket()
-
-    // Auto-check HTTP health on mount
     checkHTTPHealth()
     checkDBHealth()
-
-    // Uptime data is automatically fetched by the composable
   })
 
   onUnmounted(() => {

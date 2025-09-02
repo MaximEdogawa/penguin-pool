@@ -56,38 +56,6 @@ GET /api/streams/browse
 GET /api/streams/browse?limit=20&offset=0&namePattern=service-uptime-.*&eventType=ServiceStatusChanged
 ```
 
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "streams": [
-      {
-        "name": "service-uptime-http",
-        "eventCount": 150,
-        "firstEvent": {
-          "id": "evt_1234567890_abcdef",
-          "type": "StreamCreated",
-          "timestamp": "2024-01-01T00:00:00.000Z"
-        },
-        "lastEvent": {
-          "id": "evt_1234567890_xyz",
-          "type": "ServiceStatusChanged",
-          "timestamp": "2024-01-15T10:30:00.000Z"
-        },
-        "size": 45000,
-        "created": "2024-01-01T00:00:00.000Z",
-        "updated": "2024-01-15T10:30:00.000Z"
-      }
-    ],
-    "total": 1,
-    "hasMore": false
-  },
-  "timestamp": "2024-01-15T10:30:00.000Z"
-}
-```
-
 ### 2. Get Stream Details
 
 Get detailed information about a specific stream.
@@ -106,65 +74,6 @@ GET /api/streams/{streamName}/details
 
 ```http
 GET /api/streams/service-uptime-http/details
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "info": {
-      "name": "service-uptime-http",
-      "eventCount": 150,
-      "firstEvent": {
-        "id": "evt_1234567890_abcdef",
-        "type": "StreamCreated",
-        "timestamp": "2024-01-01T00:00:00.000Z"
-      },
-      "lastEvent": {
-        "id": "evt_1234567890_xyz",
-        "type": "ServiceStatusChanged",
-        "timestamp": "2024-01-15T10:30:00.000Z"
-      },
-      "size": 45000,
-      "created": "2024-01-01T00:00:00.000Z",
-      "updated": "2024-01-15T10:30:00.000Z"
-    },
-    "events": [
-      {
-        "id": "evt_1234567890_xyz",
-        "type": "ServiceStatusChanged",
-        "data": {
-          "serviceName": "http",
-          "status": "up",
-          "timestamp": "2024-01-15T10:30:00.000Z",
-          "responseTime": 45
-        },
-        "metadata": {
-          "source": "health-check"
-        },
-        "position": 149,
-        "revision": "149",
-        "timestamp": "2024-01-15T10:30:00.000Z",
-        "streamId": "service-uptime-http"
-      }
-    ],
-    "statistics": {
-      "eventTypes": {
-        "StreamCreated": 1,
-        "ServiceStatusChanged": 149
-      },
-      "averageEventSize": 300,
-      "eventsPerDay": {
-        "2024-01-01": 10,
-        "2024-01-02": 12,
-        "2024-01-15": 8
-      }
-    }
-  },
-  "timestamp": "2024-01-15T10:30:00.000Z"
-}
 ```
 
 ### 3. Search Events
@@ -235,35 +144,6 @@ Get comprehensive stream and event statistics.
 
 ```http
 GET /api/streams/statistics
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "totalStreams": 5,
-    "totalEvents": 1250,
-    "totalSize": 375000,
-    "streamTypes": {
-      "uptime": 3,
-      "user": 1,
-      "system": 1
-    },
-    "eventTypes": {
-      "ServiceStatusChanged": 1200,
-      "StreamCreated": 5,
-      "UserDataUpdated": 45
-    },
-    "recentActivity": {
-      "last24Hours": 50,
-      "last7Days": 300,
-      "last30Days": 1200
-    }
-  },
-  "timestamp": "2024-01-15T10:30:00.000Z"
-}
 ```
 
 ### 5. Create Stream

@@ -239,24 +239,6 @@ Content-Type: application/json
 GET /api/streams/statistics
 ```
 
-#### Create Stream
-
-```http
-POST /api/streams/create
-Content-Type: application/json
-
-{
-  "streamName": "new-stream",
-  "eventType": "StreamCreated",
-  "eventData": {
-    "description": "New stream for testing"
-  },
-  "metadata": {
-    "source": "api"
-  }
-}
-```
-
 #### Read Stream Events
 
 ```http

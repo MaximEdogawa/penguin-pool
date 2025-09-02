@@ -32,7 +32,6 @@ graph TB
     end
 
     subgraph "Event Types"
-        STREAM_CREATED[StreamCreated]
         STATUS_CHANGED[ServiceStatusChanged]
         USER_UPDATED[UserDataUpdated]
     end
@@ -168,7 +167,6 @@ stateDiagram-v2
     Archived --> [*]: Delete Stream
 
     note right of Created
-        StreamCreated event
         Initial metadata
     end note
 

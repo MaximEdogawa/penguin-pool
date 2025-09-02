@@ -290,8 +290,6 @@ export class KurrentDBService {
     const errors: string[] = []
 
     try {
-      // Test connection - skip ping test for now
-
       // Test read operation
       await this.listStreams()
 
@@ -547,8 +545,6 @@ export class KurrentDBService {
     options: AppendOptions = {}
   ): Promise<{ eventId: string; position: number; revision: number }> {
     try {
-      // Always append to real KurrentDB streams
-
       if (!this.client) {
         throw new Error('KurrentDB client not initialized')
       }
