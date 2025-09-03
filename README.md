@@ -32,6 +32,7 @@ Penguin-pool is a modern, privacy-focused decentralized lending platform that co
 - **[Technical Stack](docs/TECHNICAL_STACK.md)** - Complete technology overview and dependencies
 - **[Implementation Roadmap](docs/IMPLEMENTATION_ROADMAP.md)** - 14-week development plan with tickets
 - **[White Paper](docs/WHITE_PAPER.md)** - Complete project overview and business case
+- **[API Documentation](docs/API_DOCUMENTATION.md)** - Complete REST API reference with Swagger/OpenAPI
 
 ### 🎯 Quick Start Guide
 
@@ -45,9 +46,11 @@ Penguin-pool is a modern, privacy-focused decentralized lending platform that co
 ### Technology Stack
 
 - **Frontend**: Vue.js 3 + Composition API + TypeScript
+- **Backend**: NestJS + TypeScript + KurrentDB integration
 - **Build Tool**: Vite 5.x with optimized builds
 - **UI Components**: PrimeVue component library
 - **Styling**: Tailwind CSS with custom design system
+- **API Documentation**: Swagger/OpenAPI 3.0 with interactive UI
 - **State Management**: TanStack Query + Pinia
 - **Database**: Kurrent DB for local stream storage
 - **Blockchain**: Chia Network integration
@@ -69,6 +72,22 @@ Penguin-pool is a modern, privacy-focused decentralized lending platform that co
 - npm/yarn/pnpm
 - Git
 - Modern browser with PWA support
+
+### Backend API
+
+The backend provides a comprehensive REST API with full Swagger/OpenAPI documentation:
+
+- **API Base URL**: `http://localhost:3002`
+- **Interactive Documentation**: `http://localhost:3002/api/docs`
+- **OpenAPI Specification**: `http://localhost:3002/api/docs-json`
+
+#### Available API Modules:
+
+- **Health Monitoring** - System health checks and status
+- **Stream Management** - Event stream CRUD operations
+- **Uptime Tracking** - Service uptime monitoring and statistics
+- **KurrentDB Integration** - Direct database operations and proxy
+- **Status Endpoints** - API status and information
 
 ### Development Setup
 

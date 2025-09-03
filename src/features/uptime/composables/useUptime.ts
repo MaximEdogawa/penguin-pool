@@ -1,4 +1,5 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { io, type Socket } from 'socket.io-client'
 import {
   uptimeService,
   type ServiceUptimeSummary,
@@ -17,7 +18,7 @@ export function useUptime() {
   const selectedPeriod = ref(24) // hours (1 day)
 
   // WebSocket state for real-time updates
-  const ws = ref<WebSocket | null>(null)
+  const ws = ref<Socket | null>(null)
   const wsConnected = ref(false)
   const wsConnecting = ref(false)
   const wsError = ref<string>('')
@@ -112,54 +113,51 @@ export function useUptime() {
 
   // WebSocket methods for real-time updates
   const connectWebSocket = () => {
-    if (ws.value?.readyState === WebSocket.OPEN) return
+    if (ws.value?.connected) return
 
     wsConnecting.value = true
     wsError.value = ''
 
     try {
-      const wsUrl = 'ws://localhost:3002/ws/health'
-      ws.value = new WebSocket(wsUrl)
+      ws.value = io('http://localhost:3002/ws/health', {
+        transports: ['websocket'],
+      })
 
-      ws.value.onopen = () => {
+      ws.value.on('connect', () => {
         wsConnected.value = true
         wsConnecting.value = false
         wsError.value = ''
         console.log('Connected to health/uptime WebSocket')
-      }
+      })
 
-      ws.value.onmessage = event => {
-        try {
-          const data = JSON.parse(event.data)
+      ws.value.on('service_status_change', data => {
+        // Update current statuses in real-time
+        currentStatuses.value[data.serviceName] = data.status
 
-          if (data.type === 'service_status_change') {
-            // Update current statuses in real-time
-            currentStatuses.value[data.serviceName] = data.status
-
-            // Trigger a refresh of the uptime data to get updated percentages
-            if (autoRefresh.value) {
-              fetchUptimeData()
-            }
-
-            console.log(`Real-time status update: ${data.serviceName} is now ${data.status}`)
-          }
-        } catch (err) {
-          console.error('Failed to parse WebSocket message:', err)
+        // Trigger a refresh of the uptime data to get updated percentages
+        if (autoRefresh.value) {
+          fetchUptimeData()
         }
-      }
 
-      ws.value.onclose = event => {
+        console.log(`Real-time status update: ${data.serviceName} is now ${data.status}`)
+      })
+
+      ws.value.on('health_status', data => {
+        console.log('Received health status:', data)
+      })
+
+      ws.value.on('disconnect', reason => {
         wsConnected.value = false
         wsConnecting.value = false
-        wsError.value = `WebSocket disconnected: ${event.code} ${event.reason || ''}`
+        wsError.value = `WebSocket disconnected: ${reason}`
         console.log('Health/uptime WebSocket disconnected')
-      }
+      })
 
-      ws.value.onerror = error => {
+      ws.value.on('connect_error', error => {
         wsConnecting.value = false
         wsError.value = 'WebSocket connection error'
         console.error('Health/uptime WebSocket error:', error)
-      }
+      })
     } catch (err) {
       wsConnecting.value = false
       wsError.value = 'Failed to create WebSocket connection'
@@ -169,7 +167,7 @@ export function useUptime() {
 
   const disconnectWebSocket = () => {
     if (ws.value) {
-      ws.value.close()
+      ws.value.disconnect()
       ws.value = null
     }
     wsConnected.value = false

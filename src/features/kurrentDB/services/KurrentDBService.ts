@@ -85,7 +85,7 @@ export class KurrentDBService {
   constructor() {
     // Configuration for local KurrentDB instance via proxy
     this.config = {
-      baseUrl: 'http://localhost:3001',
+      baseUrl: 'http://localhost:3002',
       credentials: {
         apiKey: 'demo-key',
         secretKey: 'demo-secret',
