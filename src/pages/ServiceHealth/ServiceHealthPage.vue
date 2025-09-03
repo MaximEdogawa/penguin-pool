@@ -144,7 +144,7 @@
           <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2">
             {{ httpResponseTime ? `${httpResponseTime}ms` : 'Not checked' }}
           </p>
-          <div class="mt-3 text-xs text-gray-500">Port: 3001</div>
+          <div class="mt-3 text-xs text-gray-500">Port: 3002</div>
         </div>
 
         <!-- Database Status -->
@@ -517,6 +517,7 @@
 
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted, type Ref } from 'vue'
+  import { io, type Socket } from 'socket.io-client'
   import { useUptime } from '@/features/uptime/composables/useUptime'
   import { uptimeService } from '@/features/uptime/services/UptimeService'
 
@@ -542,7 +543,7 @@
   } = useUptime()
 
   // WebSocket state
-  const ws = ref<WebSocket | null>(null)
+  const ws = ref<Socket | null>(null)
   const wsConnected = ref(false)
   const wsConnecting = ref(false)
   const wsConnectionStatus = ref('Disconnected')
@@ -602,48 +603,48 @@
 
   // WebSocket methods
   const connectWebSocket = () => {
-    if (ws.value?.readyState === WebSocket.OPEN) return
+    if (ws.value?.connected) return
 
     wsConnecting.value = true
     wsConnectionStatus.value = 'Connecting...'
 
     try {
-      const wsUrl = 'ws://localhost:3002/ws/health'
-      ws.value = new WebSocket(wsUrl)
+      ws.value = io('http://localhost:3002/ws/health', {
+        transports: ['websocket'],
+      })
 
-      ws.value.onopen = () => {
+      ws.value.on('connect', () => {
         wsConnected.value = true
         wsConnecting.value = false
         wsConnectionStatus.value = 'Connected'
         wsConnectionTime.value = new Date() // Set the connection time
         addMessage('info', 'WebSocket connected successfully')
-      }
+      })
 
-      ws.value.onmessage = event => {
-        try {
-          const data = JSON.parse(event.data)
-          addMessage('data', `Received: ${JSON.stringify(data, null, 2)}`)
-        } catch {
-          addMessage('data', `Raw message: ${event.data}`)
-        }
-      }
+      ws.value.on('service_status_change', data => {
+        addMessage('data', `Service status change: ${JSON.stringify(data, null, 2)}`)
+      })
 
-      ws.value.onclose = event => {
+      ws.value.on('health_status', data => {
+        addMessage('data', `Health status: ${JSON.stringify(data, null, 2)}`)
+      })
+
+      ws.value.on('disconnect', reason => {
         wsConnected.value = false
         wsConnecting.value = false
-        wsConnectionStatus.value = `Disconnected (${event.code}: ${event.reason || 'No reason'})`
+        wsConnectionStatus.value = `Disconnected (${reason})`
         wsConnectionTime.value = null // Reset connection time on disconnect
-        addMessage('warning', `WebSocket disconnected: ${event.code} ${event.reason || ''}`)
-      }
+        addMessage('warning', `WebSocket disconnected: ${reason}`)
+      })
 
-      ws.value.onerror = event => {
+      ws.value.on('connect_error', error => {
         wsConnected.value = false
         wsConnecting.value = false
         wsConnectionStatus.value = 'Connection error'
         wsConnectionTime.value = null // Reset connection time on error
         addMessage('error', 'WebSocket connection error')
-        console.error('WebSocket error:', event)
-      }
+        console.error('WebSocket error:', error)
+      })
     } catch (err) {
       wsConnecting.value = false
       wsConnectionStatus.value = 'Failed to connect'
@@ -654,7 +655,7 @@
 
   const disconnectWebSocket = () => {
     if (ws.value) {
-      ws.value.close()
+      ws.value.disconnect()
       ws.value = null
     }
   }
@@ -696,7 +697,7 @@
     const startTime = Date.now()
 
     try {
-      const response = await fetch('http://localhost:3001/health')
+      const response = await fetch('http://localhost:3002/health')
       const endTime = Date.now()
       const responseTime = endTime - startTime
 

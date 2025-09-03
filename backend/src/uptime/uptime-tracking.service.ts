@@ -1,62 +1,16 @@
-import { createLogger } from 'winston'
-import { format, transports } from 'winston'
-import { KurrentDBService } from './KurrentDBService'
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common'
+import { KurrentDBService } from '../services/kurrentdb.service'
+import {
+  ServiceUptimeRecord,
+  ServiceUptimeTimeline,
+  ServiceUptimeSummary,
+} from '../entities/uptime.entity'
 import { WebSocket } from 'ws'
 import { BACKWARDS, FORWARDS } from '@kurrent/kurrentdb-client'
 
-const logger = createLogger({
-  level: 'info',
-  format: format.simple(),
-  transports: [new transports.Console()],
-})
-
-export interface ServiceUptimeRecord {
-  id: string
-  serviceName: string
-  status: 'up' | 'down' | 'degraded'
-  timestamp: Date
-  duration?: number // Duration in milliseconds for this status
-  metadata?: {
-    responseTime?: number
-    error?: string
-    performanceGrade?: string
-  }
-}
-
-export interface ServiceUptimeTimeline {
-  serviceName: string
-  totalUptime: number // Total uptime in milliseconds
-  totalDowntime: number // Total downtime in milliseconds
-  uptimePercentage: number // Percentage of uptime
-  currentStatus: 'up' | 'down' | 'degraded'
-  lastStatusChange: Date
-  timeline: ServiceUptimeRecord[]
-  startTime: Date
-  endTime: Date
-}
-
-export interface ServiceUptimeSummary {
-  serviceName: string
-  currentStatus: 'up' | 'down' | 'degraded'
-  uptimePercentage: number
-  totalUptime: string // Formatted duration
-  totalDowntime: string // Formatted duration
-  lastStatusChange: Date
-  isCurrentlyUp: boolean
-}
-
-export interface KurrentDBEvent {
-  id: string
-  type: string
-  data: Record<string, unknown>
-  metadata: Record<string, unknown>
-  position: number
-  revision: bigint
-  timestamp: string
-  streamId: string
-}
-
-export class UptimeTrackingService {
+@Injectable()
+export class UptimeTrackingService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(UptimeTrackingService.name)
   private uptimeRecords: Map<string, ServiceUptimeRecord[]> = new Map()
   private serviceStartTimes: Map<string, Date> = new Map()
   private currentStatuses: Map<string, 'up' | 'down' | 'degraded'> = new Map()
@@ -64,54 +18,40 @@ export class UptimeTrackingService {
   private trackingInterval: NodeJS.Timeout | null = null
   private streamReadingInterval: NodeJS.Timeout | null = null
   private readonly TRACKING_INTERVAL = 30000 // 30 seconds
-  private readonly STREAM_READING_INTERVAL = 10000 // 10 seconds - read from streams more frequently
-  private readonly MAX_RECORDS_PER_SERVICE = 1000 // Keep last 1000 records per service
+  private readonly STREAM_READING_INTERVAL = 10000 // 10 seconds
+  private readonly MAX_RECORDS_PER_SERVICE = 1000
   private readonly CLEANUP_INTERVAL = 3600000 // 1 hour
-  private readonly MAX_AGE_HOURS = 168 // 7 days - keep records for 1 week
-  private readonly kurrentDBService: KurrentDBService
+  private readonly MAX_AGE_HOURS = 168 // 7 days
   private readonly STREAM_PREFIX = 'service-uptime'
-  private lastReadPositions: Map<string, number> = new Map() // Track last read position for each stream
-  private streamErrorCounts: Map<string, number> = new Map() // Track consecutive errors per stream
-  private readonly MAX_STREAM_ERRORS = 5 // Max consecutive errors before backing off
+  private lastReadPositions: Map<string, number> = new Map()
+  private streamErrorCounts: Map<string, number> = new Map()
+  private readonly MAX_STREAM_ERRORS = 5
 
-  constructor() {
-    this.kurrentDBService = new KurrentDBService()
-    this.initialize()
+  constructor(private readonly kurrentDBService: KurrentDBService) {}
 
-    // Handle graceful shutdown
-    process.on('SIGTERM', () => this.shutdown())
-    process.on('SIGINT', () => this.shutdown())
-    process.on('exit', () => this.shutdown())
-  }
-
-  private async initialize(): Promise<void> {
+  async onModuleInit() {
     try {
-      // Create uptime streams if they don't exist
       await this.createUptimeStreams()
-
-      // Load existing uptime data from KurrentDB
       await this.loadUptimeDataFromDB()
-
-      // Start tracking, stream reading, and cleanup
       this.startTracking()
       this.startStreamReading()
       this.startCleanup()
 
-      logger.info(
+      this.logger.log(
         'Uptime tracking service initialized with KurrentDB persistence and stream reading'
       )
     } catch (error) {
-      logger.error('Failed to initialize uptime tracking service:', error)
-      // Continue with in-memory tracking even if DB fails
+      this.logger.error('Failed to initialize uptime tracking service:', error)
       this.startTracking()
       this.startCleanup()
     }
   }
 
-  /**
-   * Start tracking service uptime
-   */
-  public startTracking(): void {
+  async onModuleDestroy() {
+    await this.shutdown()
+  }
+
+  private startTracking(): void {
     if (this.trackingInterval) {
       clearInterval(this.trackingInterval)
     }
@@ -120,24 +60,10 @@ export class UptimeTrackingService {
       this.recordServiceStatus()
     }, this.TRACKING_INTERVAL)
 
-    logger.info('Service uptime tracking started')
+    this.logger.log('Service uptime tracking started')
   }
 
-  /**
-   * Stop tracking service uptime
-   */
-  public stopTracking(): void {
-    if (this.trackingInterval) {
-      clearInterval(this.trackingInterval)
-      this.trackingInterval = null
-    }
-    logger.info('Service uptime tracking stopped')
-  }
-
-  /**
-   * Start reading from KurrentDB streams for real-time updates
-   */
-  public startStreamReading(): void {
+  private startStreamReading(): void {
     if (this.streamReadingInterval) {
       clearInterval(this.streamReadingInterval)
     }
@@ -146,34 +72,17 @@ export class UptimeTrackingService {
       this.readNewStreamEvents()
     }, this.STREAM_READING_INTERVAL)
 
-    logger.info('Stream reading started for real-time uptime updates')
+    this.logger.log('Stream reading started for real-time uptime updates')
   }
 
-  /**
-   * Stop reading from KurrentDB streams
-   */
-  public stopStreamReading(): void {
-    if (this.streamReadingInterval) {
-      clearInterval(this.streamReadingInterval)
-      this.streamReadingInterval = null
-    }
-    logger.info('Stream reading stopped')
-  }
-
-  /**
-   * Start automatic cleanup of old records
-   */
   private startCleanup(): void {
     setInterval(() => {
       this.cleanupOldRecords()
     }, this.CLEANUP_INTERVAL)
 
-    logger.info('Automatic cleanup started')
+    this.logger.log('Automatic cleanup started')
   }
 
-  /**
-   * Clean up old records to prevent memory bloat
-   */
   private cleanupOldRecords(): void {
     const cutoffTime = new Date(Date.now() - this.MAX_AGE_HOURS * 60 * 60 * 1000)
     let totalRemoved = 0
@@ -189,33 +98,22 @@ export class UptimeTrackingService {
     })
 
     if (totalRemoved > 0) {
-      logger.info(`Cleaned up ${totalRemoved} old uptime records`)
+      this.logger.log(`Cleaned up ${totalRemoved} old uptime records`)
     }
   }
 
-  /**
-   * Record the current status of all services
-   */
   private async recordServiceStatus(): Promise<void> {
     const timestamp = new Date()
 
     try {
-      // Check HTTP service
       await this.checkAndRecordServiceStatus('http', timestamp)
-
-      // Check WebSocket service
       await this.checkAndRecordServiceStatus('websocket', timestamp)
-
-      // Check Database service
       await this.checkAndRecordServiceStatus('database', timestamp)
     } catch (error) {
-      logger.error('Error recording service status:', error)
+      this.logger.error('Error recording service status:', error)
     }
   }
 
-  /**
-   * Check and record status for a specific service
-   */
   private async checkAndRecordServiceStatus(serviceName: string, timestamp: Date): Promise<void> {
     try {
       let status: 'up' | 'down' | 'degraded' = 'down'
@@ -233,7 +131,6 @@ export class UptimeTrackingService {
           break
       }
 
-      // Record the status if it has changed
       const currentStatus = this.currentStatuses.get(serviceName)
       if (currentStatus !== status) {
         this.recordStatusChange(serviceName, status, timestamp, metadata)
@@ -241,21 +138,17 @@ export class UptimeTrackingService {
         this.lastStatusChange.set(serviceName, timestamp)
       }
 
-      // Initialize service start time if not set
       if (!this.serviceStartTimes.has(serviceName)) {
         this.serviceStartTimes.set(serviceName, timestamp)
       }
     } catch (error) {
-      logger.error(`Error checking ${serviceName} service:`, error)
+      this.logger.error(`Error checking ${serviceName} service:`, error)
       this.recordStatusChange(serviceName, 'down', timestamp, {
         error: error instanceof Error ? error.message : 'Unknown error',
       })
     }
   }
 
-  /**
-   * Check HTTP service status
-   */
   private async checkHTTPService(
     metadata: Record<string, unknown>
   ): Promise<'up' | 'down' | 'degraded'> {
@@ -287,18 +180,12 @@ export class UptimeTrackingService {
     }
   }
 
-  /**
-   * Check WebSocket service status
-   */
   private async checkWebSocketService(
     metadata: Record<string, unknown>
   ): Promise<'up' | 'down' | 'degraded'> {
     try {
       const startTime = Date.now()
-
-      // Quick check - try to connect to WebSocket server
-      // Use environment variable or default to 3002
-      const wsPort = process.env['WS_PORT'] || '3002'
+      const wsPort = process.env['HTTP_PORT'] || '3001'
       const ws = new WebSocket(`ws://localhost:${wsPort}/ws/health`)
 
       return new Promise(resolve => {
@@ -308,7 +195,7 @@ export class UptimeTrackingService {
           metadata['responseTime'] = responseTime
           metadata['error'] = 'WebSocket connection timeout'
           resolve('down')
-        }, 2000) // 2 second timeout
+        }, 2000)
 
         ws.onopen = () => {
           clearTimeout(timeout)
@@ -333,46 +220,50 @@ export class UptimeTrackingService {
     }
   }
 
-  /**
-   * Check Database service status
-   */
   private async checkDatabaseService(
     metadata: Record<string, unknown>
   ): Promise<'up' | 'down' | 'degraded'> {
     try {
       const startTime = Date.now()
-      const response = await fetch('http://localhost:2113/health')
+      const response = await fetch('http://localhost:3002/health/kurrentdb')
       const responseTime = Date.now() - startTime
 
       metadata['responseTime'] = responseTime
 
       if (response.ok) {
-        if (responseTime <= 50) {
-          metadata['performanceGrade'] = 'excellent'
-          return 'up'
-        } else if (responseTime <= 100) {
-          metadata['performanceGrade'] = 'good'
-          return 'up'
-        } else if (responseTime <= 500) {
-          metadata['performanceGrade'] = 'acceptable'
-          return 'up'
+        const healthData = (await response.json()) as {
+          status: string
+          connected: boolean
+        }
+
+        if (healthData.status === 'healthy' && healthData.connected) {
+          if (responseTime <= 50) {
+            metadata['performanceGrade'] = 'excellent'
+            return 'up'
+          } else if (responseTime <= 100) {
+            metadata['performanceGrade'] = 'good'
+            return 'up'
+          } else if (responseTime <= 500) {
+            metadata['performanceGrade'] = 'acceptable'
+            return 'up'
+          } else {
+            metadata['performanceGrade'] = 'slow'
+            return 'degraded'
+          }
         } else {
-          metadata['performanceGrade'] = 'slow'
+          metadata['error'] = `Database not healthy: ${healthData.status}`
           return 'degraded'
         }
       } else {
         metadata['error'] = `HTTP ${response.status}`
-        return 'degraded' // Changed from 'down' to 'degraded' for non-200 responses
+        return 'degraded'
       }
     } catch (error) {
       metadata['error'] = error instanceof Error ? error.message : 'Connection failed'
-      return 'degraded' // Changed from 'down' to 'degraded' for connection failures
+      return 'degraded'
     }
   }
 
-  /**
-   * Load uptime data from KurrentDB streams
-   */
   private async loadUptimeDataFromDB(): Promise<void> {
     try {
       const services = ['http', 'websocket', 'database']
@@ -398,22 +289,21 @@ export class UptimeTrackingService {
           if (records.length > 0) {
             this.uptimeRecords.set(serviceName, records)
 
-            // Set current status and last status change
             const lastRecord = records[records.length - 1]
             if (lastRecord) {
               this.currentStatuses.set(serviceName, lastRecord.status)
               this.lastStatusChange.set(serviceName, lastRecord.timestamp)
             }
 
-            // Set service start time
             const firstRecord = records[0]
             if (firstRecord) {
               this.serviceStartTimes.set(serviceName, firstRecord.timestamp)
             }
 
-            logger.info(`Loaded ${records.length} uptime records for ${serviceName} from KurrentDB`)
+            this.logger.log(
+              `Loaded ${records.length} uptime records for ${serviceName} from KurrentDB`
+            )
 
-            // Initialize the last read position for this stream
             if (events.length > 0) {
               const lastEvent = events[events.length - 1]
               if (lastEvent && typeof lastEvent.position === 'number') {
@@ -422,17 +312,14 @@ export class UptimeTrackingService {
             }
           }
         } catch (error) {
-          logger.warn(`Failed to load uptime data for ${serviceName}:`, error)
+          this.logger.warn(`Failed to load uptime data for ${serviceName}:`, error)
         }
       }
     } catch (error) {
-      logger.error('Failed to load uptime data from KurrentDB:', error)
+      this.logger.error('Failed to load uptime data from KurrentDB:', error)
     }
   }
 
-  /**
-   * Read new events from KurrentDB streams since last read position
-   */
   private async readNewStreamEvents(): Promise<void> {
     try {
       const services = ['http', 'websocket', 'database']
@@ -442,50 +329,45 @@ export class UptimeTrackingService {
         const lastPosition = this.lastReadPositions.get(streamName) || 0
 
         try {
-          // Check if this stream is in error backoff
           const errorCount = this.streamErrorCounts.get(streamName) || 0
           if (errorCount >= this.MAX_STREAM_ERRORS) {
-            logger.debug(`Skipping ${streamName} due to error backoff (${errorCount} errors)`)
+            this.logger.debug(`Skipping ${streamName} due to error backoff (${errorCount} errors)`)
             continue
           }
 
-          // Read events from the last known position
           const events = await this.kurrentDBService.readStream(streamName, {
-            fromRevision: lastPosition + 1, // Start from next position
-            maxCount: 100, // Read up to 100 new events
-            direction: FORWARDS, // Read forwards from the position
+            fromRevision: lastPosition + 1,
+            maxCount: 100,
+            direction: FORWARDS,
           })
 
           if (events.length > 0) {
-            logger.debug(`Read ${events.length} new events from ${streamName}`)
+            this.logger.debug(`Read ${events.length} new events from ${streamName}`)
 
-            // Process each new event
             for (const event of events) {
               await this.processStreamEvent(serviceName, event)
             }
 
-            // Update the last read position
             const lastEvent = events[events.length - 1]
             if (lastEvent && typeof lastEvent.position === 'number') {
               this.lastReadPositions.set(streamName, lastEvent.position)
             }
           }
 
-          // Reset error count on successful read
           if (errorCount > 0) {
             this.streamErrorCounts.set(streamName, 0)
-            logger.info(`Stream ${streamName} recovered from errors`)
+            this.logger.log(`Stream ${streamName} recovered from errors`)
           }
         } catch (error) {
           const newErrorCount = (this.streamErrorCounts.get(streamName) || 0) + 1
           this.streamErrorCounts.set(streamName, newErrorCount)
 
           if (newErrorCount >= this.MAX_STREAM_ERRORS) {
-            logger.error(
+            this.logger.error(
               `Stream ${streamName} has ${newErrorCount} consecutive errors, entering backoff period`
             )
           } else {
-            logger.warn(
+            this.logger.warn(
               `Failed to read new events from ${streamName} (${newErrorCount}/${this.MAX_STREAM_ERRORS}):`,
               error
             )
@@ -493,16 +375,24 @@ export class UptimeTrackingService {
         }
       }
     } catch (error) {
-      logger.error('Error reading new stream events:', error)
+      this.logger.error('Error reading new stream events:', error)
     }
   }
 
-  /**
-   * Process a single event from a KurrentDB stream
-   */
-  private async processStreamEvent(serviceName: string, event: KurrentDBEvent): Promise<void> {
+  private async processStreamEvent(
+    serviceName: string,
+    event: {
+      id: string
+      type: string
+      data: Record<string, unknown>
+      metadata: Record<string, unknown>
+      position: number
+      revision: bigint
+      timestamp: string
+      streamId: string
+    }
+  ): Promise<void> {
     try {
-      // Only process service status change events
       if (event.type !== 'service_status_change') {
         return
       }
@@ -514,11 +404,10 @@ export class UptimeTrackingService {
         !eventData['status'] ||
         !eventData['timestamp']
       ) {
-        logger.warn(`Invalid event data for ${serviceName}:`, eventData)
+        this.logger.warn(`Invalid event data for ${serviceName}:`, eventData)
         return
       }
 
-      // Create a new uptime record from the stream event
       const newRecord: ServiceUptimeRecord = {
         id: (eventData['id'] as string) || event.id,
         serviceName: eventData['serviceName'] as string,
@@ -532,60 +421,46 @@ export class UptimeTrackingService {
         },
       }
 
-      // Update local state with the new record
       await this.updateLocalStateFromStreamEvent(newRecord)
 
-      logger.debug(
+      this.logger.debug(
         `Processed stream event for ${serviceName}: ${eventData['status']} at ${eventData['timestamp']}`
       )
     } catch (error) {
-      logger.error(`Error processing stream event for ${serviceName}:`, error)
+      this.logger.error(`Error processing stream event for ${serviceName}:`, error)
     }
   }
 
-  /**
-   * Update local state based on a stream event
-   */
   private async updateLocalStateFromStreamEvent(record: ServiceUptimeRecord): Promise<void> {
     const serviceName = record.serviceName
     const records = this.uptimeRecords.get(serviceName) || []
 
-    // Check if this record already exists (avoid duplicates)
     const existingRecord = records.find(r => r.id === record.id)
     if (existingRecord) {
-      return // Skip duplicate
+      return
     }
 
-    // Add the new record
     records.push(record)
 
-    // Keep only the last MAX_RECORDS_PER_SERVICE records
     if (records.length > this.MAX_RECORDS_PER_SERVICE) {
       records.splice(0, records.length - this.MAX_RECORDS_PER_SERVICE)
     }
 
     this.uptimeRecords.set(serviceName, records)
-
-    // Update current status and last status change
     this.currentStatuses.set(serviceName, record.status)
     this.lastStatusChange.set(serviceName, record.timestamp)
 
-    // Initialize service start time if not set
     if (!this.serviceStartTimes.has(serviceName)) {
       this.serviceStartTimes.set(serviceName, record.timestamp)
     }
 
-    logger.info(`Updated local state from stream: ${serviceName} is now ${record.status}`)
+    this.logger.log(`Updated local state from stream: ${serviceName} is now ${record.status}`)
   }
 
-  /**
-   * Save uptime record to KurrentDB stream
-   */
   private async saveUptimeRecordToDB(record: ServiceUptimeRecord): Promise<void> {
     try {
-      // Validate record has required fields
       if (!record.timestamp || !record.serviceName) {
-        logger.error(`Invalid record data:`, {
+        this.logger.error(`Invalid record data:`, {
           serviceName: record.serviceName,
           timestamp: record.timestamp,
           record,
@@ -612,13 +487,10 @@ export class UptimeTrackingService {
         },
       })
     } catch (error) {
-      logger.error(`Failed to save uptime record for ${record.serviceName}:`, error)
+      this.logger.error(`Failed to save uptime record for ${record.serviceName}:`, error)
     }
   }
 
-  /**
-   * Record a status change for a service
-   */
   private recordStatusChange(
     serviceName: string,
     status: 'up' | 'down' | 'degraded',
@@ -627,21 +499,18 @@ export class UptimeTrackingService {
   ): void {
     const records = this.uptimeRecords.get(serviceName) || []
 
-    // Calculate duration for the previous status
     if (records.length > 0) {
       const lastRecord = records[records.length - 1]
       if (lastRecord) {
         const duration = timestamp.getTime() - lastRecord.timestamp.getTime()
         lastRecord.duration = duration
 
-        // Save the previous record to DB
         this.saveUptimeRecordToDB(lastRecord).catch(error => {
-          logger.error(`Failed to save previous record for ${serviceName}:`, error)
+          this.logger.error(`Failed to save previous record for ${serviceName}:`, error)
         })
       }
     }
 
-    // Create new record with minimal data structure
     const newRecord: ServiceUptimeRecord = {
       id: `${serviceName}_${timestamp.getTime()}`,
       serviceName,
@@ -658,32 +527,26 @@ export class UptimeTrackingService {
 
     records.push(newRecord)
 
-    // Keep only the last MAX_RECORDS_PER_SERVICE records
     if (records.length > this.MAX_RECORDS_PER_SERVICE) {
       records.splice(0, records.length - this.MAX_RECORDS_PER_SERVICE)
     }
 
     this.uptimeRecords.set(serviceName, records)
 
-    // Save the new record to DB
     this.saveUptimeRecordToDB(newRecord).catch(error => {
-      logger.error(`Failed to save new record for ${serviceName}:`, error)
+      this.logger.error(`Failed to save new record for ${serviceName}:`, error)
     })
 
-    // Only log status changes, not every check
     if (records.length > 1) {
       const previousRecord = records[records.length - 2]
       if (previousRecord && previousRecord.status !== status) {
-        logger.info(
+        this.logger.log(
           `Service ${serviceName} status changed from ${previousRecord.status} to ${status}`
         )
       }
     }
   }
 
-  /**
-   * Get uptime timeline for a specific service
-   */
   public getServiceUptimeTimeline(
     serviceName: string,
     hours: number = 24
@@ -693,14 +556,10 @@ export class UptimeTrackingService {
       return null
     }
 
-    // Handle special case for "all time" (use -1 or very large number)
     let filteredRecords: ServiceUptimeRecord[]
     if (hours === -1 || hours > 8760) {
-      // -1 or more than 1 year (8760 hours)
-      // All time - use all records
       filteredRecords = records
     } else {
-      // Convert hours to milliseconds (support fractional hours like 0.5 for 30 minutes)
       const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000)
       filteredRecords = records.filter(record => record.timestamp >= cutoffTime)
     }
@@ -709,7 +568,6 @@ export class UptimeTrackingService {
       return null
     }
 
-    // Filter out records with null timestamps
     const validRecords = filteredRecords.filter(record => record.timestamp)
 
     if (validRecords.length === 0) {
@@ -719,7 +577,6 @@ export class UptimeTrackingService {
     const startTime = validRecords[0]?.timestamp
     const endTime = validRecords[validRecords.length - 1]?.timestamp
 
-    // Ensure we have valid timestamps
     if (!startTime || !endTime) {
       return null
     }
@@ -727,11 +584,9 @@ export class UptimeTrackingService {
     const currentStatus = this.currentStatuses.get(serviceName) || 'down'
     const lastStatusChange = this.lastStatusChange.get(serviceName) || startTime
 
-    // Calculate total uptime and downtime
     let totalUptime = 0
     let totalDowntime = 0
 
-    // Process each record to calculate durations
     for (let i = 0; i < validRecords.length; i++) {
       const record = validRecords[i]
       if (!record) continue
@@ -739,16 +594,13 @@ export class UptimeTrackingService {
       let recordDuration = 0
 
       if (record.duration) {
-        // Record has explicit duration
         recordDuration = record.duration
       } else {
-        // Record has no duration - calculate from next record or current time
         const nextRecord = validRecords[i + 1]
         const recordEndTime = nextRecord ? nextRecord.timestamp : new Date()
         recordDuration = recordEndTime.getTime() - record.timestamp.getTime()
       }
 
-      // Ensure duration is valid and positive
       if (recordDuration > 0 && !isNaN(recordDuration)) {
         if (record.status === 'up') {
           totalUptime += recordDuration
@@ -760,13 +612,6 @@ export class UptimeTrackingService {
 
     const totalTime = totalUptime + totalDowntime
     const uptimePercentage = totalTime > 0 ? (totalUptime / totalTime) * 100 : 0
-
-    // Debug logging for WebSocket service
-    if (serviceName === 'websocket') {
-      logger.info(
-        `WebSocket uptime calculation: totalUptime=${totalUptime}, totalDowntime=${totalDowntime}, totalTime=${totalTime}, percentage=${uptimePercentage}, validRecords=${validRecords.length}`
-      )
-    }
 
     return {
       serviceName,
@@ -781,9 +626,6 @@ export class UptimeTrackingService {
     }
   }
 
-  /**
-   * Get uptime summary for a specific service
-   */
   public getServiceUptimeSummary(
     serviceName: string,
     hours: number = 24
@@ -804,9 +646,6 @@ export class UptimeTrackingService {
     }
   }
 
-  /**
-   * Get uptime summaries for all services
-   */
   public getAllServiceUptimeSummaries(hours: number = 24): ServiceUptimeSummary[] {
     const services = ['http', 'websocket', 'database']
     const summaries: ServiceUptimeSummary[] = []
@@ -821,9 +660,6 @@ export class UptimeTrackingService {
     return summaries
   }
 
-  /**
-   * Format duration in milliseconds to human-readable string
-   */
   private formatDuration(milliseconds: number): string {
     const seconds = Math.floor(milliseconds / 1000)
     const minutes = Math.floor(seconds / 60)
@@ -841,9 +677,6 @@ export class UptimeTrackingService {
     }
   }
 
-  /**
-   * Get current status of all services
-   */
   public getCurrentServiceStatuses(): Record<string, 'up' | 'down' | 'degraded'> {
     const statuses: Record<string, 'up' | 'down' | 'degraded'> = {}
     this.currentStatuses.forEach((status, serviceName) => {
@@ -852,9 +685,6 @@ export class UptimeTrackingService {
     return statuses
   }
 
-  /**
-   * Create initial streams for uptime tracking
-   */
   private async createUptimeStreams(): Promise<void> {
     try {
       const services = ['http', 'websocket', 'database']
@@ -871,84 +701,16 @@ export class UptimeTrackingService {
             owner: 'system',
           })
 
-          logger.info(`Created uptime stream for ${serviceName}`)
+          this.logger.log(`Created uptime stream for ${serviceName}`)
         } catch (error) {
-          // Stream might already exist, which is fine
-          logger.debug(`Stream ${streamName} might already exist:`, error)
+          this.logger.debug(`Stream ${streamName} might already exist:`, error)
         }
       }
     } catch (error) {
-      logger.error('Failed to create uptime streams:', error)
+      this.logger.error('Failed to create uptime streams:', error)
     }
   }
 
-  /**
-   * Clear all uptime data (useful for testing or reset)
-   */
-  public clearAllData(): void {
-    this.uptimeRecords.clear()
-    this.serviceStartTimes.clear()
-    this.currentStatuses.clear()
-    this.lastStatusChange.clear()
-    this.lastReadPositions.clear()
-    this.streamErrorCounts.clear()
-    logger.info('All uptime tracking data cleared')
-  }
-
-  /**
-   * Reset error counts for all streams (useful for recovery)
-   */
-  public resetStreamErrorCounts(): void {
-    this.streamErrorCounts.clear()
-    logger.info('Stream error counts reset')
-  }
-
-  /**
-   * Graceful shutdown - record all services as down
-   */
-  private async shutdown(): Promise<void> {
-    try {
-      logger.info('Shutting down uptime tracking service...')
-
-      // Stop all intervals
-      if (this.trackingInterval) {
-        clearInterval(this.trackingInterval)
-        this.trackingInterval = null
-      }
-
-      if (this.streamReadingInterval) {
-        clearInterval(this.streamReadingInterval)
-        this.streamReadingInterval = null
-      }
-
-      // Record all services as down
-      const timestamp = new Date()
-      const services = ['http', 'websocket', 'database']
-
-      for (const serviceName of services) {
-        const currentStatus = this.currentStatuses.get(serviceName)
-        if (currentStatus && currentStatus !== 'down') {
-          // Only record if service was not already down
-          this.recordStatusChange(serviceName, 'down', timestamp, {
-            reason: 'Service shutdown',
-            shutdown: true,
-          })
-          logger.info(`Recorded ${serviceName} service as down due to shutdown`)
-        }
-      }
-
-      // Wait a moment for records to be saved
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      logger.info('Uptime tracking service shutdown complete')
-    } catch (error) {
-      logger.error('Error during shutdown:', error)
-    }
-  }
-
-  /**
-   * Get memory usage statistics for monitoring
-   */
   public getMemoryStats(): {
     totalRecords: number
     recordsPerService: Record<string, number>
@@ -963,7 +725,6 @@ export class UptimeTrackingService {
       totalRecords += count
     })
 
-    // Rough estimate: each record is ~200 bytes
     const memoryEstimateBytes = totalRecords * 200
     const memoryEstimate =
       memoryEstimateBytes < 1024
@@ -978,7 +739,40 @@ export class UptimeTrackingService {
       memoryEstimate,
     }
   }
-}
 
-// Export singleton instance
-export const uptimeTrackingService = new UptimeTrackingService()
+  private async shutdown(): Promise<void> {
+    try {
+      this.logger.log('Shutting down uptime tracking service...')
+
+      if (this.trackingInterval) {
+        clearInterval(this.trackingInterval)
+        this.trackingInterval = null
+      }
+
+      if (this.streamReadingInterval) {
+        clearInterval(this.streamReadingInterval)
+        this.streamReadingInterval = null
+      }
+
+      const timestamp = new Date()
+      const services = ['http', 'websocket', 'database']
+
+      for (const serviceName of services) {
+        const currentStatus = this.currentStatuses.get(serviceName)
+        if (currentStatus && currentStatus !== 'down') {
+          this.recordStatusChange(serviceName, 'down', timestamp, {
+            reason: 'Service shutdown',
+            shutdown: true,
+          })
+          this.logger.log(`Recorded ${serviceName} service as down due to shutdown`)
+        }
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      this.logger.log('Uptime tracking service shutdown complete')
+    } catch (error) {
+      this.logger.error('Error during shutdown:', error)
+    }
+  }
+}

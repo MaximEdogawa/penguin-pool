@@ -168,13 +168,15 @@
   },
   "active": "762a427def224add",
   "lastOpenFiles": [
+    "API_DOCUMENTATION.md",
+    "implementation/TICKET-008/TICKET-008-NESTJS-IMPLEMENTATION.md",
     "implementation/TICKET-008/TICKET-008-IMPLEMENTATION.md",
     "implementation/TICKET-008/README.md",
     "implementation/TICKET-008",
-    "implementation/TICKET-004",
-    "implementation/IMMEDIATE_NEXT_STEPS.md",
     "implementation/TICKET-003/README.md",
     "implementation/TICKET-003",
+    "implementation/TICKET-004",
+    "implementation/IMMEDIATE_NEXT_STEPS.md",
     "implementation/TICKET-002/WALLET_CONNECT_UI/WALLET_CONNECT_UI_UPDATE.md",
     "implementation/TICKET-002/WALLET_CONNECT_UI/README.md",
     "implementation/TICKET-002/SIDEBAR_COLLAPSE/SIDEBAR_COLLAPSE_UPDATE.md",
@@ -201,8 +203,6 @@
     "design-technical",
     "README.md",
     "WHITE_PAPER.md",
-    "TECHNICAL_STACK.md",
-    "PROJECT_STRUCTURE.md",
     "implementation/WALLET_CONNECT_UI"
   ]
 }
