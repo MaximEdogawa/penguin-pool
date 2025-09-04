@@ -38,7 +38,13 @@ export enum ChiaMethod {
   GetWalletAddresses = 'chia_getWalletAddresses',
 }
 
-export const CHIA_CHAIN_ID = 'chia:testnet'
+// Determine chain ID based on environment
+const isTestnet =
+  typeof window !== 'undefined'
+    ? window.location.hostname.includes('localhost') || window.location.hostname.includes('testnet')
+    : true
+
+export const CHIA_CHAIN_ID = isTestnet ? 'chia:testnet' : 'chia:mainnet'
 
 export const REQUIRED_NAMESPACES: ProposalTypes.RequiredNamespaces = {
   chia: {
@@ -51,6 +57,6 @@ export const REQUIRED_NAMESPACES: ProposalTypes.RequiredNamespaces = {
 export const CHIA_METADATA: CoreTypes.Metadata = {
   name: 'Penguin Pool',
   description: 'Decentralized lending platform on Chia Network',
-  url: 'https://penguin.pool',
+  url: typeof window !== 'undefined' ? window.location.origin : 'https://penguin.pool',
   icons: ['https://penguin.pool/icon.png'],
 }

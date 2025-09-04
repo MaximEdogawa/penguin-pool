@@ -97,6 +97,7 @@ export type WalletConnectEventType =
   | 'session_delete'
   | 'session_update'
   | 'session_expire'
+  | 'session_restored'
   | 'session_ping'
   | 'session_event'
   | 'session_request'
@@ -112,8 +113,16 @@ export interface WalletConnectEvent {
 }
 
 export interface ChiaWalletInfo {
+  fingerprint: number
   address: string
-  publicKey: string
-  balance?: string
-  network: 'mainnet' | 'testnet'
+  balance: {
+    confirmed_wallet_balance: number
+    unconfirmed_wallet_balance: number
+    spendable_balance: number
+    pending_change: number
+    max_send_amount: number
+    unspent_coin_count: number
+    pending_coin_removal_count: number
+  }
+  isConnected: boolean
 }

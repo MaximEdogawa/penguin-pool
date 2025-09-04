@@ -10,6 +10,7 @@ import type {
   ConnectionResult,
   DisconnectResult,
   WalletConnectEvent,
+  WalletConnectEventType,
   ChiaWalletInfo,
 } from '../types/walletConnect.types'
 import type {
@@ -32,6 +33,7 @@ export class ChiaWalletConnectService {
   async initialize(): Promise<void> {
     try {
       if (this.client) {
+        console.log('WalletConnect client already initialized, skipping...')
         return
       }
 
@@ -158,22 +160,24 @@ export class ChiaWalletConnectService {
   async disconnect(): Promise<DisconnectResult> {
     try {
       if (!this.client) {
-        throw new Error('WalletConnect is not initialized')
+        // If no client, just reset state
+        this.reset()
+        return { success: true }
       }
 
-      if (!this.session) {
-        throw new Error('Session is not connected')
+      if (this.session) {
+        await this.client.disconnect({
+          topic: this.session.topic,
+          reason: getSdkError('USER_DISCONNECTED'),
+        })
       }
-
-      await this.client.disconnect({
-        topic: this.session.topic,
-        reason: getSdkError('USER_DISCONNECTED'),
-      })
 
       this.reset()
       return { success: true }
     } catch (error) {
       console.error('Disconnect failed:', error)
+      // Even if disconnect fails, reset the local state
+      this.reset()
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Disconnect failed',
@@ -182,36 +186,133 @@ export class ChiaWalletConnectService {
   }
 
   /**
+   * Force reset - clears all data and requires new connection
+   */
+  async forceReset(): Promise<void> {
+    try {
+      if (this.client && this.session) {
+        await this.client.disconnect({
+          topic: this.session.topic,
+          reason: getSdkError('USER_DISCONNECTED'),
+        })
+      }
+    } catch (error) {
+      console.warn('Error during force reset disconnect:', error)
+    }
+
+    // Clear all event listeners
+    this.eventListeners.clear()
+
+    // Reset all state
+    this.reset()
+    this.client = null
+    this.web3Modal = null
+    this.pairings = []
+  }
+
+  /**
    * Get wallet information
    */
   async getWalletInfo(): Promise<ChiaWalletInfo | null> {
     if (!this.session || !this.fingerprint) {
+      console.warn('Cannot get wallet info: no session or fingerprint')
       return null
     }
 
     try {
-      // Get current address
-      const addressResponse = await this.request<GetCurrentAddressResponse>(
-        'chia_getCurrentAddress',
-        {
-          walletId: 1, // XCH wallet
-        }
-      )
+      // Extract address from session accounts as fallback
+      const accounts = this.extractAccounts(this.session)
+      const chiaAccount = accounts.find(account => account.startsWith('xch'))
+      const fallbackAddress = chiaAccount || `chia:testnet:${this.fingerprint}`
 
-      // Get wallet balance
-      const balanceResponse = await this.request<GetWalletBalanceResponse>(
-        'chia_getWalletBalance',
-        {
-          walletId: 1, // XCH wallet
-        }
-      )
+      let address = fallbackAddress
+      let balance = {
+        confirmed_wallet_balance: 0,
+        unconfirmed_wallet_balance: 0,
+        spendable_balance: 0,
+        pending_change: 0,
+        max_send_amount: 0,
+        unspent_coin_count: 0,
+        pending_coin_removal_count: 0,
+      }
 
-      return {
+      // Try to get wallet info using the correct RPC methods
+      try {
+        // First, try to get wallets to find the correct wallet ID
+        const walletsResponse = await this.request<{
+          wallets: Array<{ id: number; type: number; name: string }>
+        }>('chia_getWallets', { includeData: false })
+
+        // Find the XCH wallet (type 0 is usually the main XCH wallet)
+        const xchWallet = walletsResponse.wallets.find(wallet => wallet.type === 0)
+        const walletId = xchWallet?.id || 1
+
+        console.log('Found XCH wallet:', xchWallet, 'using walletId:', walletId)
+
+        // Try to get current address
+        try {
+          const addressResponse = await this.request<GetCurrentAddressResponse>(
+            'chia_getCurrentAddress',
+            { walletId }
+          )
+          address = addressResponse.address
+          console.log('Got current address:', address)
+        } catch (error) {
+          console.warn(
+            'getCurrentAddress not supported, using fallback address:',
+            fallbackAddress,
+            error
+          )
+        }
+
+        // Try to get wallet balance
+        try {
+          const balanceResponse = await this.request<GetWalletBalanceResponse>(
+            'chia_getWalletBalance',
+            { walletId }
+          )
+          balance = balanceResponse.walletBalance
+          console.log('Got wallet balance:', balance)
+        } catch (error) {
+          console.warn('getWalletBalance not supported, using zero balance', error)
+        }
+
+        // If balance is still 0, try alternative methods
+        if (balance.confirmed_wallet_balance === 0) {
+          try {
+            // Try to get sync status first
+            const syncResponse = await this.request<{ synced: boolean; syncing: boolean }>(
+              'chia_getSyncStatus',
+              {}
+            )
+            console.log('Sync status:', syncResponse)
+
+            // Try to get balance using different method
+            const balanceResponse2 = await this.request<{ walletBalance: Record<string, unknown> }>(
+              'chia_getWalletBalance',
+              { walletId, includeData: true }
+            )
+            if (balanceResponse2.walletBalance) {
+              balance = balanceResponse2.walletBalance as typeof balance
+              console.log('Got wallet balance (alternative method):', balance)
+            }
+          } catch (error) {
+            console.warn('Alternative balance methods failed:', error)
+          }
+        }
+      } catch (error) {
+        console.warn('getWallets not supported, using fallback methods:', error)
+      }
+
+      const walletInfo = {
         fingerprint: parseInt(this.fingerprint),
-        address: addressResponse.address,
-        balance: balanceResponse.walletBalance,
+        address,
+        balance,
         isConnected: true,
       }
+
+      console.log('Wallet info retrieved:', walletInfo)
+      return walletInfo
     } catch (error) {
       console.error('Failed to get wallet info:', error)
       return null
@@ -275,6 +376,38 @@ export class ChiaWalletConnectService {
     return !!this.client
   }
 
+  /**
+   * Get current session
+   */
+  getSession(): WalletConnectSession | null {
+    if (!this.session) return null
+    return this.mapSession(this.session)
+  }
+
+  /**
+   * Check if connected
+   */
+  isConnected(): boolean {
+    return !!this.session && this.session.expiry > Date.now() / 1000
+  }
+
+  /**
+   * Refresh wallet info (useful for getting updated balance)
+   */
+  async refreshWalletInfo(): Promise<ChiaWalletInfo | null> {
+    // console.log('Refreshing wallet info...')
+    return await this.getWalletInfo()
+  }
+
+  /**
+   * Get current network info
+   */
+  getNetworkInfo(): { chainId: string; isTestnet: boolean } {
+    const chainId = CHIA_CHAIN_ID
+    const isTestnet = chainId.includes('testnet')
+    return { chainId, isTestnet }
+  }
+
   // Private methods
 
   private onSessionConnected(session: SessionTypes.Struct) {
@@ -304,12 +437,22 @@ export class ChiaWalletConnectService {
 
     this.pairings = this.client.pairing.getAll({ active: true })
 
+    // Check if we already have a session
     if (this.session) return
 
+    // Try to restore session from persisted state
     if (this.client.session.length) {
       const lastKeyIndex = this.client.session.keys.length - 1
       const session = this.client.session.get(this.client.session.keys[lastKeyIndex])
-      this.onSessionConnected(session)
+
+      // Check if session is still valid (not expired)
+      if (session && session.expiry > Date.now() / 1000) {
+        this.onSessionConnected(session)
+        this.emitEvent('session_restored', session)
+      } else {
+        // Session expired, clean up
+        this.reset()
+      }
     }
   }
 
@@ -322,11 +465,13 @@ export class ChiaWalletConnectService {
       const session = this.client!.session.get(topic)
       const updatedSession = { ...session, namespaces }
       this.onSessionConnected(updatedSession)
+      this.emitEvent('session_update', { topic, params })
     })
 
     this.client.on('session_delete', ({ topic }) => {
       debugWalletConnect.logConnectionFlow('Session deleted', { topic })
       this.reset()
+      this.emitEvent('session_delete', { topic })
     })
 
     this.client.on('session_event', (...args) => {
@@ -342,10 +487,33 @@ export class ChiaWalletConnectService {
 
     this.client.on('session_approve', session => {
       debugWalletConnect.logSuccess('Session approved', { topic: session.topic })
+      this.emitEvent('session_approve', session)
     })
 
     this.client.on('session_reject', event => {
       debugWalletConnect.logError('Session rejected', event)
+      this.emitEvent('session_reject', event)
+    })
+
+    this.client.on('session_expire', ({ topic }) => {
+      debugWalletConnect.logConnectionFlow('Session expired', { topic })
+      this.reset()
+      this.emitEvent('session_expire', { topic })
+    })
+
+    this.client.on('session_request', event => {
+      debugWalletConnect.logConnectionFlow('Session request', event)
+      this.emitEvent('session_request', event)
+    })
+
+    this.client.on('session_request_sent', event => {
+      debugWalletConnect.logConnectionFlow('Session request sent', event)
+      this.emitEvent('session_request_sent', event)
+    })
+
+    this.client.on('session_response', event => {
+      debugWalletConnect.logConnectionFlow('Session response', event)
+      this.emitEvent('session_response', event)
     })
   }
 
@@ -380,7 +548,11 @@ export class ChiaWalletConnectService {
   private emitEvent(event: string, data: unknown) {
     const callback = this.eventListeners.get(event)
     if (callback) {
-      callback(data)
+      const walletConnectEvent: WalletConnectEvent = {
+        type: event as WalletConnectEventType,
+        data,
+      }
+      callback(walletConnectEvent)
     }
   }
 }

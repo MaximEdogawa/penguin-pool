@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+  import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
   import { useWalletConnectStore } from '../stores/walletConnectStore'
   import QRCode from 'qrcode'
 
@@ -248,9 +248,11 @@
   }
 
   const generateQRCode = async (data: string) => {
+    // Wait for the next DOM update cycle
+    await nextTick()
+
     if (!qrCodeRef.value) {
-      console.warn('QR code ref is null, retrying in 100ms...')
-      setTimeout(() => generateQRCode(data), 100)
+      console.error('QR code ref not available')
       return
     }
 

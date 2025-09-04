@@ -43,11 +43,21 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   // Actions
   const initialize = async (): Promise<void> => {
     try {
+      console.log('Initializing WalletConnect store...')
+
       // Only initialize if not already done
       if (!chiaWalletConnectService.isInitialized()) {
+        console.log('Initializing WalletConnect service...')
         await chiaWalletConnectService.initialize()
+        console.log('WalletConnect service initialized')
+      } else {
+        console.log('WalletConnect service already initialized')
       }
+
+      // Always try to restore session after initialization
+      console.log('Attempting to restore session...')
       await restoreSession()
+      console.log('Session restoration completed')
     } catch (err) {
       console.error('Failed to initialize Wallet Connect:', err)
       error.value = err instanceof Error ? err.message : 'Initialization failed'
@@ -99,28 +109,25 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const disconnect = async (): Promise<DisconnectResult> => {
     try {
-      const result = await chiaWalletConnectService.disconnect()
+      // Use force reset to ensure complete cleanup
+      await chiaWalletConnectService.forceReset()
 
-      if (result.success) {
-        // Clear state
-        isConnected.value = false
-        session.value = null
-        accounts.value = []
-        chainId.value = null
-        walletInfo.value = null
-        error.value = null
+      // Clear state
+      isConnected.value = false
+      session.value = null
+      accounts.value = []
+      chainId.value = null
+      walletInfo.value = null
+      error.value = null
 
-        // Remove event listeners
-        removeEventListeners()
+      // Remove event listeners
+      removeEventListeners()
 
-        // Logout user from the app
-        const userStore = useUserStore()
-        userStore.logout()
-      } else {
-        error.value = result.error || 'Disconnect failed'
-      }
+      // Logout user from the app
+      const userStore = useUserStore()
+      userStore.logout()
 
-      return result
+      return { success: true }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Disconnect failed'
       error.value = errorMessage
@@ -130,8 +137,8 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const restoreSession = async (): Promise<void> => {
     try {
-      const currentSession = walletConnectService.getSession()
-      const isCurrentlyConnected = walletConnectService.isConnected()
+      const currentSession = chiaWalletConnectService.getSession()
+      const isCurrentlyConnected = chiaWalletConnectService.isConnected()
 
       if (currentSession && isCurrentlyConnected) {
         session.value = currentSession
@@ -139,10 +146,18 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
         isConnected.value = true
 
         // Get wallet info
-        walletInfo.value = await walletConnectService.getWalletInfo()
+        walletInfo.value = await chiaWalletConnectService.getWalletInfo()
 
         // Set up event listeners
         setupEventListeners()
+
+        console.log('Session restored successfully:', {
+          topic: currentSession.topic,
+          accounts: accounts.value,
+          walletInfo: walletInfo.value,
+        })
+      } else {
+        console.log('No valid session to restore')
       }
     } catch (err) {
       console.error('Failed to restore session:', err)
@@ -157,7 +172,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
         throw new Error('Not connected to wallet')
       }
 
-      return await walletConnectService.sendRequest(method, params)
+      return await chiaWalletConnectService.request(method, params)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Request failed'
       error.value = errorMessage
@@ -171,11 +186,32 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const getWalletInfo = async (): Promise<ChiaWalletInfo | null> => {
     try {
-      return await walletConnectService.getWalletInfo()
+      return await chiaWalletConnectService.getWalletInfo()
     } catch (err) {
       console.error('Failed to get wallet info:', err)
       return null
     }
+  }
+
+  const refreshWalletInfo = async (): Promise<ChiaWalletInfo | null> => {
+    try {
+      console.log('Refreshing wallet info...')
+      const info = await chiaWalletConnectService.refreshWalletInfo()
+      if (info) {
+        walletInfo.value = info
+        console.log('Wallet info refreshed successfully:', info)
+      } else {
+        console.warn('No wallet info returned from refresh')
+      }
+      return info
+    } catch (err) {
+      console.error('Failed to refresh wallet info:', err)
+      return null
+    }
+  }
+
+  const getNetworkInfo = () => {
+    return chiaWalletConnectService.getNetworkInfo()
   }
 
   // Helper function to extract accounts from session
@@ -198,25 +234,27 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const setupEventListeners = (): void => {
     // Session events
-    walletConnectService.addEventListener('session_delete', handleSessionDelete)
-    walletConnectService.addEventListener('session_expire', handleSessionExpire)
-    walletConnectService.addEventListener('session_update', handleSessionUpdate)
+    chiaWalletConnectService.on('session_delete', handleSessionDelete)
+    chiaWalletConnectService.on('session_expire', handleSessionExpire)
+    chiaWalletConnectService.on('session_update', handleSessionUpdate)
+    chiaWalletConnectService.on('session_restored', handleSessionRestored)
 
     // Connection events
-    walletConnectService.addEventListener('session_approve', handleSessionApprove)
-    walletConnectService.addEventListener('session_reject', handleSessionReject)
+    chiaWalletConnectService.on('session_approve', handleSessionApprove)
+    chiaWalletConnectService.on('session_reject', handleSessionReject)
   }
 
   const removeEventListeners = (): void => {
-    walletConnectService.removeEventListener('session_delete')
-    walletConnectService.removeEventListener('session_expire')
-    walletConnectService.removeEventListener('session_update')
-    walletConnectService.removeEventListener('session_approve')
-    walletConnectService.removeEventListener('session_reject')
+    chiaWalletConnectService.off('session_delete')
+    chiaWalletConnectService.off('session_expire')
+    chiaWalletConnectService.off('session_update')
+    chiaWalletConnectService.off('session_restored')
+    chiaWalletConnectService.off('session_approve')
+    chiaWalletConnectService.off('session_reject')
   }
 
-  const handleSessionDelete = (event: WalletConnectEvent): void => {
-    console.log('Session deleted:', event)
+  const handleSessionDelete = (): void => {
+    // console.log('Session deleted:', event)
     isConnected.value = false
     session.value = null
     accounts.value = []
@@ -228,8 +266,8 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     userStore.logout()
   }
 
-  const handleSessionExpire = (event: WalletConnectEvent): void => {
-    console.log('Session expired:', event)
+  const handleSessionExpire = (): void => {
+    // console.log('Session expired:', event)
     isConnected.value = false
     session.value = null
     accounts.value = []
@@ -242,7 +280,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   }
 
   const handleSessionUpdate = (event: WalletConnectEvent): void => {
-    console.log('Session updated:', event)
+    // console.log('Session updated:', event)
     // Update session data if needed
     if (event.data && event.data.namespaces) {
       // Extract updated accounts
@@ -261,8 +299,8 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     }
   }
 
-  const handleSessionApprove = (event: WalletConnectEvent): void => {
-    console.log('Session approved:', event)
+  const handleSessionApprove = (): void => {
+    // console.log('Session approved:', event)
     // Session is already handled in connect method
   }
 
@@ -270,6 +308,23 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     console.log('Session rejected:', event)
     error.value = 'Wallet connection was rejected'
     isConnecting.value = false
+  }
+
+  const handleSessionRestored = async (): Promise<void> => {
+    // console.log('Session restored:', event)
+    try {
+      const currentSession = chiaWalletConnectService.getSession()
+      if (currentSession) {
+        session.value = currentSession
+        accounts.value = extractAccountsFromSession(currentSession)
+        isConnected.value = true
+
+        // Get wallet info
+        walletInfo.value = await chiaWalletConnectService.getWalletInfo()
+      }
+    } catch (err) {
+      console.error('Failed to restore session from event:', err)
+    }
   }
 
   // Chia-specific methods
@@ -314,6 +369,8 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     sendRequest,
     clearError,
     getWalletInfo,
+    refreshWalletInfo,
+    getNetworkInfo,
     startConnection,
 
     // Chia-specific methods

@@ -1,7 +1,10 @@
 // Debug utilities for WalletConnect troubleshooting
 export const debugWalletConnect = {
   logConnectionFlow: (step: string, data?: unknown) => {
-    console.log(`🔍 WalletConnect Debug [${step}]:`, data)
+    // Only log in development mode
+    if (import.meta.env.DEV) {
+      console.log(`🔍 WalletConnect Debug [${step}]:`, data)
+    }
   },
 
   logError: (error: unknown, context?: string) => {
@@ -9,7 +12,10 @@ export const debugWalletConnect = {
   },
 
   logSuccess: (message: string, data?: unknown) => {
-    console.log(`✅ WalletConnect Success [${message}]:`, data)
+    // Only log in development mode
+    if (import.meta.env.DEV) {
+      console.log(`✅ WalletConnect Success [${message}]:`, data)
+    }
   },
 
   logWarning: (message: string, data?: unknown) => {

@@ -30,6 +30,24 @@
               {{ formatBalance(walletInfo.balance.confirmed_wallet_balance) }} XCH
             </span>
           </div>
+          <div class="status-item" v-if="walletInfo?.balance">
+            <span class="label">Spendable:</span>
+            <span class="value">
+              {{ formatBalance(walletInfo.balance.spendable_balance) }} XCH
+            </span>
+          </div>
+          <div class="status-item" v-if="walletInfo?.balance">
+            <span class="label">Unconfirmed:</span>
+            <span class="value">
+              {{ formatBalance(walletInfo.balance.unconfirmed_wallet_balance) }} XCH
+            </span>
+          </div>
+          <div class="status-item">
+            <span class="label">Network:</span>
+            <span class="value"
+              >{{ networkInfo.chainId }} ({{ networkInfo.isTestnet ? 'Testnet' : 'Mainnet' }})</span
+            >
+          </div>
         </div>
       </div>
 
@@ -99,7 +117,8 @@
   const isConnected = computed(() => walletStore.isConnected)
   const isConnecting = computed(() => walletStore.isConnecting)
   const chiaState = computed(() => walletStore.getChiaConnectionState)
-  const walletInfo = computed(() => walletStore.getWalletInfo)
+  const walletInfo = computed(() => walletStore.walletInfo)
+  const networkInfo = computed(() => walletStore.getNetworkInfo())
 
   // Methods
   const connectWallet = async () => {
@@ -126,8 +145,12 @@
   const refreshWalletInfo = async () => {
     try {
       error.value = null
-      // The wallet info will be automatically updated
-      lastResult.value = { message: 'Wallet info refreshed' }
+      const info = await walletStore.refreshWalletInfo()
+      if (info) {
+        lastResult.value = { message: 'Wallet info refreshed', info }
+      } else {
+        lastResult.value = { message: 'Failed to refresh wallet info' }
+      }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Refresh failed'
     }
@@ -186,6 +209,12 @@
     try {
       await walletStore.initialize()
       console.log('Chia WalletConnect initialized')
+
+      // If already connected, refresh wallet info
+      if (isConnected.value) {
+        console.log('Already connected, refreshing wallet info...')
+        await walletStore.refreshWalletInfo()
+      }
 
       // Run tests in development
       if (import.meta.env.DEV) {
