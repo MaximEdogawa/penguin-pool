@@ -4,18 +4,18 @@
     :style="backgroundStyle"
   >
     <div
-      class="px-8 md:px-12 lg:px-20 py-12 flex flex-col items-center gap-12 w-full backdrop-blur-2xl rounded-2xl bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 max-w-md"
+      class="px-8 md:px-12 lg:px-20 flex py-4 flex-col items-center gap-2 w-full backdrop-blur-2xl rounded-2xl bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 max-w-md"
     >
       <!-- Logo and Title -->
-      <div class="flex flex-col items-center gap-4 w-full">
+      <div class="flex flex-col items-center gap-2 w-full">
         <div class="logo-container">
-          <PenguinLogo class="h-14 w-14" />
+          <PenguinLogo class="h-12 w-12" />
         </div>
         <div class="flex flex-col gap-2 w-full">
-          <div class="text-center text-3xl font-medium text-white dark:text-gray-100 leading-tight">
-            Welcome to Penguin Pool
+          <div class="text-center text-2xl font-medium text-white dark:text-gray-100 leading-tight">
+            Penguin Pool
           </div>
-          <div class="text-center">
+          <div class="text-center text-sm">
             <span class="text-white/80 dark:text-gray-300/80"
               >Connect your wallet to access the decentralized lending platform</span
             >
@@ -24,17 +24,17 @@
       </div>
 
       <!-- Wallet Connection Section -->
-      <div class="flex flex-col items-center gap-8 w-full">
-        <div class="flex flex-col gap-6 w-full">
+      <div class="flex flex-col items-center w-full">
+        <div class="flex flex-col w-full">
           <!-- Primary Wallet Option - Sage -->
           <button
             @click="connectWalletConnect"
             class="wallet-option-primary group relative overflow-hidden rounded-3xl bg-white/10 dark:bg-gray-800/10 border border-white/20 dark:border-gray-700/20 p-6 w-full transition-all duration-300 hover:bg-white/20 dark:hover:bg-gray-800/20 hover:scale-105 hover:shadow-xl"
             :disabled="isConnecting"
           >
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
               <div class="wallet-icon-primary">
-                <i class="pi pi-shield text-2xl text-white dark:text-gray-100"></i>
+                <i class="pi pi-wallet text-2xl text-white dark:text-gray-100"></i>
               </div>
               <div class="flex-1 text-left">
                 <h3 class="text-lg font-semibold text-white dark:text-gray-100 mb-1">
@@ -58,7 +58,7 @@
           </button>
 
           <!-- Secondary Wallet Options -->
-          <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-2 mt-4">
             <div class="text-center text-sm text-white/60 dark:text-gray-400 mb-2">
               Other Wallets
             </div>
@@ -71,7 +71,7 @@
             >
               <div class="flex items-center gap-3">
                 <div class="wallet-icon-secondary">
-                  <i class="pi pi-circle text-lg text-white/60 dark:text-gray-400"></i>
+                  <i class="pi pi-wallet text-lg text-white/60 dark:text-gray-400"></i>
                 </div>
                 <div class="flex-1 text-left">
                   <h4 class="text-sm font-medium text-white/80 dark:text-gray-200">Chia Wallet</h4>

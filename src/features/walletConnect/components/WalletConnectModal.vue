@@ -1,24 +1,6 @@
 <template>
   <div v-if="isOpen" class="wallet-connect-modal-overlay" @click="handleOverlayClick">
     <div class="wallet-connect-modal" @click.stop>
-      <div class="modal-header">
-        <h2>{{ modalTitle }}</h2>
-        <p v-if="modalSubtitle" class="modal-subtitle">{{ modalSubtitle }}</p>
-        <button @click="closeModal" class="close-button" aria-label="Close">
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-
       <div class="modal-content">
         <!-- Wallet Selection Step -->
         <div v-if="currentStep === 'selection'" class="wallet-selection-step">
@@ -60,41 +42,60 @@
         <!-- QR Code Display -->
         <div v-else-if="currentStep === 'qr-code'" class="qr-section">
           <div class="qr-header">
-            <h3>Scan QR Code</h3>
-            <p>Use your {{ selectedWallet?.name }} to scan this QR code</p>
+            <div class="wallet-icon-large">
+              <i :class="selectedWallet?.iconClass"></i>
+            </div>
+            <h3>Connect with {{ selectedWallet?.name }}</h3>
+            <p>Scan the QR code with your mobile wallet</p>
           </div>
+
           <div class="qr-container">
-            <div v-if="qrCodeDataUrl" class="qr-code">
-              <img :src="qrCodeDataUrl" alt="Wallet Connect QR Code" />
-            </div>
-            <div v-else class="qr-placeholder">
-              <div class="qr-spinner"></div>
-              <p>Generating QR Code...</p>
+            <div class="qr-wrapper">
+              <div v-if="qrCodeDataUrl" class="qr-code">
+                <div class="qr-code-border">
+                  <img :src="qrCodeDataUrl" alt="Wallet Connect QR Code" />
+                </div>
+                <div class="qr-code-overlay">
+                  <div class="scanning-indicator">
+                    <div class="scan-line"></div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="qr-placeholder">
+                <div class="qr-spinner-container">
+                  <div class="qr-spinner"></div>
+                  <p>Generating QR Code...</p>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="uri-display">
-            <label>Connection URI:</label>
-            <div class="uri-input-container">
-              <input :value="connectionUri" readonly class="uri-input" @click="selectUri" />
-              <button @click="copyUri" class="copy-button">
-                <i class="pi pi-copy"></i>
-                Copy
-              </button>
+
+          <div class="connection-options">
+            <div class="uri-section">
+              <div class="uri-header">
+                <i class="pi pi-link"></i>
+                <span>Or copy connection link</span>
+              </div>
+              <div class="uri-input-container">
+                <input
+                  :value="connectionUri"
+                  readonly
+                  class="uri-input"
+                  @click="selectUri"
+                  placeholder="Connection URI"
+                />
+                <button @click="copyUri" class="copy-button">
+                  <i class="pi pi-copy"></i>
+                </button>
+              </div>
             </div>
           </div>
-          <div class="qr-instructions">
-            <div class="instruction-item">
-              <i class="pi pi-mobile"></i>
-              <span>Open {{ selectedWallet?.name }} on your mobile device</span>
-            </div>
-            <div class="instruction-item">
-              <i class="pi pi-qrcode"></i>
-              <span>Scan the QR code above</span>
-            </div>
-            <div class="instruction-item">
-              <i class="pi pi-check"></i>
-              <span>Approve the connection in your wallet</span>
-            </div>
+
+          <div class="wallet-download-section">
+            <a href="https://sagewallet.net/" target="_blank" class="download-link">
+              <i class="pi pi-download"></i>
+              <span>Don't have {{ selectedWallet?.name }}? Download it here</span>
+            </a>
           </div>
         </div>
 
@@ -233,37 +234,6 @@
 
   // Computed
   const walletInfo = computed(() => walletStore.walletInfo)
-
-  const modalTitle = computed(() => {
-    switch (currentStep.value) {
-      case 'selection':
-        return 'Choose Your Wallet'
-      case 'connecting':
-        return 'Connecting...'
-      case 'qr-code':
-        return 'Connect with Sage Wallet'
-      case 'error':
-        return 'Connection Failed'
-      case 'success':
-        return 'Connected!'
-      default:
-        return 'Connect Wallet'
-    }
-  })
-
-  const modalSubtitle = computed(() => {
-    switch (currentStep.value) {
-      case 'selection':
-        return 'Select a wallet to connect to Penguin Pool'
-      case 'qr-code':
-        return 'Scan the QR code with your Sage wallet to connect'
-      case 'success':
-        return 'Your wallet is now connected and ready to use'
-      default:
-        return null
-    }
-  })
-
   // Methods
   const closeModal = () => {
     resetModal()
@@ -610,16 +580,34 @@
 
   .qr-section {
     text-align: center;
+    padding: 2rem;
   }
 
   .qr-header {
     margin-bottom: 2rem;
   }
 
+  .wallet-icon-large {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+  }
+
+  .wallet-icon-large i {
+    color: white;
+    font-size: 2.25rem;
+  }
+
   .qr-header h3 {
     margin: 0 0 0.5rem 0;
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: 1.5rem;
+    font-weight: 700;
     color: #111827;
   }
 
@@ -630,7 +618,15 @@
   }
 
   .qr-container {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .qr-wrapper {
+    position: relative;
+    display: inline-block;
   }
 
   .qr-placeholder {
@@ -638,19 +634,50 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 200px;
-    height: 200px;
+    width: 280px;
+    height: 280px;
     border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    background: #f9fafb;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
     margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .qr-placeholder::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+    100% {
+      transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
+  }
+
+  .qr-spinner-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    position: relative;
   }
 
   .qr-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid #e5e7eb;
-    border-top: 3px solid #3b82f6;
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #3b82f6;
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 1rem;
@@ -660,99 +687,183 @@
     margin: 0;
     color: #6b7280;
     font-size: 0.875rem;
+    font-weight: 500;
   }
 
   .qr-code {
+    position: relative;
     display: inline-block;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1rem;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+  }
+
+  .qr-code-border {
+    padding: 24px;
     background: white;
+    border-radius: 24px;
+    border: 2px solid #e5e7eb;
   }
 
   .qr-code img {
     display: block;
-    max-width: 100%;
-    height: auto;
+    width: 260px;
+    height: 260px;
+    border-radius: 16px;
   }
 
-  .uri-display {
-    text-align: left;
-    margin-bottom: 2rem;
+  .qr-code-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    border-radius: 20px;
+    overflow: hidden;
   }
 
-  .uri-display label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
+  .scanning-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+    animation: scan 2s ease-in-out infinite;
+  }
+
+  .scan-line {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+    animation: scanLine 2s ease-in-out infinite;
+  }
+
+  @keyframes scan {
+    0%,
+    100% {
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes scanLine {
+    0% {
+      left: -100%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
+
+  .connection-options {
+    margin-bottom: 1.5rem;
+  }
+
+  .uri-section {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 1.5rem;
+  }
+
+  .uri-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
     color: #374151;
+    font-weight: 500;
     font-size: 0.875rem;
+  }
+
+  .uri-header i {
+    color: #3b82f6;
+    font-size: 1rem;
   }
 
   .uri-input-container {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
   }
 
   .uri-input {
     flex: 1;
-    padding: 0.75rem;
+    padding: 0.875rem 1rem;
     border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-family: monospace;
+    border-radius: 12px;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
     font-size: 0.875rem;
-    background: #f9fafb;
+    background: white;
+    color: #374151;
+    transition: all 0.2s;
+  }
+
+  .uri-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
   .copy-button {
     background: #3b82f6;
     color: white;
     border: none;
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
+    padding: 0.875rem 1rem;
+    border-radius: 12px;
     cursor: pointer;
     font-weight: 500;
-    transition: background 0.2s;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    white-space: nowrap;
+    justify-content: center;
+    min-width: 60px;
   }
 
   .copy-button:hover {
     background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
 
   .copy-button i {
     font-size: 0.875rem;
   }
 
-  .qr-instructions {
-    background: #f8fafc;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-align: left;
+  .wallet-download-section {
+    text-align: center;
   }
 
-  .instruction-item {
-    display: flex;
+  .download-link {
+    display: inline-flex;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 0.75rem;
-    font-size: 0.875rem;
-    color: #374151;
-  }
-
-  .instruction-item:last-child {
-    margin-bottom: 0;
-  }
-
-  .instruction-item i {
     color: #3b82f6;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.875rem;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid #3b82f6;
+    border-radius: 12px;
+    transition: all 0.2s;
+    background: rgba(59, 130, 246, 0.05);
+  }
+
+  .download-link:hover {
+    background: #3b82f6;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .download-link i {
     font-size: 1rem;
-    width: 16px;
-    text-align: center;
   }
 
   .error-section {
@@ -947,5 +1058,174 @@
 
   .back-button:hover {
     background: #4b5563;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .qr-section {
+      padding: 1.5rem;
+    }
+
+    .qr-placeholder {
+      width: 240px;
+      height: 240px;
+    }
+
+    .qr-code img {
+      width: 220px;
+      height: 220px;
+    }
+
+    .qr-code-border {
+      padding: 20px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .wallet-connect-modal {
+      width: 95%;
+      max-width: none;
+      margin: 1rem;
+    }
+
+    .qr-section {
+      padding: 1rem;
+    }
+
+    .wallet-icon-large {
+      width: 64px;
+      height: 64px;
+    }
+
+    .wallet-icon-large i {
+      font-size: 2rem;
+    }
+
+    .qr-header h3 {
+      font-size: 1.25rem;
+    }
+
+    .qr-placeholder {
+      width: 200px;
+      height: 200px;
+    }
+
+    .qr-code img {
+      width: 180px;
+      height: 180px;
+    }
+
+    .qr-code-border {
+      padding: 16px;
+    }
+
+    .uri-section {
+      padding: 1rem;
+    }
+
+    .uri-input-container {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .copy-button {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .modal-footer button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .qr-placeholder {
+      width: 180px;
+      height: 180px;
+    }
+
+    .qr-code img {
+      width: 160px;
+      height: 160px;
+    }
+
+    .qr-code-border {
+      padding: 14px;
+    }
+
+    .wallet-icon-large {
+      width: 56px;
+      height: 56px;
+    }
+
+    .wallet-icon-large i {
+      font-size: 1.75rem;
+    }
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .wallet-connect-modal {
+      background: #1f2937;
+      color: #f9fafb;
+    }
+
+    .modal-header h2 {
+      color: #f9fafb;
+    }
+
+    .modal-subtitle {
+      color: #9ca3af;
+    }
+
+    .qr-header h3 {
+      color: #f9fafb;
+    }
+
+    .qr-header p {
+      color: #9ca3af;
+    }
+
+    .qr-code-border {
+      background: #374151;
+      border-color: #4b5563;
+    }
+
+    .uri-section {
+      background: #374151;
+      border-color: #4b5563;
+    }
+
+    .uri-header {
+      color: #d1d5db;
+    }
+
+    .uri-input {
+      background: #1f2937;
+      border-color: #4b5563;
+      color: #f9fafb;
+    }
+
+    .uri-input:focus {
+      border-color: #3b82f6;
+    }
+
+    .download-link {
+      color: #60a5fa;
+      border-color: #60a5fa;
+      background: rgba(96, 165, 250, 0.1);
+    }
+
+    .download-link:hover {
+      background: #60a5fa;
+      color: white;
+    }
   }
 </style>
