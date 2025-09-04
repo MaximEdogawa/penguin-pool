@@ -168,6 +168,10 @@
   },
   "active": "762a427def224add",
   "lastOpenFiles": [
+    "implementation/TICKET-010/TICKET-010-IMPLEMENTATION.md",
+    "implementation/TICKET-010/SETUP_GUIDE.md",
+    "implementation/TICKET-010/README.md",
+    "implementation/TICKET-010",
     "implementation/TICKET-008/TICKET-008-NESTJS-IMPLEMENTATION.md",
     "API_DOCUMENTATION.md",
     "implementation/TICKET-008/TICKET-008-IMPLEMENTATION.md",
@@ -198,11 +202,6 @@
     "design-technical/TECHNICAL_STACK.md",
     "design-technical/README.md",
     "design-technical/PROJECT_STRUCTURE.md",
-    "design-technical/PRE_COMMIT_HOOKS.md",
-    "design-technical/DESIGN.md",
-    "design-technical",
-    "README.md",
-    "WHITE_PAPER.md",
-    "implementation/WALLET_CONNECT_UI"
+    "design-technical"
   ]
 }

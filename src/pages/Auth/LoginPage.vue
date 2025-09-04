@@ -97,63 +97,134 @@
         </div>
       </div>
     </div>
+
+    <!-- Wallet Connect Modal -->
+    <WalletConnectModal
+      :is-open="showWalletModal"
+      @close="closeWalletModal"
+      @connected="handleWalletConnected"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { ref, computed, onMounted } from 'vue'
   import { useRouter } from 'vue-router'
   import { useUserStore } from '@/entities/user/store/userStore'
+  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import WalletConnectModal from '@/features/walletConnect/components/WalletConnectModal.vue'
   import PenguinLogo from '@/components/PenguinLogo.vue'
 
   const router = useRouter()
   const userStore = useUserStore()
+  const walletConnectStore = useWalletConnectStore()
 
   // State
-  const isConnecting = ref(false)
+  const showWalletModal = ref(false)
   const connectionStatus = ref('')
   const statusType = ref<'info' | 'success' | 'error'>('info')
   const statusIcon = ref('pi pi-info-circle')
 
+  // Computed
+  const isConnecting = computed(() => walletConnectStore.isConnecting)
+
   // Methods
   const connectWalletConnect = async () => {
-    await connectWallet('Wallet Connect')
+    showWalletModal.value = true
   }
 
   const connectSageWallet = async () => {
-    await connectWallet('Sage Wallet')
-  }
-
-  const connectWallet = async (walletType: string) => {
     try {
-      isConnecting.value = true
-      connectionStatus.value = `Connecting to ${walletType}...`
+      connectionStatus.value = 'Opening Sage Wallet...'
       statusType.value = 'info'
       statusIcon.value = 'pi pi-spin pi-spinner'
 
-      // Simulate wallet connection
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // For now, redirect to Sage Wallet or show instructions
+      // This would be implemented based on Sage Wallet's deep linking
+      window.open('sage://wallet', '_blank')
 
-      // For demo purposes, simulate successful connection
-      await userStore.login('xch1demo123456789', 'demo-user')
+      connectionStatus.value = 'Please complete connection in Sage Wallet'
+      statusType.value = 'info'
+      statusIcon.value = 'pi pi-info-circle'
+    } catch (error) {
+      console.error('Sage Wallet connection failed:', error)
+      connectionStatus.value = 'Sage Wallet connection failed'
+      statusType.value = 'error'
+      statusIcon.value = 'pi pi-exclamation-triangle'
+    }
+  }
+
+  const handleWalletConnected = async (session: unknown) => {
+    console.log('Wallet connected:', session)
+
+    try {
+      // Verify session is valid
+      if (
+        !session ||
+        typeof session !== 'object' ||
+        !('accounts' in session) ||
+        !Array.isArray((session as { accounts: unknown }).accounts) ||
+        (session as { accounts: unknown[] }).accounts.length === 0
+      ) {
+        throw new Error('Invalid wallet session - no accounts found')
+      }
 
       connectionStatus.value = 'Wallet connected successfully!'
       statusType.value = 'success'
       statusIcon.value = 'pi pi-check-circle'
+
+      // Get wallet info and login user
+      const walletInfo = await walletConnectStore.getWalletInfo()
+      if (walletInfo && walletInfo.address) {
+        console.log('Logging in with wallet address:', walletInfo.address)
+        await userStore.login(walletInfo.address, 'wallet-user')
+      } else {
+        // Fallback: use first account from session
+        const sessionObj = session as { accounts: string[] }
+        const address = sessionObj.accounts[0]
+        console.log('Using fallback address from session:', address)
+        await userStore.login(address, 'wallet-user')
+      }
 
       // Redirect to dashboard after successful connection
       setTimeout(() => {
         router.push('/dashboard')
       }, 1000)
     } catch (error) {
-      console.error('Wallet connection failed:', error)
-      connectionStatus.value = 'Failed to connect wallet. Please try again.'
+      console.error('Failed to process wallet connection:', error)
+      connectionStatus.value =
+        'Failed to process wallet connection: ' +
+        (error instanceof Error ? error.message : 'Unknown error')
       statusType.value = 'error'
       statusIcon.value = 'pi pi-exclamation-triangle'
     } finally {
-      isConnecting.value = false
+      showWalletModal.value = false
     }
   }
+
+  const closeWalletModal = () => {
+    showWalletModal.value = false
+  }
+
+  // Initialize Wallet Connect on mount
+  onMounted(async () => {
+    try {
+      await walletConnectStore.initialize()
+
+      // Check if already connected and redirect if so
+      if (walletConnectStore.isConnected) {
+        const walletInfo = await walletConnectStore.getWalletInfo()
+        if (walletInfo) {
+          await userStore.login(walletInfo.address, 'wallet-user')
+          router.push('/dashboard')
+        }
+      }
+    } catch (error) {
+      console.error('Failed to initialize Wallet Connect:', error)
+      // Don't show error to user, just log it
+      // Wallet Connect will show appropriate error when user tries to connect
+    }
+  })
 </script>
 
 <style scoped>

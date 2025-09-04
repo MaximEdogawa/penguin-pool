@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/entities/user/store/userStore'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -94,33 +95,9 @@ router.beforeEach((to, from, next) => {
   // Set page title
   document.title = `${to.meta.title} - Penguin-pool`
 
-  // Development mode: Skip authentication for now
-  if (import.meta.env.DEV) {
-    // Create mock user for development
-    if (!localStorage.getItem('penguin-pool-user')) {
-      const mockUser = {
-        id: 'dev-user-1',
-        username: 'Developer',
-        walletAddress: 'xch1dev123456789',
-        balance: 1000,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        preferences: {
-          theme: 'auto',
-          language: 'en',
-          currency: 'XCH',
-          notifications: { email: false, push: true, sms: false },
-          privacy: { shareAnalytics: false, shareUsageData: false },
-        },
-      }
-      localStorage.setItem('penguin-pool-user', JSON.stringify(mockUser))
-    }
-    next()
-    return
-  }
-
-  // Check if user is authenticated
-  const isAuthenticated = localStorage.getItem('penguin-pool-user') !== null
+  // Get user store to check authentication status
+  const userStore = useUserStore()
+  const isAuthenticated = userStore.isAuthenticated
 
   // Check authentication requirements
   if (to.meta.requiresAuth) {
@@ -129,13 +106,15 @@ router.beforeEach((to, from, next) => {
       next()
     } else {
       // User is not authenticated, redirect to auth page
+      console.log('Route requires authentication, redirecting to login')
       next('/auth')
     }
   } else {
     // Route doesn't require auth
     if (to.path === '/auth' && isAuthenticated) {
       // User is already authenticated, redirect to dashboard
-      next('/')
+      console.log('User already authenticated, redirecting to dashboard')
+      next('/dashboard')
     } else {
       // Allow access to non-auth routes
       next()
