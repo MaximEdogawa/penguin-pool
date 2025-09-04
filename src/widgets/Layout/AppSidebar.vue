@@ -54,20 +54,11 @@
 
               <!-- Wallet Connection Info -->
               <div v-if="walletStore.isConnected" class="wallet-info">
-                <div class="wallet-address">
-                  <i class="pi pi-link text-xs"></i>
-                  <span class="address-text">{{
-                    formatWalletAddress(walletStore.primaryAccount)
+                <div class="wallet-fingerprint">
+                  <i class="pi pi-key text-sm"></i>
+                  <span class="fingerprint-text">{{
+                    walletStore.walletInfo?.fingerprint || 'N/A'
                   }}</span>
-                </div>
-                <div v-if="walletStore.walletInfo?.balance" class="wallet-balance">
-                  <i class="pi pi-coins text-xs"></i>
-                  <span class="balance-text"
-                    >{{
-                      formatBalance(walletStore.walletInfo.balance.confirmed_wallet_balance)
-                    }}
-                    XCH</span
-                  >
                 </div>
               </div>
 
@@ -97,15 +88,6 @@
               :label="!isCollapsed && !isSmallScreen ? 'Connect Wallet' : ''"
               :title="isCollapsed || isSmallScreen ? 'Connect Wallet' : ''"
               class="nav-link w-full justify-start p-button-text wallet-connect-btn"
-              text
-            />
-            <PrimeButton
-              v-else
-              @click="handleWalletDisconnect"
-              :icon="'pi pi-sign-out'"
-              :label="!isCollapsed && !isSmallScreen ? 'Disconnect Wallet' : ''"
-              :title="isCollapsed || isSmallScreen ? 'Disconnect Wallet' : ''"
-              class="nav-link w-full justify-start p-button-text wallet-disconnect-btn"
               text
             />
           </div>
@@ -151,10 +133,10 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
-  import { useRouter, useRoute } from 'vue-router'
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import { computed } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
 
   // Router
   const router = useRouter()
@@ -252,30 +234,8 @@
     router.push(path)
   }
 
-  const formatWalletAddress = (address: string | null): string => {
-    if (!address) return 'No address'
-    if (address.length <= 12) return address
-    return `${address.slice(0, 6)}...${address.slice(-6)}`
-  }
-
-  const formatBalance = (mojos: number): string => {
-    if (mojos === 0) return '0.000000'
-    return (mojos / 1000000000000).toFixed(6)
-  }
-
-  const handleWalletDisconnect = async () => {
-    try {
-      await walletStore.disconnect()
-      // Optionally redirect to auth page
-      // router.push('/auth')
-    } catch (error) {
-      console.error('Wallet disconnect failed:', error)
-    }
-  }
-
   const handleLogout = async () => {
     try {
-      // Disconnect wallet if connected
       if (walletStore.isConnected) {
         await walletStore.disconnect()
       }
@@ -476,22 +436,16 @@
     @apply space-y-1 mb-2;
   }
 
-  .wallet-address,
-  .wallet-balance {
-    @apply flex items-center space-x-2 text-xs text-gray-600 dark:text-gray-400;
+  .wallet-fingerprint {
+    @apply flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300;
   }
 
-  .address-text {
-    @apply font-mono text-xs truncate max-w-32;
+  .fingerprint-text {
+    @apply font-mono text-sm font-semibold;
   }
 
-  .balance-text {
-    @apply font-semibold text-xs text-primary-600 dark:text-primary-400;
-  }
-
-  .wallet-address i,
-  .wallet-balance i {
-    @apply text-primary-500 flex-shrink-0;
+  .wallet-fingerprint i {
+    @apply text-primary-600 dark:text-primary-400 flex-shrink-0;
   }
 
   /* Wallet Section */
