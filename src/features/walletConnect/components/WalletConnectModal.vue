@@ -196,7 +196,7 @@
   const walletStore = useWalletConnectStore()
 
   // State
-  const currentStep = ref<'selection' | 'connecting' | 'qr-code' | 'error' | 'success'>('selection')
+  const currentStep = ref<'selection' | 'connecting' | 'qr-code' | 'error' | 'success'>('qr-code')
   const selectedWallet = ref<WalletOption | null>(null)
   const connectionUri = ref<string | null>(null)
   const qrCodeDataUrl = ref<string | null>(null)
@@ -241,7 +241,7 @@
       case 'connecting':
         return 'Connecting...'
       case 'qr-code':
-        return 'Connect Your Wallet'
+        return 'Connect with Sage Wallet'
       case 'error':
         return 'Connection Failed'
       case 'success':
@@ -256,7 +256,7 @@
       case 'selection':
         return 'Select a wallet to connect to Penguin Pool'
       case 'qr-code':
-        return `Use your ${selectedWallet.value?.name} to scan the QR code below`
+        return 'Scan the QR code with your Sage wallet to connect'
       case 'success':
         return 'Your wallet is now connected and ready to use'
       default:
@@ -400,9 +400,11 @@
   // Watch for modal open state
   watch(
     () => props.isOpen,
-    isOpen => {
+    async isOpen => {
       if (isOpen) {
         resetModal()
+        // Automatically start connection process
+        await selectWallet(availableWallets.value[0]) // Start with Sage wallet
       }
     }
   )
