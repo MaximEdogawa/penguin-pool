@@ -9,18 +9,6 @@ export const mockUsers = {
   },
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 // Mock API responses
 export const mockApiResponses = {
   users: {
@@ -231,4 +219,3 @@ export const mockSearchFilters = {
     currency: ['XCH', 'USD'],
   },
 }
-

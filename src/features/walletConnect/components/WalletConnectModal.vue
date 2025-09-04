@@ -1,98 +1,185 @@
 <template>
   <div v-if="isOpen" class="wallet-connect-modal-overlay" @click="handleOverlayClick">
     <div class="wallet-connect-modal" @click.stop>
-      <!-- Header -->
       <div class="modal-header">
-        <h2 class="modal-title">Connect Wallet</h2>
-        <button @click="close" class="close-button">
-          <i class="pi pi-times"></i>
+        <h2>{{ modalTitle }}</h2>
+        <p v-if="modalSubtitle" class="modal-subtitle">{{ modalSubtitle }}</p>
+        <button @click="closeModal" class="close-button" aria-label="Close">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
       </div>
 
-      <!-- Content -->
       <div class="modal-content">
-        <!-- QR Code Section -->
-        <div v-if="showQRCode" class="qr-section">
-          <div class="qr-container">
-            <div class="qr-code" ref="qrCodeRef"></div>
-          </div>
-          <p class="qr-instructions">Scan this QR code with your wallet app to connect</p>
-          <div class="qr-actions">
-            <button @click="copyToClipboard" class="copy-button">
-              <i class="pi pi-copy"></i>
-              Copy Link
+        <!-- Wallet Selection Step -->
+        <div v-if="currentStep === 'selection'" class="wallet-selection-step">
+          <div class="wallet-grid">
+            <button
+              v-for="wallet in availableWallets"
+              :key="wallet.id"
+              @click="selectWallet(wallet)"
+              class="wallet-option"
+              :class="{ disabled: !wallet.available }"
+              :disabled="!wallet.available"
+            >
+              <div class="wallet-icon">
+                <i :class="wallet.iconClass"></i>
+              </div>
+              <div class="wallet-info">
+                <h3 class="wallet-name">{{ wallet.name }}</h3>
+                <p class="wallet-description">{{ wallet.description }}</p>
+                <div v-if="!wallet.available" class="wallet-unavailable">
+                  <i class="pi pi-exclamation-triangle"></i>
+                  <span>Coming Soon</span>
+                </div>
+              </div>
+              <div class="wallet-status">
+                <i v-if="wallet.available" class="pi pi-arrow-right"></i>
+                <i v-else class="pi pi-lock"></i>
+              </div>
             </button>
           </div>
         </div>
 
-        <!-- Wallet Options -->
-        <div v-else class="wallet-options">
-          <div class="wallet-option" @click="connectChiaWallet">
-            <div class="wallet-icon">
-              <i class="pi pi-wallet"></i>
-            </div>
-            <div class="wallet-info">
-              <h3>Chia Wallet</h3>
-              <p>Connect with Chia reference wallet</p>
-            </div>
-            <div class="wallet-arrow">
-              <i class="pi pi-arrow-right"></i>
-            </div>
-          </div>
-
-          <div class="wallet-option" @click="connectSageWallet">
-            <div class="wallet-icon">
-              <i class="pi pi-mobile"></i>
-            </div>
-            <div class="wallet-info">
-              <h3>Sage Wallet</h3>
-              <p>Connect with Sage mobile wallet</p>
-            </div>
-            <div class="wallet-arrow">
-              <i class="pi pi-arrow-right"></i>
-            </div>
-          </div>
-        </div>
-
         <!-- Connection Status -->
-        <div v-if="isConnecting" class="connection-status">
-          <div class="loading-spinner">
-            <i class="pi pi-spin pi-spinner"></i>
-          </div>
-          <p>{{ connectionStatus }}</p>
+        <div v-else-if="currentStep === 'connecting'" class="connection-status">
+          <div class="spinner"></div>
+          <h3>Connecting to {{ selectedWallet?.name }}...</h3>
+          <p>Please wait while we establish the connection</p>
         </div>
 
-        <!-- Error Message -->
-        <div v-if="error" class="error-message">
-          <i class="pi pi-exclamation-triangle"></i>
+        <!-- QR Code Display -->
+        <div v-else-if="currentStep === 'qr-code'" class="qr-section">
+          <div class="qr-header">
+            <h3>Scan QR Code</h3>
+            <p>Use your {{ selectedWallet?.name }} to scan this QR code</p>
+          </div>
+          <div class="qr-container">
+            <div v-if="qrCodeDataUrl" class="qr-code">
+              <img :src="qrCodeDataUrl" alt="Wallet Connect QR Code" />
+            </div>
+            <div v-else class="qr-placeholder">
+              <div class="qr-spinner"></div>
+              <p>Generating QR Code...</p>
+            </div>
+          </div>
+          <div class="uri-display">
+            <label>Connection URI:</label>
+            <div class="uri-input-container">
+              <input :value="connectionUri" readonly class="uri-input" @click="selectUri" />
+              <button @click="copyUri" class="copy-button">
+                <i class="pi pi-copy"></i>
+                Copy
+              </button>
+            </div>
+          </div>
+          <div class="qr-instructions">
+            <div class="instruction-item">
+              <i class="pi pi-mobile"></i>
+              <span>Open {{ selectedWallet?.name }} on your mobile device</span>
+            </div>
+            <div class="instruction-item">
+              <i class="pi pi-qrcode"></i>
+              <span>Scan the QR code above</span>
+            </div>
+            <div class="instruction-item">
+              <i class="pi pi-check"></i>
+              <span>Approve the connection in your wallet</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Display -->
+        <div v-else-if="currentStep === 'error'" class="error-section">
+          <div class="error-icon">
+            <i class="pi pi-exclamation-triangle"></i>
+          </div>
+          <h3>Connection Failed</h3>
           <p>{{ error }}</p>
-          <button @click="clearError" class="dismiss-button">
-            <i class="pi pi-times"></i>
-          </button>
+          <div class="error-actions">
+            <button @click="retryConnection" class="retry-button">
+              <i class="pi pi-refresh"></i>
+              Try Again
+            </button>
+            <button @click="goBackToSelection" class="back-button">
+              <i class="pi pi-arrow-left"></i>
+              Back to Selection
+            </button>
+          </div>
+        </div>
+
+        <!-- Success Display -->
+        <div v-else-if="currentStep === 'success'" class="success-section">
+          <div class="success-icon">
+            <i class="pi pi-check-circle"></i>
+          </div>
+          <h3>Connected Successfully!</h3>
+          <p>Your {{ selectedWallet?.name }} is now connected to Penguin Pool</p>
+          <div v-if="walletInfo" class="wallet-info">
+            <div class="info-item">
+              <span class="label">Address:</span>
+              <span class="value">{{ formatAddress(walletInfo.address) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Balance:</span>
+              <span class="value"
+                >{{ formatBalance(walletInfo.balance.confirmed_wallet_balance) }} XCH</span
+              >
+            </div>
+          </div>
+          <div class="success-actions">
+            <button @click="proceedToDashboard" class="proceed-button">
+              <i class="pi pi-arrow-right"></i>
+              Go to Dashboard
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- Footer -->
       <div class="modal-footer">
-        <p class="help-text">
-          Don't have a wallet?
-          <a
-            href="https://docs.chia.net/walletconnect-developer-guide/"
-            target="_blank"
-            rel="noopener"
-          >
-            Learn more about supported wallets
-          </a>
-        </p>
+        <button v-if="currentStep === 'selection'" @click="closeModal" class="cancel-button">
+          Cancel
+        </button>
+        <button
+          v-else-if="currentStep === 'qr-code'"
+          @click="goBackToSelection"
+          class="back-button"
+        >
+          <i class="pi pi-arrow-left"></i>
+          Back
+        </button>
+        <button v-else-if="currentStep === 'success'" @click="closeModal" class="done-button">
+          Done
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-  import { useWalletConnectStore } from '../stores/walletConnectStore'
   import QRCode from 'qrcode'
+  import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+  import { useRouter } from 'vue-router'
+  import { useWalletConnectStore } from '../stores/walletConnectStore'
+  import type { SageWalletInfo } from '../types/walletConnect.types'
+
+  interface WalletOption {
+    id: string
+    name: string
+    description: string
+    iconClass: string
+    available: boolean
+    type: 'sage' | 'chia' | 'other'
+  }
 
   interface Props {
     isOpen: boolean
@@ -100,342 +187,763 @@
 
   interface Emits {
     (e: 'close'): void
-    (e: 'connected', session: unknown): void
+    (e: 'connected', walletInfo: SageWalletInfo): void
   }
 
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
-
-  const walletConnectStore = useWalletConnectStore()
-  const qrCodeRef = ref<HTMLElement>()
+  const router = useRouter()
+  const walletStore = useWalletConnectStore()
 
   // State
-  const showQRCode = ref(false)
-  const qrCodeData = ref('')
-  const connectionStatus = ref('')
+  const currentStep = ref<'selection' | 'connecting' | 'qr-code' | 'error' | 'success'>('selection')
+  const selectedWallet = ref<WalletOption | null>(null)
+  const connectionUri = ref<string | null>(null)
+  const qrCodeDataUrl = ref<string | null>(null)
+  const isConnecting = ref(false)
+  const error = ref<string | null>(null)
+
+  // Available wallet options
+  const availableWallets = ref<WalletOption[]>([
+    {
+      id: 'sage',
+      name: 'Sage Wallet',
+      description: 'Connect using Sage wallet for Chia Network',
+      iconClass: 'pi pi-wallet',
+      available: true,
+      type: 'sage',
+    },
+    {
+      id: 'chia',
+      name: 'Chia Wallet',
+      description: 'Connect using official Chia wallet',
+      iconClass: 'pi pi-wallet',
+      available: false,
+      type: 'chia',
+    },
+    {
+      id: 'other',
+      name: 'Other Wallets',
+      description: 'Connect using other compatible wallets',
+      iconClass: 'pi pi-link',
+      available: false,
+      type: 'other',
+    },
+  ])
 
   // Computed
-  const isConnecting = computed(() => walletConnectStore.isConnecting)
-  const error = computed(() => walletConnectStore.error)
+  const walletInfo = computed(() => walletStore.walletInfo)
+
+  const modalTitle = computed(() => {
+    switch (currentStep.value) {
+      case 'selection':
+        return 'Choose Your Wallet'
+      case 'connecting':
+        return 'Connecting...'
+      case 'qr-code':
+        return 'Connect Your Wallet'
+      case 'error':
+        return 'Connection Failed'
+      case 'success':
+        return 'Connected!'
+      default:
+        return 'Connect Wallet'
+    }
+  })
+
+  const modalSubtitle = computed(() => {
+    switch (currentStep.value) {
+      case 'selection':
+        return 'Select a wallet to connect to Penguin Pool'
+      case 'qr-code':
+        return `Use your ${selectedWallet.value?.name} to scan the QR code below`
+      case 'success':
+        return 'Your wallet is now connected and ready to use'
+      default:
+        return null
+    }
+  })
 
   // Methods
-  const close = () => {
-    emit('close')
+  const closeModal = () => {
     resetModal()
+    emit('close')
+  }
+
+  const resetModal = () => {
+    currentStep.value = 'selection'
+    selectedWallet.value = null
+    connectionUri.value = null
+    qrCodeDataUrl.value = null
+    isConnecting.value = false
+    error.value = null
   }
 
   const handleOverlayClick = (event: MouseEvent) => {
     if (event.target === event.currentTarget) {
-      close()
+      closeModal()
     }
   }
 
-  const connectChiaWallet = async () => {
+  const selectWallet = async (wallet: WalletOption) => {
+    if (!wallet.available) return
+
+    selectedWallet.value = wallet
+    currentStep.value = 'connecting'
+    isConnecting.value = true
+    error.value = null
+
     try {
-      showQRCode.value = true
-      connectionStatus.value = 'Generating QR code...'
+      console.log(`Starting connection to ${wallet.name}...`)
+      const connection = await walletStore.startConnection()
 
-      // Start the connection process and get URI
-      const connectionData = await walletConnectStore.startConnection()
-
-      if (connectionData) {
-        qrCodeData.value = connectionData.uri
-        connectionStatus.value = 'Scan QR code with your Chia wallet app'
-
-        // Check if this is demo mode
-        const isDemoMode = connectionData.uri.includes('demo-connection-uri-for-testing')
-        if (isDemoMode) {
-          connectionStatus.value =
-            'Demo Mode: This is a test QR code. Connection will be simulated in 5 seconds...'
-
-          // Simulate connection after 5 seconds in demo mode
-          setTimeout(async () => {
-            try {
-              const result = await walletConnectStore.connect()
-              if (result.success) {
-                connectionStatus.value = 'Demo Mode: Simulated connection successful!'
-                emit('connected', result.session)
-                setTimeout(() => close(), 1000)
-              } else {
-                connectionStatus.value = `Demo Mode: ${result.error}`
-              }
-            } catch (err) {
-              connectionStatus.value = `Demo Mode: ${err}`
-            }
-          }, 5000)
-        } else {
-          // Real WalletConnect - wait for approval
-          try {
-            const approvedSession = await connectionData.approval()
-
-            // Update store state
-            walletConnectStore.session = approvedSession
-            walletConnectStore.accounts = extractAccountsFromSession(approvedSession)
-            walletConnectStore.isConnected = true
-
-            connectionStatus.value = 'Connection successful!'
-            emit('connected', approvedSession)
-            setTimeout(() => close(), 1000)
-          } catch (approvalError) {
-            console.error('Connection approval failed:', approvalError)
-            connectionStatus.value = 'Connection was rejected or failed'
-            showQRCode.value = false
-          }
-        }
+      if (connection) {
+        console.log('Connection URI generated:', connection.uri.substring(0, 50) + '...')
+        connectionUri.value = connection.uri
+        currentStep.value = 'qr-code'
 
         // Generate QR code
-        await generateQRCode(connectionData.uri)
+        await generateQRCode(connection.uri)
+
+        // Wait for approval
+        console.log('Waiting for wallet approval...')
+        const session = await connection.approval()
+
+        if (session) {
+          console.log('Wallet connection approved:', session)
+          // Connection successful
+          await walletStore.refreshWalletInfo()
+          currentStep.value = 'success'
+          emit('connected', walletInfo.value!)
+        } else {
+          error.value = 'Wallet connection was not approved'
+          currentStep.value = 'error'
+        }
       } else {
-        connectionStatus.value = 'Failed to generate connection link'
-        showQRCode.value = false
+        error.value = 'Failed to start connection - no connection URI generated'
+        currentStep.value = 'error'
       }
     } catch (err) {
-      console.error('Chia Wallet connection failed:', err)
-      connectionStatus.value = 'Connection failed'
-      showQRCode.value = false
+      console.error('Wallet connection error:', err)
+      error.value = err instanceof Error ? err.message : 'Connection failed'
+      currentStep.value = 'error'
+    } finally {
+      isConnecting.value = false
     }
   }
 
-  const connectSageWallet = async () => {
+  const goBackToSelection = () => {
+    currentStep.value = 'selection'
+    selectedWallet.value = null
+    connectionUri.value = null
+    qrCodeDataUrl.value = null
+    error.value = null
+  }
+
+  const retryConnection = () => {
+    if (selectedWallet.value) {
+      selectWallet(selectedWallet.value)
+    }
+  }
+
+  const proceedToDashboard = () => {
+    closeModal()
+    router.push('/dashboard')
+  }
+
+  const copyUri = async () => {
+    if (connectionUri.value) {
+      try {
+        await navigator.clipboard.writeText(connectionUri.value)
+        // Could show a toast notification here
+        console.log('URI copied to clipboard')
+      } catch (err) {
+        console.error('Failed to copy URI:', err)
+      }
+    }
+  }
+
+  const selectUri = (event: Event) => {
+    const input = event.target as HTMLInputElement
+    input.select()
+  }
+
+  const formatBalance = (mojos: number): string => {
+    return (mojos / 1000000000000).toFixed(6)
+  }
+
+  const formatAddress = (address: string): string => {
+    if (address.length <= 20) return address
+    return `${address.substring(0, 10)}...${address.substring(address.length - 10)}`
+  }
+
+  // Generate QR code from URI
+  const generateQRCode = async (uri: string) => {
     try {
-      connectionStatus.value = 'Opening Sage Wallet...'
-
-      // For now, redirect to Sage Wallet or show instructions
-      // This would be implemented based on Sage Wallet's deep linking
-      window.open('sage://wallet', '_blank')
-
-      connectionStatus.value = 'Please complete connection in Sage Wallet'
-    } catch (err) {
-      console.error('Sage Wallet connection failed:', err)
-      connectionStatus.value = 'Sage Wallet connection failed'
-    }
-  }
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(qrCodeData.value)
-      connectionStatus.value = 'Link copied to clipboard!'
-    } catch (err) {
-      console.error('Failed to copy to clipboard:', err)
-      connectionStatus.value = 'Failed to copy link'
-    }
-  }
-
-  const clearError = () => {
-    walletConnectStore.clearError()
-  }
-
-  const resetModal = () => {
-    showQRCode.value = false
-    qrCodeData.value = ''
-    connectionStatus.value = ''
-  }
-
-  // Helper function to extract accounts from session
-  const extractAccountsFromSession = (session: unknown): string[] => {
-    const accounts: string[] = []
-
-    if (session && typeof session === 'object' && 'namespaces' in session) {
-      const sessionObj = session as { namespaces: Record<string, { accounts?: string[] }> }
-      Object.values(sessionObj.namespaces).forEach(namespace => {
-        if (namespace.accounts) {
-          accounts.push(...namespace.accounts)
-        }
-      })
-    }
-
-    return accounts
-  }
-
-  const generateQRCode = async (data: string) => {
-    // Wait for the next DOM update cycle
-    await nextTick()
-
-    if (!qrCodeRef.value) {
-      console.error('QR code ref not available')
-      return
-    }
-
-    try {
-      const qrCodeUrl = await QRCode.toDataURL(data, {
-        width: 256,
+      console.log('Generating QR code for URI:', uri.substring(0, 50) + '...')
+      const dataUrl = await QRCode.toDataURL(uri, {
+        width: 200,
         margin: 2,
         color: {
           dark: '#000000',
           light: '#FFFFFF',
         },
       })
-
-      qrCodeRef.value.innerHTML = `<img src="${qrCodeUrl}" alt="Wallet Connect QR Code" />`
-    } catch (err) {
-      console.error('Failed to generate QR code:', err)
+      qrCodeDataUrl.value = dataUrl
+      console.log('QR code generated successfully')
+    } catch (error) {
+      console.error('Failed to generate QR code:', error)
+      qrCodeDataUrl.value = null
     }
   }
 
-  // Watch for QR code data changes
-  watch(qrCodeData, newData => {
-    if (newData) {
-      generateQRCode(newData)
-    }
-  })
-
-  // Watch for modal open/close
+  // Watch for modal open state
   watch(
     () => props.isOpen,
     isOpen => {
       if (isOpen) {
-        // Reset modal state when opening
-        showQRCode.value = false
-        qrCodeData.value = ''
-        connectionStatus.value = ''
+        resetModal()
       }
     }
   )
 
-  // Watch for Wallet Connect events
-  watch(
-    () => walletConnectStore.session,
-    newSession => {
-      if (newSession) {
-        emit('connected', newSession)
-        close()
-      }
+  // Handle escape key
+  const handleKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape' && props.isOpen) {
+      closeModal()
     }
-  )
+  }
 
   onMounted(() => {
-    // Initialize Wallet Connect
-    walletConnectStore.initialize()
+    document.addEventListener('keydown', handleKeydown)
   })
 
   onUnmounted(() => {
-    // Cleanup if needed
+    document.removeEventListener('keydown', handleKeydown)
   })
 </script>
 
 <style scoped>
   .wallet-connect-modal-overlay {
-    @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4;
-    background-color: rgba(0, 0, 0, 0.8) !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
   }
 
   .wallet-connect-modal {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden;
+    background: white;
+    border-radius: 12px;
+    box-shadow:
+      0 20px 25px -5px rgba(0, 0, 0, 0.1),
+      0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   .modal-header {
-    @apply flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700;
+    padding: 2rem 2rem 1rem 2rem;
+    text-align: center;
+    position: relative;
   }
 
-  .modal-title {
-    @apply text-xl font-semibold text-gray-900 dark:text-white;
+  .modal-header h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .modal-subtitle {
+    margin: 0 0 1rem 0;
+    color: #6b7280;
+    font-size: 0.875rem;
   }
 
   .close-button {
-    @apply p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors;
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    color: #6b7280;
+    transition: all 0.2s;
+  }
+
+  .close-button:hover {
+    background: #f3f4f6;
+    color: #374151;
   }
 
   .modal-content {
-    @apply p-6 space-y-6;
+    padding: 0 2rem 2rem 2rem;
+    flex: 1;
+    overflow-y: auto;
   }
 
-  .qr-section {
-    @apply text-center space-y-4;
+  /* Wallet Selection Step */
+  .wallet-selection-step {
+    padding: 1rem 0;
   }
 
-  .qr-container {
-    @apply flex justify-center;
-  }
-
-  .qr-code {
-    @apply p-4 bg-white rounded-lg shadow-sm;
-  }
-
-  .qr-instructions {
-    @apply text-sm text-gray-600 dark:text-gray-400;
-  }
-
-  .qr-actions {
-    @apply flex justify-center;
-  }
-
-  .copy-button {
-    @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2;
-  }
-
-  .wallet-options {
-    @apply space-y-3;
+  .wallet-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
   }
 
   .wallet-option {
-    @apply flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors;
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    width: 100%;
+  }
+
+  .wallet-option:hover:not(.disabled) {
+    border-color: #3b82f6;
+    background: #f8fafc;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  }
+
+  .wallet-option.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .wallet-icon {
-    @apply w-12 h-12 flex items-center justify-center bg-blue-100 dark:bg-blue-900 rounded-lg mr-4;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    flex-shrink: 0;
   }
 
   .wallet-icon i {
-    @apply text-blue-600 dark:text-blue-400 text-xl;
+    color: #6b7280;
+    font-size: 1.5rem;
   }
 
   .wallet-info {
-    @apply flex-1;
+    flex: 1;
   }
 
-  .wallet-info h3 {
-    @apply font-medium text-gray-900 dark:text-white;
+  .wallet-name {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
   }
 
-  .wallet-info p {
-    @apply text-sm text-gray-600 dark:text-gray-400;
+  .wallet-description {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    color: #6b7280;
   }
 
-  .wallet-arrow {
-    @apply text-gray-400;
+  .wallet-unavailable {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: #f59e0b;
+    font-weight: 500;
+  }
+
+  .wallet-status {
+    color: #6b7280;
+    font-size: 1.25rem;
+  }
+
+  .wallet-option:hover:not(.disabled) .wallet-status {
+    color: #3b82f6;
   }
 
   .connection-status {
-    @apply flex flex-col items-center space-y-3 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg;
+    text-align: center;
+    padding: 2rem 0;
   }
 
-  .loading-spinner {
-    @apply text-blue-600 dark:text-blue-400;
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
   }
 
-  .loading-spinner i {
-    @apply text-2xl;
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
-  .connection-status p {
-    @apply text-sm text-blue-800 dark:text-blue-200;
+  .qr-section {
+    text-align: center;
   }
 
-  .error-message {
-    @apply flex items-start space-x-3 p-4 bg-red-50 dark:bg-red-900 rounded-lg;
+  .qr-header {
+    margin-bottom: 2rem;
   }
 
-  .error-message i {
-    @apply text-red-600 dark:text-red-400 mt-0.5;
+  .qr-header h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
   }
 
-  .error-message p {
-    @apply text-sm text-red-800 dark:text-red-200 flex-1;
+  .qr-header p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.875rem;
   }
 
-  .dismiss-button {
-    @apply text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200;
+  .qr-container {
+    margin-bottom: 1.5rem;
+  }
+
+  .qr-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 200px;
+    height: 200px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    background: #f9fafb;
+    margin: 0 auto;
+  }
+
+  .qr-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #e5e7eb;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+
+  .qr-placeholder p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  .qr-code {
+    display: inline-block;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1rem;
+    background: white;
+  }
+
+  .qr-code img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .uri-display {
+    text-align: left;
+    margin-bottom: 2rem;
+  }
+
+  .uri-display label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
+  }
+
+  .uri-input-container {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .uri-input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 0.875rem;
+    background: #f9fafb;
+  }
+
+  .copy-button {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+  }
+
+  .copy-button:hover {
+    background: #2563eb;
+  }
+
+  .copy-button i {
+    font-size: 0.875rem;
+  }
+
+  .qr-instructions {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: left;
+  }
+
+  .instruction-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    color: #374151;
+  }
+
+  .instruction-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .instruction-item i {
+    color: #3b82f6;
+    font-size: 1rem;
+    width: 16px;
+    text-align: center;
+  }
+
+  .error-section {
+    text-align: center;
+    padding: 2rem 0;
+  }
+
+  .error-icon {
+    color: #ef4444;
+    margin-bottom: 1rem;
+    font-size: 3rem;
+  }
+
+  .error-section h3 {
+    margin: 0 0 0.5rem 0;
+    color: #111827;
+    font-size: 1.25rem;
+  }
+
+  .error-section p {
+    margin: 0 0 2rem 0;
+    color: #6b7280;
+  }
+
+  .error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .retry-button {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .retry-button:hover {
+    background: #dc2626;
+  }
+
+  .back-button {
+    background: #6b7280;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .back-button:hover {
+    background: #4b5563;
+  }
+
+  .success-section {
+    text-align: center;
+    padding: 2rem 0;
+  }
+
+  .success-icon {
+    color: #10b981;
+    margin-bottom: 1rem;
+    font-size: 3rem;
+  }
+
+  .success-section h3 {
+    margin: 0 0 0.5rem 0;
+    color: #111827;
+    font-size: 1.25rem;
+  }
+
+  .success-section p {
+    margin: 0 0 2rem 0;
+    color: #6b7280;
+  }
+
+  .success-actions {
+    margin-top: 2rem;
+  }
+
+  .proceed-button {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 auto;
+  }
+
+  .proceed-button:hover {
+    background: #059669;
+  }
+
+  .proceed-button i {
+    font-size: 1rem;
+  }
+
+  .wallet-info {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: left;
+  }
+
+  .info-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .info-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .info-item .label {
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .info-item .value {
+    font-family: monospace;
+    color: #6b7280;
+    word-break: break-all;
   }
 
   .modal-footer {
-    @apply p-6 border-t border-gray-200 dark:border-gray-700;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
   }
 
-  .help-text {
-    @apply text-xs text-gray-600 dark:text-gray-400 text-center;
+  .cancel-button,
+  .done-button,
+  .back-button {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
-  .help-text a {
-    @apply text-blue-600 dark:text-blue-400 hover:underline;
+  .cancel-button {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+  }
+
+  .cancel-button:hover {
+    background: #e5e7eb;
+  }
+
+  .done-button {
+    background: #10b981;
+    color: white;
+    border: none;
+  }
+
+  .done-button:hover {
+    background: #059669;
+  }
+
+  .back-button {
+    background: #6b7280;
+    color: white;
+    border: none;
+  }
+
+  .back-button:hover {
+    background: #4b5563;
   }
 </style>

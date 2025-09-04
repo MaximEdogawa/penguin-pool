@@ -14,8 +14,8 @@
     "type-check": "vue-tsc --build",
     "lint": "eslint . --ext .vue,.js,.ts,.jsx,.tsx --fix",
     "lint:check": "eslint . --ext .vue,.js,.ts,.jsx,.tsx",
-    "format": "prettier --write \"src/**/*.{vue,js,ts,jsx,tsx,json,css,md}\"",
-    "format:check": "prettier --check \"src/**/*.{vue,js,ts,jsx,tsx,json,css,md}\"",
+    "format": "prettier --write \"**/*.{vue,js,ts,jsx,tsx,json,css,md,html,scss,sass,less}\" --ignore-path .prettierignore",
+    "format:check": "prettier --check \"**/*.{vue,js,ts,jsx,tsx,json,css,md,html,scss,sass,less}\" --ignore-path .prettierignore",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "kill-backend": "./scripts/kill-backend.sh",
@@ -95,10 +95,10 @@
   "lint-staged": {
     "*.{vue,js,ts,jsx,tsx}": [
       "eslint --fix",
-      "prettier --write"
+      "prettier --write --ignore-path .prettierignore"
     ],
-    "*.{json,css,md}": [
-      "prettier --write"
+    "*.{json,css,md,html,scss,sass,less}": [
+      "prettier --write --ignore-path .prettierignore"
     ]
   }
 }

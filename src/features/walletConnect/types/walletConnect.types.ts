@@ -106,13 +106,14 @@ export type WalletConnectEventType =
   | 'session_response_sent'
   | 'session_request_expire'
   | 'session_response_expire'
+  | string // Allow any string for custom events
 
 export interface WalletConnectEvent {
   type: WalletConnectEventType
   data: unknown
 }
 
-export interface ChiaWalletInfo {
+export interface SageWalletInfo {
   fingerprint: number
   address: string
   balance: {
@@ -125,4 +126,38 @@ export interface ChiaWalletInfo {
     pending_coin_removal_count: number
   }
   isConnected: boolean
+}
+
+// Alias for backward compatibility
+export type ChiaWalletInfo = SageWalletInfo
+
+// Command execution result type
+export interface CommandExecutionResult<T = unknown> {
+  success: boolean
+  data?: T
+  error?: string
+}
+
+// Wallet command interface for easier usage
+export interface WalletCommand {
+  command: string
+  params: Record<string, unknown>
+}
+
+// Chia connection state interface
+export interface ChiaConnectionState {
+  isConnected: boolean
+  isConnecting: boolean
+  fingerprint?: number
+  address?: string
+  balance?: {
+    confirmed_wallet_balance: number
+    unconfirmed_wallet_balance: number
+    spendable_balance: number
+    pending_change: number
+    max_send_amount: number
+    unspent_coin_count: number
+    pending_coin_removal_count: number
+  }
+  error?: string
 }

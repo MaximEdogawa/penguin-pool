@@ -28,4 +28,3 @@ describe('PenguinLogo', () => {
     expect(logoContainer.exists()).toBe(true)
   })
 })
-

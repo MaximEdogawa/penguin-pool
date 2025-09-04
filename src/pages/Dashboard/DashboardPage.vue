@@ -3,17 +3,73 @@
     <div class="content-body">
       <!-- Quick Stats -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div class="card p-4 sm:p-6 flex items-center space-x-3 sm:space-x-4">
-          <div class="flex-shrink-0">
-            <i class="pi pi-wallet text-xl sm:text-2xl text-primary-600"></i>
+        <div class="card p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center space-x-3">
+              <div class="flex-shrink-0">
+                <i
+                  :class="[
+                    'pi text-xl sm:text-2xl',
+                    isWalletConnected ? 'pi-wallet text-primary-600' : 'pi-wallet text-gray-400',
+                  ]"
+                ></i>
+              </div>
+              <h3 class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                Wallet Balance
+              </h3>
+            </div>
+            <button
+              v-if="isWalletConnected"
+              @click="refreshBalance"
+              :disabled="isBalanceLoading"
+              class="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+              title="Refresh balance"
+            >
+              <i :class="['pi', isBalanceLoading ? 'pi-spin pi-spinner' : 'pi-refresh']"></i>
+            </button>
           </div>
-          <div class="flex-1 min-w-0">
-            <h3 class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
-              Wallet Balance
-            </h3>
-            <p class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-              {{ userBalance }} XCH
-            </p>
+
+          <div class="space-y-2">
+            <div class="flex items-center space-x-2">
+              <p class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
+                {{ userBalance }} XCH
+              </p>
+              <div v-if="isBalanceLoading" class="loading-spinner">
+                <i class="pi pi-spin pi-spinner text-sm text-primary-600"></i>
+              </div>
+            </div>
+
+            <!-- Additional balance info when connected -->
+            <div v-if="isWalletConnected && walletStore.walletInfo?.balance" class="space-y-1">
+              <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                <span>Spendable:</span>
+                <span
+                  >{{ formatBalance(walletStore.walletInfo.balance.spendable_balance) }} XCH</span
+                >
+              </div>
+              <div
+                v-if="walletStore.walletInfo.balance.unconfirmed_wallet_balance > 0"
+                class="flex justify-between text-xs text-gray-500 dark:text-gray-400"
+              >
+                <span>Unconfirmed:</span>
+                <span
+                  >{{
+                    formatBalance(walletStore.walletInfo.balance.unconfirmed_wallet_balance)
+                  }}
+                  XCH</span
+                >
+              </div>
+            </div>
+
+            <!-- Connection status -->
+            <div v-if="!isWalletConnected" class="text-xs text-orange-600 dark:text-orange-400">
+              <i class="pi pi-exclamation-triangle mr-1"></i>
+              Wallet not connected
+            </div>
+            <div v-else-if="isWalletConnected" class="text-xs text-green-600 dark:text-green-400">
+              <i class="pi pi-check-circle mr-1"></i>
+              Wallet connected
+            </div>
           </div>
         </div>
 
@@ -62,7 +118,24 @@
           Quick Actions
         </h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <!-- Wallet Connect Action (only show if not connected) -->
           <button
+            v-if="!isWalletConnected"
+            @click="connectWallet"
+            :disabled="isBalanceLoading"
+            class="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border-2 border-dashed border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20 hover:border-orange-500 dark:hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors duration-200"
+          >
+            <i
+              class="pi pi-wallet text-base sm:text-lg mb-2 text-orange-600 dark:text-orange-400"
+            ></i>
+            <span
+              class="text-xs sm:text-sm font-medium text-orange-700 dark:text-orange-300 text-center"
+              >Connect Wallet</span
+            >
+          </button>
+
+          <button
+            v-else
             class="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border-2 border-dashed border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-primary-900/20 hover:border-primary-500 dark:hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors duration-200"
           >
             <i class="pi pi-plus text-base sm:text-lg mb-2 text-gray-600 dark:text-gray-400"></i>
@@ -71,6 +144,20 @@
               >Create Contract</span
             >
           </button>
+
+          <!-- Test Button (only show in development when wallet is connected) -->
+          <button
+            v-if="isDevelopment && isWalletConnected"
+            @click="runWalletTests"
+            class="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border-2 border-dashed border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/20 hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors duration-200"
+          >
+            <i class="pi pi-cog text-base sm:text-lg mb-2 text-green-600 dark:text-green-400"></i>
+            <span
+              class="text-xs sm:text-sm font-medium text-green-700 dark:text-green-300 text-center"
+              >Run Tests</span
+            >
+          </button>
+
           <button
             class="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 hover:border-primary-500 dark:hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors duration-200"
           >
@@ -123,20 +210,103 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, onMounted } from 'vue'
-  import { useUserStore } from '@/entities/user/store/userStore'
   import PageFooter from '@/components/PageFooter.vue'
+  import { useUserStore } from '@/entities/user/store/userStore'
+  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import { WalletBalanceTest } from '@/features/walletConnect/utils/wallet-balance-test'
+  import { computed, onMounted, ref, watch } from 'vue'
 
   const userStore = ref<ReturnType<typeof useUserStore> | null>(null)
-  const userBalance = ref(0)
+  const walletStore = useWalletConnectStore()
+
+  // Computed properties for wallet balance
+  const userBalance = computed(() => {
+    if (walletStore.walletInfo?.balance) {
+      return formatBalance(walletStore.walletInfo.balance.confirmed_wallet_balance)
+    }
+    return '0.000000'
+  })
+
+  const isWalletConnected = computed(() => walletStore.isConnected)
+  const isBalanceLoading = computed(() => walletStore.isConnecting)
+  const isDevelopment = computed(() => import.meta.env.DEV)
+
+  // Format balance helper
+  const formatBalance = (mojos: number): string => {
+    if (mojos === 0) return '0.000000'
+    return (mojos / 1000000000000).toFixed(6)
+  }
+
+  // Refresh wallet balance
+  const refreshBalance = async () => {
+    if (isWalletConnected.value) {
+      try {
+        await walletStore.refreshWalletInfo()
+      } catch (error) {
+        console.error('Failed to refresh wallet balance:', error)
+      }
+    }
+  }
+
+  // Connect wallet
+  const connectWallet = () => {
+    // Redirect to wallet connect page
+    window.location.href = '/wallet-connect'
+  }
+
+  // Run wallet tests (development only)
+  const runWalletTests = async () => {
+    try {
+      console.log('Running wallet balance tests...')
+      await WalletBalanceTest.runAllTests()
+    } catch (error) {
+      console.error('Wallet balance tests failed:', error)
+    }
+  }
 
   onMounted(async () => {
     try {
       userStore.value = useUserStore()
-      // Simulate user balance for demo
-      userBalance.value = 100.5
+
+      // Initialize wallet connect if not already done
+      await walletStore.initialize()
+
+      // If wallet is connected, refresh balance
+      if (isWalletConnected.value) {
+        await refreshBalance()
+      }
     } catch (error) {
       console.error('Failed to initialize dashboard:', error)
     }
   })
+
+  // Watch for wallet connection changes
+  watch(isWalletConnected, async connected => {
+    if (connected) {
+      console.log('Wallet connected, refreshing balance and running tests...')
+      await refreshBalance()
+
+      // Run wallet balance tests in development (only if wallet is connected)
+      if (isDevelopment.value && isWalletConnected.value) {
+        try {
+          console.log('Running wallet balance tests...')
+          await WalletBalanceTest.runAllTests()
+        } catch (error) {
+          console.error('Wallet balance tests failed:', error)
+        }
+      } else if (isDevelopment.value) {
+        console.log('Skipping wallet balance tests - no wallet connected')
+      }
+    }
+  })
 </script>
+
+<style scoped>
+  .loading-spinner {
+    @apply flex items-center justify-center;
+  }
+
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700;
+  }
+</style>

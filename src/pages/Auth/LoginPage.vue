@@ -32,27 +32,10 @@
                 <i class="pi pi-wallet text-xl sm:text-2xl"></i>
               </div>
               <div class="wallet-info">
-                <h3 class="wallet-name">Wallet Connect</h3>
-                <p class="wallet-description">Connect any compatible wallet</p>
-              </div>
-              <div class="wallet-status">
-                <i v-if="isConnecting" class="pi pi-spin pi-spinner text-base sm:text-lg"></i>
-                <i v-else class="pi pi-arrow-right text-base sm:text-lg"></i>
-              </div>
-            </button>
-
-            <!-- Sage Wallet Option -->
-            <button
-              @click="connectSageWallet"
-              class="wallet-option secondary"
-              :disabled="isConnecting"
-            >
-              <div class="wallet-icon">
-                <i class="pi pi-credit-card text-xl sm:text-2xl"></i>
-              </div>
-              <div class="wallet-info">
-                <h3 class="wallet-name">Sage Wallet</h3>
-                <p class="wallet-description">Native Chia wallet integration</p>
+                <h3 class="wallet-name">Connect Wallet</h3>
+                <p class="wallet-description">
+                  Choose from Sage, Chia, and other compatible wallets
+                </p>
               </div>
               <div class="wallet-status">
                 <i v-if="isConnecting" class="pi pi-spin pi-spinner text-base sm:text-lg"></i>
@@ -108,12 +91,12 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted } from 'vue'
-  import { useRouter } from 'vue-router'
-  import { useUserStore } from '@/entities/user/store/userStore'
-  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
-  import WalletConnectModal from '@/features/walletConnect/components/WalletConnectModal.vue'
   import PenguinLogo from '@/components/PenguinLogo.vue'
+  import { useUserStore } from '@/entities/user/store/userStore'
+  import WalletConnectModal from '@/features/walletConnect/components/WalletConnectModal.vue'
+  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import { computed, onMounted, ref } from 'vue'
+  import { useRouter } from 'vue-router'
 
   const router = useRouter()
   const userStore = useUserStore()
@@ -133,66 +116,27 @@
     showWalletModal.value = true
   }
 
-  const connectSageWallet = async () => {
-    try {
-      connectionStatus.value = 'Opening Sage Wallet...'
-      statusType.value = 'info'
-      statusIcon.value = 'pi pi-spin pi-spinner'
-
-      // For now, redirect to Sage Wallet or show instructions
-      // This would be implemented based on Sage Wallet's deep linking
-      window.open('sage://wallet', '_blank')
-
-      connectionStatus.value = 'Please complete connection in Sage Wallet'
-      statusType.value = 'info'
-      statusIcon.value = 'pi pi-info-circle'
-    } catch (error) {
-      console.error('Sage Wallet connection failed:', error)
-      connectionStatus.value = 'Sage Wallet connection failed'
-      statusType.value = 'error'
-      statusIcon.value = 'pi pi-exclamation-triangle'
-    }
-  }
-
-  const handleWalletConnected = async (session: unknown) => {
-    console.log('Wallet connected:', session)
+  const handleWalletConnected = async (walletInfo: unknown) => {
+    console.log('Wallet connected:', walletInfo)
 
     try {
-      // Verify session is valid
-      if (!session || typeof session !== 'object') {
-        throw new Error('Invalid wallet session - no session data')
+      // Verify wallet info is valid
+      if (!walletInfo || typeof walletInfo !== 'object') {
+        throw new Error('Invalid wallet info - no wallet data received')
       }
 
-      // Extract accounts from session namespaces
-      const accounts: string[] = []
-      if ('namespaces' in session) {
-        const sessionObj = session as { namespaces: Record<string, { accounts?: string[] }> }
-        Object.values(sessionObj.namespaces).forEach(namespace => {
-          if (namespace.accounts) {
-            accounts.push(...namespace.accounts)
-          }
-        })
-      }
-
-      if (accounts.length === 0) {
-        throw new Error('Invalid wallet session - no accounts found in namespaces')
+      const wallet = walletInfo as { address: string }
+      if (!wallet.address) {
+        throw new Error('Invalid wallet info - no address found')
       }
 
       connectionStatus.value = 'Wallet connected successfully!'
       statusType.value = 'success'
       statusIcon.value = 'pi pi-check-circle'
 
-      // Get wallet info and login user
-      const walletInfo = await walletConnectStore.getWalletInfo()
-      if (walletInfo && walletInfo.address) {
-        console.log('Logging in with wallet address:', walletInfo.address)
-        await userStore.login(walletInfo.address, 'wallet-user')
-      } else {
-        // Fallback: use first account from extracted accounts
-        const address = accounts[0]
-        console.log('Using fallback address from session:', address)
-        await userStore.login(address, 'wallet-user')
-      }
+      // Login user with wallet address
+      console.log('Logging in with wallet address:', wallet.address)
+      await userStore.login(wallet.address, 'wallet-user')
 
       // Redirect to dashboard after successful connection
       setTimeout(() => {

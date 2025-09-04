@@ -8,4 +8,4 @@ describe('Basic Test Suite', () => {
   it('should handle basic math', () => {
     expect(2 + 2).toBe(4)
   })
-}) 
+})

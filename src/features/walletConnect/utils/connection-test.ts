@@ -72,11 +72,11 @@ export const testConnectionIssues = {
     console.log('🧪 Testing WalletConnect initialization...')
 
     try {
-      const { chiaWalletConnectService } = await import('../services/ChiaWalletConnectService')
+      const { sageWalletConnectService } = await import('../services/SageWalletConnectService')
 
-      if (!chiaWalletConnectService.isInitialized()) {
+      if (!sageWalletConnectService.isInitialized()) {
         console.log('Initializing WalletConnect...')
-        await chiaWalletConnectService.initialize()
+        await sageWalletConnectService.initialize()
       }
 
       console.log('✅ WalletConnect initialized successfully')
@@ -90,5 +90,5 @@ export const testConnectionIssues = {
 
 // Export for browser console access
 if (typeof window !== 'undefined') {
-  ;(window as Record<string, unknown>).testConnectionIssues = testConnectionIssues
+  ;(window as unknown as Record<string, unknown>).testConnectionIssues = testConnectionIssues
 }

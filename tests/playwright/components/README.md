@@ -12,21 +12,25 @@ This directory contains fast component tests using Playwright for the Penguin Po
 ## Running Tests
 
 ### Quick Component Tests
+
 ```bash
 npm run test:component
 ```
 
 ### Interactive UI Mode
+
 ```bash
 npm run test:component:ui
 ```
 
 ### Debug Mode
+
 ```bash
 npm run test:component:debug
 ```
 
 ### Using the Script
+
 ```bash
 ./scripts/test-component.sh
 ```
@@ -65,6 +69,7 @@ The component tests use `playwright.component.config.ts` which is optimized for:
 ## Performance
 
 Component tests are designed to run in under 10 seconds for the entire suite, making them suitable for:
+
 - Development feedback
 - CI/CD pipelines
 - Pre-deployment validation

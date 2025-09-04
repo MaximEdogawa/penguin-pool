@@ -130,7 +130,7 @@
 
 - **Purpose**: Chia-specific wallet integration
 - **Features**:
-  - Chia wallet management
+  - Sage Wallet management
   - Transaction signing
   - Balance tracking
   - DID management

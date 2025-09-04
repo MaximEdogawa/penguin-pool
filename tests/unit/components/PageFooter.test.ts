@@ -30,4 +30,3 @@ describe('PageFooter', () => {
     expect(wrapper.find('.footer-right').exists()).toBe(true)
   })
 })
-

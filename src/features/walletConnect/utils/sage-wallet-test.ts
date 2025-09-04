@@ -1,9 +1,9 @@
 import { sageWalletConnectService } from '../services/SageWalletConnectService'
 
 /**
- * Test utility for Chia WalletConnect integration
+ * Test utility for Sage WalletConnect integration
  */
-export class ChiaWalletTest {
+export class SageWalletTest {
   /**
    * Test basic WalletConnect initialization
    */
@@ -70,7 +70,7 @@ export class ChiaWalletTest {
    * Run all tests
    */
   static async runAllTests(): Promise<boolean> {
-    console.log('🧪 Running Chia WalletConnect tests...')
+    console.log('🧪 Running Sage WalletConnect tests...')
 
     const tests = [
       { name: 'Initialization', test: () => this.testInitialization() },
@@ -104,5 +104,5 @@ export class ChiaWalletTest {
 
 // Export for easy access in browser console
 if (typeof window !== 'undefined') {
-  ;(window as unknown as Record<string, unknown>).ChiaWalletTest = ChiaWalletTest
+  ;(window as unknown as Record<string, unknown>).SageWalletTest = SageWalletTest
 }

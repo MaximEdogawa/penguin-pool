@@ -1,3 +1,21 @@
+// Suppress Lit development mode warning
+if (typeof window !== 'undefined') {
+  // Set Lit to production mode to suppress dev warnings
+  ;(window as unknown as Record<string, unknown>).litDisableBundleWarning = true
+  // Alternative approach - set Lit development mode to false
+  if ((window as unknown as Record<string, unknown>).lit) {
+    ;((window as unknown as Record<string, unknown>).lit as Record<string, unknown>).DEV_MODE =
+      false
+  }
+  // Set environment variable for Lit
+  const windowWithProcess = window as unknown as Record<string, unknown>
+  windowWithProcess.process = windowWithProcess.process || {}
+  const process = windowWithProcess.process as Record<string, unknown>
+  process.env = process.env || {}
+  const env = process.env as Record<string, unknown>
+  env.NODE_ENV = 'production'
+}
+
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { VueQueryPlugin } from '@tanstack/vue-query'

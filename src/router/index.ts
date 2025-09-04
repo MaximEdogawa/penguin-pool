@@ -1,5 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/entities/user/store/userStore'
+import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -69,15 +69,6 @@ const router = createRouter({
       meta: {
         title: 'Service Health',
         requiresAuth: true,
-      },
-    },
-    {
-      path: '/chia-wallet-demo',
-      name: 'chia-wallet-demo',
-      component: () => import('@/pages/ChiaWalletDemo/ChiaWalletDemoPage.vue'),
-      meta: {
-        title: 'Chia Wallet Demo',
-        requiresAuth: false,
       },
     },
 

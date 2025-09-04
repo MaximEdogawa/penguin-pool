@@ -29,5 +29,5 @@ export const testWalletConnectTypes = () => {
 
 // Export for browser console testing
 if (typeof window !== 'undefined') {
-  ;(window as Record<string, unknown>).testWalletConnectTypes = testWalletConnectTypes
+  ;(window as unknown as Record<string, unknown>).testWalletConnectTypes = testWalletConnectTypes
 }

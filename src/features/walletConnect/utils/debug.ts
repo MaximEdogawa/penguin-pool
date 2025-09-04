@@ -25,5 +25,5 @@ export const debugWalletConnect = {
 
 // Export for browser console access
 if (typeof window !== 'undefined') {
-  ;(window as Record<string, unknown>).debugWalletConnect = debugWalletConnect
+  ;(window as unknown as Record<string, unknown>).debugWalletConnect = debugWalletConnect
 }

@@ -1,15 +1,15 @@
-import { SignClient } from '@walletconnect/sign-client'
-import type { SessionTypes, PairingTypes } from '@walletconnect/types'
-import { Web3Modal } from '@web3modal/standalone'
 import { environment } from '@/shared/config/environment'
-import { REQUIRED_NAMESPACES, CHIA_METADATA, CHIA_CHAIN_ID } from '../constants/chia-wallet-connect'
+import { SignClient } from '@walletconnect/sign-client'
+import type { PairingTypes, SessionTypes } from '@walletconnect/types'
+import { Web3Modal } from '@web3modal/standalone'
+import { REQUIRED_NAMESPACES, CHIA_CHAIN_ID, CHIA_METADATA } from '../constants/chia-wallet-connect'
 import type {
-  WalletConnectConfig,
-  WalletConnectSession,
   ConnectionResult,
   DisconnectResult,
+  WalletConnectConfig,
   WalletConnectEvent,
-  ChiaWalletInfo,
+  WalletConnectEventType,
+  WalletConnectSession,
 } from '../types/walletConnect.types'
 
 export class WalletConnectService {
@@ -222,7 +222,7 @@ export class WalletConnectService {
   /**
    * Get wallet info for Chia network
    */
-  async getWalletInfo(): Promise<ChiaWalletInfo | null> {
+  async getWalletInfo(): Promise<{ address: string } | null> {
     try {
       // Check if we're in demo mode
       if (
@@ -232,8 +232,6 @@ export class WalletConnectService {
         console.log('Demo mode: returning fake wallet info')
         return {
           address: 'xch1demo123456789abcdefghijklmnopqrstuvwxyz',
-          publicKey: 'demo-public-key-1234567890abcdef',
-          network: environment.blockchain.chia.network as 'mainnet' | 'testnet',
         }
       }
 
@@ -252,8 +250,6 @@ export class WalletConnectService {
 
       return {
         address: chiaAccount,
-        publicKey: session.peer.publicKey,
-        network: environment.blockchain.chia.network as 'mainnet' | 'testnet',
       }
     } catch (error) {
       console.error('Failed to get wallet info:', error)
@@ -350,12 +346,15 @@ export class WalletConnectService {
   /**
    * Extract accounts from session
    */
-  private extractAccounts(session: SessionTypes.Struct): string[] {
+  private extractAccounts(session: SessionTypes.Struct | WalletConnectSession): string[] {
     const accounts: string[] = []
 
     Object.values(session.namespaces).forEach(namespace => {
-      if (namespace.accounts) {
-        accounts.push(...namespace.accounts)
+      if (namespace && typeof namespace === 'object' && 'accounts' in namespace) {
+        const accountsArray = (namespace as { accounts?: string[] }).accounts
+        if (accountsArray) {
+          accounts.push(...accountsArray)
+        }
       }
     })
 
