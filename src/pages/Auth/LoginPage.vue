@@ -159,14 +159,23 @@
 
     try {
       // Verify session is valid
-      if (
-        !session ||
-        typeof session !== 'object' ||
-        !('accounts' in session) ||
-        !Array.isArray((session as { accounts: unknown }).accounts) ||
-        (session as { accounts: unknown[] }).accounts.length === 0
-      ) {
-        throw new Error('Invalid wallet session - no accounts found')
+      if (!session || typeof session !== 'object') {
+        throw new Error('Invalid wallet session - no session data')
+      }
+
+      // Extract accounts from session namespaces
+      const accounts: string[] = []
+      if ('namespaces' in session) {
+        const sessionObj = session as { namespaces: Record<string, { accounts?: string[] }> }
+        Object.values(sessionObj.namespaces).forEach(namespace => {
+          if (namespace.accounts) {
+            accounts.push(...namespace.accounts)
+          }
+        })
+      }
+
+      if (accounts.length === 0) {
+        throw new Error('Invalid wallet session - no accounts found in namespaces')
       }
 
       connectionStatus.value = 'Wallet connected successfully!'
@@ -179,9 +188,8 @@
         console.log('Logging in with wallet address:', walletInfo.address)
         await userStore.login(walletInfo.address, 'wallet-user')
       } else {
-        // Fallback: use first account from session
-        const sessionObj = session as { accounts: string[] }
-        const address = sessionObj.accounts[0]
+        // Fallback: use first account from extracted accounts
+        const address = accounts[0]
         console.log('Using fallback address from session:', address)
         await userStore.login(address, 'wallet-user')
       }

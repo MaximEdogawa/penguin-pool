@@ -43,17 +43,71 @@
           <!-- User Info Section -->
           <div class="user-info-section">
             <div class="user-avatar">
-              <i class="pi pi-user text-xl text-white"></i>
+              <i
+                :class="walletStore.isConnected ? 'pi pi-wallet' : 'pi pi-user'"
+                class="text-xl text-white"
+              ></i>
             </div>
             <div v-if="!isCollapsed && !isSmallScreen" class="user-details">
               <p class="user-name">{{ userName }}</p>
               <p class="user-email">{{ userEmail }}</p>
+
+              <!-- Wallet Connection Info -->
+              <div v-if="walletStore.isConnected" class="wallet-info">
+                <div class="wallet-address">
+                  <i class="pi pi-link text-xs"></i>
+                  <span class="address-text">{{
+                    formatWalletAddress(walletStore.primaryAccount)
+                  }}</span>
+                </div>
+                <div v-if="walletStore.walletInfo?.balance" class="wallet-balance">
+                  <i class="pi pi-coins text-xs"></i>
+                  <span class="balance-text"
+                    >{{
+                      formatBalance(walletStore.walletInfo.balance.confirmed_wallet_balance)
+                    }}
+                    XCH</span
+                  >
+                </div>
+              </div>
+
               <!-- Connection Status -->
               <div class="connection-status" :class="connectionStatusClass">
                 <div class="connection-dot"></div>
                 <span class="connection-text">{{ connectionStatusText }}</span>
               </div>
             </div>
+          </div>
+
+          <!-- Wallet Connect/Disconnect Button -->
+          <div class="wallet-section">
+            <PrimeButton
+              v-if="walletStore.isConnecting"
+              :icon="'pi pi-spin pi-spinner'"
+              :label="!isCollapsed && !isSmallScreen ? 'Connecting...' : ''"
+              :title="isCollapsed || isSmallScreen ? 'Connecting...' : ''"
+              class="nav-link w-full justify-start p-button-text wallet-connecting-btn"
+              text
+              disabled
+            />
+            <PrimeButton
+              v-else-if="!walletStore.isConnected"
+              @click="navigateTo('/auth')"
+              :icon="'pi pi-wallet'"
+              :label="!isCollapsed && !isSmallScreen ? 'Connect Wallet' : ''"
+              :title="isCollapsed || isSmallScreen ? 'Connect Wallet' : ''"
+              class="nav-link w-full justify-start p-button-text wallet-connect-btn"
+              text
+            />
+            <PrimeButton
+              v-else
+              @click="handleWalletDisconnect"
+              :icon="'pi pi-sign-out'"
+              :label="!isCollapsed && !isSmallScreen ? 'Disconnect Wallet' : ''"
+              :title="isCollapsed || isSmallScreen ? 'Disconnect Wallet' : ''"
+              class="nav-link w-full justify-start p-button-text wallet-disconnect-btn"
+              text
+            />
           </div>
 
           <!-- Settings Link -->
@@ -100,10 +154,15 @@
   import { computed } from 'vue'
   import { useRouter, useRoute } from 'vue-router'
   import { useUserStore } from '@/entities/user/store/userStore'
+  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
 
   // Router
   const router = useRouter()
   const route = useRoute()
+
+  // Stores
+  const userStore = useUserStore()
+  const walletStore = useWalletConnectStore()
 
   // Props
   interface Props {
@@ -118,9 +177,6 @@
     'toggle-collapse': []
     close: []
   }>()
-
-  // Store
-  const userStore = useUserStore()
 
   // Small screen detection
   const isSmallScreen = computed(() => {
@@ -184,11 +240,11 @@
   })
 
   const connectionStatusClass = computed(() => {
-    return userStore.currentUser?.walletAddress ? 'connected' : 'disconnected'
+    return walletStore.isConnected ? 'connected' : 'disconnected'
   })
 
   const connectionStatusText = computed(() => {
-    return userStore.currentUser?.walletAddress ? 'Connected' : 'Disconnected'
+    return walletStore.isConnected ? 'Wallet Connected' : 'Wallet Disconnected'
   })
 
   // Methods
@@ -196,8 +252,33 @@
     router.push(path)
   }
 
+  const formatWalletAddress = (address: string | null): string => {
+    if (!address) return 'No address'
+    if (address.length <= 12) return address
+    return `${address.slice(0, 6)}...${address.slice(-6)}`
+  }
+
+  const formatBalance = (mojos: number): string => {
+    if (mojos === 0) return '0.000000'
+    return (mojos / 1000000000000).toFixed(6)
+  }
+
+  const handleWalletDisconnect = async () => {
+    try {
+      await walletStore.disconnect()
+      // Optionally redirect to auth page
+      // router.push('/auth')
+    } catch (error) {
+      console.error('Wallet disconnect failed:', error)
+    }
+  }
+
   const handleLogout = async () => {
     try {
+      // Disconnect wallet if connected
+      if (walletStore.isConnected) {
+        await walletStore.disconnect()
+      }
       await userStore.logout()
       // Redirect to auth page after logout
       window.location.href = '/auth'
@@ -388,6 +469,46 @@
 
   .user-info-section .connection-status.disconnected .connection-text {
     @apply text-red-600 dark:text-red-400;
+  }
+
+  /* Wallet Info Section */
+  .wallet-info {
+    @apply space-y-1 mb-2;
+  }
+
+  .wallet-address,
+  .wallet-balance {
+    @apply flex items-center space-x-2 text-xs text-gray-600 dark:text-gray-400;
+  }
+
+  .address-text {
+    @apply font-mono text-xs truncate max-w-32;
+  }
+
+  .balance-text {
+    @apply font-semibold text-xs text-primary-600 dark:text-primary-400;
+  }
+
+  .wallet-address i,
+  .wallet-balance i {
+    @apply text-primary-500 flex-shrink-0;
+  }
+
+  /* Wallet Section */
+  .wallet-section {
+    @apply mb-3;
+  }
+
+  .wallet-connect-btn {
+    @apply text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20;
+  }
+
+  .wallet-connecting-btn {
+    @apply text-gray-500 dark:text-gray-400 cursor-not-allowed;
+  }
+
+  .wallet-disconnect-btn {
+    @apply text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20;
   }
 
   /* Sign Out Section */

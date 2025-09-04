@@ -33,11 +33,13 @@ export const environment = {
     walletConnect: {
       projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || '',
       metadata: {
-        name: 'Penguin-pool',
-        description: 'Decentralized lending platform',
+        name: 'Penguin Pool',
+        description: 'Decentralized lending platform on Chia Network',
         url: 'https://penguin.pool',
         icons: ['https://penguin.pool/icon.png'],
       },
+      chainId: 'chia:testnet',
+      relayUrl: 'wss://relay.walletconnect.com',
     },
   },
 

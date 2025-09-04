@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { walletConnectService } from '../services/WalletConnectService'
+import { chiaWalletConnectService } from '../services/ChiaWalletConnectService'
 import { useUserStore } from '@/entities/user/store/userStore'
 import type {
   WalletConnectState,
@@ -10,6 +10,7 @@ import type {
   ChiaWalletInfo,
   WalletConnectEvent,
 } from '../types/walletConnect.types'
+import type { ChiaConnectionState } from '../types/chia-rpc.types'
 
 export const useWalletConnectStore = defineStore('walletConnect', () => {
   // State
@@ -43,8 +44,8 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   const initialize = async (): Promise<void> => {
     try {
       // Only initialize if not already done
-      if (!walletConnectService.client) {
-        await walletConnectService.initialize()
+      if (!chiaWalletConnectService.isInitialized()) {
+        await chiaWalletConnectService.initialize()
       }
       await restoreSession()
     } catch (err) {
@@ -53,12 +54,12 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     }
   }
 
-  const connect = async (): Promise<ConnectionResult> => {
+  const connect = async (pairing?: { topic: string }): Promise<ConnectionResult> => {
     try {
       isConnecting.value = true
       error.value = null
 
-      const result = await walletConnectService.connect()
+      const result = await chiaWalletConnectService.connect(pairing)
 
       if (result.success && result.session) {
         session.value = result.session
@@ -66,7 +67,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
         isConnected.value = true
 
         // Get wallet info
-        walletInfo.value = await walletConnectService.getWalletInfo()
+        walletInfo.value = await chiaWalletConnectService.getWalletInfo()
 
         // Set up event listeners
         setupEventListeners()
@@ -89,7 +90,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     approval: () => Promise<unknown>
   } | null> => {
     try {
-      return await walletConnectService.startConnection()
+      return await chiaWalletConnectService.startConnection()
     } catch (err) {
       console.error('Failed to start connection:', err)
       return null
@@ -98,7 +99,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const disconnect = async (): Promise<DisconnectResult> => {
     try {
-      const result = await walletConnectService.disconnect()
+      const result = await chiaWalletConnectService.disconnect()
 
       if (result.success) {
         // Clear state
@@ -271,6 +272,25 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     isConnecting.value = false
   }
 
+  // Chia-specific methods
+  const getChiaConnectionState = computed((): ChiaConnectionState => {
+    return chiaWalletConnectService.getConnectionState()
+  })
+
+  const getPairings = computed(() => {
+    return chiaWalletConnectService.getPairings()
+  })
+
+  // Chia-specific RPC methods
+  const makeChiaRequest = async <T>(method: string, data: Record<string, unknown>): Promise<T> => {
+    try {
+      return await chiaWalletConnectService.request<T>(method, data)
+    } catch (err) {
+      console.error(`Chia RPC request failed (${method}):`, err)
+      throw err
+    }
+  }
+
   return {
     // State
     isConnected,
@@ -295,5 +315,10 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     clearError,
     getWalletInfo,
     startConnection,
+
+    // Chia-specific methods
+    getChiaConnectionState,
+    getPairings,
+    makeChiaRequest,
   }
 })

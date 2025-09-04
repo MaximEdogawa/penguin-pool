@@ -1,6 +1,8 @@
 import { SignClient } from '@walletconnect/sign-client'
-import type { SessionTypes } from '@walletconnect/types'
+import type { SessionTypes, PairingTypes } from '@walletconnect/types'
+import { Web3Modal } from '@web3modal/standalone'
 import { environment } from '@/shared/config/environment'
+import { REQUIRED_NAMESPACES, CHIA_METADATA, CHIA_CHAIN_ID } from '../constants/chia-wallet-connect'
 import type {
   WalletConnectConfig,
   WalletConnectSession,
@@ -12,25 +14,18 @@ import type {
 
 export class WalletConnectService {
   public client: InstanceType<typeof SignClient> | null = null
+  public web3Modal: Web3Modal | null = null
   private config: WalletConnectConfig
   private eventListeners: Map<string, (event: WalletConnectEvent) => void> = new Map()
+  private pairings: PairingTypes.Struct[] = []
 
   constructor() {
     this.config = {
       projectId: environment.wallet.walletConnect.projectId,
-      metadata: {
-        ...environment.wallet.walletConnect.metadata,
-        icons: [...environment.wallet.walletConnect.metadata.icons],
-      },
-      chains: ['chia:testnet', 'chia:mainnet'],
-      methods: [
-        'chia_getBalance',
-        'chia_getAddress',
-        'chia_signMessage',
-        'chia_sendTransaction',
-        'chia_getTransactions',
-      ],
-      events: ['accountsChanged', 'chainChanged', 'disconnect'],
+      metadata: CHIA_METADATA,
+      chains: [CHIA_CHAIN_ID],
+      methods: Object.values(REQUIRED_NAMESPACES.chia.methods),
+      events: REQUIRED_NAMESPACES.chia.events,
     }
   }
 

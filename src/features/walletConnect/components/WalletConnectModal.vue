@@ -27,13 +27,13 @@
 
         <!-- Wallet Options -->
         <div v-else class="wallet-options">
-          <div class="wallet-option" @click="connectWalletConnect">
+          <div class="wallet-option" @click="connectChiaWallet">
             <div class="wallet-icon">
               <i class="pi pi-wallet"></i>
             </div>
             <div class="wallet-info">
-              <h3>Wallet Connect</h3>
-              <p>Connect any compatible wallet</p>
+              <h3>Chia Wallet</h3>
+              <p>Connect with Chia reference wallet</p>
             </div>
             <div class="wallet-arrow">
               <i class="pi pi-arrow-right"></i>
@@ -92,7 +92,6 @@
 <script setup lang="ts">
   import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
   import { useWalletConnectStore } from '../stores/walletConnectStore'
-  import { walletConnectService } from '../services/WalletConnectService'
   import QRCode from 'qrcode'
 
   interface Props {
@@ -131,7 +130,7 @@
     }
   }
 
-  const connectWalletConnect = async () => {
+  const connectChiaWallet = async () => {
     try {
       showQRCode.value = true
       connectionStatus.value = 'Generating QR code...'
@@ -141,43 +140,57 @@
 
       if (connectionData) {
         qrCodeData.value = connectionData.uri
-        connectionStatus.value = 'Scan QR code with your wallet app'
+        connectionStatus.value = 'Scan QR code with your Chia wallet app'
 
         // Check if this is demo mode
         const isDemoMode = connectionData.uri.includes('demo-connection-uri-for-testing')
         if (isDemoMode) {
           connectionStatus.value =
-            'Demo Mode: This is a test QR code. Connection will be simulated in 3 seconds...'
+            'Demo Mode: This is a test QR code. Connection will be simulated in 5 seconds...'
+
+          // Simulate connection after 5 seconds in demo mode
+          setTimeout(async () => {
+            try {
+              const result = await walletConnectStore.connect()
+              if (result.success) {
+                connectionStatus.value = 'Demo Mode: Simulated connection successful!'
+                emit('connected', result.session)
+                setTimeout(() => close(), 1000)
+              } else {
+                connectionStatus.value = `Demo Mode: ${result.error}`
+              }
+            } catch (err) {
+              connectionStatus.value = `Demo Mode: ${err}`
+            }
+          }, 5000)
+        } else {
+          // Real WalletConnect - wait for approval
+          try {
+            const approvedSession = await connectionData.approval()
+
+            // Update store state
+            walletConnectStore.session = approvedSession
+            walletConnectStore.accounts = extractAccountsFromSession(approvedSession)
+            walletConnectStore.isConnected = true
+
+            connectionStatus.value = 'Connection successful!'
+            emit('connected', approvedSession)
+            setTimeout(() => close(), 1000)
+          } catch (approvalError) {
+            console.error('Connection approval failed:', approvalError)
+            connectionStatus.value = 'Connection was rejected or failed'
+            showQRCode.value = false
+          }
         }
 
-        // Wait for approval
-        try {
-          const approvedSession = await connectionData.approval()
-
-          // Store session and update state
-          walletConnectStore.session = approvedSession
-          walletConnectStore.accounts = extractAccountsFromSession(approvedSession)
-          walletConnectStore.isConnected = true
-
-          // Get wallet info
-          walletConnectStore.walletInfo = await walletConnectService.getWalletInfo()
-
-          connectionStatus.value = isDemoMode
-            ? 'Demo Mode: Simulated connection successful!'
-            : 'Connection successful!'
-          emit('connected', approvedSession)
-          setTimeout(() => close(), 1000)
-        } catch (approvalError) {
-          console.error('Connection approval failed:', approvalError)
-          connectionStatus.value = 'Connection was rejected or failed'
-          showQRCode.value = false
-        }
+        // Generate QR code
+        await generateQRCode(connectionData.uri)
       } else {
         connectionStatus.value = 'Failed to generate connection link'
         showQRCode.value = false
       }
     } catch (err) {
-      console.error('Wallet Connect failed:', err)
+      console.error('Chia Wallet connection failed:', err)
       connectionStatus.value = 'Connection failed'
       showQRCode.value = false
     }
@@ -235,7 +248,11 @@
   }
 
   const generateQRCode = async (data: string) => {
-    if (!qrCodeRef.value) return
+    if (!qrCodeRef.value) {
+      console.warn('QR code ref is null, retrying in 100ms...')
+      setTimeout(() => generateQRCode(data), 100)
+      return
+    }
 
     try {
       const qrCodeUrl = await QRCode.toDataURL(data, {

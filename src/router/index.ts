@@ -71,6 +71,15 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
+    {
+      path: '/chia-wallet-demo',
+      name: 'chia-wallet-demo',
+      component: () => import('@/pages/ChiaWalletDemo/ChiaWalletDemoPage.vue'),
+      meta: {
+        title: 'Chia Wallet Demo',
+        requiresAuth: false,
+      },
+    },
 
     {
       path: '/auth',
