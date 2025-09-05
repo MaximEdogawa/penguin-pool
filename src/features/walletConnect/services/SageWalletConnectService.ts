@@ -587,9 +587,11 @@ export class SageWalletConnectService {
   private onSessionConnected(session: SessionTypes.Struct) {
     console.log('Session connected, namespaces:', session.namespaces)
 
-    const allNamespaceAccounts = Object.values(session.namespaces)
-      .map(namespace => namespace.accounts)
-      .flat()
+    const allNamespaceAccounts = session.namespaces
+      ? Object.values(session.namespaces)
+          .map(namespace => namespace.accounts)
+          .flat()
+      : []
 
     console.log('All namespace accounts:', allNamespaceAccounts)
 
@@ -725,9 +727,11 @@ export class SageWalletConnectService {
   }
 
   private extractAccounts(session: SessionTypes.Struct): string[] {
-    return Object.values(session.namespaces)
-      .map(namespace => namespace.accounts)
-      .flat()
+    return session.namespaces
+      ? Object.values(session.namespaces)
+          .map(namespace => namespace.accounts)
+          .flat()
+      : []
   }
 
   private mapSession(session: SessionTypes.Struct): WalletConnectSession {

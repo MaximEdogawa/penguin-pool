@@ -351,14 +351,16 @@ export class WalletConnectService {
   private extractAccounts(session: SessionTypes.Struct | WalletConnectSession): string[] {
     const accounts: string[] = []
 
-    Object.values(session.namespaces).forEach(namespace => {
-      if (namespace && typeof namespace === 'object' && 'accounts' in namespace) {
-        const accountsArray = (namespace as { accounts?: string[] }).accounts
-        if (accountsArray) {
-          accounts.push(...accountsArray)
+    if (session.namespaces) {
+      Object.values(session.namespaces).forEach(namespace => {
+        if (namespace && typeof namespace === 'object' && 'accounts' in namespace) {
+          const accountsArray = (namespace as { accounts?: string[] }).accounts
+          if (accountsArray) {
+            accounts.push(...accountsArray)
+          }
         }
-      }
-    })
+      })
+    }
 
     return accounts
   }

@@ -240,16 +240,18 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   const extractAccountsFromSession = (session: WalletConnectSession): string[] => {
     const accounts: string[] = []
 
-    Object.values(session.namespaces).forEach((namespace: unknown) => {
-      if (
-        namespace &&
-        typeof namespace === 'object' &&
-        'accounts' in namespace &&
-        Array.isArray((namespace as { accounts: unknown }).accounts)
-      ) {
-        accounts.push(...(namespace as { accounts: string[] }).accounts)
-      }
-    })
+    if (session.namespaces) {
+      Object.values(session.namespaces).forEach((namespace: unknown) => {
+        if (
+          namespace &&
+          typeof namespace === 'object' &&
+          'accounts' in namespace &&
+          Array.isArray((namespace as { accounts: unknown }).accounts)
+        ) {
+          accounts.push(...(namespace as { accounts: string[] }).accounts)
+        }
+      })
+    }
 
     return accounts
   }
@@ -308,16 +310,18 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       const eventData = event.data as { namespaces: Record<string, unknown> }
       // Extract updated accounts
       const updatedAccounts: string[] = []
-      Object.values(eventData.namespaces).forEach((namespace: unknown) => {
-        if (
-          namespace &&
-          typeof namespace === 'object' &&
-          'accounts' in namespace &&
-          Array.isArray((namespace as { accounts: unknown }).accounts)
-        ) {
-          updatedAccounts.push(...(namespace as { accounts: string[] }).accounts)
-        }
-      })
+      if (eventData.namespaces) {
+        Object.values(eventData.namespaces).forEach((namespace: unknown) => {
+          if (
+            namespace &&
+            typeof namespace === 'object' &&
+            'accounts' in namespace &&
+            Array.isArray((namespace as { accounts: unknown }).accounts)
+          ) {
+            updatedAccounts.push(...(namespace as { accounts: string[] }).accounts)
+          }
+        })
+      }
       accounts.value = updatedAccounts
     }
   }
