@@ -210,7 +210,7 @@
     if (walletStore.walletInfo?.balance) {
       return formatBalance(walletStore.walletInfo.balance.confirmed_wallet_balance)
     }
-    return '0.000000'
+    return '0.00'
   })
 
   const isWalletConnected = computed(() => walletStore.isConnected)

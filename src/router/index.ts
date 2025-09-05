@@ -81,7 +81,6 @@ const router = createRouter({
         requiresAuth: false,
       },
     },
-    // Catch all route
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
@@ -90,33 +89,22 @@ const router = createRouter({
   ],
 })
 
-// Navigation guard for authentication
 router.beforeEach((to, from, next) => {
-  // Set page title
   document.title = `${to.meta.title} - Penguin-pool`
 
-  // Get user store to check authentication status
   const userStore = useUserStore()
   const isAuthenticated = userStore.isAuthenticated
 
-  // Check authentication requirements
   if (to.meta.requiresAuth) {
     if (isAuthenticated) {
-      // User is authenticated, allow access
       next()
     } else {
-      // User is not authenticated, redirect to auth page
-      console.log('Route requires authentication, redirecting to login')
       next('/auth')
     }
   } else {
-    // Route doesn't require auth
     if (to.path === '/auth' && isAuthenticated) {
-      // User is already authenticated, redirect to dashboard
-      console.log('User already authenticated, redirecting to dashboard')
       next('/dashboard')
     } else {
-      // Allow access to non-auth routes
       next()
     }
   }

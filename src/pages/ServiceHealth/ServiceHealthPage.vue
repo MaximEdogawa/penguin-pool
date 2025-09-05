@@ -516,10 +516,10 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted, type Ref } from 'vue'
-  import { io, type Socket } from 'socket.io-client'
   import { useUptime } from '@/features/uptime/composables/useUptime'
   import { uptimeService } from '@/features/uptime/services/UptimeService'
+  import { io, type Socket } from 'socket.io-client'
+  import { computed, onMounted, onUnmounted, ref, type Ref } from 'vue'
 
   // Configuration
   const KURRENTDB_URL = 'http://localhost:2113'
@@ -539,7 +539,6 @@
     refreshData,
     setPeriod,
     watchAutoRefresh,
-    // WebSocket state for real-time updates (handled automatically by composable)
   } = useUptime()
 
   // WebSocket state
@@ -633,7 +632,7 @@
         wsConnected.value = false
         wsConnecting.value = false
         wsConnectionStatus.value = `Disconnected (${reason})`
-        wsConnectionTime.value = null // Reset connection time on disconnect
+        wsConnectionTime.value = null
         addMessage('warning', `WebSocket disconnected: ${reason}`)
       })
 
@@ -641,7 +640,7 @@
         wsConnected.value = false
         wsConnecting.value = false
         wsConnectionStatus.value = 'Connection error'
-        wsConnectionTime.value = null // Reset connection time on error
+        wsConnectionTime.value = null
         addMessage('error', 'WebSocket connection error')
         console.error('WebSocket error:', error)
       })
@@ -668,7 +667,6 @@
     })
     lastSendWSMessageTime.value = new Date()
 
-    // Keep only last 100 messages
     if (wsMessages.value.length > 100) {
       wsMessages.value = wsMessages.value.slice(0, 100)
     }
@@ -732,13 +730,11 @@
     dbChecking.value = false
   }
 
-  // Database health check methods
   const checkDBHealth = async () => {
     dbChecking.value = true
     const startTime = Date.now()
 
     try {
-      // Connect directly to KurrentDB using the /info endpoint
       const response = await fetch(`${KURRENTDB_URL}/info`)
       const endTime = Date.now()
       const responseTime = endTime - startTime
@@ -746,7 +742,6 @@
       if (response.ok) {
         const data = await response.json()
 
-        // Define response time thresholds
         const EXCELLENT_THRESHOLD = 50 // ms - excellent performance
         const GOOD_THRESHOLD = 100 // ms - good performance
         const ACCEPTABLE_THRESHOLD = 500 // ms - acceptable performance
@@ -762,9 +757,7 @@
           performanceGrade = 'acceptable'
         } else {
           performanceGrade = 'slow'
-          // Only mark as degraded if response time is very slow
           if (responseTime > 1000) {
-            // 1 second
             status = 'degraded'
           }
         }
@@ -839,7 +832,7 @@
     wsConnected.value = false
     wsConnecting.value = false
     wsConnectionStatus.value = 'Disconnected'
-    wsConnectionTime.value = null // Reset connection time
+    wsConnectionTime.value = null
     httpStatus.value = ''
     httpChecking.value = false
     httpResponseTime.value = null
@@ -848,7 +841,6 @@
     dbChecking.value = false
     dbResponseTime.value = null
     dbDetails.value = null
-    // overallHealth is computed, so we don't need to reset it
     wsMessages.value = []
     clearError()
     addMessage('info', 'All data cleared.')
@@ -919,7 +911,7 @@
       case 'unhealthy':
         return 'down'
       default:
-        return 'degraded' // Changed from 'down' to 'degraded' for unknown status
+        return 'degraded'
     }
   }
 

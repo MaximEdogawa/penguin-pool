@@ -168,6 +168,8 @@
   },
   "active": "762a427def224add",
   "lastOpenFiles": [
+    "technical-info/TESTING_SUMMARY.md",
+    "technical-info/PORT_SETUP.md",
     "technical-info/CHIA_WALLET_CONNECT_SETUP.md",
     "technical-info/WALLET_CONNECT_SETUP.md",
     "WALLET_CONNECT_SETUP.md",
@@ -201,8 +203,6 @@
     "implementation/TICKET-002/SIDEBAR_COLLAPSE",
     "implementation/TICKET-002/README.md",
     "implementation/TICKET-002/HEADER_SIDEBAR",
-    "implementation/TICKET-002/CUSTOM_THEMES.md",
-    "implementation/TICKET-002",
-    "implementation/README.md"
+    "implementation/TICKET-002"
   ]
 }
