@@ -49,21 +49,12 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   // Actions
   const initialize = async (): Promise<void> => {
     try {
-      console.log('Initializing WalletConnect store...')
-
-      // Only initialize if not already done
       if (!sageWalletConnectService.isInitialized()) {
-        console.log('Initializing WalletConnect service...')
         await sageWalletConnectService.initialize()
-        console.log('WalletConnect service initialized')
       } else {
         console.log('WalletConnect service already initialized')
       }
-
-      // Always try to restore session after initialization
-      console.log('Attempting to restore session...')
       await restoreSession()
-      console.log('Session restoration completed')
     } catch (err) {
       console.error('Failed to initialize Wallet Connect:', err)
       error.value = err instanceof Error ? err.message : 'Initialization failed'
@@ -101,7 +92,6 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     approval: () => Promise<unknown>
   } | null> => {
     try {
-      // Ensure service is initialized before starting connection
       if (!sageWalletConnectService.isInitialized()) {
         await sageWalletConnectService.initialize()
       }
@@ -115,10 +105,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const disconnect = async (): Promise<DisconnectResult> => {
     try {
-      // Use force reset to ensure complete cleanup
       await sageWalletConnectService.forceReset()
-
-      // Clear state
       isConnected.value = false
       session.value = null
       accounts.value = []
@@ -126,10 +113,8 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       walletInfo.value = null
       error.value = null
 
-      // Remove event listeners
       removeEventListeners()
 
-      // Logout user from the app
       const userStore = useUserStore()
       userStore.logout()
 
@@ -193,7 +178,6 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const refreshWalletInfo = async (): Promise<ChiaWalletInfo | null> => {
     try {
-      console.log('Refreshing wallet info...')
       const info = await sageWalletConnectService.refreshWalletInfo()
       if (info) {
         walletInfo.value = { ...info }
@@ -262,37 +246,28 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   }
 
   const handleSessionDelete = (): void => {
-    // console.log('Session deleted:', event)
     isConnected.value = false
     session.value = null
     accounts.value = []
     chainId.value = null
     walletInfo.value = null
-
-    // Logout user from the app
     const userStore = useUserStore()
     userStore.logout()
   }
 
   const handleSessionExpire = (): void => {
-    // console.log('Session expired:', event)
     isConnected.value = false
     session.value = null
     accounts.value = []
     chainId.value = null
     walletInfo.value = null
-
-    // Logout user from the app
     const userStore = useUserStore()
     userStore.logout()
   }
 
   const handleSessionUpdate = (event: WalletConnectEvent): void => {
-    // console.log('Session updated:', event)
-    // Update session data if needed
     if (event.data && typeof event.data === 'object' && 'namespaces' in event.data) {
       const eventData = event.data as { namespaces: Record<string, unknown> }
-      // Extract updated accounts
       const updatedAccounts: string[] = []
       if (eventData.namespaces) {
         Object.values(eventData.namespaces).forEach((namespace: unknown) => {
@@ -310,10 +285,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     }
   }
 
-  const handleSessionApprove = (): void => {
-    // console.log('Session approved:', event)
-    // Session is already handled in connect method
-  }
+  const handleSessionApprove = (): void => {}
 
   const handleSessionReject = (event: WalletConnectEvent): void => {
     console.log('Session rejected:', event)

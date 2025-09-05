@@ -310,7 +310,6 @@
       isRefreshingBalance = true
       try {
         await walletStore.refreshWalletInfo()
-        console.log('Wallet balance refreshed successfully')
       } catch (error) {
         console.error('Failed to refresh wallet balance:', error)
       } finally {
@@ -344,7 +343,6 @@
   // Watch for wallet connection changes
   watch(isWalletConnected, async connected => {
     if (connected) {
-      console.log('Wallet connected, refreshing balance...')
       await refreshBalance()
     }
   })

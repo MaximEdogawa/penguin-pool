@@ -283,12 +283,6 @@ export class SageWalletConnectService {
       if (!this.fingerprint) {
         throw new Error('Fingerprint is not loaded')
       }
-      console.log(`request to wallet attempt: ${method}`, {
-        hasClient: !!this.client,
-        hasSession: !!this.session,
-        hasFingerprint: !!this.fingerprint,
-        sessionTopic: this.session?.topic,
-      })
       const result = await this.client.request<T | { error: Record<string, unknown> }>({
         topic: this.session.topic,
         chainId: CHIA_CHAIN_ID,
@@ -299,10 +293,10 @@ export class SageWalletConnectService {
       })
 
       if (result && typeof result === 'object' && 'error' in result) {
-        console.error(`response from wallet for ${method} is not a valid response`, result)
+        console.error(`Response from wallet for ${method} is not a valid response`, result)
         return undefined
       }
-      // Wrap the direct response in a data field to match the expected type
+      console.log(`Response from wallet for ${method}: `, result)
       return { data: result as T }
     } catch (error) {
       console.error(`request failed for ${method}:`, error)
