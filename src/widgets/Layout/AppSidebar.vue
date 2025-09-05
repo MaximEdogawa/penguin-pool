@@ -135,7 +135,7 @@
 <script setup lang="ts">
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
-  import { computed } from 'vue'
+  import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
 
   // Router
@@ -161,8 +161,22 @@
   }>()
 
   // Small screen detection
+  const windowWidth = ref(window.innerWidth)
   const isSmallScreen = computed(() => {
-    return window.innerWidth <= 1023
+    return windowWidth.value <= 1023
+  })
+
+  // Update window width on resize
+  const updateWindowWidth = () => {
+    windowWidth.value = window.innerWidth
+  }
+
+  onMounted(() => {
+    window.addEventListener('resize', updateWindowWidth)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('resize', updateWindowWidth)
   })
 
   // Navigation items for PrimeVue Menu
@@ -283,7 +297,7 @@
   }
 
   .collapse-toggle {
-    @apply p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-700/30 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200;
+    @apply rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-700/30 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200;
   }
 
   /* Collapse toggle button styling */
@@ -541,17 +555,17 @@
 
   @media (max-width: 1200px) {
     .sidebar {
-      width: 25vw; /* 25% on medium screens */
+      width: 25vw;
     }
 
     .sidebar.sidebar-collapsed {
-      width: 8vw; /* 8% when collapsed on medium screens */
+      width: 8vw;
     }
   }
 
   @media (max-width: 1023px) {
     .sidebar {
-      width: 80vw; /* 80% of viewport width on mobile */
+      width: 20vw;
       transform: translateX(-100%); /* Hidden by default */
       background: rgb(255 255 255 / 0.95); /* More opaque for mobile */
       backdrop-filter: blur(20px); /* Moderate blur for mobile */
@@ -565,26 +579,26 @@
     }
 
     .sidebar.sidebar-open {
-      transform: translateX(0); /* Show when toggled */
+      transform: translateX(0);
     }
 
     .sidebar.sidebar-collapsed {
-      width: 80vw; /* Keep 80% width when collapsed on mobile */
+      width: 20vw;
     }
 
     .sidebar.dark {
-      background: rgb(31 41 55 / 0.95); /* More opaque dark mode */
+      background: rgb(31 41 55 / 0.95);
       border: 1px solid rgb(75 85 99 / 0.3);
     }
   }
 
   @media (max-width: 768px) {
     .sidebar {
-      width: 20vw; /* 85% of viewport width on mobile */
+      width: 15vw;
     }
 
     .sidebar.sidebar-collapsed {
-      width: 20vw; /* Keep 85% width when collapsed */
+      width: 18vw;
     }
   }
 
