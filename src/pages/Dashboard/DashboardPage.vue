@@ -21,18 +21,18 @@
             <button
               v-if="isWalletConnected"
               @click="refreshBalance"
-              :disabled="isBalanceLoading"
-              class="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+              :disabled="isRefreshingBalance"
+              class="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title="Refresh balance"
             >
-              <i :class="['pi', isBalanceLoading ? 'pi-spin pi-spinner' : 'pi-refresh']"></i>
+              <i :class="['pi', isRefreshingBalance ? 'pi-spin pi-spinner' : 'pi-refresh']"></i>
             </button>
           </div>
 
           <div class="space-y-2">
             <div class="flex items-center space-x-2">
               <p class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
-                {{ userBalance }} XCH
+                {{ userBalance }} {{ ticker }}
               </p>
               <div v-if="isBalanceLoading" class="loading-spinner">
                 <i class="pi pi-spin pi-spinner text-sm text-primary-600"></i>
@@ -44,7 +44,8 @@
               <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>Spendable:</span>
                 <span
-                  >{{ formatBalance(walletStore.walletInfo.balance.spendable_balance) }} XCH</span
+                  >{{ formatBalance(walletStore.walletInfo.balance.spendable_balance) }}
+                  {{ ticker }}</span
                 >
               </div>
               <div
@@ -53,10 +54,8 @@
               >
                 <span>Unconfirmed:</span>
                 <span
-                  >{{
-                    formatBalance(walletStore.walletInfo.balance.unconfirmed_wallet_balance)
-                  }}
-                  XCH</span
+                  >{{ formatBalance(walletStore.walletInfo.balance.unconfirmed_wallet_balance) }}
+                  {{ ticker }}</span
                 >
               </div>
             </div>
@@ -227,6 +226,7 @@
 <script setup lang="ts">
   import PageFooter from '@/components/PageFooter.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
+  import { sageWalletConnectService } from '@/features/walletConnect/services/SageWalletConnectService'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
   import { computed, onMounted, ref, watch } from 'vue'
 
@@ -243,6 +243,15 @@
 
   const isWalletConnected = computed(() => walletStore.isConnected)
   const isBalanceLoading = computed(() => walletStore.isConnecting)
+
+  // Get network info and determine ticker
+  const networkInfo = computed(() => walletStore.getNetworkInfo())
+  const ticker = computed(() => {
+    if (networkInfo.value?.isTestnet) {
+      return 'TXCH'
+    }
+    return 'XCH'
+  })
 
   // Format balance helper
   const formatBalance = (mojos: number): string => {
@@ -302,23 +311,24 @@
   }
 
   // Flag to prevent multiple simultaneous balance refresh calls
-  let isRefreshingBalance = false
+  const isRefreshingBalance = ref(false)
 
   // Refresh wallet balance
   const refreshBalance = async () => {
-    if (isWalletConnected.value && !isRefreshingBalance) {
-      isRefreshingBalance = true
+    if (isWalletConnected.value && !isRefreshingBalance.value) {
+      isRefreshingBalance.value = true
       try {
-        // Refresh wallet info by re-fetching from service
         if (walletStore.isConnected) {
-          // The walletInfo should already be available from the store
-          // If we need to refresh it, we would call the service directly
-          console.log('Wallet info refreshed')
+          const freshWalletInfo = await sageWalletConnectService.getWalletInfo()
+          if (freshWalletInfo) {
+            walletStore.walletInfo = freshWalletInfo
+            console.log('Wallet info refreshed with fresh balance:', freshWalletInfo)
+          }
         }
       } catch (error) {
         console.error('Failed to refresh wallet balance:', error)
       } finally {
-        isRefreshingBalance = false
+        isRefreshingBalance.value = false
       }
     }
   }
