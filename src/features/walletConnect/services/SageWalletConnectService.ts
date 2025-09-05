@@ -36,21 +36,15 @@ export class SageWalletConnectService {
    */
   async initialize(): Promise<void> {
     try {
-      console.log('Initializing WalletConnect service...')
-      console.log('Project ID:', environment.wallet.walletConnect.projectId)
-
       if (this.client) {
         console.log('WalletConnect client already initialized, skipping...')
         return
       }
 
       if (SageWalletConnectService.isInitializing) {
-        console.log('WalletConnect initialization already in progress, waiting...')
-        // Wait for initialization to complete
         while (SageWalletConnectService.isInitializing) {
           await new Promise(resolve => setTimeout(resolve, 100))
         }
-        // Check if client was initialized by another instance
         if (
           typeof window !== 'undefined' &&
           (window as unknown as Record<string, unknown>).__WALLETCONNECT_SIGN_CLIENT__
@@ -65,23 +59,17 @@ export class SageWalletConnectService {
         !environment.wallet.walletConnect.projectId ||
         environment.wallet.walletConnect.projectId === 'your_wallet_connect_project_id_here'
       ) {
-        console.error(
-          'WalletConnect Project ID not configured:',
-          environment.wallet.walletConnect.projectId
-        )
         throw new Error(
-          'WalletConnect Project ID is not configured. Please set a valid project ID.'
+          'WalletConnect Project ID is not configured. Please set a valid project ID. '
         )
       }
 
       SageWalletConnectService.isInitializing = true
 
-      // Check if SignClient is already initialized globally
       if (
         typeof window !== 'undefined' &&
         (window as unknown as Record<string, unknown>).__WALLETCONNECT_SIGN_CLIENT__
       ) {
-        console.log('SignClient already initialized globally, reusing...')
         this.client = (window as unknown as Record<string, unknown>)
           .__WALLETCONNECT_SIGN_CLIENT__ as InstanceType<typeof SignClient>
       } else {
@@ -108,8 +96,6 @@ export class SageWalletConnectService {
 
       this.setupEventListeners()
       await this.checkPersistedState()
-
-      console.log('WalletConnect initialized successfully')
     } catch (error) {
       console.error('Failed to initialize WalletConnect:', error)
       console.error('Error details:', {
@@ -146,22 +132,12 @@ export class SageWalletConnectService {
         optionalNamespaces: REQUIRED_NAMESPACES,
       })
 
-      console.log('Connect - URI generated', {
-        uri: uri?.substring(0, 50) + '...',
-      })
-
       if (uri) {
         this.web3Modal.openModal({ uri })
-        console.log('Connect - Modal opened, waiting for approval')
-
         const session = await approval()
-        console.log('Connect - Session approved', { topic: session.topic })
-
         this.onSessionConnected(session)
         this.pairings = this.client.pairing.getAll({ active: true })
         this.web3Modal.closeModal()
-
-        console.log('Connect - Connection complete')
       }
 
       return {
@@ -170,7 +146,6 @@ export class SageWalletConnectService {
         accounts: this.extractAccounts(this.session!),
       }
     } catch (error) {
-      console.error('Wallet connection failed:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Connection failed',
@@ -195,10 +170,6 @@ export class SageWalletConnectService {
         optionalNamespaces: REQUIRED_NAMESPACES,
       })
 
-      console.log('StartConnection - URI generated', {
-        uri: uri?.substring(0, 50) + '...',
-      })
-
       if (uri) {
         // Wrap the approval function to handle session connection
         const wrappedApproval = async () => {
@@ -213,7 +184,6 @@ export class SageWalletConnectService {
         return { uri, approval: wrappedApproval }
       }
 
-      console.warn('StartConnection - No URI generated')
       return null
     } catch (error) {
       console.error('Failed to start connection:', error)
@@ -281,149 +251,45 @@ export class SageWalletConnectService {
    * Get wallet information
    */
   async getWalletInfo(): Promise<SageWalletInfo | null> {
-    console.log('getWalletInfo called - session:', !!this.session, 'fingerprint:', this.fingerprint)
+    if (!this.session) return null
+    if (!this.fingerprint) this.onSessionConnected(this.session)
+    if (!this.fingerprint) return null
 
-    if (!this.session) {
-      console.warn('Cannot get wallet info: no session')
-      console.log('Session details:', this.session)
-      return null
+    const result = await this.getCurrentAddress()
+
+    const walletInfo: SageWalletInfo = {
+      address: result!.address || '',
+      balance: null,
+      fingerprint: parseInt(this.fingerprint),
+      isConnected: true,
     }
-
-    // If no fingerprint, try to extract it from session
-    if (!this.fingerprint) {
-      console.log('No fingerprint found, attempting to extract from session')
-      this.onSessionConnected(this.session)
-    }
-
-    if (!this.fingerprint) {
-      console.warn('Cannot get wallet info: no fingerprint available')
-      return null
-    }
-
-    console.log('Getting wallet info for fingerprint:', this.fingerprint)
-
-    try {
-      // Extract address from session accounts
-      const accounts = this.extractAccounts(this.session)
-      const chiaAccount = accounts.find(
-        account => account.startsWith('xch') || account.startsWith('txch')
-      )
-      const fallbackAddress = chiaAccount || `chia:testnet:${this.fingerprint}`
-
-      console.log('Session accounts:', accounts)
-      console.log('Chia account found:', chiaAccount)
-      console.log('Fallback address:', fallbackAddress)
-
-      // Try to get real wallet data using RPC calls
-      let address = fallbackAddress
-      let balance = {
-        confirmed_wallet_balance: 0,
-        unconfirmed_wallet_balance: 0,
-        spendable_balance: 0,
-        pending_change: 0,
-        max_send_amount: 0,
-        unspent_coin_count: 0,
-        pending_coin_removal_count: 0,
-      }
-
-      console.log('Attempting to get wallet info using RPC calls...')
-
-      try {
-        // Get current address
-        try {
-          console.log('Getting current address...')
-          const addressResponse = await this.request<{ address: string }>(
-            SageMethods.CHIA_GET_ADDRESS,
-            {}
-          )
-          if (addressResponse && addressResponse.address) {
-            address = addressResponse.address
-            console.log('Current address:', address)
-          }
-        } catch (addressError) {
-          console.warn('Failed to get current address:', addressError)
-          // Keep fallback address
-        }
-
-        // Get wallet balance - temporarily skip due to hex decoding issues
-        // TODO: Find the correct method/parameters for getting native XCH balance
-        try {
-          console.log('Skipping wallet balance RPC call due to hex decoding issues...')
-          // For now, use a default balance structure
-          balance = {
-            confirmed_wallet_balance: 0,
-            unconfirmed_wallet_balance: 0,
-            spendable_balance: 0,
-            pending_change: 0,
-            max_send_amount: 0,
-            unspent_coin_count: 0,
-            pending_coin_removal_count: 0,
-          }
-          console.log('Using default balance structure:', balance)
-        } catch (error) {
-          console.error('Failed to set default balance:', error)
-        }
-
-        // Return wallet info with real data
-        const walletInfo: SageWalletInfo = {
-          address,
-          balance,
-          fingerprint: parseInt(this.fingerprint),
-          isConnected: true,
-        }
-
-        console.log('Returning wallet info:', walletInfo)
-        return walletInfo
-      } catch (error) {
-        console.error('Failed to get wallet info:', error)
-        // Return basic info with fallback values
-        const walletInfo: SageWalletInfo = {
-          address: fallbackAddress,
-          balance: {
-            confirmed_wallet_balance: 0,
-            unconfirmed_wallet_balance: 0,
-            spendable_balance: 0,
-            pending_change: 0,
-            max_send_amount: 0,
-            unspent_coin_count: 0,
-            pending_coin_removal_count: 0,
-          },
-          fingerprint: parseInt(this.fingerprint),
-          isConnected: true,
-        }
-        return walletInfo
-      }
-    } catch (error) {
-      console.error('Failed to get wallet info:', error)
-      return null
-    }
+    return walletInfo
   }
 
   /**
-   * Make RPC request to Chia wallet
+   * Make request to wallet
    */
-  async request<T>(method: string, data: Record<string, unknown>): Promise<T> {
-    console.log(`RPC request attempt: ${method}`, {
-      hasClient: !!this.client,
-      hasSession: !!this.session,
-      hasFingerprint: !!this.fingerprint,
-      sessionTopic: this.session?.topic,
-    })
-
-    if (!this.client) {
-      throw new Error('WalletConnect is not initialized')
-    }
-    if (!this.session) {
-      throw new Error('Session is not connected')
-    }
-    if (!this.fingerprint) {
-      throw new Error('Fingerprint is not loaded')
-    }
-
-    console.log(`Making RPC request: ${method}`, data)
-
+  async request<T>(
+    method: string,
+    data: Record<string, unknown>
+  ): Promise<{ data: T } | undefined> {
     try {
-      const result = await this.client.request<{ data: T } | { error: Record<string, unknown> }>({
+      if (!this.client) {
+        throw new Error('WalletConnect is not initialized')
+      }
+      if (!this.session) {
+        throw new Error('Session is not connected')
+      }
+      if (!this.fingerprint) {
+        throw new Error('Fingerprint is not loaded')
+      }
+      console.log(`request to wallet attempt: ${method}`, {
+        hasClient: !!this.client,
+        hasSession: !!this.session,
+        hasFingerprint: !!this.fingerprint,
+        sessionTopic: this.session?.topic,
+      })
+      const result = await this.client.request<T | { error: Record<string, unknown> }>({
         topic: this.session.topic,
         chainId: CHIA_CHAIN_ID,
         request: {
@@ -432,24 +298,16 @@ export class SageWalletConnectService {
         },
       })
 
-      console.log(`RPC response for ${method}:`, result)
-
-      // Handle different response types
-      if (typeof result === 'string') {
-        // Some methods return strings directly (like chip0002_chainId)
-        return result
+      if (result && typeof result === 'object' && 'error' in result) {
+        console.error(`response from wallet for ${method} is not a valid response`, result)
+        return undefined
       }
-
-      if ('error' in result) {
-        console.error(`RPC error for ${method}:`, result.error)
-        throw new Error(JSON.stringify(result.error))
-      }
-
-      return result.data
+      // Wrap the direct response in a data field to match the expected type
+      return { data: result as T }
     } catch (error) {
-      console.error(`RPC request failed for ${method}:`, error)
-      throw error
+      console.error(`request failed for ${method}:`, error)
     }
+    return
   }
 
   /**
@@ -493,16 +351,20 @@ export class SageWalletConnectService {
     }
   }
 
+  async getCurrentAddress(): Promise<{ address: string } | null> {
+    try {
+      const result = await this.request<{ address: string }>(SageMethods.CHIA_GET_ADDRESS, {})
+      return result?.data || null
+    } catch (addressError) {
+      console.warn('Failed to get current address:', addressError)
+    }
+    return null
+  }
+
   /**
    * Get current connection state
    */
   getConnectionState(): SageConnectionState {
-    console.log(
-      'getConnectionState called - session:',
-      !!this.session,
-      'fingerprint:',
-      this.fingerprint
-    )
     return {
       isConnected: !!this.session,
       isConnecting: false,
@@ -545,7 +407,6 @@ export class SageWalletConnectService {
    * Refresh wallet info (useful for getting updated balance)
    */
   async refreshWalletInfo(): Promise<SageWalletInfo | null> {
-    console.log('Refreshing wallet info...')
     return await this.getWalletInfo()
   }
 
@@ -559,8 +420,6 @@ export class SageWalletConnectService {
         return false
       }
 
-      console.log('Testing RPC connection...')
-      // Test with a simple method like get_sync_status
       const response = await this.client!.request<boolean>({
         topic: this.session.topic,
         chainId: CHIA_CHAIN_ID,
@@ -586,29 +445,18 @@ export class SageWalletConnectService {
     return { chainId, isTestnet }
   }
 
-  // Private methods
-
   private onSessionConnected(session: SessionTypes.Struct) {
-    console.log('Session connected, namespaces:', session.namespaces)
-
     const allNamespaceAccounts = session.namespaces
       ? Object.values(session.namespaces)
           .map(namespace => namespace.accounts)
           .flat()
       : []
-
-    console.log('All namespace accounts:', allNamespaceAccounts)
-
     this.session = session
 
-    // Try different ways to extract fingerprint
     if (allNamespaceAccounts.length > 0) {
       const firstAccount = allNamespaceAccounts[0]
-      console.log('First account:', firstAccount)
 
-      // Try splitting by ':' and taking the last part
       const parts = firstAccount.split(':')
-      console.log('Account parts:', parts)
 
       if (parts.length >= 3) {
         this.fingerprint = parts[2]
@@ -618,22 +466,13 @@ export class SageWalletConnectService {
         this.fingerprint = parts[0]
       }
     } else {
-      // If no accounts found, try to extract from session topic or use a fallback
-      console.log('No accounts found, using session topic as fallback')
       this.fingerprint = session.topic.substring(0, 8) // Use first 8 chars of topic as fallback
     }
 
     // Ensure fingerprint is set
     if (!this.fingerprint) {
-      console.log('No fingerprint extracted, using session topic')
       this.fingerprint = session.topic.substring(0, 8)
     }
-
-    console.log('Session connected', {
-      topic: session.topic,
-      accounts: allNamespaceAccounts,
-      fingerprint: this.fingerprint,
-    })
   }
 
   private reset() {
@@ -646,31 +485,21 @@ export class SageWalletConnectService {
       throw new Error('WalletConnect is not initialized')
     }
 
-    console.log('Checking persisted state...')
     this.pairings = this.client.pairing.getAll({ active: true })
-    console.log('Active pairings:', this.pairings.length)
 
-    // Check if we already have a session
     if (this.session) {
       console.log('Session already exists, skipping restoration')
       return
     }
 
-    // Try to restore session from persisted state
-    console.log('Session length:', this.client.session.length)
     if (this.client.session.length) {
       const lastKeyIndex = this.client.session.keys.length - 1
       const session = this.client.session.get(this.client.session.keys[lastKeyIndex])
-      console.log('Retrieved session:', session)
 
-      // Check if session is still valid (not expired)
       if (session && session.expiry > Date.now() / 1000) {
-        console.log('Session is valid, restoring...')
         this.onSessionConnected(session)
         this.emitEvent('session_restored', session)
       } else {
-        console.log('Session expired, cleaning up')
-        // Session expired, clean up
         this.reset()
       }
     } else {
@@ -682,7 +511,6 @@ export class SageWalletConnectService {
     if (!this.client) return
 
     this.client.on('session_update', ({ topic, params }) => {
-      console.log('Session update', { topic, params })
       const { namespaces } = params
       const session = this.client!.session.get(topic)
       const updatedSession = { ...session, namespaces }
@@ -691,7 +519,6 @@ export class SageWalletConnectService {
     })
 
     this.client.on('session_delete', ({ topic }) => {
-      console.log('Session deleted', { topic })
       this.reset()
       this.emitEvent('session_delete', { topic })
     })
@@ -703,31 +530,22 @@ export class SageWalletConnectService {
     this.client.on('session_proposal', proposal => {
       console.log('Session proposal', {
         id: proposal.id,
-        proposer: 'Unknown', // Simplified for now
+        proposer: 'Unknown',
       })
     })
 
-    // Note: session_approve and session_reject are not standard WalletConnect v2 events
-    // These would be handled through the connection flow
-
     this.client.on('session_expire', ({ topic }) => {
-      console.log('Session expired', { topic })
       this.reset()
       this.emitEvent('session_expire', { topic })
     })
 
     this.client.on('session_request', event => {
-      console.log('Session request', event)
       this.emitEvent('session_request', event)
     })
 
     this.client.on('session_request_sent', event => {
-      console.log('Session request sent', event)
       this.emitEvent('session_request_sent', event)
     })
-
-    // Note: session_response is not a standard WalletConnect v2 event
-    // This would be handled through the request/response flow
   }
 
   private extractAccounts(session: SessionTypes.Struct): string[] {
@@ -783,5 +601,4 @@ export class SageWalletConnectService {
   }
 }
 
-// Export singleton instance
 export const sageWalletConnectService = new SageWalletConnectService()

@@ -133,7 +133,12 @@
             <div class="info-item">
               <span class="label">Balance:</span>
               <span class="value"
-                >{{ formatBalance(walletInfo.balance.confirmed_wallet_balance) }} XCH</span
+                >{{
+                  walletInfo.balance
+                    ? formatBalance(walletInfo.balance.confirmed_wallet_balance)
+                    : '0.000000'
+                }}
+                XCH</span
               >
             </div>
           </div>

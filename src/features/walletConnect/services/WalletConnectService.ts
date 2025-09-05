@@ -220,46 +220,6 @@ export class WalletConnectService {
   }
 
   /**
-   * Get wallet info for Chia network
-   */
-  async getWalletInfo(): Promise<{ address: string } | null> {
-    try {
-      // Check if we're in demo mode
-      if (
-        !this.config.projectId ||
-        this.config.projectId === 'your_wallet_connect_project_id_here'
-      ) {
-        console.log('Demo mode: returning fake wallet info')
-        return {
-          address: 'xch1demo123456789abcdefghijklmnopqrstuvwxyz',
-        }
-      }
-
-      const session = this.getStoredSession()
-      if (!session || !this.client) {
-        return null
-      }
-
-      // Extract Chia address from session
-      const accounts = this.extractAccounts(session)
-      const chiaAccount = accounts.find(
-        account => account.startsWith('xch') || account.startsWith('txch')
-      )
-
-      if (!chiaAccount) {
-        return null
-      }
-
-      return {
-        address: chiaAccount,
-      }
-    } catch (error) {
-      console.error('Failed to get wallet info:', error)
-      return null
-    }
-  }
-
-  /**
    * Send a request to the connected wallet
    */
   async sendRequest(method: string, params: unknown[] = []): Promise<unknown> {

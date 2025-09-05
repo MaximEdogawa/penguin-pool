@@ -124,7 +124,7 @@ export interface SageWalletInfo {
     max_send_amount: number
     unspent_coin_count: number
     pending_coin_removal_count: number
-  }
+  } | null
   isConnected: boolean
 }
 

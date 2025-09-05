@@ -309,7 +309,6 @@
     if (isWalletConnected.value && !isRefreshingBalance) {
       isRefreshingBalance = true
       try {
-        console.log('Refreshing wallet balance...')
         await walletStore.refreshWalletInfo()
         console.log('Wallet balance refreshed successfully')
       } catch (error) {

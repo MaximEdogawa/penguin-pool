@@ -8,6 +8,7 @@ import type {
   ChiaWalletInfo,
   ConnectionResult,
   DisconnectResult,
+  SageWalletInfo,
   WalletConnectEvent,
   WalletConnectSession,
   WalletConnectState,
@@ -21,7 +22,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   const accounts = ref<string[]>([])
   const chainId = ref<string | null>(null)
   const error = ref<string | null>(null)
-  const walletInfo = ref<ChiaWalletInfo | null>(null)
+  const walletInfo = ref<SageWalletInfo | null>(null)
 
   // Getters
   const state = computed<WalletConnectState>(() => ({
@@ -80,11 +81,6 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
         session.value = result.session
         accounts.value = result.accounts || []
         isConnected.value = true
-
-        // Get wallet info
-        walletInfo.value = await sageWalletConnectService.getWalletInfo()
-
-        // Set up event listeners
         setupEventListeners()
       } else {
         error.value = result.error || 'Connection failed'
@@ -154,18 +150,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
         session.value = currentSession
         accounts.value = extractAccountsFromSession(currentSession)
         isConnected.value = true
-
-        // Get wallet info
-        walletInfo.value = await sageWalletConnectService.getWalletInfo()
-
-        // Set up event listeners
         setupEventListeners()
-
-        console.log('Session restored successfully:', {
-          topic: currentSession.topic,
-          accounts: accounts.value,
-          walletInfo: walletInfo.value,
-        })
       } else {
         console.log('No valid session to restore')
       }
@@ -197,7 +182,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     error.value = null
   }
 
-  const getWalletInfo = async (): Promise<ChiaWalletInfo | null> => {
+  const getWalletInfo = async (): Promise<SageWalletInfo | null> => {
     try {
       return await sageWalletConnectService.getWalletInfo()
     } catch (err) {
@@ -211,8 +196,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       console.log('Refreshing wallet info...')
       const info = await sageWalletConnectService.refreshWalletInfo()
       if (info) {
-        walletInfo.value = info
-        console.log('Wallet info refreshed successfully:', info)
+        walletInfo.value = { ...info }
       } else {
         console.warn('No wallet info returned from refresh')
       }
@@ -366,7 +350,14 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   // Chia-specific RPC methods
   const makeChiaRequest = async <T>(method: string, data: Record<string, unknown>): Promise<T> => {
     try {
-      return await sageWalletConnectService.request<T>(method, data)
+      const result = await sageWalletConnectService.request<T>(method, data)
+      if (!result) {
+        throw new Error('Request failed: No response received')
+      }
+      if ('error' in result) {
+        throw new Error(`Request failed: ${JSON.stringify(result.error)}`)
+      }
+      return result.data
     } catch (err) {
       console.error(`Chia RPC request failed (${method}):`, err)
       throw err

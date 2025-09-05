@@ -223,23 +223,19 @@
     showWalletModal.value = false
   }
 
-  // Initialize Wallet Connect on mount
   onMounted(async () => {
     try {
       await walletConnectStore.initialize()
 
-      // Check if already connected and redirect if so
       if (walletConnectStore.isConnected) {
         const walletInfo = await walletConnectStore.getWalletInfo()
         if (walletInfo) {
-          await userStore.login(walletInfo.address, 'wallet-user')
+          await userStore.login(walletInfo.fingerprint.toString(), 'wallet-user')
           router.push('/dashboard')
         }
       }
     } catch (error) {
       console.error('Failed to initialize Wallet Connect:', error)
-      // Don't show error to user, just log it
-      // Wallet Connect will show appropriate error when user tries to connect
     }
   })
 </script>
