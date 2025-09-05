@@ -135,6 +135,32 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
         accounts.value = extractAccountsFromSession(currentSession)
         isConnected.value = true
         setupEventListeners()
+
+        // Fetch wallet info when restoring session
+        try {
+          const fetchedWalletInfo = await sageWalletConnectService.getWalletInfo()
+          if (fetchedWalletInfo) {
+            walletInfo.value = fetchedWalletInfo
+
+            // Sync with user store if user is not already authenticated
+            const userStore = useUserStore()
+            if (!userStore.isAuthenticated && fetchedWalletInfo.address) {
+              try {
+                if (fetchedWalletInfo.fingerprint) {
+                  await userStore.login(fetchedWalletInfo.fingerprint, 'wallet-user')
+                } else {
+                  await userStore.login(fetchedWalletInfo.address, 'wallet-user')
+                }
+                console.log('User auto-logged in with restored wallet info')
+              } catch (loginError) {
+                console.warn('Failed to auto-login with restored wallet info:', loginError)
+              }
+            }
+          }
+        } catch (walletInfoError) {
+          console.warn('Failed to fetch wallet info during session restore:', walletInfoError)
+          // Don't fail the entire restore process if wallet info fetch fails
+        }
       } else {
         console.log('No valid session to restore')
       }
@@ -275,7 +301,26 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
         session.value = currentSession
         accounts.value = extractAccountsFromSession(currentSession)
         isConnected.value = true
-        walletInfo.value = await sageWalletConnectService.getWalletInfo()
+
+        const fetchedWalletInfo = await sageWalletConnectService.getWalletInfo()
+        if (fetchedWalletInfo) {
+          walletInfo.value = fetchedWalletInfo
+
+          // Sync with user store if user is not already authenticated
+          const userStore = useUserStore()
+          if (!userStore.isAuthenticated && fetchedWalletInfo.address) {
+            try {
+              if (fetchedWalletInfo.fingerprint) {
+                await userStore.login(fetchedWalletInfo.fingerprint, 'wallet-user')
+              } else {
+                await userStore.login(fetchedWalletInfo.address, 'wallet-user')
+              }
+              console.log('User auto-logged in with restored wallet info from event')
+            } catch (loginError) {
+              console.warn('Failed to auto-login with restored wallet info from event:', loginError)
+            }
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to restore session from event:', err)

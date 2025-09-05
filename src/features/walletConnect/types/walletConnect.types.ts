@@ -113,6 +113,35 @@ export interface WalletConnectEvent {
   data: unknown
 }
 
+export interface AssetBalance {
+  confirmed: string
+  spendable: string
+  spendableCoinCount: number
+}
+
+export interface CoinInfo {
+  parent_coin_info: string
+  puzzle_hash: string
+  amount: number
+}
+
+export interface LineageProof {
+  parentName: string
+  innerPuzzleHash: string
+  amount: number
+}
+
+export interface AssetCoin {
+  coin: CoinInfo
+  coinName: string
+  confirmedBlockIndex: number
+  lineageProof: LineageProof
+  locked: boolean
+  puzzle: string
+}
+
+export type AssetCoins = AssetCoin[]
+
 export interface SageWalletInfo {
   fingerprint: number
   address: string

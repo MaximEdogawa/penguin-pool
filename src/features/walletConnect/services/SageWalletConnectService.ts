@@ -6,6 +6,7 @@ import { Web3Modal } from '@web3modal/standalone'
 import { SageMethods } from '../constants/sage-methods'
 import { CHIA_CHAIN_ID, CHIA_METADATA, REQUIRED_NAMESPACES } from '../constants/wallet-connect'
 import type {
+  AssetType,
   CommandParams,
   CommandResponse,
   HandlerContext,
@@ -13,6 +14,8 @@ import type {
 } from '../types/command.types'
 import type { SageConnectionState } from '../types/sage-rpc.types'
 import type {
+  AssetBalance,
+  AssetCoins,
   ConnectionResult,
   DisconnectResult,
   SageWalletInfo,
@@ -273,11 +276,22 @@ export class SageWalletConnectService {
     if (!this.fingerprint) this.onSessionConnected(this.session)
     if (!this.fingerprint) return null
 
-    const result = await this.getCurrentAddress()
+    const currentAddress = await this.getCurrentAddress()
+    const assetBalance = await this.getAssetBalance()
 
     const walletInfo: SageWalletInfo = {
-      address: result!.address || '',
-      balance: null,
+      address: currentAddress!.address || '',
+      balance: assetBalance
+        ? {
+            confirmed_wallet_balance: parseInt(assetBalance.confirmed),
+            unconfirmed_wallet_balance: 0,
+            spendable_balance: parseInt(assetBalance.spendable),
+            pending_change: 0,
+            max_send_amount: parseInt(assetBalance.spendable),
+            unspent_coin_count: assetBalance.spendableCoinCount,
+            pending_coin_removal_count: 0,
+          }
+        : null,
       fingerprint: parseInt(this.fingerprint),
       isConnected: true,
     }
@@ -373,6 +387,38 @@ export class SageWalletConnectService {
     return null
   }
 
+  async getAssetBalance(
+    type: AssetType | null = null,
+    assetId: string | null = null
+  ): Promise<AssetBalance | null> {
+    try {
+      const result = await this.request<AssetBalance>(SageMethods.CHIP0002_GET_ASSET_BALANCE, {
+        type,
+        assetId,
+      })
+      return result?.data || null
+    } catch (addressError) {
+      console.warn('Failed to get asset balance:', addressError)
+    }
+    return null
+  }
+
+  async getAssetCoins(
+    type: AssetType | null = null,
+    assetId: string | null = null
+  ): Promise<AssetCoins | null> {
+    try {
+      const result = await this.request<AssetCoins>(SageMethods.CHIP0002_GET_ASSET_COINS, {
+        type,
+        assetId,
+      })
+      return result?.data || null
+    } catch (error) {
+      console.warn('Failed to get asset coins:', error)
+    }
+    return null
+  }
+
   /**
    * Get current connection state
    */
@@ -381,8 +427,8 @@ export class SageWalletConnectService {
       isConnected: !!this.session,
       isConnecting: false,
       fingerprint: this.fingerprint ? parseInt(this.fingerprint) : undefined,
-      address: undefined, // Will be populated when needed
-      balance: undefined, // Will be populated when needed
+      address: undefined,
+      balance: undefined,
     }
   }
 

@@ -249,6 +249,9 @@
       await walletConnectStore.initialize()
 
       if (walletConnectStore.isConnected) {
+        // Wait a moment for wallet info to be loaded during session restore
+        await new Promise(resolve => setTimeout(resolve, 500))
+
         const walletInfo = walletConnectStore.walletInfo
         if (walletInfo && walletInfo.address) {
           // Use fingerprint if available, otherwise fall back to address
@@ -260,6 +263,8 @@
             await userStore.login(walletInfo.address, 'wallet-user')
           }
           router.push('/dashboard')
+        } else {
+          console.log('Wallet connected but no wallet info available yet')
         }
       }
     } catch (error) {
