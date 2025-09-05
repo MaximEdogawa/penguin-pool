@@ -580,11 +580,11 @@
 
   @media (max-width: 768px) {
     .sidebar {
-      width: 10vw; /* 10% of viewport width on mobile */
+      width: 20vw; /* 85% of viewport width on mobile */
     }
 
     .sidebar.sidebar-collapsed {
-      width: 10vw; /* Keep 10% width when collapsed */
+      width: 20vw; /* Keep 85% width when collapsed */
     }
   }
 

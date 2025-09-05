@@ -32,7 +32,7 @@
           <div class="space-y-2">
             <div class="flex items-center space-x-2">
               <p class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
-                {{ userBalance }} XCH
+                {{ userBalance }} {{ currencySymbol }}
               </p>
               <div v-if="isBalanceLoading" class="loading-spinner">
                 <i class="pi pi-spin pi-spinner text-sm text-primary-600"></i>
@@ -44,7 +44,8 @@
               <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>Spendable:</span>
                 <span
-                  >{{ formatBalance(walletStore.walletInfo.balance.spendable_balance) }} XCH</span
+                  >{{ formatBalance(walletStore.walletInfo.balance.spendable_balance) }}
+                  {{ currencySymbol }}</span
                 >
               </div>
               <div
@@ -53,10 +54,8 @@
               >
                 <span>Unconfirmed:</span>
                 <span
-                  >{{
-                    formatBalance(walletStore.walletInfo.balance.unconfirmed_wallet_balance)
-                  }}
-                  XCH</span
+                  >{{ formatBalance(walletStore.walletInfo.balance.unconfirmed_wallet_balance) }}
+                  {{ currencySymbol }}</span
                 >
               </div>
             </div>
@@ -230,6 +229,10 @@
   const isWalletConnected = computed(() => walletStore.isConnected)
   const isBalanceLoading = computed(() => walletStore.isConnecting)
   const isDevelopment = computed(() => import.meta.env.DEV)
+
+  // Network info for currency display
+  const networkInfo = computed(() => walletStore.getNetworkInfo())
+  const currencySymbol = computed(() => (networkInfo.value.isTestnet ? 'TXCH' : 'XCH'))
 
   // Format balance helper
   const formatBalance = (mojos: number): string => {
