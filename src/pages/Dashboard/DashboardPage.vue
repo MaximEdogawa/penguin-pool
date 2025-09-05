@@ -61,6 +61,34 @@
               </div>
             </div>
 
+            <!-- Wallet Address (only when connected) -->
+            <div
+              v-if="isWalletConnected && walletStore.walletInfo?.address"
+              class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2 min-w-0 flex-1">
+                  <i
+                    class="pi pi-id-card text-xs text-gray-500 dark:text-gray-400 flex-shrink-0"
+                  ></i>
+                  <span
+                    class="text-xs text-gray-600 dark:text-gray-400 font-mono truncate cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                    :title="walletStore.walletInfo.address"
+                    @click="copyAddress"
+                  >
+                    {{ formatAddress(walletStore.walletInfo.address) }}
+                  </span>
+                </div>
+                <button
+                  @click="copyAddress"
+                  class="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  title="Copy address"
+                >
+                  <i class="pi pi-copy text-xs"></i>
+                </button>
+              </div>
+            </div>
+
             <!-- Connection status -->
             <div v-if="!isWalletConnected" class="text-xs text-orange-600 dark:text-orange-400">
               <i class="pi pi-exclamation-triangle mr-1"></i>
@@ -220,6 +248,57 @@
   const formatBalance = (mojos: number): string => {
     if (mojos === 0) return '0.000000'
     return (mojos / 1000000000000).toFixed(6)
+  }
+
+  // Format address helper - show first 6 and last 4 characters
+  const formatAddress = (address: string): string => {
+    if (!address) return ''
+    if (address.length <= 10) return address
+    return `${address.slice(0, 6)}...${address.slice(-4)}`
+  }
+
+  // Copy address to clipboard
+  const copyAddress = async () => {
+    if (!walletStore.walletInfo?.address) return
+
+    try {
+      await navigator.clipboard.writeText(walletStore.walletInfo.address)
+      // Visual feedback - you could enhance this with a proper toast notification
+      console.log('Address copied to clipboard')
+
+      // Simple visual feedback by temporarily changing the copy button
+      const copyButton = document.querySelector('[title="Copy address"]') as HTMLElement
+      if (copyButton) {
+        const originalIcon = copyButton.innerHTML
+        copyButton.innerHTML = '<i class="pi pi-check text-xs"></i>'
+        copyButton.style.color = 'rgb(34, 197, 94)' // green-500
+        setTimeout(() => {
+          copyButton.innerHTML = originalIcon
+          copyButton.style.color = ''
+        }, 1500)
+      }
+    } catch (error) {
+      console.error('Failed to copy address:', error)
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = walletStore.walletInfo.address
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+
+      // Visual feedback for fallback
+      const copyButton = document.querySelector('[title="Copy address"]') as HTMLElement
+      if (copyButton) {
+        const originalIcon = copyButton.innerHTML
+        copyButton.innerHTML = '<i class="pi pi-check text-xs"></i>'
+        copyButton.style.color = 'rgb(34, 197, 94)' // green-500
+        setTimeout(() => {
+          copyButton.innerHTML = originalIcon
+          copyButton.style.color = ''
+        }, 1500)
+      }
+    }
   }
 
   // Flag to prevent multiple simultaneous balance refresh calls
