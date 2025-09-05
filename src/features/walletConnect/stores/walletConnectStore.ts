@@ -34,11 +34,15 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   }))
 
   const hasChiaAccount = computed(() => {
-    return accounts.value.some(account => account.startsWith('xch'))
+    return accounts.value.some(account => account.startsWith('xch') || account.startsWith('txch'))
   })
 
   const primaryAccount = computed(() => {
-    return accounts.value.find(account => account.startsWith('xch')) || accounts.value[0] || null
+    return (
+      accounts.value.find(account => account.startsWith('xch') || account.startsWith('txch')) ||
+      accounts.value[0] ||
+      null
+    )
   })
 
   // Actions

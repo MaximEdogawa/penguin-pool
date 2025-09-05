@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type {
-  WalletConnectCommand,
+  AssetType,
+  CommandHandler,
   CommandParams,
   CommandResponse,
   HandlerContext,
-  CommandHandler,
   ParseCommandFunction,
+  WalletConnectCommand,
 } from '../types/command.types'
 
 /**
@@ -148,7 +149,7 @@ export class CommandHandlerService {
   ): Promise<unknown> {
     // This would typically make an RPC call to get asset balance
     // For now, return zero balance - implement based on actual wallet RPC
-    const typedParams = _params as { assetId?: string }
+    const typedParams = _params as { type: AssetType; assetId: string }
     return {
       balance: 0,
       assetId: typedParams.assetId || 'xch',

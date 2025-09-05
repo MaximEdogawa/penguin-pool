@@ -32,7 +32,7 @@
           <div class="space-y-2">
             <div class="flex items-center space-x-2">
               <p class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
-                {{ userBalance }} {{ currencySymbol }}
+                {{ userBalance }} XCH
               </p>
               <div v-if="isBalanceLoading" class="loading-spinner">
                 <i class="pi pi-spin pi-spinner text-sm text-primary-600"></i>
@@ -44,8 +44,7 @@
               <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>Spendable:</span>
                 <span
-                  >{{ formatBalance(walletStore.walletInfo.balance.spendable_balance) }}
-                  {{ currencySymbol }}</span
+                  >{{ formatBalance(walletStore.walletInfo.balance.spendable_balance) }} XCH</span
                 >
               </div>
               <div
@@ -54,8 +53,10 @@
               >
                 <span>Unconfirmed:</span>
                 <span
-                  >{{ formatBalance(walletStore.walletInfo.balance.unconfirmed_wallet_balance) }}
-                  {{ currencySymbol }}</span
+                  >{{
+                    formatBalance(walletStore.walletInfo.balance.unconfirmed_wallet_balance)
+                  }}
+                  XCH</span
                 >
               </div>
             </div>
@@ -144,19 +145,6 @@
             >
           </button>
 
-          <!-- Test Button (only show in development when wallet is connected) -->
-          <button
-            v-if="isDevelopment && isWalletConnected"
-            @click="runWalletTests"
-            class="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border-2 border-dashed border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/20 hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors duration-200"
-          >
-            <i class="pi pi-cog text-base sm:text-lg mb-2 text-green-600 dark:text-green-400"></i>
-            <span
-              class="text-xs sm:text-sm font-medium text-green-700 dark:text-green-300 text-center"
-              >Run Tests</span
-            >
-          </button>
-
           <button
             class="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 hover:border-primary-500 dark:hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors duration-200"
           >
@@ -212,7 +200,6 @@
   import PageFooter from '@/components/PageFooter.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
-  import { WalletBalanceTest } from '@/features/walletConnect/utils/wallet-balance-test'
   import { computed, onMounted, ref, watch } from 'vue'
 
   const userStore = ref<ReturnType<typeof useUserStore> | null>(null)
@@ -228,11 +215,6 @@
 
   const isWalletConnected = computed(() => walletStore.isConnected)
   const isBalanceLoading = computed(() => walletStore.isConnecting)
-  const isDevelopment = computed(() => import.meta.env.DEV)
-
-  // Network info for currency display
-  const networkInfo = computed(() => walletStore.getNetworkInfo())
-  const currencySymbol = computed(() => (networkInfo.value.isTestnet ? 'TXCH' : 'XCH'))
 
   // Format balance helper
   const formatBalance = (mojos: number): string => {
@@ -240,13 +222,21 @@
     return (mojos / 1000000000000).toFixed(6)
   }
 
+  // Flag to prevent multiple simultaneous balance refresh calls
+  let isRefreshingBalance = false
+
   // Refresh wallet balance
   const refreshBalance = async () => {
-    if (isWalletConnected.value) {
+    if (isWalletConnected.value && !isRefreshingBalance) {
+      isRefreshingBalance = true
       try {
+        console.log('Refreshing wallet balance...')
         await walletStore.refreshWalletInfo()
+        console.log('Wallet balance refreshed successfully')
       } catch (error) {
         console.error('Failed to refresh wallet balance:', error)
+      } finally {
+        isRefreshingBalance = false
       }
     }
   }
@@ -255,16 +245,6 @@
   const connectWallet = () => {
     // Redirect to wallet connect page
     window.location.href = '/wallet-connect'
-  }
-
-  // Run wallet tests (development only)
-  const runWalletTests = async () => {
-    try {
-      console.log('Running wallet balance tests...')
-      await WalletBalanceTest.runAllTests()
-    } catch (error) {
-      console.error('Wallet balance tests failed:', error)
-    }
   }
 
   onMounted(async () => {
@@ -286,20 +266,8 @@
   // Watch for wallet connection changes
   watch(isWalletConnected, async connected => {
     if (connected) {
-      console.log('Wallet connected, refreshing balance and running tests...')
+      console.log('Wallet connected, refreshing balance...')
       await refreshBalance()
-
-      // Run wallet balance tests in development (only if wallet is connected)
-      if (isDevelopment.value && isWalletConnected.value) {
-        try {
-          console.log('Running wallet balance tests...')
-          await WalletBalanceTest.runAllTests()
-        } catch (error) {
-          console.error('Wallet balance tests failed:', error)
-        }
-      } else if (isDevelopment.value) {
-        console.log('Skipping wallet balance tests - no wallet connected')
-      }
     }
   })
 </script>

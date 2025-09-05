@@ -43,9 +43,11 @@ export interface Chip0002GetAssetCoinsParams {
   assetId?: string
 }
 
+export type AssetType = 'cat' | 'nft' | 'did'
+
 export interface Chip0002GetAssetBalanceParams {
-  walletId: number
-  assetId?: string
+  type: AssetType
+  assetId: string
 }
 
 export interface Chip0002SignCoinSpendsParams {

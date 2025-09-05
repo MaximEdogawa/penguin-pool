@@ -2,7 +2,7 @@ import { environment } from '@/shared/config/environment'
 import { SignClient } from '@walletconnect/sign-client'
 import type { PairingTypes, SessionTypes } from '@walletconnect/types'
 import { Web3Modal } from '@web3modal/standalone'
-import { REQUIRED_NAMESPACES, CHIA_CHAIN_ID, CHIA_METADATA } from '../constants/chia-wallet-connect'
+import { CHIA_CHAIN_ID, CHIA_METADATA, REQUIRED_NAMESPACES } from '../constants/wallet-connect'
 import type {
   ConnectionResult,
   DisconnectResult,
@@ -242,7 +242,9 @@ export class WalletConnectService {
 
       // Extract Chia address from session
       const accounts = this.extractAccounts(session)
-      const chiaAccount = accounts.find(account => account.startsWith('xch'))
+      const chiaAccount = accounts.find(
+        account => account.startsWith('xch') || account.startsWith('txch')
+      )
 
       if (!chiaAccount) {
         return null

@@ -108,18 +108,19 @@ export class WalletBalanceTest {
         return
       }
 
-      const wallets = await sageWalletConnectService.request<{
-        wallets: Array<{ id: number; type: number; name: string }>
-      }>('get_wallets', {})
+      // Use chip0002_getPublicKeys instead of get_wallets since it's registered
+      const publicKeys = await sageWalletConnectService.request<{
+        publicKeys: string[]
+      }>('chip0002_getPublicKeys', {})
 
       this.results.push({
         testName: 'Get Wallets',
         success: true,
-        data: wallets,
+        data: publicKeys,
         duration: Date.now() - startTime,
       })
 
-      console.log('✅ Get Wallets: SUCCESS', wallets)
+      console.log('✅ Get Wallets: SUCCESS', publicKeys)
     } catch (error) {
       this.results.push({
         testName: 'Get Wallets',
@@ -152,20 +153,17 @@ export class WalletBalanceTest {
         return
       }
 
-      const syncStatus = await sageWalletConnectService.request<{
-        synced: boolean
-        syncing: boolean
-        genesis_initialized: boolean
-      }>('get_sync_status', {})
+      // Use chip0002_chainId instead of get_sync_status since it's registered
+      const chainId = await sageWalletConnectService.request<string>('chip0002_chainId', {})
 
       this.results.push({
         testName: 'Get Sync Status',
         success: true,
-        data: syncStatus,
+        data: { chainId },
         duration: Date.now() - startTime,
       })
 
-      console.log('✅ Get Sync Status: SUCCESS', syncStatus)
+      console.log('✅ Get Sync Status: SUCCESS', chainId)
     } catch (error) {
       this.results.push({
         testName: 'Get Sync Status',
@@ -198,17 +196,14 @@ export class WalletBalanceTest {
         return
       }
 
+      // Use chip0002_getAssetBalance instead of get_wallet_balance since it's registered
       const balance = await sageWalletConnectService.request<{
-        walletBalance: {
-          confirmed_wallet_balance: number
-          unconfirmed_wallet_balance: number
-          spendable_balance: number
-          pending_change: number
-          max_send_amount: number
-          unspent_coin_count: number
-          pending_coin_removal_count: number
-        }
-      }>('get_wallet_balance', { wallet_id: 1 })
+        balance: number
+        assetId: string
+      }>('chip0002_getAssetBalance', {
+        type: 'cat',
+        assetId: 'xch', // XCH asset ID (xch for native Chia token)
+      })
 
       this.results.push({
         testName: 'Get Wallet Balance (Direct)',

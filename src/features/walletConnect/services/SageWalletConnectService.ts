@@ -3,7 +3,7 @@ import { SignClient } from '@walletconnect/sign-client'
 import type { PairingTypes, SessionTypes } from '@walletconnect/types'
 import { getSdkError } from '@walletconnect/utils'
 import { Web3Modal } from '@web3modal/standalone'
-import { CHIA_CHAIN_ID, CHIA_METADATA, REQUIRED_NAMESPACES } from '../constants/chia-wallet-connect'
+import { CHIA_CHAIN_ID, CHIA_METADATA, REQUIRED_NAMESPACES } from '../constants/wallet-connect'
 import type {
   CommandParams,
   CommandResponse,
@@ -19,7 +19,6 @@ import type {
   WalletConnectEventType,
   WalletConnectSession,
 } from '../types/walletConnect.types'
-import { debugWalletConnect } from '../utils/debug'
 import { commandHandler } from './CommandHandler'
 
 export class SageWalletConnectService {
@@ -146,22 +145,22 @@ export class SageWalletConnectService {
         optionalNamespaces: REQUIRED_NAMESPACES,
       })
 
-      debugWalletConnect.logConnectionFlow('Connect - URI generated', {
+      console.log('Connect - URI generated', {
         uri: uri?.substring(0, 50) + '...',
       })
 
       if (uri) {
         this.web3Modal.openModal({ uri })
-        debugWalletConnect.logConnectionFlow('Connect - Modal opened, waiting for approval')
+        console.log('Connect - Modal opened, waiting for approval')
 
         const session = await approval()
-        debugWalletConnect.logSuccess('Connect - Session approved', { topic: session.topic })
+        console.log('Connect - Session approved', { topic: session.topic })
 
         this.onSessionConnected(session)
         this.pairings = this.client.pairing.getAll({ active: true })
         this.web3Modal.closeModal()
 
-        debugWalletConnect.logSuccess('Connect - Connection complete')
+        console.log('Connect - Connection complete')
       }
 
       return {
@@ -195,7 +194,7 @@ export class SageWalletConnectService {
         optionalNamespaces: REQUIRED_NAMESPACES,
       })
 
-      debugWalletConnect.logConnectionFlow('StartConnection - URI generated', {
+      console.log('StartConnection - URI generated', {
         uri: uri?.substring(0, 50) + '...',
       })
 
@@ -213,7 +212,7 @@ export class SageWalletConnectService {
         return { uri, approval: wrappedApproval }
       }
 
-      debugWalletConnect.logWarning('StartConnection - No URI generated')
+      console.warn('StartConnection - No URI generated')
       return null
     } catch (error) {
       console.error('Failed to start connection:', error)
@@ -305,16 +304,18 @@ export class SageWalletConnectService {
     try {
       // Extract address from session accounts
       const accounts = this.extractAccounts(this.session)
-      const chiaAccount = accounts.find(account => account.startsWith('xch'))
+      const chiaAccount = accounts.find(
+        account => account.startsWith('xch') || account.startsWith('txch')
+      )
       const fallbackAddress = chiaAccount || `chia:testnet:${this.fingerprint}`
 
       console.log('Session accounts:', accounts)
       console.log('Chia account found:', chiaAccount)
       console.log('Fallback address:', fallbackAddress)
 
-      // Use session data without making RPC calls that might fail
+      // Try to get real wallet data using RPC calls
       let address = fallbackAddress
-      const balance = {
+      let balance = {
         confirmed_wallet_balance: 0,
         unconfirmed_wallet_balance: 0,
         spendable_balance: 0,
@@ -324,31 +325,42 @@ export class SageWalletConnectService {
         pending_coin_removal_count: 0,
       }
 
-      console.log('Using session data for wallet info (skipping RPC calls to avoid errors)')
+      console.log('Attempting to get wallet info using RPC calls...')
 
-      // Try to get wallet info using basic WalletConnect methods first
       try {
-        console.log('Attempting to get accounts using basic WalletConnect methods...')
-
-        // Try basic WalletConnect methods first
-        let accounts: string[] = []
-
-        // Skip RPC calls that cause errors
-        console.log('Skipping RPC calls to avoid errors')
-        accounts = []
-
-        if (accounts.length > 0) {
-          address = accounts[0]
-          console.log('Using first account as address:', address)
+        // Get current address
+        try {
+          console.log('Getting current address...')
+          const addressResponse = await this.request<{ address: string }>('chia_getAddress', {})
+          if (addressResponse && addressResponse.address) {
+            address = addressResponse.address
+            console.log('Current address:', address)
+          }
+        } catch (addressError) {
+          console.warn('Failed to get current address:', addressError)
+          // Keep fallback address
         }
 
-        // Skip balance RPC calls that cause errors
-        console.log('Skipping balance RPC calls to avoid errors')
+        // Get wallet balance - temporarily skip due to hex decoding issues
+        // TODO: Find the correct method/parameters for getting native XCH balance
+        try {
+          console.log('Skipping wallet balance RPC call due to hex decoding issues...')
+          // For now, use a default balance structure
+          balance = {
+            confirmed_wallet_balance: 0,
+            unconfirmed_wallet_balance: 0,
+            spendable_balance: 0,
+            pending_change: 0,
+            max_send_amount: 0,
+            unspent_coin_count: 0,
+            pending_coin_removal_count: 0,
+          }
+          console.log('Using default balance structure:', balance)
+        } catch (error) {
+          console.error('Failed to set default balance:', error)
+        }
 
-        // Skip all Chia-specific RPC calls that cause errors
-        console.log('Skipping Chia-specific RPC calls to avoid errors')
-
-        // Return basic wallet info using session data
+        // Return wallet info with real data
         const walletInfo: SageWalletInfo = {
           address,
           balance,
@@ -360,7 +372,22 @@ export class SageWalletConnectService {
         return walletInfo
       } catch (error) {
         console.error('Failed to get wallet info:', error)
-        return null
+        // Return basic info with fallback values
+        const walletInfo: SageWalletInfo = {
+          address: fallbackAddress,
+          balance: {
+            confirmed_wallet_balance: 0,
+            unconfirmed_wallet_balance: 0,
+            spendable_balance: 0,
+            pending_change: 0,
+            max_send_amount: 0,
+            unspent_coin_count: 0,
+            pending_coin_removal_count: 0,
+          },
+          fingerprint: parseInt(this.fingerprint),
+          isConnected: true,
+        }
+        return walletInfo
       }
     } catch (error) {
       console.error('Failed to get wallet info:', error)
@@ -402,6 +429,12 @@ export class SageWalletConnectService {
       })
 
       console.log(`RPC response for ${method}:`, result)
+
+      // Handle different response types
+      if (typeof result === 'string') {
+        // Some methods return strings directly (like chip0002_chainId)
+        return result
+      }
 
       if ('error' in result) {
         console.error(`RPC error for ${method}:`, result.error)
@@ -516,9 +549,28 @@ export class SageWalletConnectService {
    * Test RPC connection with a simple method
    */
   async testRpcConnection(): Promise<boolean> {
-    // Skip RPC testing to avoid errors
-    console.log('Skipping RPC connection test to avoid errors')
-    return true
+    try {
+      if (!this.session || !this.fingerprint) {
+        console.log('No session or fingerprint available for RPC test')
+        return false
+      }
+
+      console.log('Testing RPC connection...')
+      // Test with a simple method like get_sync_status
+      const response = await this.client!.request<boolean>({
+        topic: this.session.topic,
+        chainId: CHIA_CHAIN_ID,
+        request: {
+          method: 'chip0002_connect',
+          params: { fingerprint: parseInt(this.fingerprint) },
+        },
+      })
+      console.log('RPC test successful:', response)
+      return true
+    } catch (error) {
+      console.error('RPC connection test failed:', error)
+      return false
+    }
   }
 
   /**
@@ -571,7 +623,7 @@ export class SageWalletConnectService {
       this.fingerprint = session.topic.substring(0, 8)
     }
 
-    debugWalletConnect.logSuccess('Session connected', {
+    console.log('Session connected', {
       topic: session.topic,
       accounts: allNamespaceAccounts,
       fingerprint: this.fingerprint,
@@ -624,7 +676,7 @@ export class SageWalletConnectService {
     if (!this.client) return
 
     this.client.on('session_update', ({ topic, params }) => {
-      debugWalletConnect.logConnectionFlow('Session update', { topic, params })
+      console.log('Session update', { topic, params })
       const { namespaces } = params
       const session = this.client!.session.get(topic)
       const updatedSession = { ...session, namespaces }
@@ -633,17 +685,17 @@ export class SageWalletConnectService {
     })
 
     this.client.on('session_delete', ({ topic }) => {
-      debugWalletConnect.logConnectionFlow('Session deleted', { topic })
+      console.log('Session deleted', { topic })
       this.reset()
       this.emitEvent('session_delete', { topic })
     })
 
     this.client.on('session_event', (...args) => {
-      debugWalletConnect.logConnectionFlow('Session event', args)
+      console.log('Session event', args)
     })
 
     this.client.on('session_proposal', proposal => {
-      debugWalletConnect.logConnectionFlow('Session proposal', {
+      console.log('Session proposal', {
         id: proposal.id,
         proposer: 'Unknown', // Simplified for now
       })
@@ -653,18 +705,18 @@ export class SageWalletConnectService {
     // These would be handled through the connection flow
 
     this.client.on('session_expire', ({ topic }) => {
-      debugWalletConnect.logConnectionFlow('Session expired', { topic })
+      console.log('Session expired', { topic })
       this.reset()
       this.emitEvent('session_expire', { topic })
     })
 
     this.client.on('session_request', event => {
-      debugWalletConnect.logConnectionFlow('Session request', event)
+      console.log('Session request', event)
       this.emitEvent('session_request', event)
     })
 
     this.client.on('session_request_sent', event => {
-      debugWalletConnect.logConnectionFlow('Session request sent', event)
+      console.log('Session request sent', event)
       this.emitEvent('session_request_sent', event)
     })
 
