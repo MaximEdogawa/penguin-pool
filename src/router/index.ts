@@ -97,14 +97,18 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresAuth) {
     if (isAuthenticated) {
+      console.log('Router guard - allowing access to protected route')
       next()
     } else {
+      console.log('Router guard - redirecting to auth (not authenticated)')
       next('/auth')
     }
   } else {
     if (to.path === '/auth' && isAuthenticated) {
+      console.log('Router guard - redirecting authenticated user from auth to dashboard')
       next('/dashboard')
     } else {
+      console.log('Router guard - allowing access to public route')
       next()
     }
   }

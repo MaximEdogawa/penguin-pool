@@ -72,6 +72,33 @@ Penguin-pool is a modern, privacy-focused decentralized lending platform that co
 - npm/yarn/pnpm
 - Git
 - Modern browser with PWA support
+- WalletConnect Project ID (optional, for wallet features)
+- KurrentDB API keys (optional, for database features)
+
+### Environment Setup
+
+1. **Copy environment template**:
+
+   ```bash
+   cp env.example .env
+   ```
+
+2. **Configure required environment variables**:
+   - `VITE_WALLET_CONNECT_PROJECT_ID`: Get from [WalletConnect Cloud](https://cloud.walletconnect.com/)
+   - `VITE_KURRENT_DB_DEV_API_KEY` & `VITE_KURRENT_DB_DEV_SECRET_KEY`: Get from KurrentDB dashboard
+
+3. **Optional configurations**:
+   - Update API endpoints if using custom backend
+   - Configure blockchain network settings
+   - Set feature flags as needed
+
+### Troubleshooting
+
+If you see warnings about missing configuration:
+
+- **WalletConnect warnings**: Set `VITE_WALLET_CONNECT_PROJECT_ID` in your `.env` file
+- **KurrentDB warnings**: Set the appropriate API keys for your environment
+- **Lit development mode**: This is automatically suppressed in production builds
 
 ### Backend API
 

@@ -182,15 +182,15 @@
   }
 
   const handleWalletConnected = async (walletInfo: unknown) => {
-    console.log('Wallet connected:', walletInfo)
-
     try {
+      console.log('Received wallet info:', walletInfo)
+
       // Verify wallet info is valid
       if (!walletInfo || typeof walletInfo !== 'object') {
         throw new Error('Invalid wallet info - no wallet data received')
       }
 
-      const wallet = walletInfo as { address: string }
+      const wallet = walletInfo as { address: string; fingerprint?: number }
       if (!wallet.address) {
         throw new Error('Invalid wallet info - no address found')
       }
@@ -199,13 +199,34 @@
       statusType.value = 'success'
       statusIcon.value = 'pi pi-check-circle'
 
-      // Login user with wallet address
-      console.log('Logging in with wallet address:', wallet.address)
-      await userStore.login(wallet.address, 'wallet-user')
+      // Login user with wallet fingerprint if available, otherwise use address
+      if (wallet.fingerprint) {
+        console.log('Logging in with wallet fingerprint:', wallet.fingerprint)
+        await userStore.login(wallet.fingerprint, 'wallet-user')
+      } else {
+        console.log('Logging in with wallet address:', wallet.address)
+        await userStore.login(wallet.address, 'wallet-user')
+      }
+
+      // Check authentication state after login
+      console.log('User store state after login:', {
+        isAuthenticated: userStore.isAuthenticated,
+        currentUser: userStore.currentUser,
+      })
 
       // Redirect to dashboard after successful connection
       setTimeout(() => {
-        router.push('/dashboard')
+        console.log('Attempting redirect to dashboard...')
+        console.log('Current route:', router.currentRoute.value.path)
+        console.log('User authenticated:', userStore.isAuthenticated)
+        router
+          .push('/dashboard')
+          .then(() => {
+            console.log('Redirect successful, new route:', router.currentRoute.value.path)
+          })
+          .catch(error => {
+            console.error('Redirect failed:', error)
+          })
       }, 1000)
     } catch (error) {
       console.error('Failed to process wallet connection:', error)
@@ -228,9 +249,16 @@
       await walletConnectStore.initialize()
 
       if (walletConnectStore.isConnected) {
-        const walletInfo = await walletConnectStore.getWalletInfo()
-        if (walletInfo) {
-          await userStore.login(walletInfo.fingerprint.toString(), 'wallet-user')
+        const walletInfo = walletConnectStore.walletInfo
+        if (walletInfo && walletInfo.address) {
+          // Use fingerprint if available, otherwise fall back to address
+          if (walletInfo.fingerprint) {
+            console.log('Auto-login with wallet fingerprint:', walletInfo.fingerprint)
+            await userStore.login(walletInfo.fingerprint, 'wallet-user')
+          } else {
+            console.log('Auto-login with wallet address:', walletInfo.address)
+            await userStore.login(walletInfo.address, 'wallet-user')
+          }
           router.push('/dashboard')
         }
       }

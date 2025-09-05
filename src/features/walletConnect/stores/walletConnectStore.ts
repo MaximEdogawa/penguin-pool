@@ -5,7 +5,6 @@ import { sageWalletConnectService } from '../services/SageWalletConnectService'
 import type { CommandParams, WalletConnectCommand } from '../types/command.types'
 import type {
   ChiaConnectionState,
-  ChiaWalletInfo,
   ConnectionResult,
   DisconnectResult,
   SageWalletInfo,
@@ -167,30 +166,6 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     error.value = null
   }
 
-  const getWalletInfo = async (): Promise<SageWalletInfo | null> => {
-    try {
-      return await sageWalletConnectService.getWalletInfo()
-    } catch (err) {
-      console.error('Failed to get wallet info:', err)
-      return null
-    }
-  }
-
-  const refreshWalletInfo = async (): Promise<ChiaWalletInfo | null> => {
-    try {
-      const info = await sageWalletConnectService.refreshWalletInfo()
-      if (info) {
-        walletInfo.value = { ...info }
-      } else {
-        console.warn('No wallet info returned from refresh')
-      }
-      return info
-    } catch (err) {
-      console.error('Failed to refresh wallet info:', err)
-      return null
-    }
-  }
-
   const getNetworkInfo = () => {
     return sageWalletConnectService.getNetworkInfo()
   }
@@ -294,15 +269,12 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   }
 
   const handleSessionRestored = async (): Promise<void> => {
-    // console.log('Session restored:', event)
     try {
       const currentSession = sageWalletConnectService.getSession()
       if (currentSession) {
         session.value = currentSession
         accounts.value = extractAccountsFromSession(currentSession)
         isConnected.value = true
-
-        // Get wallet info
         walletInfo.value = await sageWalletConnectService.getWalletInfo()
       }
     } catch (err) {
@@ -310,7 +282,6 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     }
   }
 
-  // Chia-specific methods
   const getChiaConnectionState = computed((): ChiaConnectionState => {
     return sageWalletConnectService.getConnectionState()
   })
@@ -319,7 +290,6 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     return sageWalletConnectService.getPairings()
   })
 
-  // Chia-specific RPC methods
   const makeChiaRequest = async <T>(method: string, data: Record<string, unknown>): Promise<T> => {
     try {
       const result = await sageWalletConnectService.request<T>(method, data)
@@ -336,7 +306,6 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     }
   }
 
-  // Command execution methods
   const executeCommand = async <TParams extends Record<string, unknown>, TResponse>(
     command: string,
     params: TParams
@@ -382,8 +351,6 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     restoreSession,
     sendRequest,
     clearError,
-    getWalletInfo,
-    refreshWalletInfo,
     getNetworkInfo,
     startConnection,
 

@@ -91,3 +91,62 @@ export const environment = {
 } as const
 
 export type Environment = typeof environment
+
+/**
+ * Environment validation utilities
+ */
+export const validateEnvironment = () => {
+  const warnings: string[] = []
+  const errors: string[] = []
+
+  // Check WalletConnect configuration
+  if (
+    !environment.wallet.walletConnect.projectId ||
+    environment.wallet.walletConnect.projectId === 'your_wallet_connect_project_id_here' ||
+    environment.wallet.walletConnect.projectId.trim() === ''
+  ) {
+    warnings.push(
+      'WalletConnect Project ID is not configured. Set VITE_WALLET_CONNECT_PROJECT_ID to enable wallet connection features.'
+    )
+  }
+
+  // Check KurrentDB configuration
+  if (environment.database.kurrent.enabled) {
+    const kurrentEnv = environment.database.kurrent.environment
+    const apiKeyVar = `VITE_KURRENT_DB_${kurrentEnv.toUpperCase()}_API_KEY`
+    const secretKeyVar = `VITE_KURRENT_DB_${kurrentEnv.toUpperCase()}_SECRET_KEY`
+
+    if (!import.meta.env[apiKeyVar]) {
+      warnings.push(
+        `KurrentDB API key is not configured. Set ${apiKeyVar} to enable database features.`
+      )
+    }
+    if (!import.meta.env[secretKeyVar]) {
+      warnings.push(
+        `KurrentDB secret key is not configured. Set ${secretKeyVar} to enable database features.`
+      )
+    }
+  }
+
+  // Log warnings and errors
+  if (warnings.length > 0) {
+    console.warn('Environment Configuration Warnings:')
+    warnings.forEach(warning => console.warn(`- ${warning}`))
+  }
+
+  if (errors.length > 0) {
+    console.error('Environment Configuration Errors:')
+    errors.forEach(error => console.error(`- ${error}`))
+  }
+
+  return {
+    isValid: errors.length === 0,
+    warnings,
+    errors,
+  }
+}
+
+// Auto-validate environment on import
+if (typeof window !== 'undefined') {
+  validateEnvironment()
+}

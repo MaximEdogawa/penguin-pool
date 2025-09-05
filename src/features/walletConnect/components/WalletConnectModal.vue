@@ -143,10 +143,10 @@
             </div>
           </div>
           <div class="success-actions">
-            <button @click="proceedToDashboard" class="proceed-button">
-              <i class="pi pi-arrow-right"></i>
-              Go to Dashboard
-            </button>
+            <p class="redirect-message">
+              <i class="pi pi-spin pi-spinner"></i>
+              Redirecting to dashboard...
+            </p>
           </div>
         </div>
       </div>
@@ -174,7 +174,7 @@
 <script setup lang="ts">
   import QRCode from 'qrcode'
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { sageWalletConnectService } from '../services/SageWalletConnectService'
   import { useWalletConnectStore } from '../stores/walletConnectStore'
   import type { SageWalletInfo } from '../types/walletConnect.types'
 
@@ -198,7 +198,6 @@
 
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
-  const router = useRouter()
   const walletStore = useWalletConnectStore()
 
   // State
@@ -277,19 +276,32 @@
         connectionUri.value = connection.uri
         currentStep.value = 'qr-code'
 
-        // Generate QR code
         await generateQRCode(connection.uri)
-
-        // Wait for approval
-        console.log('Waiting for wallet approval...')
         const session = await connection.approval()
 
         if (session) {
           console.log('Wallet connection approved:', session)
-          // Connection successful
-          await walletStore.refreshWalletInfo()
-          currentStep.value = 'success'
-          emit('connected', walletInfo.value!)
+
+          // Wait a moment for the wallet store to update
+          await new Promise(resolve => setTimeout(resolve, 1000))
+
+          // Try to fetch wallet info from the service
+          try {
+            const fetchedWalletInfo = await sageWalletConnectService.getWalletInfo()
+            if (fetchedWalletInfo) {
+              console.log('Fetched wallet info:', fetchedWalletInfo)
+              // Update the store with the fetched wallet info
+              walletStore.walletInfo = fetchedWalletInfo
+              currentStep.value = 'success'
+              emit('connected', fetchedWalletInfo)
+            } else {
+              throw new Error('Failed to fetch wallet info from service')
+            }
+          } catch (fetchError) {
+            console.error('Failed to fetch wallet info:', fetchError)
+            error.value = 'Connected but failed to fetch wallet information'
+            currentStep.value = 'error'
+          }
         } else {
           error.value = 'Wallet connection was not approved'
           currentStep.value = 'error'
@@ -319,11 +331,6 @@
     if (selectedWallet.value) {
       selectWallet(selectedWallet.value)
     }
-  }
-
-  const proceedToDashboard = () => {
-    closeModal()
-    router.push('/dashboard')
   }
 
   const copyUri = async () => {
@@ -983,6 +990,15 @@
 
   .proceed-button i {
     font-size: 1rem;
+  }
+
+  .redirect-message {
+    color: #6b7280;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
   }
 
   .wallet-info {

@@ -123,12 +123,6 @@ await walletStore.initialize()
 
 // Connect
 const result = await walletStore.connect()
-
-// Check connection status
-if (walletStore.isConnected) {
-  const walletInfo = await walletStore.getWalletInfo()
-  console.log('Connected wallet:', walletInfo)
-}
 ```
 
 ### Sending Requests

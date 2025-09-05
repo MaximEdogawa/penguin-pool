@@ -20,6 +20,10 @@ import './assets/main.css'
 
 import App from './App.vue'
 import router from './router'
+import { validateEnvironment } from './shared/config/environment'
+
+// Validate environment configuration early
+validateEnvironment()
 
 const app = createApp(App)
 

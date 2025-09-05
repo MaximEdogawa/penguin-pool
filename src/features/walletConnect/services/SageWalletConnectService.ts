@@ -41,6 +41,15 @@ export class SageWalletConnectService {
         return
       }
 
+      // Check if WalletConnect is properly configured
+      if (!this.isConfigured()) {
+        console.warn(
+          'WalletConnect Project ID is not configured. WalletConnect features will be disabled.'
+        )
+        console.warn('Please set VITE_WALLET_CONNECT_PROJECT_ID in your environment variables.')
+        return
+      }
+
       if (SageWalletConnectService.isInitializing) {
         while (SageWalletConnectService.isInitializing) {
           await new Promise(resolve => setTimeout(resolve, 100))
@@ -53,15 +62,6 @@ export class SageWalletConnectService {
             .__WALLETCONNECT_SIGN_CLIENT__ as InstanceType<typeof SignClient>
           return
         }
-      }
-
-      if (
-        !environment.wallet.walletConnect.projectId ||
-        environment.wallet.walletConnect.projectId === 'your_wallet_connect_project_id_here'
-      ) {
-        throw new Error(
-          'WalletConnect Project ID is not configured. Please set a valid project ID. '
-        )
       }
 
       SageWalletConnectService.isInitializing = true
@@ -87,13 +87,6 @@ export class SageWalletConnectService {
         }
       }
 
-      // Initialize Web3Modal
-      this.web3Modal = new Web3Modal({
-        projectId: environment.wallet.walletConnect.projectId,
-        standaloneChains: [CHIA_CHAIN_ID],
-        walletConnectVersion: 2,
-      })
-
       this.setupEventListeners()
       await this.checkPersistedState()
     } catch (error) {
@@ -115,16 +108,28 @@ export class SageWalletConnectService {
    */
   async connect(pairing?: { topic: string }): Promise<ConnectionResult> {
     try {
+      if (!this.isConfigured()) {
+        return {
+          success: false,
+          error:
+            'WalletConnect is not configured. Please set VITE_WALLET_CONNECT_PROJECT_ID environment variable.',
+        }
+      }
+
       if (!this.client) {
         await this.initialize()
       }
 
       if (!this.client) {
-        throw new Error('WalletConnect is not initialized')
+        return {
+          success: false,
+          error: 'WalletConnect is not initialized',
+        }
       }
 
       if (!this.web3Modal) {
-        throw new Error('Web3Modal is not initialized')
+        console.warn('Web3Modal is not initialized. WalletConnect features may be limited.')
+        // Continue without Web3Modal - use direct connection
       }
 
       const { uri, approval } = await this.client.connect({
@@ -133,11 +138,19 @@ export class SageWalletConnectService {
       })
 
       if (uri) {
-        this.web3Modal.openModal({ uri })
-        const session = await approval()
-        this.onSessionConnected(session)
-        this.pairings = this.client.pairing.getAll({ active: true })
-        this.web3Modal.closeModal()
+        if (this.web3Modal) {
+          this.web3Modal.openModal({ uri })
+          const session = await approval()
+          this.onSessionConnected(session)
+          this.pairings = this.client.pairing.getAll({ active: true })
+          this.web3Modal.closeModal()
+        } else {
+          // Direct connection without Web3Modal
+          console.log('Connection URI:', uri)
+          const session = await approval()
+          this.onSessionConnected(session)
+          this.pairings = this.client.pairing.getAll({ active: true })
+        }
       }
 
       return {
@@ -158,6 +171,11 @@ export class SageWalletConnectService {
    */
   async startConnection(): Promise<{ uri: string; approval: () => Promise<unknown> } | null> {
     try {
+      if (!this.isConfigured()) {
+        console.warn('WalletConnect is not configured. Cannot start connection.')
+        return null
+      }
+
       if (!this.client) {
         await this.initialize()
       }
@@ -383,6 +401,17 @@ export class SageWalletConnectService {
   }
 
   /**
+   * Check if WalletConnect is properly configured
+   */
+  isConfigured(): boolean {
+    return !!(
+      environment.wallet.walletConnect.projectId &&
+      environment.wallet.walletConnect.projectId !== 'your_wallet_connect_project_id_here' &&
+      environment.wallet.walletConnect.projectId.trim() !== ''
+    )
+  }
+
+  /**
    * Get current session
    */
   getSession(): WalletConnectSession | null {
@@ -395,13 +424,6 @@ export class SageWalletConnectService {
    */
   isConnected(): boolean {
     return !!this.session && this.session.expiry > Date.now() / 1000
-  }
-
-  /**
-   * Refresh wallet info (useful for getting updated balance)
-   */
-  async refreshWalletInfo(): Promise<SageWalletInfo | null> {
-    return await this.getWalletInfo()
   }
 
   /**
@@ -440,11 +462,12 @@ export class SageWalletConnectService {
   }
 
   private onSessionConnected(session: SessionTypes.Struct) {
-    const allNamespaceAccounts = session.namespaces
-      ? Object.values(session.namespaces)
-          .map(namespace => namespace.accounts)
-          .flat()
-      : []
+    const allNamespaceAccounts =
+      session.namespaces && typeof session.namespaces === 'object'
+        ? Object.values(session.namespaces)
+            .map(namespace => namespace.accounts)
+            .flat()
+        : []
     this.session = session
 
     if (allNamespaceAccounts.length > 0) {
@@ -543,7 +566,7 @@ export class SageWalletConnectService {
   }
 
   private extractAccounts(session: SessionTypes.Struct): string[] {
-    return session.namespaces
+    return session.namespaces && typeof session.namespaces === 'object'
       ? Object.values(session.namespaces)
           .map(namespace => namespace.accounts)
           .flat()

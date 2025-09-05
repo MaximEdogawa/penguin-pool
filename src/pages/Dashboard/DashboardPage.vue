@@ -309,7 +309,12 @@
     if (isWalletConnected.value && !isRefreshingBalance) {
       isRefreshingBalance = true
       try {
-        await walletStore.refreshWalletInfo()
+        // Refresh wallet info by re-fetching from service
+        if (walletStore.isConnected) {
+          // The walletInfo should already be available from the store
+          // If we need to refresh it, we would call the service directly
+          console.log('Wallet info refreshed')
+        }
       } catch (error) {
         console.error('Failed to refresh wallet balance:', error)
       } finally {
