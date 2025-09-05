@@ -1,22 +1,7 @@
 // Command types for Sage Wallet Connect
-export type WalletConnectCommand =
-  | 'chip0002_connect'
-  | 'chip0002_chainId'
-  | 'chip0002_getPublicKeys'
-  | 'chip0002_filterUnlockedCoins'
-  | 'chip0002_getAssetCoins'
-  | 'chip0002_getAssetBalance'
-  | 'chip0002_signCoinSpends'
-  | 'chip0002_signMessage'
-  | 'chip0002_sendTransaction'
-  | 'chia_createOffer'
-  | 'chia_takeOffer'
-  | 'chia_cancelOffer'
-  | 'chia_getNfts'
-  | 'chia_send'
-  | 'chia_getAddress'
-  | 'chia_signMessageByAddress'
-  | 'chia_bulkMintNfts'
+import type { SageMethodName } from '../constants/sage-methods'
+
+export type WalletConnectCommand = SageMethodName
 
 // Command parameter types
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type

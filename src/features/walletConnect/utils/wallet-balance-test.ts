@@ -1,3 +1,4 @@
+import { SageMethods } from '../constants/sage-methods'
 import { sageWalletConnectService } from '../services/SageWalletConnectService'
 import { useWalletConnectStore } from '../stores/walletConnectStore'
 
@@ -111,7 +112,7 @@ export class WalletBalanceTest {
       // Use chip0002_getPublicKeys instead of get_wallets since it's registered
       const publicKeys = await sageWalletConnectService.request<{
         publicKeys: string[]
-      }>('chip0002_getPublicKeys', {})
+      }>(SageMethods.CHIP0002_GET_PUBLIC_KEYS, {})
 
       this.results.push({
         testName: 'Get Wallets',
@@ -154,7 +155,10 @@ export class WalletBalanceTest {
       }
 
       // Use chip0002_chainId instead of get_sync_status since it's registered
-      const chainId = await sageWalletConnectService.request<string>('chip0002_chainId', {})
+      const chainId = await sageWalletConnectService.request<string>(
+        SageMethods.CHIP0002_CHAIN_ID,
+        {}
+      )
 
       this.results.push({
         testName: 'Get Sync Status',
@@ -200,7 +204,7 @@ export class WalletBalanceTest {
       const balance = await sageWalletConnectService.request<{
         balance: number
         assetId: string
-      }>('chip0002_getAssetBalance', {
+      }>(SageMethods.CHIP0002_GET_ASSET_BALANCE, {
         type: 'cat',
         assetId: 'xch', // XCH asset ID (xch for native Chia token)
       })

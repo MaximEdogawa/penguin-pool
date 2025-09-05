@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { SageMethods } from '../constants/sage-methods'
 import type {
   AssetType,
   CommandHandler,
@@ -36,23 +37,29 @@ export class CommandHandlerService {
    * Register all command handlers
    */
   private registerHandlers(): void {
-    this.handlers.set('chip0002_connect', this.handleConnect.bind(this))
-    this.handlers.set('chip0002_chainId', this.handleChainId.bind(this))
-    this.handlers.set('chip0002_getPublicKeys', this.handleGetPublicKeys.bind(this))
-    this.handlers.set('chip0002_filterUnlockedCoins', this.handleFilterUnlockedCoins.bind(this))
-    this.handlers.set('chip0002_getAssetCoins', this.handleGetAssetCoins.bind(this))
-    this.handlers.set('chip0002_getAssetBalance', this.handleGetAssetBalance.bind(this))
-    this.handlers.set('chip0002_signCoinSpends', this.handleSignCoinSpends.bind(this))
-    this.handlers.set('chip0002_signMessage', this.handleSignMessage.bind(this))
-    this.handlers.set('chip0002_sendTransaction', this.handleSendTransaction.bind(this))
-    this.handlers.set('chia_createOffer', this.handleCreateOffer.bind(this))
-    this.handlers.set('chia_takeOffer', this.handleTakeOffer.bind(this))
-    this.handlers.set('chia_cancelOffer', this.handleCancelOffer.bind(this))
-    this.handlers.set('chia_getNfts', this.handleGetNfts.bind(this))
-    this.handlers.set('chia_send', this.handleSend.bind(this))
-    this.handlers.set('chia_getAddress', this.handleGetAddress.bind(this))
-    this.handlers.set('chia_signMessageByAddress', this.handleSignMessageByAddress.bind(this))
-    this.handlers.set('chia_bulkMintNfts', this.handleBulkMintNfts.bind(this))
+    this.handlers.set(SageMethods.CHIP0002_CONNECT, this.handleConnect.bind(this))
+    this.handlers.set(SageMethods.CHIP0002_CHAIN_ID, this.handleChainId.bind(this))
+    this.handlers.set(SageMethods.CHIP0002_GET_PUBLIC_KEYS, this.handleGetPublicKeys.bind(this))
+    this.handlers.set(
+      SageMethods.CHIP0002_FILTER_UNLOCKED_COINS,
+      this.handleFilterUnlockedCoins.bind(this)
+    )
+    this.handlers.set(SageMethods.CHIP0002_GET_ASSET_COINS, this.handleGetAssetCoins.bind(this))
+    this.handlers.set(SageMethods.CHIP0002_GET_ASSET_BALANCE, this.handleGetAssetBalance.bind(this))
+    this.handlers.set(SageMethods.CHIP0002_SIGN_COIN_SPENDS, this.handleSignCoinSpends.bind(this))
+    this.handlers.set(SageMethods.CHIP0002_SIGN_MESSAGE, this.handleSignMessage.bind(this))
+    this.handlers.set(SageMethods.CHIP0002_SEND_TRANSACTION, this.handleSendTransaction.bind(this))
+    this.handlers.set(SageMethods.CHIA_CREATE_OFFER, this.handleCreateOffer.bind(this))
+    this.handlers.set(SageMethods.CHIA_TAKE_OFFER, this.handleTakeOffer.bind(this))
+    this.handlers.set(SageMethods.CHIA_CANCEL_OFFER, this.handleCancelOffer.bind(this))
+    this.handlers.set(SageMethods.CHIA_GET_NFTS, this.handleGetNfts.bind(this))
+    this.handlers.set(SageMethods.CHIA_SEND, this.handleSend.bind(this))
+    this.handlers.set(SageMethods.CHIA_GET_ADDRESS, this.handleGetAddress.bind(this))
+    this.handlers.set(
+      SageMethods.CHIA_SIGN_MESSAGE_BY_ADDRESS,
+      this.handleSignMessageByAddress.bind(this)
+    )
+    this.handlers.set(SageMethods.CHIA_BULK_MINT_NFTS, this.handleBulkMintNfts.bind(this))
   }
 
   /**

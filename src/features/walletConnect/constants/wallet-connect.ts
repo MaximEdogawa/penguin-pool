@@ -1,4 +1,6 @@
 import type { CoreTypes } from '@walletconnect/types'
+import { SageMethods } from './sage-methods'
+
 // Determine chain ID based on environment
 const isTestnet =
   typeof window !== 'undefined'
@@ -19,24 +21,24 @@ export const REQUIRED_NAMESPACES = {
   chia: {
     methods: [
       // CHIP-0002 Commands
-      'chip0002_connect',
-      'chip0002_chainId',
-      'chip0002_getPublicKeys',
-      'chip0002_filterUnlockedCoins',
-      'chip0002_getAssetCoins',
-      'chip0002_getAssetBalance',
-      'chip0002_signCoinSpends',
-      'chip0002_signMessage',
-      'chip0002_sendTransaction',
+      SageMethods.CHIP0002_CONNECT,
+      SageMethods.CHIP0002_CHAIN_ID,
+      SageMethods.CHIP0002_GET_PUBLIC_KEYS,
+      SageMethods.CHIP0002_FILTER_UNLOCKED_COINS,
+      SageMethods.CHIP0002_GET_ASSET_COINS,
+      SageMethods.CHIP0002_GET_ASSET_BALANCE,
+      SageMethods.CHIP0002_SIGN_COIN_SPENDS,
+      SageMethods.CHIP0002_SIGN_MESSAGE,
+      SageMethods.CHIP0002_SEND_TRANSACTION,
       // Chia-specific Commands
-      'chia_createOffer',
-      'chia_takeOffer',
-      'chia_cancelOffer',
-      'chia_getNfts',
-      'chia_send',
-      'chia_getAddress',
-      'chia_signMessageByAddress',
-      'chia_bulkMintNfts',
+      SageMethods.CHIA_CREATE_OFFER,
+      SageMethods.CHIA_TAKE_OFFER,
+      SageMethods.CHIA_CANCEL_OFFER,
+      SageMethods.CHIA_GET_NFTS,
+      SageMethods.CHIA_SEND,
+      SageMethods.CHIA_GET_ADDRESS,
+      SageMethods.CHIA_SIGN_MESSAGE_BY_ADDRESS,
+      SageMethods.CHIA_BULK_MINT_NFTS,
     ],
     chains: [CHIA_CHAIN_ID],
     events: ['chainChanged', 'accountsChanged'],

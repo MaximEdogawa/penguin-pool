@@ -3,6 +3,7 @@ import { SignClient } from '@walletconnect/sign-client'
 import type { PairingTypes, SessionTypes } from '@walletconnect/types'
 import { getSdkError } from '@walletconnect/utils'
 import { Web3Modal } from '@web3modal/standalone'
+import { SageMethods } from '../constants/sage-methods'
 import { CHIA_CHAIN_ID, CHIA_METADATA, REQUIRED_NAMESPACES } from '../constants/wallet-connect'
 import type {
   CommandParams,
@@ -331,7 +332,10 @@ export class SageWalletConnectService {
         // Get current address
         try {
           console.log('Getting current address...')
-          const addressResponse = await this.request<{ address: string }>('chia_getAddress', {})
+          const addressResponse = await this.request<{ address: string }>(
+            SageMethods.CHIA_GET_ADDRESS,
+            {}
+          )
           if (addressResponse && addressResponse.address) {
             address = addressResponse.address
             console.log('Current address:', address)
@@ -561,7 +565,7 @@ export class SageWalletConnectService {
         topic: this.session.topic,
         chainId: CHIA_CHAIN_ID,
         request: {
-          method: 'chip0002_connect',
+          method: SageMethods.CHIP0002_CONNECT,
           params: { fingerprint: parseInt(this.fingerprint) },
         },
       })
