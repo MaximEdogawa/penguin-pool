@@ -1,7 +1,8 @@
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import type { CustomTheme, BuiltInTheme, ThemeMode, PrimeUITheme } from '../types/theme'
+import { computed, ref } from 'vue'
 import { themeManager } from '../services/themeManager'
+import type { BuiltInTheme, CustomTheme, PrimeUITheme, ThemeMode } from '../types/theme'
 
 export const useThemeStore = defineStore('theme', () => {
   // State
@@ -272,9 +273,19 @@ export const useThemeStore = defineStore('theme', () => {
 
   const loadAvailableThemes = async () => {
     try {
-      const themes = themeManager.getAvailableThemes()
-      availableCustomThemes.value = themes
-      customThemes.value = themes.filter(theme => theme.id.includes('-custom-'))
+      // Check if custom themes feature is enabled
+      const featureFlags = useFeatureFlagsStore()
+      const customThemesEnabled = featureFlags.isUIFeatureEnabled('customThemes')
+
+      if (customThemesEnabled) {
+        const themes = themeManager.getAvailableThemes()
+        availableCustomThemes.value = themes
+        customThemes.value = themes.filter(theme => theme.id.includes('-custom-'))
+      } else {
+        // If custom themes are disabled, clear the available themes
+        availableCustomThemes.value = []
+        customThemes.value = []
+      }
     } catch (error) {
       console.error('Failed to load available themes:', error)
     }
@@ -282,6 +293,14 @@ export const useThemeStore = defineStore('theme', () => {
 
   const addCustomTheme = async (theme: CustomTheme) => {
     try {
+      // Check if custom themes feature is enabled
+      const featureFlags = useFeatureFlagsStore()
+      const customThemesEnabled = featureFlags.isUIFeatureEnabled('customThemes')
+
+      if (!customThemesEnabled) {
+        throw new Error('Custom themes feature is disabled')
+      }
+
       themeManager.addCustomTheme(theme)
       await loadAvailableThemes()
     } catch (error) {
@@ -292,6 +311,14 @@ export const useThemeStore = defineStore('theme', () => {
 
   const removeCustomTheme = async (themeId: string) => {
     try {
+      // Check if custom themes feature is enabled
+      const featureFlags = useFeatureFlagsStore()
+      const customThemesEnabled = featureFlags.isUIFeatureEnabled('customThemes')
+
+      if (!customThemesEnabled) {
+        throw new Error('Custom themes feature is disabled')
+      }
+
       themeManager.removeCustomTheme(themeId)
       await loadAvailableThemes()
     } catch (error) {
@@ -305,6 +332,14 @@ export const useThemeStore = defineStore('theme', () => {
 
   const importTheme = async (themeJson: string): Promise<CustomTheme> => {
     try {
+      // Check if custom themes feature is enabled
+      const featureFlags = useFeatureFlagsStore()
+      const customThemesEnabled = featureFlags.isUIFeatureEnabled('customThemes')
+
+      if (!customThemesEnabled) {
+        throw new Error('Custom themes feature is disabled')
+      }
+
       const theme = themeManager.importTheme(themeJson)
       await loadAvailableThemes()
       return theme

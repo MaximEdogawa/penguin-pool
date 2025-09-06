@@ -106,7 +106,7 @@ export const validateEnvironment = () => {
     environment.wallet.walletConnect.projectId.trim() === ''
   ) {
     warnings.push(
-      'WalletConnect Project ID is not configured. Set VITE_WALLET_CONNECT_PROJECT_ID to enable wallet connection features.'
+      'WalletConnect Project ID is not configured. Create a .env.local file with VITE_WALLET_CONNECT_PROJECT_ID to enable wallet connection features. See env.local.example for reference.'
     )
   }
 
@@ -118,12 +118,12 @@ export const validateEnvironment = () => {
 
     if (!import.meta.env[apiKeyVar]) {
       warnings.push(
-        `KurrentDB API key is not configured. Set ${apiKeyVar} to enable database features.`
+        `KurrentDB API key is not configured. Add ${apiKeyVar} to .env.local for local development or CI/CD secrets for production. See env.local.example for reference.`
       )
     }
     if (!import.meta.env[secretKeyVar]) {
       warnings.push(
-        `KurrentDB secret key is not configured. Set ${secretKeyVar} to enable database features.`
+        `KurrentDB secret key is not configured. Add ${secretKeyVar} to .env.local for local development or CI/CD secrets for production. See env.local.example for reference.`
       )
     }
   }

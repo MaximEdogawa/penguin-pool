@@ -127,7 +127,7 @@
       v-if="isOpen && isSmallScreen"
       class="sidebar-overlay"
       @click="$emit('close')"
-      @touchstart="$emit('close')"
+      @touchstart.passive="$emit('close')"
     ></div>
   </div>
 </template>
@@ -135,6 +135,11 @@
 <script setup lang="ts">
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import {
+    defaultFeatureFlags,
+    getCurrentEnvironment,
+    isFeatureEnabled,
+  } from '@/shared/config/featureFlags'
   import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
 
@@ -181,13 +186,16 @@
 
   // Navigation items for PrimeVue Menu
   const navigationItems = computed(() => {
-    const items = [
+    const currentEnv = getCurrentEnvironment()
+
+    const allItems = [
       {
         label: !props.isCollapsed && !isSmallScreen.value ? 'Dashboard' : '',
         icon: 'pi pi-home',
         command: () => navigateTo('/dashboard'),
         class: route.path === '/' || route.path === '/dashboard' ? 'nav-link-active' : '',
         title: 'Dashboard',
+        featureFlag: 'dashboard',
       },
       {
         label: !props.isCollapsed && !isSmallScreen.value ? 'Loans' : '',
@@ -195,6 +203,7 @@
         command: () => navigateTo('/loans'),
         class: route.path === '/loans' ? 'nav-link-active' : '',
         title: 'Loans',
+        featureFlag: 'loans',
       },
       {
         label: !props.isCollapsed && !isSmallScreen.value ? 'Offers' : '',
@@ -202,6 +211,7 @@
         command: () => navigateTo('/offers'),
         class: route.path === '/offers' ? 'nav-link-active' : '',
         title: 'Offers',
+        featureFlag: 'offers',
       },
       {
         label: !props.isCollapsed && !isSmallScreen.value ? 'Option Contracts' : '',
@@ -209,6 +219,7 @@
         command: () => navigateTo('/option-contracts'),
         class: route.path === '/option-contracts' ? 'nav-link-active' : '',
         title: 'Option Contracts',
+        featureFlag: 'optionContracts',
       },
       {
         label: !props.isCollapsed && !isSmallScreen.value ? 'Piggy Bank' : '',
@@ -216,10 +227,22 @@
         command: () => navigateTo('/piggy-bank'),
         class: route.path === '/piggy-bank' ? 'nav-link-active' : '',
         title: 'Piggy Bank',
+        featureFlag: 'piggyBank',
       },
     ]
 
-    return items
+    // Filter items based on feature flags
+    const filteredItems = allItems.filter(item => {
+      if (!item.featureFlag) return true // Always show items without feature flags
+
+      const feature =
+        defaultFeatureFlags.app[item.featureFlag as keyof typeof defaultFeatureFlags.app]
+      const isEnabled = feature ? isFeatureEnabled(feature, currentEnv, item.featureFlag) : true
+
+      return isEnabled
+    })
+
+    return filteredItems
   })
 
   // Computed

@@ -235,6 +235,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     // Connection events
     sageWalletConnectService.on('session_approve', handleSessionApprove)
     sageWalletConnectService.on('session_reject', handleSessionReject)
+    sageWalletConnectService.on('session_request', handleSessionRequest)
   }
 
   const removeEventListeners = (): void => {
@@ -244,6 +245,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     sageWalletConnectService.off('session_restored')
     sageWalletConnectService.off('session_approve')
     sageWalletConnectService.off('session_reject')
+    sageWalletConnectService.off('session_request')
   }
 
   const handleSessionDelete = (): void => {
@@ -292,6 +294,12 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     console.log('Session rejected:', event)
     error.value = 'Wallet connection was rejected'
     isConnecting.value = false
+  }
+
+  const handleSessionRequest = (event: WalletConnectEvent): void => {
+    console.log('Session request received:', event)
+    // Handle session request - this could be a method call from the wallet
+    // For now, just log it to prevent the "no listeners" error
   }
 
   const handleSessionRestored = async (): Promise<void> => {
