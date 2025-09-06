@@ -99,6 +99,32 @@
           </div>
         </div>
 
+        <!-- Processing Display -->
+        <div v-else-if="currentStep === 'processing'" class="processing-section text-center p-8">
+          <div class="processing-animation">
+            <div class="loading-spinner">
+              <div class="spinner-ring"></div>
+              <div class="spinner-ring"></div>
+              <div class="spinner-ring"></div>
+            </div>
+            <div class="loading-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+          <h3>Processing Connection...</h3>
+          <p>Setting up your account and loading wallet information</p>
+          <div class="progress-container mt-6">
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: processingProgress + '%' }"></div>
+            </div>
+            <div class="progress-text text-sm text-gray-600 mt-2">
+              {{ processingMessage }}
+            </div>
+          </div>
+        </div>
+
         <!-- Success Display -->
         <div v-else-if="currentStep === 'success'" class="success-section text-center p-8">
           <div class="success-icon">
@@ -183,13 +209,17 @@
   const walletStore = useWalletConnectStore()
 
   // State
-  const currentStep = ref<'selection' | 'connecting' | 'qr-code' | 'error' | 'success'>('qr-code')
+  const currentStep = ref<
+    'selection' | 'connecting' | 'qr-code' | 'processing' | 'error' | 'success'
+  >('qr-code')
   const selectedWallet = ref<WalletOption | null>(null)
   const connectionUri = ref<string | null>(null)
   const qrCodeDataUrl = ref<string | null>(null)
   const isConnecting = ref(false)
   const error = ref<string | null>(null)
   const isCopied = ref(false)
+  const processingProgress = ref(0)
+  const processingMessage = ref('Initializing...')
 
   // Available wallet options
   const availableWallets = ref<WalletOption[]>([
@@ -230,6 +260,8 @@
     qrCodeDataUrl.value = null
     isConnecting.value = false
     error.value = null
+    processingProgress.value = 0
+    processingMessage.value = 'Initializing...'
   }
 
   const selectWallet = async (wallet: WalletOption) => {
@@ -255,16 +287,41 @@
         if (session) {
           console.log('Wallet connection approved:', session)
 
+          // Show processing state
+          currentStep.value = 'processing'
+          processingProgress.value = 20
+          processingMessage.value = 'Verifying connection...'
+
           // Wait a moment for the wallet store to update
           await new Promise(resolve => setTimeout(resolve, 1000))
 
           // Try to fetch wallet info from the service
           try {
+            processingProgress.value = 40
+            processingMessage.value = 'Fetching wallet information...'
+
             const fetchedWalletInfo = await sageWalletConnectService.getWalletInfo()
             if (fetchedWalletInfo) {
               console.log('Fetched wallet info:', fetchedWalletInfo)
+
+              processingProgress.value = 60
+              processingMessage.value = 'Setting up account...'
+
               // Update the store with the fetched wallet info
               walletStore.walletInfo = fetchedWalletInfo
+
+              processingProgress.value = 80
+              processingMessage.value = 'Finalizing connection...'
+
+              // Wait a moment to show the progress
+              await new Promise(resolve => setTimeout(resolve, 500))
+
+              processingProgress.value = 100
+              processingMessage.value = 'Connection complete!'
+
+              // Wait a moment then show success
+              await new Promise(resolve => setTimeout(resolve, 500))
+
               currentStep.value = 'success'
               emit('connected', fetchedWalletInfo)
             } else {
@@ -757,5 +814,100 @@
 
   .download-link:hover {
     @apply dark:bg-blue-500 dark:text-white;
+  }
+
+  /* Processing Animation Styles */
+  .processing-animation {
+    @apply flex flex-col items-center gap-4 mb-6;
+  }
+
+  .loading-spinner {
+    @apply relative w-16 h-16;
+  }
+
+  .spinner-ring {
+    @apply absolute w-full h-full border-4 border-transparent rounded-full;
+    animation: spin 1.5s linear infinite;
+  }
+
+  .spinner-ring:nth-child(1) {
+    @apply border-t-blue-500 border-r-blue-400;
+    animation-delay: 0s;
+  }
+
+  .spinner-ring:nth-child(2) {
+    @apply border-t-green-500 border-r-green-400;
+    animation-delay: 0.2s;
+  }
+
+  .spinner-ring:nth-child(3) {
+    @apply border-t-purple-500 border-r-purple-400;
+    animation-delay: 0.4s;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .loading-dots {
+    @apply flex gap-2;
+  }
+
+  .loading-dots span {
+    @apply w-3 h-3 bg-blue-500 rounded-full;
+    animation: bounce 1.2s ease-in-out infinite both;
+  }
+
+  .loading-dots span:nth-child(1) {
+    animation-delay: -0.32s;
+  }
+
+  .loading-dots span:nth-child(2) {
+    animation-delay: -0.16s;
+  }
+
+  .loading-dots span:nth-child(3) {
+    animation-delay: 0s;
+  }
+
+  @keyframes bounce {
+    0%,
+    80%,
+    100% {
+      transform: scale(0);
+    }
+    40% {
+      transform: scale(1);
+    }
+  }
+
+  .progress-container {
+    @apply w-full max-w-xs mx-auto;
+  }
+
+  .progress-bar {
+    @apply w-full h-3 bg-gray-200 rounded-full overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-full transition-all duration-700 ease-out;
+  }
+
+  .progress-text {
+    @apply text-center text-sm text-gray-600 mt-2;
+  }
+
+  /* Dark mode for processing */
+  .progress-bar {
+    @apply dark:bg-gray-700;
+  }
+
+  .progress-text {
+    @apply dark:text-gray-300;
   }
 </style>

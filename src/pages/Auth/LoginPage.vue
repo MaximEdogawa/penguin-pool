@@ -1,4 +1,5 @@
 <template>
+  <!-- Login Screen with Loading State -->
   <div
     class="login-page min-h-screen flex items-center justify-center px-6 py-20 md:px-20 lg:px-80 backdrop-blur-3xl bg-cover bg-center bg-no-repeat"
     :style="backgroundStyle"
@@ -170,10 +171,6 @@
         throw new Error('Invalid wallet info - no address found')
       }
 
-      connectionStatus.value = 'Wallet connected successfully!'
-      statusType.value = 'success'
-      statusIcon.value = 'pi pi-check-circle'
-
       // Login user with wallet fingerprint if available, otherwise use address
       if (wallet.fingerprint) {
         console.log('Logging in with wallet fingerprint:', wallet.fingerprint)
@@ -189,20 +186,12 @@
         currentUser: userStore.currentUser,
       })
 
-      // Redirect to dashboard after successful connection
-      setTimeout(() => {
-        console.log('Attempting redirect to dashboard...')
-        console.log('Current route:', router.currentRoute.value.path)
-        console.log('User authenticated:', userStore.isAuthenticated)
-        router
-          .push('/dashboard')
-          .then(() => {
-            console.log('Redirect successful, new route:', router.currentRoute.value.path)
-          })
-          .catch(error => {
-            console.error('Redirect failed:', error)
-          })
-      }, 1000)
+      console.log('Attempting redirect to dashboard...')
+      console.log('Current route:', router.currentRoute.value.path)
+      console.log('User authenticated:', userStore.isAuthenticated)
+
+      await router.push('/dashboard')
+      console.log('Successfully redirected to dashboard')
     } catch (error) {
       console.error('Failed to process wallet connection:', error)
       connectionStatus.value =
