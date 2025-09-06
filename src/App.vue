@@ -1,14 +1,11 @@
 <script setup lang="ts">
+  import AppProvider from '@/app/providers/AppProvider.vue'
+  import { useUserStore } from '@/entities/user/store/userStore'
+  import AppLayout from '@/widgets/Layout/AppLayout.vue'
   import { computed } from 'vue'
   import { RouterView } from 'vue-router'
-  import AppProvider from '@/app/providers/AppProvider.vue'
-  import AppLayout from '@/widgets/Layout/AppLayout.vue'
-  import { useUserStore } from '@/entities/user/store/userStore'
 
-  // Get user store
   const userStore = useUserStore()
-
-  // Check if user is authenticated using the store state
   const isAuthenticated = computed(() => {
     return userStore.isAuthenticated || localStorage.getItem('penguin-pool-user') !== null
   })

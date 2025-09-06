@@ -175,7 +175,7 @@ export function useUptime() {
   }
 
   // Auto-refresh setup
-  let refreshTimer: number | null = null
+  let refreshTimer: ReturnType<typeof setInterval> | null = null
 
   const startAutoRefresh = () => {
     if (refreshTimer) {

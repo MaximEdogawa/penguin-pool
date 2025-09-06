@@ -72,6 +72,49 @@ Penguin-pool is a modern, privacy-focused decentralized lending platform that co
 - npm/yarn/pnpm
 - Git
 - Modern browser with PWA support
+- WalletConnect Project ID (optional, for wallet features)
+- KurrentDB API keys (optional, for database features)
+
+### Environment Setup
+
+1. **Copy environment template**:
+
+   ```bash
+   cp env.example .env
+   ```
+
+2. **Configure required environment variables**:
+   - `VITE_WALLET_CONNECT_PROJECT_ID`: Get from [WalletConnect Cloud](https://cloud.walletconnect.com/)
+   - `VITE_KURRENT_DB_DEV_API_KEY` & `VITE_KURRENT_DB_DEV_SECRET_KEY`: Get from KurrentDB dashboard
+
+3. **Optional configurations**:
+   - Update API endpoints if using custom backend
+   - Configure blockchain network settings
+   - Set feature flags as needed
+
+### Troubleshooting
+
+If you see warnings about missing configuration:
+
+- **WalletConnect warnings**: Set `VITE_WALLET_CONNECT_PROJECT_ID` in your `.env` file
+- **KurrentDB warnings**: Set the appropriate API keys for your environment
+- **Lit development mode**: This is automatically suppressed in production builds
+
+### Backend API
+
+The backend provides a comprehensive REST API with full Swagger/OpenAPI documentation:
+
+- **API Base URL**: `http://localhost:3002`
+- **Interactive Documentation**: `http://localhost:3002/api/docs`
+- **OpenAPI Specification**: `http://localhost:3002/api/docs-json`
+
+#### Available API Modules:
+
+- **Health Monitoring** - System health checks and status
+- **Stream Management** - Event stream CRUD operations
+- **Uptime Tracking** - Service uptime monitoring and statistics
+- **KurrentDB Integration** - Direct database operations and proxy
+- **Status Endpoints** - API status and information
 
 ### Backend API
 

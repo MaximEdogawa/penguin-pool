@@ -113,7 +113,6 @@ export const getKurrentDBConfig = (): KurrentDBConfig => {
 
 export const isKurrentDBEnabled = (): boolean => {
   const config = getKurrentDBConfig()
-  // Enable by default if VITE_KURRENT_DB_ENABLED is not explicitly set to 'false'
   const explicitlyDisabled = import.meta.env.VITE_KURRENT_DB_ENABLED === 'false'
   return config.enabled && !explicitlyDisabled
 }

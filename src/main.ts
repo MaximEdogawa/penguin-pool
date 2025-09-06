@@ -1,25 +1,29 @@
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-import { VueQueryPlugin } from '@tanstack/vue-query'
 import Aura from '@primeuix/themes/aura'
+import { VueQueryPlugin } from '@tanstack/vue-query'
+import { createPinia } from 'pinia'
+import { createApp } from 'vue'
 
 // PrimeVue imports
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 
-import ConfirmationService from 'primevue/confirmationservice'
 import 'primeicons/primeicons.css'
-import './assets/main.css'
 import Button from 'primevue/button'
+import ConfirmationService from 'primevue/confirmationservice'
 import Menu from 'primevue/menu'
-import Tabs from 'primevue/tabs'
-import TabList from 'primevue/tablist'
 import Tab from 'primevue/tab'
-import TabPanels from 'primevue/tabpanels'
+import TabList from 'primevue/tablist'
 import TabPanel from 'primevue/tabpanel'
+import TabPanels from 'primevue/tabpanels'
+import Tabs from 'primevue/tabs'
+import './assets/main.css'
 
 import App from './App.vue'
 import router from './router'
+import { validateEnvironment } from './shared/config/environment'
+
+// Validate environment configuration early
+validateEnvironment()
 
 const app = createApp(App)
 

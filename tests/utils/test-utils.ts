@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { mount, VueWrapper } from '@vue/test-utils'
-import { vi} from 'vitest'
+import { vi } from 'vitest'
 import type { ComponentMountingOptions } from '@vue/test-utils'
 
 // Test utilities for Vue components
@@ -16,15 +16,15 @@ export class TestUtils {
       global: {
         stubs: {
           // Stub common PrimeVue components
-          'PrimeVue': true,
-          'Toast': true,
-          'ToastService': true,
-          'ConfirmDialog': true,
-          'ConfirmService': true,
-          'DialogService': true,
-          'DynamicDialog': true,
-          'RouterLink': true,
-          'RouterView': true,
+          PrimeVue: true,
+          Toast: true,
+          ToastService: true,
+          ConfirmDialog: true,
+          ConfirmService: true,
+          DialogService: true,
+          DynamicDialog: true,
+          RouterLink: true,
+          RouterView: true,
         },
         mocks: {
           // Mock common composables
@@ -50,8 +50,6 @@ export class TestUtils {
 
     return mount(component, defaultOptions)
   }
-
-
 
   /**
    * Wait for next tick
@@ -83,11 +81,7 @@ export class TestUtils {
   /**
    * Mock fetch with specific response
    */
-  static mockFetchResponse(
-    url: string | RegExp,
-    response: any,
-    status: number = 200
-  ) {
+  static mockFetchResponse(url: string | RegExp, response: any, status: number = 200) {
     const mockResponse = {
       ok: status >= 200 && status < 300,
       status,
@@ -98,14 +92,14 @@ export class TestUtils {
     }
 
     if (typeof url === 'string') {
-      vi.mocked(fetch).mockImplementationOnce((requestUrl) => {
+      vi.mocked(fetch).mockImplementationOnce(requestUrl => {
         if (requestUrl === url) {
           return Promise.resolve(mockResponse as Response)
         }
         return Promise.reject(new Error('URL not matched'))
       })
     } else {
-      vi.mocked(fetch).mockImplementationOnce((requestUrl) => {
+      vi.mocked(fetch).mockImplementationOnce(requestUrl => {
         if (url.test(requestUrl.toString())) {
           return Promise.resolve(mockResponse as Response)
         }
@@ -133,11 +127,7 @@ export class TestUtils {
   /**
    * Create mock keyboard event
    */
-  static createMockKeyboardEvent(
-    type: string,
-    key: string,
-    options: any = {}
-  ) {
+  static createMockKeyboardEvent(type: string, key: string, options: any = {}) {
     return new KeyboardEvent(type, {
       key,
       bubbles: true,
@@ -149,10 +139,7 @@ export class TestUtils {
   /**
    * Create mock mouse event
    */
-  static createMockMouseEvent(
-    type: string,
-    options: any = {}
-  ) {
+  static createMockMouseEvent(type: string, options: any = {}) {
     return new MouseEvent(type, {
       bubbles: true,
       cancelable: true,
@@ -308,13 +295,21 @@ export const expectElementToBeVisible = (wrapper: VueWrapper<any>, selector: str
   expect(element.isVisible()).toBe(true)
 }
 
-export const expectElementToHaveText = (wrapper: VueWrapper<any>, selector: string, text: string) => {
+export const expectElementToHaveText = (
+  wrapper: VueWrapper<any>,
+  selector: string,
+  text: string
+) => {
   const element = wrapper.find(selector)
   expect(element.exists()).toBe(true)
   expect(element.text()).toContain(text)
 }
 
-export const expectElementToHaveClass = (wrapper: VueWrapper<any>, selector: string, className: string) => {
+export const expectElementToHaveClass = (
+  wrapper: VueWrapper<any>,
+  selector: string,
+  className: string
+) => {
   const element = wrapper.find(selector)
   expect(element.exists()).toBe(true)
   expect(element.classes()).toContain(className)

@@ -1,309 +1,352 @@
 <template>
-  <div class="login-page">
-    <div class="auth-container">
-      <div class="auth-card">
-        <!-- Logo and Title -->
-        <div class="auth-header">
-          <div class="logo-container">
-            <PenguinLogo class="logo" />
-          </div>
-          <h1 class="auth-title">Welcome to Penguin Pool</h1>
-          <p class="auth-subtitle">
-            Connect your wallet to access the decentralized lending platform
-          </p>
+  <div
+    class="login-page min-h-screen flex items-center justify-center px-6 py-20 md:px-20 lg:px-80 backdrop-blur-3xl bg-cover bg-center bg-no-repeat"
+    :style="backgroundStyle"
+  >
+    <div
+      class="px-8 md:px-12 lg:px-20 flex py-4 flex-col items-center gap-2 w-full backdrop-blur-2xl rounded-2xl bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 max-w-md"
+    >
+      <!-- Logo and Title -->
+      <div class="flex flex-col items-center gap-2 w-full">
+        <div class="logo-container">
+          <PenguinLogo class="h-12 w-12" />
         </div>
-
-        <!-- Wallet Connection Section -->
-        <div class="wallet-section">
-          <h2 class="section-title">Connect Your Wallet</h2>
-          <p class="section-description">
-            Choose your preferred wallet to securely connect to the Chia Network
-          </p>
-
-          <!-- Wallet Options -->
-          <div class="wallet-options">
-            <!-- Wallet Connect Option -->
-            <button
-              @click="connectWalletConnect"
-              class="wallet-option primary"
-              :disabled="isConnecting"
+        <div class="flex flex-col gap-2 w-full">
+          <div class="text-center text-2xl font-medium text-white dark:text-gray-100 leading-tight">
+            Penguin Pool
+          </div>
+          <div class="text-center text-sm">
+            <span class="text-white/80 dark:text-gray-300/80"
+              >Connect your wallet to access the decentralized lending platform</span
             >
-              <div class="wallet-icon">
-                <i class="pi pi-wallet text-xl sm:text-2xl"></i>
-              </div>
-              <div class="wallet-info">
-                <h3 class="wallet-name">Wallet Connect</h3>
-                <p class="wallet-description">Connect any compatible wallet</p>
-              </div>
-              <div class="wallet-status">
-                <i v-if="isConnecting" class="pi pi-spin pi-spinner text-base sm:text-lg"></i>
-                <i v-else class="pi pi-arrow-right text-base sm:text-lg"></i>
-              </div>
-            </button>
-
-            <!-- Sage Wallet Option -->
-            <button
-              @click="connectSageWallet"
-              class="wallet-option secondary"
-              :disabled="isConnecting"
-            >
-              <div class="wallet-icon">
-                <i class="pi pi-credit-card text-xl sm:text-2xl"></i>
-              </div>
-              <div class="wallet-info">
-                <h3 class="wallet-name">Sage Wallet</h3>
-                <p class="wallet-description">Native Chia wallet integration</p>
-              </div>
-              <div class="wallet-status">
-                <i v-if="isConnecting" class="pi pi-spin pi-spinner text-base sm:text-lg"></i>
-                <i v-else class="pi pi-arrow-right text-base sm:text-lg"></i>
-              </div>
-            </button>
           </div>
-
-          <!-- Connection Status -->
-          <div v-if="connectionStatus" class="connection-status" :class="statusType">
-            <i :class="statusIcon" class="status-icon"></i>
-            <span class="status-text">{{ connectionStatus }}</span>
-          </div>
-
-          <!-- Help Section -->
-          <div class="help-section">
-            <h3 class="help-title">Need Help?</h3>
-            <div class="help-links">
-              <a href="#" class="help-link">
-                <i class="pi pi-question-circle text-sm"></i>
-                <span>How to connect wallet</span>
-              </a>
-              <a href="#" class="help-link">
-                <i class="pi pi-shield text-sm"></i>
-                <span>Security guide</span>
-              </a>
-              <a href="#" class="help-link">
-                <i class="pi pi-book text-sm"></i>
-                <span>Documentation</span>
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="auth-footer">
-          <p class="footer-text">
-            By connecting your wallet, you agree to our
-            <a href="#" class="footer-link">Terms of Service</a> and
-            <a href="#" class="footer-link">Privacy Policy</a>
-          </p>
         </div>
       </div>
+
+      <!-- Wallet Connection Section -->
+      <div class="flex flex-col items-center w-full">
+        <div class="flex flex-col w-full">
+          <!-- Primary Wallet Option - Sage -->
+          <button
+            @click="connectWalletConnect"
+            class="wallet-option-primary group relative overflow-hidden rounded-3xl bg-white/10 dark:bg-gray-800/10 border border-white/20 dark:border-gray-700/20 p-6 w-full transition-all duration-300 hover:bg-white/20 dark:hover:bg-gray-800/20 hover:scale-105 hover:shadow-xl"
+            :disabled="isConnecting"
+          >
+            <div class="flex items-center gap-2">
+              <div class="wallet-icon-primary">
+                <i class="pi pi-wallet text-2xl text-white dark:text-gray-100"></i>
+              </div>
+              <div class="flex-1 text-left">
+                <h3 class="text-lg font-semibold text-white dark:text-gray-100 mb-1">
+                  Sage Wallet
+                </h3>
+                <p class="text-sm text-white/70 dark:text-gray-300/70">
+                  Recommended for Chia Network
+                </p>
+              </div>
+              <div class="wallet-status">
+                <i v-if="isConnecting" class="pi pi-spin pi-spinner text-lg text-white/70"></i>
+                <i
+                  v-else
+                  class="pi pi-arrow-right text-lg text-white/70 group-hover:text-white transition-colors"
+                ></i>
+              </div>
+            </div>
+            <div
+              class="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl"
+            ></div>
+          </button>
+
+          <!-- Secondary Wallet Options -->
+          <div class="flex flex-col gap-2 mt-4">
+            <div class="text-center text-sm text-white/60 dark:text-gray-400 mb-2">
+              Other Wallets
+            </div>
+
+            <!-- Chia Wallet -->
+            <button
+              @click="connectChiaWallet"
+              class="wallet-option-secondary group relative overflow-hidden rounded-2xl bg-white/5 dark:bg-gray-800/5 border border-white/10 dark:border-gray-700/10 p-4 w-full transition-all duration-300 hover:bg-white/10 dark:hover:bg-gray-800/10"
+              :disabled="isConnecting"
+            >
+              <div class="flex items-center gap-3">
+                <div class="wallet-icon-secondary">
+                  <i class="pi pi-wallet text-lg text-white/60 dark:text-gray-400"></i>
+                </div>
+                <div class="flex-1 text-left">
+                  <h4 class="text-sm font-medium text-white/80 dark:text-gray-200">Chia Wallet</h4>
+                  <p class="text-xs text-white/50 dark:text-gray-400">Official Chia wallet</p>
+                </div>
+                <i
+                  class="pi pi-arrow-right text-sm text-white/40 group-hover:text-white/60 transition-colors"
+                ></i>
+              </div>
+            </button>
+
+            <!-- Other Wallets -->
+            <button
+              @click="connectOtherWallet"
+              class="wallet-option-secondary group relative overflow-hidden rounded-2xl bg-white/5 dark:bg-gray-800/5 border border-white/10 dark:border-gray-700/10 p-4 w-full transition-all duration-300 hover:bg-white/10 dark:hover:bg-gray-800/10"
+              :disabled="isConnecting"
+            >
+              <div class="flex items-center gap-3">
+                <div class="wallet-icon-secondary">
+                  <i class="pi pi-wallet text-lg text-white/60 dark:text-gray-400"></i>
+                </div>
+                <div class="flex-1 text-left">
+                  <h4 class="text-sm font-medium text-white/80 dark:text-gray-200">
+                    Other Wallets
+                  </h4>
+                  <p class="text-xs text-white/50 dark:text-gray-400">WalletConnect compatible</p>
+                </div>
+                <i
+                  class="pi pi-arrow-right text-sm text-white/40 group-hover:text-white/60 transition-colors"
+                ></i>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Connection Status -->
+        <div v-if="connectionStatus" class="connection-status w-full" :class="statusType">
+          <i :class="statusIcon" class="status-icon"></i>
+          <span class="status-text">{{ connectionStatus }}</span>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="text-center">
+        <p class="text-white/60 dark:text-gray-400 text-sm">
+          By connecting your wallet, you agree to our
+          <a
+            href="#"
+            class="text-white/80 dark:text-gray-300 hover:text-white dark:hover:text-gray-100 underline transition-colors"
+            >Terms of Service</a
+          >
+          and
+          <a
+            href="#"
+            class="text-white/80 dark:text-gray-300 hover:text-white dark:hover:text-gray-100 underline transition-colors"
+            >Privacy Policy</a
+          >
+        </p>
+      </div>
     </div>
+
+    <!-- Wallet Connect Modal -->
+    <WalletConnectModal
+      :is-open="showWalletModal"
+      @close="closeWalletModal"
+      @connected="handleWalletConnected"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
-  import { useRouter } from 'vue-router'
-  import { useUserStore } from '@/entities/user/store/userStore'
   import PenguinLogo from '@/components/PenguinLogo.vue'
+  import { useUserStore } from '@/entities/user/store/userStore'
+  import WalletConnectModal from '@/features/walletConnect/components/WalletConnectModal.vue'
+  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import { computed, onMounted, ref } from 'vue'
+  import { useRouter } from 'vue-router'
 
   const router = useRouter()
   const userStore = useUserStore()
+  const walletConnectStore = useWalletConnectStore()
 
   // State
-  const isConnecting = ref(false)
+  const showWalletModal = ref(false)
   const connectionStatus = ref('')
   const statusType = ref<'info' | 'success' | 'error'>('info')
   const statusIcon = ref('pi pi-info-circle')
 
+  // Computed
+  const isConnecting = computed(() => walletConnectStore.isConnecting)
+
+  const backgroundStyle = computed(() => ({
+    backgroundImage:
+      "url('https://fqjltiegiezfetthbags.supabase.co/storage/v1/object/public/block.images/blocks/signin/signin-glass.jpg')",
+  }))
+
   // Methods
   const connectWalletConnect = async () => {
-    await connectWallet('Wallet Connect')
+    showWalletModal.value = true
   }
 
-  const connectSageWallet = async () => {
-    await connectWallet('Sage Wallet')
+  const connectChiaWallet = async () => {
+    showWalletModal.value = true
   }
 
-  const connectWallet = async (walletType: string) => {
+  const connectOtherWallet = async () => {
+    showWalletModal.value = true
+  }
+
+  const handleWalletConnected = async (walletInfo: unknown) => {
     try {
-      isConnecting.value = true
-      connectionStatus.value = `Connecting to ${walletType}...`
-      statusType.value = 'info'
-      statusIcon.value = 'pi pi-spin pi-spinner'
+      console.log('Received wallet info:', walletInfo)
 
-      // Simulate wallet connection
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Verify wallet info is valid
+      if (!walletInfo || typeof walletInfo !== 'object') {
+        throw new Error('Invalid wallet info - no wallet data received')
+      }
 
-      // For demo purposes, simulate successful connection
-      await userStore.login('xch1demo123456789', 'demo-user')
+      const wallet = walletInfo as { address: string; fingerprint?: number }
+      if (!wallet.address) {
+        throw new Error('Invalid wallet info - no address found')
+      }
 
       connectionStatus.value = 'Wallet connected successfully!'
       statusType.value = 'success'
       statusIcon.value = 'pi pi-check-circle'
 
+      // Login user with wallet fingerprint if available, otherwise use address
+      if (wallet.fingerprint) {
+        console.log('Logging in with wallet fingerprint:', wallet.fingerprint)
+        await userStore.login(wallet.fingerprint, 'wallet-user')
+      } else {
+        console.log('Logging in with wallet address:', wallet.address)
+        await userStore.login(wallet.address, 'wallet-user')
+      }
+
+      // Check authentication state after login
+      console.log('User store state after login:', {
+        isAuthenticated: userStore.isAuthenticated,
+        currentUser: userStore.currentUser,
+      })
+
       // Redirect to dashboard after successful connection
       setTimeout(() => {
-        router.push('/dashboard')
+        console.log('Attempting redirect to dashboard...')
+        console.log('Current route:', router.currentRoute.value.path)
+        console.log('User authenticated:', userStore.isAuthenticated)
+        router
+          .push('/dashboard')
+          .then(() => {
+            console.log('Redirect successful, new route:', router.currentRoute.value.path)
+          })
+          .catch(error => {
+            console.error('Redirect failed:', error)
+          })
       }, 1000)
     } catch (error) {
-      console.error('Wallet connection failed:', error)
-      connectionStatus.value = 'Failed to connect wallet. Please try again.'
+      console.error('Failed to process wallet connection:', error)
+      connectionStatus.value =
+        'Failed to process wallet connection: ' +
+        (error instanceof Error ? error.message : 'Unknown error')
       statusType.value = 'error'
       statusIcon.value = 'pi pi-exclamation-triangle'
     } finally {
-      isConnecting.value = false
+      showWalletModal.value = false
     }
   }
+
+  const closeWalletModal = () => {
+    showWalletModal.value = false
+  }
+
+  onMounted(async () => {
+    try {
+      await walletConnectStore.initialize()
+
+      if (walletConnectStore.isConnected) {
+        // Wait a moment for wallet info to be loaded during session restore
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        const walletInfo = walletConnectStore.walletInfo
+        if (walletInfo && walletInfo.address) {
+          // Use fingerprint if available, otherwise fall back to address
+          if (walletInfo.fingerprint) {
+            console.log('Auto-login with wallet fingerprint:', walletInfo.fingerprint)
+            await userStore.login(walletInfo.fingerprint, 'wallet-user')
+          } else {
+            console.log('Auto-login with wallet address:', walletInfo.address)
+            await userStore.login(walletInfo.address, 'wallet-user')
+          }
+          router.push('/dashboard')
+        } else {
+          console.log('Wallet connected but no wallet info available yet')
+        }
+      }
+    } catch (error) {
+      console.error('Failed to initialize Wallet Connect:', error)
+    }
+  })
 </script>
 
 <style scoped>
   .login-page {
-    @apply min-h-screen w-full mt-10 sm:mt-10 md:mt-10 lg:mt-1 xl:mt-1;
-    background-color: var(--surface-ground);
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    position: relative;
   }
 
-  .auth-container {
-    @apply min-h-screen flex items-center justify-center p-4 sm:p-6;
-    flex: 1;
+  .wallet-option-primary {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
 
-  .auth-card {
-    @apply bg-white dark:bg-gray-800 rounded-2xl shadow-strong border border-gray-200 dark:border-gray-700;
-    max-width: 480px;
-    width: 100%;
+  .wallet-option-primary:disabled {
+    @apply opacity-50 cursor-not-allowed hover:scale-100 hover:shadow-none;
   }
 
-  .auth-header {
-    @apply p-6 sm:p-8 text-center border-b border-gray-200 dark:border-gray-700;
+  .wallet-option-secondary {
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
   }
 
-  .logo-container {
-    @apply mb-4 sm:mb-6;
-  }
-
-  .logo {
-    @apply w-12 h-12 sm:w-16 sm:h-16 mx-auto;
-  }
-
-  .auth-title {
-    @apply text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2;
-  }
-
-  .auth-subtitle {
-    @apply text-sm sm:text-base text-gray-600 dark:text-gray-400;
-  }
-
-  .wallet-section {
-    @apply p-6 sm:p-8;
-  }
-
-  .section-title {
-    @apply text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2;
-  }
-
-  .section-description {
-    @apply text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6;
-  }
-
-  .wallet-options {
-    @apply space-y-3 sm:space-y-4 mb-4 sm:mb-6;
-  }
-
-  .wallet-option {
-    @apply w-full flex items-center p-3 sm:p-4 rounded-xl border-2 border-transparent transition-all duration-200;
-  }
-
-  .wallet-option.primary {
-    @apply bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 hover:bg-primary-100 dark:hover:bg-primary-900/30;
-  }
-
-  .wallet-option.secondary {
-    @apply bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70;
-  }
-
-  .wallet-option:disabled {
+  .wallet-option-secondary:disabled {
     @apply opacity-50 cursor-not-allowed;
   }
 
-  .wallet-icon {
-    @apply w-10 h-10 sm:w-12 sm:h-12 bg-white dark:bg-gray-700 rounded-lg flex items-center justify-center text-primary-600 dark:text-primary-400 mr-3 sm:mr-4;
+  .wallet-icon-primary {
+    @apply w-12 h-12 bg-white/20 dark:bg-gray-800/20 rounded-xl flex items-center justify-center backdrop-blur-sm;
   }
 
-  .wallet-info {
-    @apply flex-1 text-left;
+  .wallet-icon-secondary {
+    @apply w-8 h-8 bg-white/10 dark:bg-gray-800/10 rounded-lg flex items-center justify-center backdrop-blur-sm;
   }
 
-  .wallet-name {
-    @apply font-semibold text-gray-900 dark:text-white text-sm;
-  }
-
-  .wallet-description {
-    @apply text-gray-500 dark:text-gray-400 text-xs;
-  }
-
-  .wallet-status {
-    @apply text-gray-400 dark:text-gray-500;
-  }
-
-  /* Connection Status */
   .connection-status {
-    @apply flex items-center p-3 rounded-lg text-sm mb-4 sm:mb-6;
+    @apply p-4 rounded-2xl text-sm font-medium flex items-center gap-3 backdrop-blur-sm;
   }
 
   .connection-status.info {
-    @apply bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300;
+    @apply bg-blue-500/20 dark:bg-blue-500/10 text-blue-200 dark:text-blue-300 border border-blue-400/30 dark:border-blue-500/20;
   }
 
   .connection-status.success {
-    @apply bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300;
+    @apply bg-green-500/20 dark:bg-green-500/10 text-green-200 dark:text-green-300 border border-green-400/30 dark:border-green-500/20;
   }
 
   .connection-status.error {
-    @apply bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300;
+    @apply bg-red-500/20 dark:bg-red-500/10 text-red-200 dark:text-red-300 border border-red-400/30 dark:border-red-500/20;
   }
 
   .status-icon {
-    @apply mr-2;
+    @apply text-lg;
   }
 
-  .status-text {
-    @apply font-medium;
+  /* Glass morphism effects */
+  .login-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+    pointer-events: none;
   }
 
-  /* Help Section */
-  .help-section {
-    @apply mb-4 sm:mb-6;
+  /* Responsive adjustments */
+  @media (max-width: 640px) {
+    .login-page {
+      @apply px-4 py-16;
+    }
   }
 
-  .help-title {
-    @apply text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 sm:mb-3;
-  }
-
-  .help-links {
-    @apply space-y-2;
-  }
-
-  .help-link {
-    @apply flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200;
-  }
-
-  .help-link i {
-    @apply mr-2;
-  }
-
-  /* Auth Footer */
-  .auth-footer {
-    @apply p-4 sm:p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700;
-  }
-
-  .footer-text {
-    @apply text-xs text-gray-500 dark:text-gray-400 text-center;
-  }
-
-  .footer-link {
-    @apply text-primary-600 dark:text-primary-400 hover:underline;
+  @media (max-width: 480px) {
+    .login-page {
+      @apply px-3 py-12;
+    }
   }
 </style>

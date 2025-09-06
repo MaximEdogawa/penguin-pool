@@ -43,17 +43,53 @@
           <!-- User Info Section -->
           <div class="user-info-section">
             <div class="user-avatar">
-              <i class="pi pi-user text-xl text-white"></i>
+              <i
+                :class="walletStore.isConnected ? 'pi pi-wallet' : 'pi pi-user'"
+                class="text-xl text-white"
+              ></i>
             </div>
             <div v-if="!isCollapsed && !isSmallScreen" class="user-details">
               <p class="user-name">{{ userName }}</p>
               <p class="user-email">{{ userEmail }}</p>
+
+              <!-- Wallet Connection Info -->
+              <div v-if="walletStore.isConnected" class="wallet-info">
+                <div class="wallet-fingerprint">
+                  <i class="pi pi-key text-sm"></i>
+                  <span class="fingerprint-text">{{
+                    walletStore.walletInfo?.fingerprint || 'N/A'
+                  }}</span>
+                </div>
+              </div>
+
               <!-- Connection Status -->
               <div class="connection-status" :class="connectionStatusClass">
                 <div class="connection-dot"></div>
                 <span class="connection-text">{{ connectionStatusText }}</span>
               </div>
             </div>
+          </div>
+
+          <!-- Wallet Connect/Disconnect Button -->
+          <div class="wallet-section">
+            <PrimeButton
+              v-if="walletStore.isConnecting"
+              :icon="'pi pi-spin pi-spinner'"
+              :label="!isCollapsed && !isSmallScreen ? 'Connecting...' : ''"
+              :title="isCollapsed || isSmallScreen ? 'Connecting...' : ''"
+              class="nav-link w-full justify-start p-button-text wallet-connecting-btn"
+              text
+              disabled
+            />
+            <PrimeButton
+              v-else-if="!walletStore.isConnected"
+              @click="navigateTo('/auth')"
+              :icon="'pi pi-wallet'"
+              :label="!isCollapsed && !isSmallScreen ? 'Connect Wallet' : ''"
+              :title="isCollapsed || isSmallScreen ? 'Connect Wallet' : ''"
+              class="nav-link w-full justify-start p-button-text wallet-connect-btn"
+              text
+            />
           </div>
 
           <!-- Settings Link -->
@@ -97,13 +133,18 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue'
-  import { useRouter, useRoute } from 'vue-router'
   import { useUserStore } from '@/entities/user/store/userStore'
+  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import { computed, onMounted, onUnmounted, ref } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
 
   // Router
   const router = useRouter()
   const route = useRoute()
+
+  // Stores
+  const userStore = useUserStore()
+  const walletStore = useWalletConnectStore()
 
   // Props
   interface Props {
@@ -119,12 +160,23 @@
     close: []
   }>()
 
-  // Store
-  const userStore = useUserStore()
-
   // Small screen detection
+  const windowWidth = ref(window.innerWidth)
   const isSmallScreen = computed(() => {
-    return window.innerWidth <= 1023
+    return windowWidth.value <= 1023
+  })
+
+  // Update window width on resize
+  const updateWindowWidth = () => {
+    windowWidth.value = window.innerWidth
+  }
+
+  onMounted(() => {
+    window.addEventListener('resize', updateWindowWidth)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('resize', updateWindowWidth)
   })
 
   // Navigation items for PrimeVue Menu
@@ -184,11 +236,11 @@
   })
 
   const connectionStatusClass = computed(() => {
-    return userStore.currentUser?.walletAddress ? 'connected' : 'disconnected'
+    return walletStore.isConnected ? 'connected' : 'disconnected'
   })
 
   const connectionStatusText = computed(() => {
-    return userStore.currentUser?.walletAddress ? 'Connected' : 'Disconnected'
+    return walletStore.isConnected ? 'Wallet Connected' : 'Wallet Disconnected'
   })
 
   // Methods
@@ -198,6 +250,9 @@
 
   const handleLogout = async () => {
     try {
+      if (walletStore.isConnected) {
+        await walletStore.disconnect()
+      }
       await userStore.logout()
       // Redirect to auth page after logout
       window.location.href = '/auth'
@@ -242,7 +297,7 @@
   }
 
   .collapse-toggle {
-    @apply p-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-700/30 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200;
+    @apply rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100/30 dark:hover:bg-gray-700/30 hover:text-gray-900 dark:hover:text-gray-100 transition-all duration-200;
   }
 
   /* Collapse toggle button styling */
@@ -390,6 +445,40 @@
     @apply text-red-600 dark:text-red-400;
   }
 
+  /* Wallet Info Section */
+  .wallet-info {
+    @apply space-y-1 mb-2;
+  }
+
+  .wallet-fingerprint {
+    @apply flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300;
+  }
+
+  .fingerprint-text {
+    @apply font-mono text-sm font-semibold;
+  }
+
+  .wallet-fingerprint i {
+    @apply text-primary-600 dark:text-primary-400 flex-shrink-0;
+  }
+
+  /* Wallet Section */
+  .wallet-section {
+    @apply mb-3;
+  }
+
+  .wallet-connect-btn {
+    @apply text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20;
+  }
+
+  .wallet-connecting-btn {
+    @apply text-gray-500 dark:text-gray-400 cursor-not-allowed;
+  }
+
+  .wallet-disconnect-btn {
+    @apply text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20;
+  }
+
   /* Sign Out Section */
   .signout-section {
     @apply mb-3;
@@ -466,17 +555,17 @@
 
   @media (max-width: 1200px) {
     .sidebar {
-      width: 25vw; /* 25% on medium screens */
+      width: 25vw;
     }
 
     .sidebar.sidebar-collapsed {
-      width: 8vw; /* 8% when collapsed on medium screens */
+      width: 8vw;
     }
   }
 
   @media (max-width: 1023px) {
     .sidebar {
-      width: 80vw; /* 80% of viewport width on mobile */
+      width: 20vw;
       transform: translateX(-100%); /* Hidden by default */
       background: rgb(255 255 255 / 0.95); /* More opaque for mobile */
       backdrop-filter: blur(20px); /* Moderate blur for mobile */
@@ -490,26 +579,26 @@
     }
 
     .sidebar.sidebar-open {
-      transform: translateX(0); /* Show when toggled */
+      transform: translateX(0);
     }
 
     .sidebar.sidebar-collapsed {
-      width: 80vw; /* Keep 80% width when collapsed on mobile */
+      width: 20vw;
     }
 
     .sidebar.dark {
-      background: rgb(31 41 55 / 0.95); /* More opaque dark mode */
+      background: rgb(31 41 55 / 0.95);
       border: 1px solid rgb(75 85 99 / 0.3);
     }
   }
 
   @media (max-width: 768px) {
     .sidebar {
-      width: 10vw; /* 10% of viewport width on mobile */
+      width: 15vw;
     }
 
     .sidebar.sidebar-collapsed {
-      width: 10vw; /* Keep 10% width when collapsed */
+      width: 18vw;
     }
   }
 

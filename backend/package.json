@@ -14,7 +14,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "docker:build": "docker build -t kurrentdb-backend .",
-    "docker:run": "docker run -p 3000:3000 kurrentdb-backend"
+    "docker:run": "docker run -p 3000:3000 kurrentdb-backend",
+    "kill": "../scripts/kill-backend.sh"
   },
   "dependencies": {
     "@kurrent/kurrentdb-client": "~1.0",

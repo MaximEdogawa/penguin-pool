@@ -47,7 +47,7 @@ Penguin-pool is a Progressive Web App (PWA) that enables decentralized lending a
 interface User {
   id: string // Unique identifier
   username: string // Display name
-  walletAddress: string // Chia wallet address
+  walletAddress: string // Sage Wallet address
   balance: number // Current balance
   createdAt: Date // Account creation date
   updatedAt: Date // Last update timestamp

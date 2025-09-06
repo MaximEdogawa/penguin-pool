@@ -1,18 +1,17 @@
 ---
 name: Custom Feature template
 about: Describe this feature here.
-title: "[Feature]"
+title: '[Feature]'
 labels: feature
 assignees: ''
-
 ---
 
 ## User story
-*As a user* -
-*I want* -
-*so that* -
+
+_As a user_ -
+_I want_ -
+_so that_ -
 
 ## Additional info
-
 
 ## Requirements
