@@ -272,6 +272,35 @@
     -webkit-overscroll-behavior-y: none;
   }
 
+  /* Custom scrollbar styling - only show when needed */
+  .content-body::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .content-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .content-body::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.3);
+    border-radius: 3px;
+  }
+
+  .content-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.5);
+  }
+
+  /* Hide scrollbar when not needed */
+  .content-body:not(:hover)::-webkit-scrollbar {
+    width: 0px;
+  }
+
+  /* For Firefox */
+  .content-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+  }
+
   /* Ensure the app container takes full viewport */
   #app {
     position: fixed;
@@ -486,15 +515,14 @@
 
   /* Content page styles */
   .content-page {
-    @apply w-full h-full flex flex-col overflow-hidden mt-16 sm:mt-18 md:mt-18 lg:mt-1 xl:mt-0;
+    @apply w-full h-full flex flex-col mt-16 sm:mt-18 md:mt-18 lg:mt-1 xl:mt-0;
+    @apply overflow-hidden max-h-[calc(100vh-4rem)] h-full;
     background-color: var(--surface-ground);
     overscroll-behavior: none;
     overscroll-behavior-y: none;
     -webkit-overscroll-behavior: none;
     -webkit-overscroll-behavior-y: none;
     position: relative;
-    height: 100%;
-    max-height: 100vh;
   }
 
   .content-header {
@@ -511,7 +539,8 @@
   }
 
   .content-body {
-    @apply flex-1 p-6 space-y-8 overflow-y-auto overflow-x-hidden;
+    @apply flex-1 p-4 sm:p-6 overflow-x-hidden overflow-y-auto;
+    @apply max-h-[calc(100vh-4rem)] h-full;
     background-color: var(--surface-ground);
     overscroll-behavior: none;
     overscroll-behavior-y: none;
@@ -519,6 +548,9 @@
     -webkit-overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
 
   .content-footer {

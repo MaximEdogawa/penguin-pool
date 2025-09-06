@@ -2,7 +2,7 @@
   <div class="content-page">
     <div class="content-body">
       <!-- Quick Stats -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 flex-shrink-0">
         <div class="card p-4 sm:p-6">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center space-x-3">
@@ -157,7 +157,7 @@
       </div>
 
       <!-- Quick Actions -->
-      <div class="card p-4 sm:p-6">
+      <div class="card p-4 sm:p-6 flex-shrink-0">
         <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
           Quick Actions
         </h2>
@@ -213,19 +213,19 @@
       </div>
 
       <!-- Recent Activity -->
-      <div class="card p-4 sm:p-6">
-        <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
+      <div class="card p-3 sm:p-4 flex-1 min-h-0 max-h-64 lg:max-h-80">
+        <h2 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3">
           Recent Activity
         </h2>
-        <div class="space-y-3 sm:space-y-4">
+        <div class="space-y-2 sm:space-y-3 overflow-y-auto h-full">
           <div
-            class="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+            class="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
           >
             <div class="flex-shrink-0">
-              <i class="pi pi-info-circle text-blue-500 text-sm sm:text-base"></i>
+              <i class="pi pi-info-circle text-blue-500 text-xs sm:text-sm"></i>
             </div>
             <div class="flex-1 min-w-0">
-              <p class="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
+              <p class="text-xs font-medium text-gray-900 dark:text-white truncate">
                 Welcome to Penguin Pool!
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">Just now</p>
@@ -234,14 +234,10 @@
         </div>
       </div>
     </div>
-
-    <!-- Page Footer -->
-    <PageFooter />
   </div>
 </template>
 
 <script setup lang="ts">
-  import PageFooter from '@/components/PageFooter.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
   import { sageWalletConnectService } from '@/features/walletConnect/services/SageWalletConnectService'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
