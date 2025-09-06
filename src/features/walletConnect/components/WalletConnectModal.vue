@@ -155,11 +155,7 @@
         <button v-if="currentStep === 'selection'" @click="closeModal" class="cancel-button">
           Cancel
         </button>
-        <button
-          v-else-if="currentStep === 'qr-code'"
-          @click="goBackToSelection"
-          class="back-button"
-        >
+        <button v-else-if="currentStep === 'qr-code'" @click="goBackToLogin" class="back-button">
           <i class="pi pi-arrow-left"></i>
           Back
         </button>
@@ -325,6 +321,12 @@
     connectionUri.value = null
     qrCodeDataUrl.value = null
     error.value = null
+  }
+
+  const goBackToLogin = () => {
+    // Close the modal and redirect to login page
+    closeModal()
+    window.location.href = '/'
   }
 
   const retryConnection = () => {

@@ -76,14 +76,12 @@ export class SageWalletConnectService {
         this.client = (window as unknown as Record<string, unknown>)
           .__WALLETCONNECT_SIGN_CLIENT__ as InstanceType<typeof SignClient>
       } else {
-        // Initialize the SignClient
         this.client = await SignClient.init({
           projectId: environment.wallet.walletConnect.projectId,
           metadata: CHIA_METADATA,
           relayUrl: 'wss://relay.walletconnect.com',
         })
 
-        // Store globally to prevent re-initialization
         if (typeof window !== 'undefined') {
           ;(window as unknown as Record<string, unknown>).__WALLETCONNECT_SIGN_CLIENT__ =
             this.client
@@ -132,7 +130,6 @@ export class SageWalletConnectService {
 
       if (!this.web3Modal) {
         console.warn('Web3Modal is not initialized. WalletConnect features may be limited.')
-        // Continue without Web3Modal - use direct connection
       }
 
       const { uri, approval } = await this.client.connect({
@@ -148,8 +145,6 @@ export class SageWalletConnectService {
           this.pairings = this.client.pairing.getAll({ active: true })
           this.web3Modal.closeModal()
         } else {
-          // Direct connection without Web3Modal
-          console.log('Connection URI:', uri)
           const session = await approval()
           this.onSessionConnected(session)
           this.pairings = this.client.pairing.getAll({ active: true })
@@ -192,7 +187,6 @@ export class SageWalletConnectService {
       })
 
       if (uri) {
-        // Wrap the approval function to handle session connection
         const wrappedApproval = async () => {
           const session = await approval()
           if (session) {
@@ -218,7 +212,6 @@ export class SageWalletConnectService {
   async disconnect(): Promise<DisconnectResult> {
     try {
       if (!this.client) {
-        // If no client, just reset state
         this.reset()
         return { success: true }
       }
@@ -258,10 +251,7 @@ export class SageWalletConnectService {
       console.warn('Error during force reset disconnect:', error)
     }
 
-    // Clear all event listeners
     this.eventListeners.clear()
-
-    // Reset all state
     this.reset()
     this.client = null
     this.web3Modal = null
