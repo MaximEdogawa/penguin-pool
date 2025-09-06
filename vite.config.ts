@@ -57,12 +57,32 @@ export default defineConfig(({ mode }) => {
           'v8',
           'vm',
           'worker_threads',
+          '@kurrent/kurrentdb-client',
         ],
+        onwarn(warning, warn) {
+          // Suppress warnings about /*#__PURE__*/ comments in ox package
+          if (
+            warning.message &&
+            warning.message.includes('/*#__PURE__*/') &&
+            warning.message.includes('ox')
+          ) {
+            return
+          }
+          warn(warning)
+        },
         output: {
           manualChunks: {
             'vue-vendor': ['vue', 'vue-router', 'pinia'],
             'ui-vendor': ['primevue'],
             'utils-vendor': ['@tanstack/vue-query'],
+            'walletconnect-vendor': [
+              '@walletconnect/sign-client',
+              '@walletconnect/modal',
+              '@walletconnect/types',
+              '@web3modal/standalone',
+            ],
+            'socket-vendor': ['socket.io-client'],
+            'qrcode-vendor': ['qrcode'],
           },
         },
       },

@@ -28,11 +28,24 @@ Development roadmaps, implementation progress, and ticket-specific changes that 
 - UI/UX updates and fixes
 - Development progress tracking
 
+### 📦 [Dependencies](./dependencies/)
+
+Detailed analysis of project dependencies, their purposes, and impact on bundle size and performance.
+
+**Contains:**
+
+- Dependency chain analysis
+- Bundle size optimization
+- Unused dependency documentation
+- Performance impact assessment
+- Future optimization strategies
+
 ## 📖 How to Use
 
 - **New to the project?** Start with the [Design & Technical](./design-technical/) folder to understand the project architecture
 - **Looking for development status?** Check the [Implementation](./implementation/) folder for current progress and next steps
 - **Working on a specific feature?** Look for relevant ticket documentation in the implementation folder
+- **Concerned about bundle size?** Check the [Dependencies](./dependencies/) folder for optimization strategies
 
 ## 🔄 Maintenance
 

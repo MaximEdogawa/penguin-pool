@@ -1,7 +1,6 @@
 import { environment } from '@/shared/config/environment'
 import { SignClient } from '@walletconnect/sign-client'
 import type { PairingTypes, SessionTypes } from '@walletconnect/types'
-import { getSdkError } from '@walletconnect/utils'
 import { Web3Modal } from '@web3modal/standalone'
 import { SageMethods } from '../constants/sage-methods'
 import { CHIA_CHAIN_ID, CHIA_METADATA, REQUIRED_NAMESPACES } from '../constants/wallet-connect'
@@ -24,6 +23,12 @@ import type {
   WalletConnectSession,
 } from '../types/walletConnect.types'
 import { commandHandler } from './CommandHandler'
+
+// Simple replacement for getSdkError to avoid @walletconnect/utils dependency
+const getSdkError = (code: string) => ({
+  code: 6000,
+  message: code,
+})
 
 export class SageWalletConnectService {
   public client: InstanceType<typeof SignClient> | null = null
