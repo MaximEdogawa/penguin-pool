@@ -355,7 +355,6 @@
           if (freshWalletInfo) {
             walletStore.walletInfo = freshWalletInfo
             lastBalanceRefresh.value = new Date()
-            console.log('Wallet info refreshed with fresh balance:', freshWalletInfo)
           }
         }
       } catch (error) {

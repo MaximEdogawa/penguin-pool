@@ -314,13 +314,13 @@
               processingMessage.value = 'Finalizing connection...'
 
               // Wait a moment to show the progress
-              await new Promise(resolve => setTimeout(resolve, 500))
+              await new Promise(resolve => setTimeout(resolve, 300))
 
               processingProgress.value = 100
               processingMessage.value = 'Connection complete!'
 
               // Wait a moment then show success
-              await new Promise(resolve => setTimeout(resolve, 500))
+              await new Promise(resolve => setTimeout(resolve, 300))
 
               currentStep.value = 'success'
               emit('connected', fetchedWalletInfo)
