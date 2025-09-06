@@ -417,10 +417,9 @@
       userStore.value = useUserStore()
 
       // Mark balance as loaded if wallet is connected
-      if (isWalletConnected.value) {
-        balanceLoaded.value = true
-        lastBalanceRefresh.value = new Date()
-      }
+      // Router guard already ensures wallet is connected for this page
+      balanceLoaded.value = true
+      lastBalanceRefresh.value = new Date()
     } catch (error) {
       console.error('Failed to initialize dashboard:', error)
     }
@@ -437,6 +436,7 @@
       balanceLoaded.value = false
       lastBalanceRefresh.value = null
       stopAutoRefresh()
+      // Router guard will handle redirect to login
     }
   })
 

@@ -128,15 +128,18 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.meta.requiresAuth) {
+    // Check both authentication and wallet connection for protected routes
     if (isAuthenticated) {
       next()
     } else {
-      console.log('Router guard - redirecting to auth (not authenticated)')
+      console.log('Router guard - redirecting to auth (not authenticated or wallet not connected)')
       next('/auth')
     }
   } else {
     if (to.path === '/auth' && isAuthenticated) {
-      console.log('Router guard - redirecting authenticated user from auth to dashboard')
+      console.log(
+        'Router guard - redirecting authenticated user with wallet from auth to dashboard'
+      )
       next('/dashboard')
     } else {
       console.log('Router guard - allowing access to public route')
