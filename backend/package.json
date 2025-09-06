@@ -5,31 +5,30 @@
   "main": "dist/main.js",
   "scripts": {
     "build": "nest build",
-    "build:dev": "nest build --env-file=env.dev",
-    "build:test": "nest build --env-file=env.test",
-    "build:staging": "nest build --env-file=env.staging",
-    "build:production": "nest build --env-file=env.production",
-    "start": "nest start",
-    "start:dev": "nest start --env-file=env.dev",
-    "start:test": "nest start --env-file=env.test",
-    "start:staging": "nest start --env-file=env.staging",
-    "start:production": "nest start --env-file=env.production",
+    "build:dev": "NODE_ENV=dev nest build",
+    "build:test": "NODE_ENV=test nest build",
+    "build:staging": "NODE_ENV=staging nest build",
+    "build:production": "NODE_ENV=production nest build",
     "dev:debug": "nest start --debug --watch",
-    "dev:debug:dev": "nest start --debug --watch --env-file=env.dev",
-    "dev:debug:test": "nest start --debug --watch --env-file=env.test",
-    "dev:debug:staging": "nest start --debug --watch --env-file=env.staging",
-    "dev:debug:production": "nest start --debug --watch --env-file=env.production",
+    "dev:debug:dev": "NODE_ENV=dev nest start --debug --watch",
+    "dev:debug:test": "NODE_ENV=test nest start --debug --watch",
+    "dev:debug:staging": "NODE_ENV=staging nest start --debug --watch",
+    "dev:debug:production": "NODE_ENV=production nest start --debug --watch",
     "start:prod": "node dist/main",
-    "dev": "nest start --watch --env-file=.env",
-    "dev:test": "nest start --watch --env-file=env.test",
-    "dev:staging": "nest start --watch --env-file=env.staging",
-    "dev:production": "nest start --watch --env-file=env.production",
+    "dev": "NODE_ENV=dev nest start --watch",
+    "dev:test": "NODE_ENV=test nest start --watch",
+    "dev:staging": "NODE_ENV=staging nest start --watch",
+    "dev:production": "NODE_ENV=production nest start --watch",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:validation:dev": "jest --testPathPattern=feature-flags.environment.spec.ts -- --env=dev",
+    "test:validation:test": "jest --testPathPattern=feature-flags.environment.spec.ts -- --env=test",
+    "test:validation:staging": "jest --testPathPattern=feature-flags.environment.spec.ts -- --env=staging",
+    "test:validation:production": "jest --testPathPattern=feature-flags.environment.spec.ts -- --env=production",
     "docker:build": "docker build -t kurrentdb-backend .",
-    "docker:run": "docker run -p 3000:3000 kurrentdb-backend",
+    "docker:run": "docker run -p 3001:3001 kurrentdb-backend",
     "kill": "../scripts/kill-backend.sh"
   },
   "dependencies": {
@@ -94,5 +93,30 @@
     "swagger"
   ],
   "author": "Penguin Pool Team",
-  "license": "MIT"
+  "license": "MIT",
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "testMatch": [
+      "**/*.spec.ts",
+      "**/*.test.ts"
+    ],
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.spec.ts",
+      "!src/**/*.test.ts"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json"
+    ],
+    "testTimeout": 10000
+  }
 }

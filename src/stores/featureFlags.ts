@@ -50,13 +50,13 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
 
   const updateEnvironment = (env: 'dev' | 'test' | 'staging' | 'production') => {
     currentEnvironment.value = env
-    validation.value = validateFeatureFlags(flags.value)
+    validation.value = validateFeatureFlags()
   }
 
   const resetToDefaults = () => {
     flags.value = defaultFeatureFlags
     currentEnvironment.value = getCurrentEnvironment()
-    validation.value = validateFeatureFlags(flags.value)
+    validation.value = validateFeatureFlags()
   }
 
   const loadFromEnvironment = () => {
@@ -64,7 +64,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     const envFlags = loadFeatureFlagsFromEnv()
 
     flags.value = envFlags
-    validation.value = validateFeatureFlags(flags.value)
+    validation.value = validateFeatureFlags()
   }
 
   const getFeatureFlag = (
@@ -96,7 +96,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
 
   // Watch for environment changes
   watch(currentEnvironment, () => {
-    validation.value = validateFeatureFlags(flags.value)
+    validation.value = validateFeatureFlags()
   })
 
   // Initialize from environment on store creation

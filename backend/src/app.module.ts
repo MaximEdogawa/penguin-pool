@@ -14,7 +14,8 @@ import { WebSocketModule } from './websocket/websocket.module'
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ['.env.local', `env.${process.env.NODE_ENV || 'dev'}`], // Load .env.local first, then env-specific file
+      ignoreEnvFile: false,
     }),
     ThrottlerModule.forRoot([
       {

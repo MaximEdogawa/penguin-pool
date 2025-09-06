@@ -1,5 +1,5 @@
-import { KurrentDBHTTPClient } from '../clients/KurrentDBHTTPClient'
 import type { KurrentDBHTTPConfig } from '../clients/KurrentDBHTTPClient'
+import { KurrentDBHTTPClient } from '../clients/KurrentDBHTTPClient'
 
 export interface Stream {
   id: string
@@ -85,7 +85,7 @@ export class KurrentDBService {
   constructor() {
     // Configuration for local KurrentDB instance via proxy
     this.config = {
-      baseUrl: 'http://localhost:3002',
+      baseUrl: 'http://localhost:3001',
       credentials: {
         apiKey: 'demo-key',
         secretKey: 'demo-secret',

@@ -120,7 +120,7 @@
           <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2">
             {{ wsConnectionStatus }}
           </p>
-          <div class="mt-3 text-xs text-gray-500">Port: 3002</div>
+          <div class="mt-3 text-xs text-gray-500">Port: 3001</div>
         </div>
 
         <!-- HTTP Service Status -->
@@ -144,7 +144,7 @@
           <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2">
             {{ httpResponseTime ? `${httpResponseTime}ms` : 'Not checked' }}
           </p>
-          <div class="mt-3 text-xs text-gray-500">Port: 3002</div>
+          <div class="mt-3 text-xs text-gray-500">Port: 3001</div>
         </div>
 
         <!-- Database Status -->
@@ -608,7 +608,7 @@
     wsConnectionStatus.value = 'Connecting...'
 
     try {
-      ws.value = io('http://localhost:3002/ws/health', {
+      ws.value = io('http://localhost:3001/ws/health', {
         transports: ['websocket'],
       })
 
@@ -695,7 +695,7 @@
     const startTime = Date.now()
 
     try {
-      const response = await fetch('http://localhost:3002/health')
+      const response = await fetch('http://localhost:3001/health')
       const endTime = Date.now()
       const responseTime = endTime - startTime
 

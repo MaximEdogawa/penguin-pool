@@ -414,6 +414,10 @@ export class FeatureFlagsService {
     const currentEnv = this.getCurrentEnvironment()
     const categoryFlags = this.flags[category]
 
+    if (!categoryFlags) {
+      return enabledFeatures
+    }
+
     Object.entries(categoryFlags).forEach(([featureKey]) => {
       if (this.isFeatureEnabled(category, featureKey, currentEnv)) {
         enabledFeatures.push(featureKey)

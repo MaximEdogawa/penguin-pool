@@ -29,7 +29,7 @@ export const kurrentDBConfigs: Record<KurrentDBConfig['environment'], KurrentDBC
     timeout: 30000,
     endpoints: {
       grpc: 'localhost:1113',
-      http: 'http://localhost:3002',
+      http: 'http://localhost:3001',
     },
     credentials: {
       apiKey: import.meta.env.VITE_KURRENT_DB_DEV_API_KEY || 'admin',

@@ -1,6 +1,6 @@
-import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [vue()],
@@ -12,6 +12,7 @@ export default defineConfig({
       '**/node_modules/**',
       '**/dist/**',
       '**/tests/playwright/**', // Exclude Playwright tests
+      '**/backend/**', // Exclude backend tests
     ],
   },
   resolve: {
