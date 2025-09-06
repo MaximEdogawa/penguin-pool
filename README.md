@@ -116,6 +116,22 @@ The backend provides a comprehensive REST API with full Swagger/OpenAPI document
 - **KurrentDB Integration** - Direct database operations and proxy
 - **Status Endpoints** - API status and information
 
+### Backend API
+
+The backend provides a comprehensive REST API with full Swagger/OpenAPI documentation:
+
+- **API Base URL**: `http://localhost:3002`
+- **Interactive Documentation**: `http://localhost:3002/api/docs`
+- **OpenAPI Specification**: `http://localhost:3002/api/docs-json`
+
+#### Available API Modules:
+
+- **Health Monitoring** - System health checks and status
+- **Stream Management** - Event stream CRUD operations
+- **Uptime Tracking** - Service uptime monitoring and statistics
+- **KurrentDB Integration** - Direct database operations and proxy
+- **Status Endpoints** - API status and information
+
 ### Development Setup
 
 ```bash
