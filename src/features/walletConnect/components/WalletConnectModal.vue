@@ -67,8 +67,8 @@
                     @click="selectUri"
                     placeholder="Connection URI"
                   />
-                  <button @click="copyUri" class="copy-button">
-                    <i class="pi pi-copy text-sm"></i>
+                  <button @click="copyUri" class="copy-button" :class="{ copied: isCopied }">
+                    <i :class="isCopied ? 'pi pi-check text-sm' : 'pi pi-copy text-sm'"></i>
                   </button>
                 </div>
               </div>
@@ -189,6 +189,7 @@
   const qrCodeDataUrl = ref<string | null>(null)
   const isConnecting = ref(false)
   const error = ref<string | null>(null)
+  const isCopied = ref(false)
 
   // Available wallet options
   const availableWallets = ref<WalletOption[]>([
@@ -320,8 +321,10 @@
     if (connectionUri.value) {
       try {
         await navigator.clipboard.writeText(connectionUri.value)
-        // Could show a toast notification here
-        console.log('URI copied to clipboard')
+        isCopied.value = true
+        setTimeout(() => {
+          isCopied.value = false
+        }, 2000) // Reset after 2 seconds
       } catch (err) {
         console.error('Failed to copy URI:', err)
       }
@@ -526,6 +529,23 @@
 
   .copy-button {
     @apply bg-white/20 text-white border border-white/30 p-2 rounded-md cursor-pointer font-medium transition-all flex items-center justify-center min-w-10 flex-shrink-0 hover:bg-white/30 hover:-translate-y-0.5 hover:shadow-lg;
+  }
+
+  .copy-button.copied {
+    @apply bg-green-500/20 border-green-500/50 text-green-400;
+    animation: copySuccess 0.6s ease-in-out;
+  }
+
+  @keyframes copySuccess {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 
   .wallet-download-section {
