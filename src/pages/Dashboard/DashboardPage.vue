@@ -18,15 +18,32 @@
                 Wallet Balance
               </h3>
             </div>
-            <button
-              v-if="isWalletConnected"
-              @click="refreshBalance"
-              :disabled="isRefreshingBalance"
-              class="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Refresh balance"
-            >
-              <i :class="['pi', isRefreshingBalance ? 'pi-spin pi-spinner' : 'pi-refresh']"></i>
-            </button>
+            <div v-if="isWalletConnected" class="flex items-center space-x-1">
+              <button
+                @click="refreshBalance(true)"
+                :disabled="isRefreshingBalance"
+                class="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh balance"
+              >
+                <i :class="['pi', isRefreshingBalance ? 'pi-spin pi-spinner' : 'pi-refresh']"></i>
+              </button>
+              <button
+                @click="toggleAutoRefresh"
+                :class="[
+                  'p-2 transition-colors',
+                  autoRefreshEnabled
+                    ? 'text-primary-600 dark:text-primary-400'
+                    : 'text-gray-400 hover:text-primary-600 dark:hover:text-primary-400',
+                ]"
+                :title="
+                  autoRefreshEnabled
+                    ? 'Disable auto-refresh'
+                    : `Enable auto-refresh (every ${AUTO_REFRESH_INTERVAL / 60000} minutes)`
+                "
+              >
+                <i :class="['pi', autoRefreshEnabled ? 'pi-clock-fill' : 'pi-clock']"></i>
+              </button>
+            </div>
           </div>
 
           <div class="space-y-2">
@@ -228,10 +245,13 @@
   import { useUserStore } from '@/entities/user/store/userStore'
   import { sageWalletConnectService } from '@/features/walletConnect/services/SageWalletConnectService'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
-  import { computed, onMounted, ref, watch } from 'vue'
+  import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
   const userStore = ref<ReturnType<typeof useUserStore> | null>(null)
   const walletStore = useWalletConnectStore()
+
+  // Constants
+  const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes in milliseconds
 
   // Computed properties for wallet balance
   const userBalance = computed(() => {
@@ -313,15 +333,26 @@
   // Flag to prevent multiple simultaneous balance refresh calls
   const isRefreshingBalance = ref(false)
 
-  // Refresh wallet balance
-  const refreshBalance = async () => {
+  // Refresh wallet balance with caching
+  const refreshBalance = async (force = false) => {
     if (isWalletConnected.value && !isRefreshingBalance.value) {
+      // Check if we should skip refresh based on cache
+      if (!force && lastBalanceRefresh.value) {
+        const timeSinceLastRefresh = Date.now() - lastBalanceRefresh.value.getTime()
+
+        if (timeSinceLastRefresh < AUTO_REFRESH_INTERVAL) {
+          console.log('Skipping balance refresh - recently updated')
+          return
+        }
+      }
+
       isRefreshingBalance.value = true
       try {
         if (walletStore.isConnected) {
           const freshWalletInfo = await sageWalletConnectService.getWalletInfo()
           if (freshWalletInfo) {
             walletStore.walletInfo = freshWalletInfo
+            lastBalanceRefresh.value = new Date()
             console.log('Wallet info refreshed with fresh balance:', freshWalletInfo)
           }
         }
@@ -339,27 +370,79 @@
     window.location.href = '/wallet-connect'
   }
 
+  // Start automatic refresh
+  const startAutoRefresh = () => {
+    if (refreshInterval.value) {
+      clearInterval(refreshInterval.value)
+    }
+
+    if (isWalletConnected.value && autoRefreshEnabled.value) {
+      setTimeout(() => {
+        refreshInterval.value = setInterval(() => {
+          if (isWalletConnected.value) {
+            refreshBalance()
+          }
+        }, AUTO_REFRESH_INTERVAL)
+      }, AUTO_REFRESH_INTERVAL)
+    }
+  }
+
+  // Stop automatic refresh
+  const stopAutoRefresh = () => {
+    if (refreshInterval.value) {
+      clearInterval(refreshInterval.value)
+      refreshInterval.value = null
+    }
+  }
+
+  // Toggle automatic refresh
+  const toggleAutoRefresh = () => {
+    autoRefreshEnabled.value = !autoRefreshEnabled.value
+
+    if (autoRefreshEnabled.value) {
+      startAutoRefresh()
+    } else {
+      stopAutoRefresh()
+    }
+  }
+
+  // Track if balance has been loaded to prevent unnecessary refreshes
+  const balanceLoaded = ref(false)
+  const lastBalanceRefresh = ref<Date | null>(null)
+  const autoRefreshEnabled = ref(false)
+  const refreshInterval = ref<NodeJS.Timeout | null>(null)
+
   onMounted(async () => {
     try {
       userStore.value = useUserStore()
 
-      // Initialize wallet connect if not already done
-      await walletStore.initialize()
-
-      // If wallet is connected, refresh balance
+      // Mark balance as loaded if wallet is connected
       if (isWalletConnected.value) {
-        await refreshBalance()
+        balanceLoaded.value = true
+        lastBalanceRefresh.value = new Date()
       }
     } catch (error) {
       console.error('Failed to initialize dashboard:', error)
     }
   })
 
-  // Watch for wallet connection changes
+  // Watch for wallet connection changes - only refresh if balance hasn't been loaded
   watch(isWalletConnected, async connected => {
-    if (connected) {
-      await refreshBalance()
+    if (connected && !balanceLoaded.value) {
+      startAutoRefresh()
+      balanceLoaded.value = true
+      lastBalanceRefresh.value = new Date()
+    } else if (!connected) {
+      // Reset balance loaded flag when wallet disconnects
+      balanceLoaded.value = false
+      lastBalanceRefresh.value = null
+      stopAutoRefresh()
     }
+  })
+
+  // Cleanup on unmount
+  onUnmounted(() => {
+    stopAutoRefresh()
   })
 </script>
 
