@@ -26,6 +26,7 @@ export interface FeatureFlagsConfig {
     piggyBank: FeatureFlag
     customThemes: FeatureFlag
     loginOptions: FeatureFlag
+    otherWallets: FeatureFlag
     dashboard: FeatureFlag
     profile: FeatureFlag
     serviceHealth: FeatureFlag
@@ -92,6 +93,12 @@ export const defaultFeatureFlags: FeatureFlagsConfig = {
       test: false,
     }),
     loginOptions: createFeatureFlag('Enable/disable different login options', 'app'),
+    otherWallets: createFeatureFlag('Enable/disable Other Wallets login option', 'app', true, {
+      dev: true,
+      test: false,
+      staging: false,
+      production: false,
+    }),
     dashboard: createFeatureFlag('Enable/disable the Dashboard feature', 'app'),
     profile: createFeatureFlag('Enable/disable the Profile feature', 'app'),
     serviceHealth: createFeatureFlag('Enable/disable the Service Health monitoring', 'app', true, {

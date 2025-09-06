@@ -59,51 +59,29 @@
 
           <!-- Secondary Wallet Options -->
           <div class="flex flex-col gap-2 mt-4">
-            <div class="text-center text-sm text-white/60 dark:text-gray-400 mb-2">
-              Other Wallets
-            </div>
-
-            <!-- Chia Wallet -->
-            <button
-              @click="connectChiaWallet"
-              class="wallet-option-secondary group relative overflow-hidden rounded-2xl bg-white/5 dark:bg-gray-800/5 border border-white/10 dark:border-gray-700/10 p-4 w-full transition-all duration-300 hover:bg-white/10 dark:hover:bg-gray-800/10"
-              :disabled="isConnecting"
-            >
-              <div class="flex items-center gap-3">
-                <div class="wallet-icon-secondary">
-                  <i class="pi pi-wallet text-lg text-white/60 dark:text-gray-400"></i>
-                </div>
-                <div class="flex-1 text-left">
-                  <h4 class="text-sm font-medium text-white/80 dark:text-gray-200">Chia Wallet</h4>
-                  <p class="text-xs text-white/50 dark:text-gray-400">Official Chia wallet</p>
-                </div>
-                <i
-                  class="pi pi-arrow-right text-sm text-white/40 group-hover:text-white/60 transition-colors"
-                ></i>
-              </div>
-            </button>
-
             <!-- Other Wallets -->
-            <button
-              @click="connectOtherWallet"
-              class="wallet-option-secondary group relative overflow-hidden rounded-2xl bg-white/5 dark:bg-gray-800/5 border border-white/10 dark:border-gray-700/10 p-4 w-full transition-all duration-300 hover:bg-white/10 dark:hover:bg-gray-800/10"
-              :disabled="isConnecting"
-            >
-              <div class="flex items-center gap-3">
-                <div class="wallet-icon-secondary">
-                  <i class="pi pi-wallet text-lg text-white/60 dark:text-gray-400"></i>
+            <FeatureFlag category="app" feature="otherWallets">
+              <button
+                @click="connectOtherWallet"
+                class="wallet-option-secondary group relative overflow-hidden rounded-2xl bg-white/5 dark:bg-gray-800/5 border border-white/10 dark:border-gray-700/10 p-4 w-full transition-all duration-300 hover:bg-white/10 dark:hover:bg-gray-800/10"
+                :disabled="isConnecting"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="wallet-icon-secondary">
+                    <i class="pi pi-wallet text-lg text-white/60 dark:text-gray-400"></i>
+                  </div>
+                  <div class="flex-1 text-left">
+                    <h4 class="text-sm font-medium text-white/80 dark:text-gray-200">
+                      Other Wallets
+                    </h4>
+                    <p class="text-xs text-white/50 dark:text-gray-400">WalletConnect compatible</p>
+                  </div>
+                  <i
+                    class="pi pi-arrow-right text-sm text-white/40 group-hover:text-white/60 transition-colors"
+                  ></i>
                 </div>
-                <div class="flex-1 text-left">
-                  <h4 class="text-sm font-medium text-white/80 dark:text-gray-200">
-                    Other Wallets
-                  </h4>
-                  <p class="text-xs text-white/50 dark:text-gray-400">WalletConnect compatible</p>
-                </div>
-                <i
-                  class="pi pi-arrow-right text-sm text-white/40 group-hover:text-white/60 transition-colors"
-                ></i>
-              </div>
-            </button>
+              </button>
+            </FeatureFlag>
           </div>
         </div>
 
@@ -143,6 +121,7 @@
 </template>
 
 <script setup lang="ts">
+  import FeatureFlag from '@/components/FeatureFlag.vue'
   import PenguinLogo from '@/components/PenguinLogo.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
   import WalletConnectModal from '@/features/walletConnect/components/WalletConnectModal.vue'
@@ -170,10 +149,6 @@
 
   // Methods
   const connectWalletConnect = async () => {
-    showWalletModal.value = true
-  }
-
-  const connectChiaWallet = async () => {
     showWalletModal.value = true
   }
 

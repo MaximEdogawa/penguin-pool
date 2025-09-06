@@ -69,6 +69,7 @@ export const loadFeatureFlagsFromEnv = (): FeatureFlagsConfig => {
   updateFeatureFlag('app', 'piggyBank')
   updateFeatureFlag('app', 'customThemes')
   updateFeatureFlag('app', 'loginOptions')
+  updateFeatureFlag('app', 'otherWallets')
   updateFeatureFlag('app', 'dashboard')
   updateFeatureFlag('app', 'profile')
   updateFeatureFlag('app', 'serviceHealth')
