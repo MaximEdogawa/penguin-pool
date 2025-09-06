@@ -30,6 +30,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       target: 'esnext',
+      minify: 'esbuild',
       rollupOptions: {
         external: [
           'fs',
@@ -75,12 +76,8 @@ export default defineConfig(({ mode }) => {
             'vue-vendor': ['vue', 'vue-router', 'pinia'],
             'ui-vendor': ['primevue'],
             'utils-vendor': ['@tanstack/vue-query'],
-            'walletconnect-vendor': [
-              '@walletconnect/sign-client',
-              '@walletconnect/modal',
-              '@walletconnect/types',
-              '@web3modal/standalone',
-            ],
+            'walletconnect-core': ['@walletconnect/sign-client', '@walletconnect/types'],
+            'walletconnect-ui': ['@walletconnect/modal', '@web3modal/standalone'],
             'socket-vendor': ['socket.io-client'],
             'qrcode-vendor': ['qrcode'],
           },
@@ -89,6 +86,7 @@ export default defineConfig(({ mode }) => {
     },
     optimizeDeps: {
       exclude: ['@kurrent/kurrentdb-client'],
+      include: ['vue', 'vue-router', 'pinia', '@tanstack/vue-query', 'primevue'],
     },
     server: {
       port: 3000,

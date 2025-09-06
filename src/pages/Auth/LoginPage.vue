@@ -125,10 +125,14 @@
   import FeatureFlag from '@/components/FeatureFlag.vue'
   import PenguinLogo from '@/components/PenguinLogo.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
-  import WalletConnectModal from '@/features/walletConnect/components/WalletConnectModal.vue'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
+
+  // Lazy load heavy components
+  const WalletConnectModal = defineAsyncComponent(
+    () => import('@/features/walletConnect/components/WalletConnectModal.vue')
+  )
 
   const router = useRouter()
   const userStore = useUserStore()

@@ -57,6 +57,7 @@ These are included due to WalletConnect's architecture but are not used in our C
 - [OX_PACKAGE_DEPENDENCY.md](./OX_PACKAGE_DEPENDENCY.md) - Detailed explanation of the ox package
 - [WALLET_CONNECT_DEPENDENCIES.md](./WALLET_CONNECT_DEPENDENCIES.md) - WalletConnect dependency analysis
 - [BUNDLE_ANALYSIS.md](./BUNDLE_ANALYSIS.md) - Bundle size and optimization analysis
+- [LAZY_LOADING_OPTIMIZATION.md](./LAZY_LOADING_OPTIMIZATION.md) - Lazy loading optimization guide
 
 ## Dependency Management
 

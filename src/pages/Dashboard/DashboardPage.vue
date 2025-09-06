@@ -246,9 +246,11 @@
   import { sageWalletConnectService } from '@/features/walletConnect/services/SageWalletConnectService'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+  import { useRouter } from 'vue-router'
 
   const userStore = ref<ReturnType<typeof useUserStore> | null>(null)
   const walletStore = useWalletConnectStore()
+  const router = useRouter()
 
   // Constants
   const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes in milliseconds
@@ -416,10 +418,29 @@
     try {
       userStore.value = useUserStore()
 
-      // Mark balance as loaded if wallet is connected
-      // Router guard already ensures wallet is connected for this page
-      balanceLoaded.value = true
-      lastBalanceRefresh.value = new Date()
+      // Wait for wallet connection state to be properly initialized
+      if (isWalletConnected.value) {
+        balanceLoaded.value = true
+        lastBalanceRefresh.value = new Date()
+        startAutoRefresh()
+      } else {
+        // If wallet is not connected, wait a bit for state to be restored
+        const checkWalletConnection = () => {
+          if (isWalletConnected.value) {
+            balanceLoaded.value = true
+            lastBalanceRefresh.value = new Date()
+            startAutoRefresh()
+          } else {
+            // If still not connected after waiting, redirect to auth
+            console.log('Wallet not connected, redirecting to auth...')
+            router.push('/auth')
+          }
+        }
+
+        // Check immediately and also after a short delay
+        checkWalletConnection()
+        setTimeout(checkWalletConnection, 1000)
+      }
     } catch (error) {
       console.error('Failed to initialize dashboard:', error)
     }
