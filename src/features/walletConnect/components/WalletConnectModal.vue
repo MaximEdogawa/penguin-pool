@@ -1,39 +1,21 @@
 <template>
-  <div v-if="isOpen" class="wallet-connect-modal-overlay" @click="handleOverlayClick">
-    <div class="wallet-connect-modal" @click.stop>
-      <div class="modal-content">
-        <!-- Wallet Selection Step -->
-        <div v-if="currentStep === 'selection'" class="wallet-selection-step">
-          <div class="wallet-grid">
-            <button
-              v-for="wallet in availableWallets"
-              :key="wallet.id"
-              @click="selectWallet(wallet)"
-              class="wallet-option"
-              :class="{ disabled: !wallet.available }"
-              :disabled="!wallet.available"
-            >
-              <div class="wallet-icon">
-                <i :class="wallet.iconClass"></i>
-              </div>
-              <div class="wallet-info">
-                <h3 class="wallet-name">{{ wallet.name }}</h3>
-                <p class="wallet-description">{{ wallet.description }}</p>
-                <div v-if="!wallet.available" class="wallet-unavailable">
-                  <i class="pi pi-exclamation-triangle"></i>
-                  <span>Coming Soon</span>
-                </div>
-              </div>
-              <div class="wallet-status">
-                <i v-if="wallet.available" class="pi pi-arrow-right"></i>
-                <i v-else class="pi pi-lock"></i>
-              </div>
-            </button>
-          </div>
-        </div>
-
+  <PrimeDialog
+    :visible="isOpen"
+    modal
+    :closable="false"
+    :dismissable-mask="true"
+    :draggable="false"
+    :resizable="false"
+    class="wallet-connect-dialog"
+    @hide="handleClose"
+    @update:visible="handleClose"
+    pt:root:class="!border-0 !bg-transparent"
+    pt:mask:class="backdrop-blur-sm"
+  >
+    <template #container>
+      <div class="wallet-connect-container">
         <!-- Connection Status -->
-        <div v-else-if="currentStep === 'connecting'" class="connection-status">
+        <div v-if="currentStep === 'connecting'" class="connection-status text-center p-8">
           <div class="spinner"></div>
           <h3>Connecting to {{ selectedWallet?.name }}...</h3>
           <p>Please wait while we establish the connection</p>
@@ -41,66 +23,69 @@
 
         <!-- QR Code Display -->
         <div v-else-if="currentStep === 'qr-code'" class="qr-section">
-          <div class="qr-header">
-            <div class="wallet-icon-large">
-              <i :class="selectedWallet?.iconClass"></i>
+          <div class="qr-main-content">
+            <!-- Wallet Icon and Title -->
+            <div class="wallet-header-section">
+              <div class="wallet-icon-large">
+                <i :class="selectedWallet?.iconClass"></i>
+              </div>
+              <h3>Connect with {{ selectedWallet?.name }}</h3>
             </div>
-            <h3>Connect with {{ selectedWallet?.name }}</h3>
-            <p>Scan the QR code with your mobile wallet</p>
-          </div>
 
-          <div class="qr-container">
-            <div class="qr-wrapper">
-              <div v-if="qrCodeDataUrl" class="qr-code">
-                <div class="qr-code-border">
-                  <img :src="qrCodeDataUrl" alt="Wallet Connect QR Code" />
+            <!-- QR Code -->
+            <div class="qr-container">
+              <div class="qr-wrapper">
+                <div v-if="qrCodeDataUrl" class="qr-code">
+                  <div class="qr-code-border">
+                    <img :src="qrCodeDataUrl" alt="Wallet Connect QR Code" />
+                  </div>
+                  <div class="qr-code-overlay">
+                    <div class="scanning-indicator">
+                      <div class="scan-line"></div>
+                    </div>
+                  </div>
                 </div>
-                <div class="qr-code-overlay">
-                  <div class="scanning-indicator">
-                    <div class="scan-line"></div>
+                <div v-else class="qr-placeholder">
+                  <div class="qr-spinner-container">
+                    <div class="qr-spinner"></div>
+                    <p>Generating QR Code...</p>
                   </div>
                 </div>
               </div>
-              <div v-else class="qr-placeholder">
-                <div class="qr-spinner-container">
-                  <div class="qr-spinner"></div>
-                  <p>Generating QR Code...</p>
+            </div>
+
+            <!-- Wallet Connect Code -->
+            <div class="connection-options">
+              <p class="qr-instruction">Scan the QR code with your mobile wallet</p>
+
+              <div class="uri-section">
+                <div class="uri-input-container">
+                  <input
+                    :value="connectionUri"
+                    readonly
+                    class="uri-input"
+                    @click="selectUri"
+                    placeholder="Connection URI"
+                  />
+                  <button @click="copyUri" class="copy-button">
+                    <i class="pi pi-copy text-sm"></i>
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div class="connection-options">
-            <div class="uri-section">
-              <div class="uri-header">
-                <i class="pi pi-link"></i>
-                <span>Or copy connection link</span>
-              </div>
-              <div class="uri-input-container">
-                <input
-                  :value="connectionUri"
-                  readonly
-                  class="uri-input"
-                  @click="selectUri"
-                  placeholder="Connection URI"
-                />
-                <button @click="copyUri" class="copy-button">
-                  <i class="pi pi-copy"></i>
-                </button>
-              </div>
+            <!-- Download Link -->
+            <div class="wallet-download-section">
+              <a href="https://sagewallet.net/" target="_blank" class="download-link">
+                <i class="pi pi-download text-sm"></i>
+                <span>Don't have {{ selectedWallet?.name }}? Download it here</span>
+              </a>
             </div>
-          </div>
-
-          <div class="wallet-download-section">
-            <a href="https://sagewallet.net/" target="_blank" class="download-link">
-              <i class="pi pi-download"></i>
-              <span>Don't have {{ selectedWallet?.name }}? Download it here</span>
-            </a>
           </div>
         </div>
 
         <!-- Error Display -->
-        <div v-else-if="currentStep === 'error'" class="error-section">
+        <div v-else-if="currentStep === 'error'" class="error-section text-center p-8">
           <div class="error-icon">
             <i class="pi pi-exclamation-triangle"></i>
           </div>
@@ -111,15 +96,11 @@
               <i class="pi pi-refresh"></i>
               Try Again
             </button>
-            <button @click="goBackToSelection" class="back-button">
-              <i class="pi pi-arrow-left"></i>
-              Back to Selection
-            </button>
           </div>
         </div>
 
         <!-- Success Display -->
-        <div v-else-if="currentStep === 'success'" class="success-section">
+        <div v-else-if="currentStep === 'success'" class="success-section text-center p-8">
           <div class="success-icon">
             <i class="pi pi-check-circle"></i>
           </div>
@@ -142,7 +123,7 @@
               >
             </div>
           </div>
-          <div class="success-actions">
+          <div class="success-actions mt-8">
             <p class="redirect-message">
               <i class="pi pi-spin pi-spinner"></i>
               Redirecting to dashboard...
@@ -155,16 +136,21 @@
         <button v-if="currentStep === 'selection'" @click="closeModal" class="cancel-button">
           Cancel
         </button>
-        <button v-else-if="currentStep === 'qr-code'" @click="goBackToLogin" class="back-button">
+        <button v-else-if="currentStep === 'qr-code'" @click="handleClose" class="back-button">
+          <i class="pi pi-arrow-left"></i>
+          Back
+        </button>
+        <button v-else-if="currentStep === 'error'" @click="handleClose" class="back-button">
           <i class="pi pi-arrow-left"></i>
           Back
         </button>
         <button v-else-if="currentStep === 'success'" @click="closeModal" class="done-button">
+          <i class="pi pi-check text-base"></i>
           Done
         </button>
       </div>
-    </div>
-  </div>
+    </template>
+  </PrimeDialog>
 </template>
 
 <script setup lang="ts">
@@ -215,14 +201,6 @@
       type: 'sage',
     },
     {
-      id: 'chia',
-      name: 'Chia Wallet',
-      description: 'Connect using official Chia wallet',
-      iconClass: 'pi pi-wallet',
-      available: false,
-      type: 'chia',
-    },
-    {
       id: 'other',
       name: 'Other Wallets',
       description: 'Connect using other compatible wallets',
@@ -240,6 +218,10 @@
     emit('close')
   }
 
+  const handleClose = () => {
+    closeModal()
+  }
+
   const resetModal = () => {
     currentStep.value = 'selection'
     selectedWallet.value = null
@@ -247,12 +229,6 @@
     qrCodeDataUrl.value = null
     isConnecting.value = false
     error.value = null
-  }
-
-  const handleOverlayClick = (event: MouseEvent) => {
-    if (event.target === event.currentTarget) {
-      closeModal()
-    }
   }
 
   const selectWallet = async (wallet: WalletOption) => {
@@ -297,42 +273,47 @@
             console.error('Failed to fetch wallet info:', fetchError)
             error.value = 'Connected but failed to fetch wallet information'
             currentStep.value = 'error'
+            console.log(
+              'Fetch error state set - currentStep:',
+              currentStep.value,
+              'error:',
+              error.value
+            )
           }
         } else {
           error.value = 'Wallet connection was not approved'
           currentStep.value = 'error'
+          console.log(
+            'Approval error state set - currentStep:',
+            currentStep.value,
+            'error:',
+            error.value
+          )
         }
       } else {
         error.value = 'Failed to start connection - no connection URI generated'
         currentStep.value = 'error'
+        console.log(
+          'Connection URI error state set - currentStep:',
+          currentStep.value,
+          'error:',
+          error.value
+        )
       }
     } catch (err) {
       console.error('Wallet connection error:', err)
       error.value = err instanceof Error ? err.message : 'Connection failed'
       currentStep.value = 'error'
+      console.log('Error state set - currentStep:', currentStep.value, 'error:', error.value)
     } finally {
       isConnecting.value = false
     }
   }
 
-  const goBackToSelection = () => {
-    currentStep.value = 'selection'
-    selectedWallet.value = null
-    connectionUri.value = null
-    qrCodeDataUrl.value = null
-    error.value = null
-  }
-
-  const goBackToLogin = () => {
-    // Close the modal and redirect to login page
-    closeModal()
-    window.location.href = '/'
-  }
-
   const retryConnection = () => {
-    if (selectedWallet.value) {
-      selectWallet(selectedWallet.value)
-    }
+    // Reset to QR code step to show wallet connection dialog again
+    currentStep.value = 'qr-code'
+    error.value = null
   }
 
   const copyUri = async () => {
@@ -366,7 +347,7 @@
     try {
       console.log('Generating QR code for URI:', uri.substring(0, 50) + '...')
       const dataUrl = await QRCode.toDataURL(uri, {
-        width: 200,
+        width: 300,
         margin: 2,
         color: {
           dark: '#000000',
@@ -410,845 +391,351 @@
 </script>
 
 <style scoped>
-  .wallet-connect-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+  /* Base Layout */
+  .wallet-connect-container {
+    @apply flex flex-col p-2 gap-4 rounded-2xl bg-stone-950 backdrop-blur-xl max-w-2xl w-[95vw] max-h-[95vh] overflow-hidden relative border border-white/10 mt-2;
   }
 
-  .wallet-connect-modal {
-    background: white;
-    border-radius: 12px;
-    box-shadow:
-      0 20px 25px -5px rgba(0, 0, 0, 0.1),
-      0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    max-width: 500px;
-    width: 90%;
-    max-height: 90vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+  .wallet-connect-dialog :deep(.p-dialog) {
+    @apply max-w-none w-auto;
   }
 
-  .modal-header {
-    padding: 2rem 2rem 1rem 2rem;
-    text-align: center;
-    position: relative;
+  .wallet-connect-dialog :deep(.p-dialog-content) {
+    @apply p-0;
   }
 
-  .modal-header h2 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #111827;
+  /* Common Text Styles */
+  .error-section h3 {
+    @apply m-0 text-white font-semibold;
+  }
+  .wallet-header-section h3 {
+    @apply text-sm leading-tight sm:text-base md:text-lg lg:text-xl xl:text-2xl;
+  }
+  .error-section h3 {
+    @apply text-2xl mb-2;
   }
 
-  .modal-subtitle {
-    margin: 0 0 1rem 0;
-    color: #6b7280;
-    font-size: 0.875rem;
+  .qr-instruction,
+  .error-section p {
+    @apply m-0 text-gray-300;
   }
 
-  .close-button {
-    position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    color: #6b7280;
-    transition: all 0.2s;
+  .qr-instruction {
+    @apply mt-1 text-xs text-center;
+  }
+  .error-section p {
+    @apply text-base mb-8;
   }
 
-  .close-button:hover {
-    background: #f3f4f6;
-    color: #374151;
+  /* Spinner Styles */
+  .spinner,
+  .qr-spinner {
+    @apply w-10 h-10 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto mb-4;
   }
 
-  .modal-content {
-    padding: 0 2rem 2rem 2rem;
-    flex: 1;
-    overflow-y: auto;
-  }
-
-  /* Wallet Selection Step */
-  .wallet-selection-step {
-    padding: 1rem 0;
-  }
-
-  .wallet-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .wallet-option {
-    display: flex;
-    align-items: center;
-    padding: 1rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: left;
-    width: 100%;
-  }
-
-  .wallet-option:hover:not(.disabled) {
-    border-color: #3b82f6;
-    background: #f8fafc;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-  }
-
-  .wallet-option.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .wallet-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: #f3f4f6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 1rem;
-    flex-shrink: 0;
-  }
-
-  .wallet-icon i {
-    color: #6b7280;
-    font-size: 1.5rem;
-  }
-
-  .wallet-info {
-    flex: 1;
-  }
-
-  .wallet-name {
-    margin: 0 0 0.25rem 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #111827;
-  }
-
-  .wallet-description {
-    margin: 0 0 0.5rem 0;
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-
-  .wallet-unavailable {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.75rem;
-    color: #f59e0b;
-    font-weight: 500;
-  }
-
-  .wallet-status {
-    color: #6b7280;
-    font-size: 1.25rem;
-  }
-
-  .wallet-option:hover:not(.disabled) .wallet-status {
-    color: #3b82f6;
-  }
-
-  .connection-status {
-    text-align: center;
-    padding: 2rem 0;
-  }
-
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #e5e7eb;
-    border-top: 4px solid #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 1rem;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
+  /* QR Code Section */
   .qr-section {
-    text-align: center;
-    padding: 2rem;
+    @apply text-center flex flex-col items-center justify-center flex-1 min-h-0;
   }
 
-  .qr-header {
-    margin-bottom: 2rem;
+  .qr-main-content {
+    @apply flex flex-col items-center justify-center w-full gap-6;
+  }
+
+  .wallet-header-section {
+    @apply flex flex-row items-center gap-3 text-center;
   }
 
   .wallet-icon-large {
-    width: 72px;
-    height: 72px;
-    border-radius: 18px;
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+    @apply w-6 h-6 rounded-xl bg-white/20 flex items-center justify-center;
   }
 
   .wallet-icon-large i {
-    color: white;
-    font-size: 2.25rem;
-  }
-
-  .qr-header h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #111827;
-  }
-
-  .qr-header p {
-    margin: 0;
-    color: #6b7280;
-    font-size: 0.875rem;
+    @apply text-white text-base;
   }
 
   .qr-container {
-    margin-bottom: 2rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    @apply flex justify-center items-center flex-none;
   }
 
   .qr-wrapper {
-    position: relative;
-    display: inline-block;
+    @apply relative inline-block;
   }
 
   .qr-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 280px;
-    height: 280px;
-    border: 2px solid #e5e7eb;
-    border-radius: 20px;
-    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-    margin: 0 auto;
-    position: relative;
-    overflow: hidden;
+    @apply flex flex-col items-center justify-center w-auto h-auto border border-gray-300 rounded-xl bg-gray-50 mx-auto relative overflow-hidden;
   }
 
   .qr-placeholder::before {
     content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.1), transparent);
-    animation: shimmer 2s infinite;
-  }
-
-  @keyframes shimmer {
-    0% {
-      transform: translateX(-100%) translateY(-100%) rotate(45deg);
-    }
-    100% {
-      transform: translateX(100%) translateY(100%) rotate(45deg);
-    }
+    @apply absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-gradient-to-br from-transparent via-blue-500/10 to-transparent animate-pulse;
   }
 
   .qr-spinner-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 1;
-    position: relative;
-  }
-
-  .qr-spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #e5e7eb;
-    border-top: 4px solid #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
+    @apply flex flex-col items-center justify-center z-10 relative;
   }
 
   .qr-placeholder p {
-    margin: 0;
-    color: #6b7280;
-    font-size: 0.875rem;
-    font-weight: 500;
+    @apply m-0 text-gray-500 text-sm font-medium;
   }
 
   .qr-code {
-    position: relative;
-    display: inline-block;
-    border-radius: 24px;
-    overflow: hidden;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    @apply relative inline-block rounded-xl overflow-hidden shadow-lg;
   }
 
   .qr-code-border {
-    padding: 24px;
-    background: white;
-    border-radius: 24px;
-    border: 2px solid #e5e7eb;
+    @apply bg-white/90 rounded-xl border border-white/30;
   }
 
   .qr-code img {
-    display: block;
-    width: 260px;
-    height: 260px;
-    border-radius: 16px;
+    @apply block w-full h-full rounded-lg;
   }
 
   .qr-code-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    border-radius: 20px;
-    overflow: hidden;
+    @apply absolute inset-0 pointer-events-none rounded-2xl overflow-hidden;
   }
 
   .scanning-indicator {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
-    animation: scan 2s ease-in-out infinite;
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/30 to-transparent animate-pulse;
   }
 
   .scan-line {
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #3b82f6, transparent);
-    animation: scanLine 2s ease-in-out infinite;
+    @apply absolute top-0 -left-full w-full h-0.5 bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-pulse;
   }
 
-  @keyframes scan {
-    0%,
-    100% {
-      opacity: 0;
-    }
-    50% {
-      opacity: 1;
-    }
-  }
-
-  @keyframes scanLine {
-    0% {
-      left: -100%;
-    }
-    100% {
-      left: 100%;
-    }
-  }
-
+  /* Connection Options */
   .connection-options {
-    margin-bottom: 1.5rem;
+    @apply flex flex-col gap-4 w-full max-w-md;
   }
 
   .uri-section {
-    background: #f8fafc;
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    padding: 1.5rem;
-  }
-
-  .uri-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    color: #374151;
-    font-weight: 500;
-    font-size: 0.875rem;
-  }
-
-  .uri-header i {
-    color: #3b82f6;
-    font-size: 1rem;
+    @apply bg-white/10 border border-white/30 rounded-lg p-3 backdrop-blur-sm;
   }
 
   .uri-input-container {
-    display: flex;
-    gap: 0.75rem;
+    @apply flex flex-row gap-2 items-center;
   }
 
   .uri-input {
-    flex: 1;
-    padding: 0.875rem 1rem;
-    border: 1px solid #d1d5db;
-    border-radius: 12px;
-    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-    font-size: 0.875rem;
-    background: white;
-    color: #374151;
-    transition: all 0.2s;
+    @apply flex-1 p-2 border border-white/30 rounded-md text-sm bg-white/10 text-white transition-all leading-tight font-mono;
   }
 
   .uri-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    @apply outline-none border-white/50 shadow-[0_0_0_3px_rgba(255,255,255,0.1)];
   }
 
   .copy-button {
-    background: #3b82f6;
-    color: white;
-    border: none;
-    padding: 0.875rem 1rem;
-    border-radius: 12px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 60px;
-  }
-
-  .copy-button:hover {
-    background: #2563eb;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-  }
-
-  .copy-button i {
-    font-size: 0.875rem;
+    @apply bg-white/20 text-white border border-white/30 p-2 rounded-md cursor-pointer font-medium transition-all flex items-center justify-center min-w-10 flex-shrink-0 hover:bg-white/30 hover:-translate-y-0.5 hover:shadow-lg;
   }
 
   .wallet-download-section {
-    text-align: center;
+    @apply text-center mt-1 flex-shrink-0;
   }
 
   .download-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: #3b82f6;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.875rem;
-    padding: 0.75rem 1.5rem;
-    border: 1px solid #3b82f6;
-    border-radius: 12px;
-    transition: all 0.2s;
-    background: rgba(59, 130, 246, 0.05);
+    @apply inline-flex items-center gap-1.5 text-white no-underline font-medium text-xs px-3 py-1.5 border border-white/30 rounded-md transition-all bg-white/10 backdrop-blur-sm hover:bg-white/20 hover:text-white hover:-translate-y-0.5 hover:shadow-lg;
   }
 
-  .download-link:hover {
-    background: #3b82f6;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-  }
-
-  .download-link i {
-    font-size: 1rem;
-  }
-
-  .error-section {
-    text-align: center;
-    padding: 2rem 0;
-  }
-
+  /* Error & Success Sections */
   .error-icon {
-    color: #ef4444;
-    margin-bottom: 1rem;
-    font-size: 3rem;
-  }
-
-  .error-section h3 {
-    margin: 0 0 0.5rem 0;
-    color: #111827;
-    font-size: 1.25rem;
-  }
-
-  .error-section p {
-    margin: 0 0 2rem 0;
-    color: #6b7280;
+    @apply text-red-500 mb-4 text-6xl;
   }
 
   .error-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
+    @apply flex gap-4 justify-center flex-wrap;
   }
 
   .retry-button {
-    background: #ef4444;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .retry-button:hover {
-    background: #dc2626;
-  }
-
-  .back-button {
-    background: #6b7280;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .back-button:hover {
-    background: #4b5563;
-  }
-
-  .success-section {
-    text-align: center;
-    padding: 2rem 0;
+    @apply bg-red-500 text-white border border-white/20 px-6 py-3 rounded-lg cursor-pointer font-medium transition-all flex items-center gap-2 shadow-[0_4px_12px_rgba(239,68,68,0.3)] hover:bg-red-600 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(239,68,68,0.4)];
   }
 
   .success-icon {
-    color: #10b981;
-    margin-bottom: 1rem;
-    font-size: 3rem;
+    @apply text-emerald-500 mb-4 text-5xl;
   }
 
   .success-section h3 {
-    margin: 0 0 0.5rem 0;
-    color: #111827;
-    font-size: 1.25rem;
+    @apply text-gray-900 text-xl mb-2;
   }
 
   .success-section p {
-    margin: 0 0 2rem 0;
-    color: #6b7280;
-  }
-
-  .success-actions {
-    margin-top: 2rem;
-  }
-
-  .proceed-button {
-    background: #10b981;
-    color: white;
-    border: none;
-    padding: 0.75rem 2rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0 auto;
-  }
-
-  .proceed-button:hover {
-    background: #059669;
-  }
-
-  .proceed-button i {
-    font-size: 1rem;
+    @apply text-gray-500 mb-8;
   }
 
   .redirect-message {
-    color: #6b7280;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    @apply text-gray-500 text-center flex items-center justify-center gap-2;
   }
 
   .wallet-info {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    text-align: left;
+    @apply bg-gray-50 border border-gray-300 rounded-lg p-4 text-left;
   }
 
   .info-item {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-  }
-
-  .info-item:last-child {
-    margin-bottom: 0;
+    @apply flex justify-between mb-2 last:mb-0;
   }
 
   .info-item .label {
-    font-weight: 500;
-    color: #374151;
+    @apply font-medium text-gray-700;
   }
 
   .info-item .value {
-    font-family: monospace;
-    color: #6b7280;
-    word-break: break-all;
+    @apply font-mono text-gray-500 break-all;
   }
 
+  /* Modal Footer */
   .modal-footer {
-    padding: 1.5rem 2rem;
-    border-top: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
+    @apply pt-4 border-t border-white/20 flex justify-center gap-3 flex-shrink-0;
   }
 
   .cancel-button,
   .done-button,
   .back-button {
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    @apply px-6 py-3 border border-white/30 rounded-lg font-medium cursor-pointer transition-all flex items-center gap-2 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:-translate-y-0.5 hover:shadow-lg;
   }
 
-  .cancel-button {
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
+  /* Responsive Design using Tailwind breakpoints */
+  .wallet-connect-container {
+    @apply lg:max-w-xl xl:max-w-2xl md:p-6 md:gap-4 md:max-h-[95vh] md:max-w-lg sm:p-4 sm:gap-3 sm:max-h-[98vh] sm:max-w-sm;
   }
 
-  .cancel-button:hover {
-    background: #e5e7eb;
+  .qr-main-content {
+    @apply lg:gap-5;
   }
 
-  .done-button {
-    background: #10b981;
-    color: white;
-    border: none;
+  .connection-options {
+    @apply lg:max-w-lg lg:gap-4;
   }
 
-  .done-button:hover {
-    background: #059669;
+  .wallet-connect-dialog :deep(.p-dialog) {
+    @apply md:max-w-lg md:max-h-96;
   }
 
-  .back-button {
-    background: #6b7280;
-    color: white;
-    border: none;
+  .qr-section {
+    @apply md:gap-2;
   }
 
-  .back-button:hover {
-    background: #4b5563;
+  .qr-main-content {
+    @apply md:gap-4;
   }
 
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .qr-section {
-      padding: 1.5rem;
-    }
-
-    .qr-placeholder {
-      width: 240px;
-      height: 240px;
-    }
-
-    .qr-code img {
-      width: 220px;
-      height: 220px;
-    }
-
-    .qr-code-border {
-      padding: 20px;
-    }
+  .connection-options {
+    @apply md:max-w-sm md:gap-3;
   }
 
-  @media (max-width: 640px) {
-    .wallet-connect-modal {
-      width: 95%;
-      max-width: none;
-      margin: 1rem;
-    }
-
-    .qr-section {
-      padding: 1rem;
-    }
-
-    .wallet-icon-large {
-      width: 64px;
-      height: 64px;
-    }
-
-    .wallet-icon-large i {
-      font-size: 2rem;
-    }
-
-    .qr-header h3 {
-      font-size: 1.25rem;
-    }
-
-    .qr-placeholder {
-      width: 200px;
-      height: 200px;
-    }
-
-    .qr-code img {
-      width: 180px;
-      height: 180px;
-    }
-
-    .qr-code-border {
-      padding: 16px;
-    }
-
-    .uri-section {
-      padding: 1rem;
-    }
-
-    .uri-input-container {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .copy-button {
-      width: 100%;
-      justify-content: center;
-    }
-
-    .modal-footer {
-      padding: 1rem 1.5rem;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .modal-footer button {
-      width: 100%;
-      justify-content: center;
-    }
+  .qr-placeholder,
+  .qr-code img {
+    @apply w-[15rem] h-[15rem] sm:w-[15rem] sm:h-[15rem] md:w-[17rem] md:h-[17rem] lg:w-[18rem] lg:h-[18rem] xl:w-[18rem] xl:h-[18rem];
   }
 
-  @media (max-width: 480px) {
-    .qr-placeholder {
-      width: 180px;
-      height: 180px;
-    }
-
-    .qr-code img {
-      width: 160px;
-      height: 160px;
-    }
-
-    .qr-code-border {
-      padding: 14px;
-    }
-
-    .wallet-icon-large {
-      width: 56px;
-      height: 56px;
-    }
-
-    .wallet-icon-large i {
-      font-size: 1.75rem;
-    }
+  .qr-code-border {
+    @apply md:p-3;
   }
 
-  /* Dark mode support */
-  @media (prefers-color-scheme: dark) {
-    .wallet-connect-modal {
-      background: #1f2937;
-      color: #f9fafb;
-    }
+  .wallet-icon-large {
+    @apply sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14;
+  }
 
-    .modal-header h2 {
-      color: #f9fafb;
-    }
+  .wallet-icon-large i {
+    @apply sm:text-lg md:text-xl lg:text-2xl xl:text-3xl;
+  }
 
-    .modal-subtitle {
-      color: #9ca3af;
-    }
+  .wallet-header-section {
+    @apply md:gap-2 md:flex-row;
+  }
 
-    .qr-header h3 {
-      color: #f9fafb;
-    }
+  .wallet-header-section h3 {
+    @apply md:text-xl;
+  }
 
-    .qr-header p {
-      color: #9ca3af;
-    }
+  .qr-section {
+    @apply sm:p-2;
+  }
 
-    .qr-code-border {
-      background: #374151;
-      border-color: #4b5563;
-    }
+  .wallet-header-section {
+    @apply sm:gap-1 sm:flex-row;
+  }
 
-    .uri-section {
-      background: #374151;
-      border-color: #4b5563;
-    }
+  .connection-options {
+    @apply sm:max-w-xs sm:gap-2;
+  }
 
-    .uri-header {
-      color: #d1d5db;
-    }
+  .qr-code-border {
+    @apply sm:p-2;
+  }
 
-    .uri-input {
-      background: #1f2937;
-      border-color: #4b5563;
-      color: #f9fafb;
-    }
+  .uri-section {
+    @apply sm:p-2;
+  }
 
-    .uri-input:focus {
-      border-color: #3b82f6;
-    }
+  .uri-input-container {
+    @apply sm:flex-row sm:gap-2;
+  }
 
-    .download-link {
-      color: #60a5fa;
-      border-color: #60a5fa;
-      background: rgba(96, 165, 250, 0.1);
-    }
+  .copy-button {
+    @apply sm:min-w-8 sm:px-2;
+  }
 
-    .download-link:hover {
-      background: #60a5fa;
-      color: white;
-    }
+  .modal-footer {
+    @apply sm:p-2 sm:px-4 sm:flex-col sm:gap-2;
+  }
+
+  .modal-footer button {
+    @apply sm:w-full sm:justify-center;
+  }
+
+  .wallet-connect-dialog :deep(.p-dialog) {
+    @apply sm:max-w-sm;
+  }
+
+  .qr-section {
+    @apply sm:gap-2;
+  }
+
+  .qr-main-content {
+    @apply sm:gap-3;
+  }
+
+  .connection-options {
+    @apply sm:max-w-xs sm:gap-2;
+  }
+
+  .qr-code-border {
+    @apply sm:p-2.5;
+  }
+
+  .wallet-header-section {
+    @apply sm:gap-1 sm:flex-row;
+  }
+
+  /* Dark Mode */
+  .wallet-connect-dialog :deep(.p-dialog) {
+    @apply dark:bg-gray-800 dark:text-gray-50;
+  }
+
+  .wallet-header-section h3 {
+    @apply dark:text-gray-50;
+  }
+
+  .qr-code-border {
+    @apply dark:bg-gray-700 dark:border-gray-600;
+  }
+
+  .uri-section {
+    @apply dark:bg-gray-700 dark:border-gray-600;
+  }
+
+  .uri-input {
+    @apply dark:bg-gray-800 dark:border-gray-600 dark:text-gray-50;
+  }
+
+  .uri-input:focus {
+    @apply dark:border-blue-500;
+  }
+
+  .download-link {
+    @apply dark:text-blue-400 dark:border-blue-400 dark:bg-blue-500/10;
+  }
+
+  .download-link:hover {
+    @apply dark:bg-blue-500 dark:text-white;
   }
 </style>

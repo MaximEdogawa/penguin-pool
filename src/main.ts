@@ -10,6 +10,7 @@ import ToastService from 'primevue/toastservice'
 import 'primeicons/primeicons.css'
 import Button from 'primevue/button'
 import ConfirmationService from 'primevue/confirmationservice'
+import Dialog from 'primevue/dialog'
 import Menu from 'primevue/menu'
 import Tab from 'primevue/tab'
 import TabList from 'primevue/tablist'
@@ -43,6 +44,7 @@ app.use(PrimeVue, {
 app.use(ToastService)
 app.use(ConfirmationService)
 app.component('PrimeButton', Button)
+app.component('PrimeDialog', Dialog)
 app.component('PrimeMenu', Menu)
 app.component('PrimeTabList', TabList)
 app.component('PrimeTabs', Tabs)
