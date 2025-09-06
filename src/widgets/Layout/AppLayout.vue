@@ -33,9 +33,9 @@
 <script setup lang="ts">
   import { computed, watch } from 'vue'
   import { useRoute } from 'vue-router'
-  import { useLayout } from './composables/layout'
-  import AppTopbar from './AppTopbar.vue'
   import AppSidebar from './AppSidebar.vue'
+  import AppTopbar from './AppTopbar.vue'
+  import { useLayout } from './composables/layout'
 
   // Router
   const route = useRoute()
@@ -71,6 +71,16 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    -webkit-overscroll-behavior: none;
+    -webkit-overscroll-behavior-y: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
   }
 
   .layout-main-container {
@@ -82,6 +92,10 @@
     height: calc(100vh - 4rem);
     position: relative;
     overflow: hidden;
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    -webkit-overscroll-behavior: none;
+    -webkit-overscroll-behavior-y: none;
   }
 
   .layout-main {
@@ -89,6 +103,10 @@
     height: 100%;
     background-color: var(--surface-ground);
     overflow: hidden; /* Let individual pages handle their own scrolling */
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    -webkit-overscroll-behavior: none;
+    -webkit-overscroll-behavior-y: none;
   }
 
   .layout-mask {
