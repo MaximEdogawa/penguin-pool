@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
 import type { UserPreferences } from '@/app/types/common'
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 
 export interface User {
   id: string
@@ -45,13 +45,17 @@ export const useUserStore = defineStore('user', () => {
   initializeStore()
 
   // Actions
-  const login = async (walletAddress: string, username?: string) => {
+  const login = async (walletIdentifier: string | number, username?: string) => {
     isLoading.value = true
     error.value = null
 
     try {
       // In a real implementation, this would verify the wallet signature
       // and potentially call an API to get user data
+
+      // Convert fingerprint to string for display, or use address if provided
+      const walletAddress =
+        typeof walletIdentifier === 'number' ? `fingerprint_${walletIdentifier}` : walletIdentifier
 
       // For now, create a mock user
       const user: User = {

@@ -10,7 +10,7 @@ test.describe('PenguinLogo Component', () => {
     // Check if logo image is visible
     const logo = page.locator('img[alt="Penguin Pool Logo"]')
     await expect(logo).toBeVisible()
-    
+
     // Check logo attributes
     await expect(logo).toHaveAttribute('src', /penguin-pool\.svg$/)
     await expect(logo).toHaveAttribute('alt', 'Penguin Pool Logo')
@@ -25,11 +25,11 @@ test.describe('PenguinLogo Component', () => {
 
   test('logo has correct dimensions', async ({ page }) => {
     const logo = page.locator('img[alt="Penguin Pool Logo"]')
-    
+
     // Check if logo has width and height attributes
     const width = await logo.getAttribute('width')
     const height = await logo.getAttribute('height')
-    
+
     expect(width).toBeTruthy()
     expect(height).toBeTruthy()
   })

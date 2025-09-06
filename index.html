@@ -10,6 +10,11 @@
   </head>
   <body>
     <div id="app"></div>
+    <script>
+      // Suppress Lit development mode warning
+      globalThis.litDisableBundleWarning = true
+      globalThis.__LIT_DEV_MODE__ = false
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

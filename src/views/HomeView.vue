@@ -1,7 +1,3 @@
-<script setup lang="ts">
-  // Simple welcome component
-</script>
-
 <template>
   <main class="home-view">
     <div class="welcome-container">

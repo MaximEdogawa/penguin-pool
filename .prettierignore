@@ -1,12 +1,24 @@
 # Dependencies
 node_modules/
-dist/
-build/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Generated files
-*.min.js
-*.min.css
-*.bundle.js
+# Build outputs
+dist/
+dist-ssr/
+build/
+out/
+
+# Coverage
+coverage/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Logs
 *.log
@@ -20,100 +32,47 @@ pids
 *.seed
 *.pid.lock
 
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# nyc test coverage
-.nyc_output
-
-# Dependency directories
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variables file
-.env
-.env.test
-.env.local
-.env.production
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# next.js build output
-.next
-
-# nuxt.js build output
-.nuxt
-
-# vuepress build output
-.vuepress/dist
-
-# Serverless directories
-.serverless/
-
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
-# yarn v2
-.yarn/cache
-.yarn/unplugged
-.yarn/build-state.yml
-.yarn/install-state.gz
-.pnp.*
-
-# IDE
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
-# OS
-.DS_Store
-Thumbs.db
+# Temporary files
+*.tmp
+*.temp
 
-# Git
-.git/
-.gitignore
+# Generated files
+*.d.ts
+*.js.map
+*.css.map
 
-# Husky
-.husky/
+# Docker
+Dockerfile
+docker-compose*.yml
 
-# Test files
-tests/
-__tests__/
-*.test.js
-*.test.ts
-*.spec.js
-*.spec.ts 
+# Database
+*.db
+*.sqlite
+
+# Chia specific
+*.plot
+*.plot.tmp
+
+# Backend specific
+backend/dist/
+backend/node_modules/
+
+# Test artifacts
+test-results/
+playwright-report/
+playwright/.cache/

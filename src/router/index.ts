@@ -1,3 +1,4 @@
+import { useUserStore } from '@/entities/user/store/userStore'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
@@ -80,7 +81,6 @@ const router = createRouter({
         requiresAuth: false,
       },
     },
-    // Catch all route
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
@@ -89,55 +89,26 @@ const router = createRouter({
   ],
 })
 
-// Navigation guard for authentication
 router.beforeEach((to, from, next) => {
-  // Set page title
   document.title = `${to.meta.title} - Penguin-pool`
 
-  // Development mode: Skip authentication for now
-  if (import.meta.env.DEV) {
-    // Create mock user for development
-    if (!localStorage.getItem('penguin-pool-user')) {
-      const mockUser = {
-        id: 'dev-user-1',
-        username: 'Developer',
-        walletAddress: 'xch1dev123456789',
-        balance: 1000,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        preferences: {
-          theme: 'auto',
-          language: 'en',
-          currency: 'XCH',
-          notifications: { email: false, push: true, sms: false },
-          privacy: { shareAnalytics: false, shareUsageData: false },
-        },
-      }
-      localStorage.setItem('penguin-pool-user', JSON.stringify(mockUser))
-    }
-    next()
-    return
-  }
+  const userStore = useUserStore()
+  const isAuthenticated = userStore.isAuthenticated
 
-  // Check if user is authenticated
-  const isAuthenticated = localStorage.getItem('penguin-pool-user') !== null
-
-  // Check authentication requirements
   if (to.meta.requiresAuth) {
     if (isAuthenticated) {
-      // User is authenticated, allow access
+      console.log('Router guard - allowing access to protected route')
       next()
     } else {
-      // User is not authenticated, redirect to auth page
+      console.log('Router guard - redirecting to auth (not authenticated)')
       next('/auth')
     }
   } else {
-    // Route doesn't require auth
     if (to.path === '/auth' && isAuthenticated) {
-      // User is already authenticated, redirect to dashboard
-      next('/')
+      console.log('Router guard - redirecting authenticated user from auth to dashboard')
+      next('/dashboard')
     } else {
-      // Allow access to non-auth routes
+      console.log('Router guard - allowing access to public route')
       next()
     }
   }

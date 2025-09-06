@@ -1,4 +1,4 @@
-import { computed, reactive, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, reactive } from 'vue'
 
 const layoutConfig = reactive({
   preset: 'Aura',
@@ -40,10 +40,8 @@ export function useLayout() {
 
   const toggleMenu = () => {
     if (layoutState.isMobile) {
-      // On mobile, toggle the mobile menu overlay
       layoutState.staticMenuMobileActive = !layoutState.staticMenuMobileActive
     } else {
-      // On desktop, toggle the sidebar collapse
       layoutState.staticMenuDesktopInactive = !layoutState.staticMenuDesktopInactive
     }
   }
@@ -58,12 +56,10 @@ export function useLayout() {
     const wasMobile = layoutState.isMobile
     layoutState.isMobile = window.innerWidth < 1024
 
-    // If switching from mobile to desktop, close mobile menu
     if (wasMobile && !layoutState.isMobile) {
       layoutState.staticMenuMobileActive = false
     }
 
-    // If switching from desktop to mobile, reset desktop state
     if (!wasMobile && layoutState.isMobile) {
       layoutState.staticMenuDesktopInactive = false
     }
