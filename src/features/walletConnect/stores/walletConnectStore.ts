@@ -1,8 +1,12 @@
 import { useUserStore } from '@/entities/user/store/userStore'
+import { sessionManager } from '@/shared/services/sessionManager'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import {
+  getWalletInfo,
+  testRpcConnection as testRpcConnectionQuery,
+} from '../queries/walletQueries'
 import { sageWalletConnectService } from '../services/SageWalletConnectService'
-import type { CommandParams, WalletConnectCommand } from '../types/command.types'
 import type {
   ChiaConnectionState,
   ConnectionResult,
@@ -70,6 +74,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       if (result.success && result.session) {
         session.value = result.session
         accounts.value = result.accounts || []
+        chainId.value = sageWalletConnectService.getNetworkInfo().chainId
         isConnected.value = true
         setupEventListeners()
       } else {
@@ -104,7 +109,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const disconnect = async (): Promise<DisconnectResult> => {
     try {
-      await sageWalletConnectService.forceReset()
+      // Clear wallet state first
       isConnected.value = false
       session.value = null
       accounts.value = []
@@ -114,13 +119,25 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
       removeEventListeners()
 
-      const userStore = useUserStore()
-      userStore.logout()
+      // Use centralized session manager for comprehensive clearing
+      await sessionManager.clearAllSessionData({
+        clearWalletConnect: true,
+        clearUserData: true,
+        clearThemeData: true,
+        clearPWAStorage: true,
+        clearServiceWorker: true,
+        clearAllCaches: false, // Don't clear all caches, just session-related ones
+      })
 
+      // Reset the wallet connect service after clearing storage
+      await sageWalletConnectService.forceReset()
+
+      console.log('Wallet disconnect completed successfully')
       return { success: true }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Disconnect failed'
       error.value = errorMessage
+      console.error('Error during wallet disconnect:', err)
       return { success: false, error: errorMessage }
     }
   }
@@ -133,29 +150,35 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       if (currentSession && isCurrentlyConnected) {
         session.value = currentSession
         accounts.value = extractAccountsFromSession(currentSession)
+        chainId.value = sageWalletConnectService.getNetworkInfo().chainId
         isConnected.value = true
         setupEventListeners()
 
         // Fetch wallet info when restoring session
         try {
-          const fetchedWalletInfo = await sageWalletConnectService.getWalletInfo()
-          if (fetchedWalletInfo) {
-            walletInfo.value = fetchedWalletInfo
+          const fetchedWalletInfo = await getWalletInfo()
+          if (fetchedWalletInfo.success && fetchedWalletInfo.data) {
+            walletInfo.value = fetchedWalletInfo.data
 
             // Sync with user store if user is not already authenticated
             const userStore = useUserStore()
-            if (!userStore.isAuthenticated && fetchedWalletInfo.address) {
+            if (!userStore.isAuthenticated && fetchedWalletInfo.data.address) {
               try {
-                if (fetchedWalletInfo.fingerprint) {
-                  await userStore.login(fetchedWalletInfo.fingerprint, 'wallet-user')
+                if (fetchedWalletInfo.data.fingerprint) {
+                  await userStore.login(fetchedWalletInfo.data.fingerprint, 'wallet-user')
                 } else {
-                  await userStore.login(fetchedWalletInfo.address, 'wallet-user')
+                  await userStore.login(fetchedWalletInfo.data.address, 'wallet-user')
                 }
                 console.log('User auto-logged in with restored wallet info')
               } catch (loginError) {
                 console.warn('Failed to auto-login with restored wallet info:', loginError)
               }
             }
+          } else {
+            console.error(
+              'Failed to fetch wallet info during session restore:',
+              fetchedWalletInfo.error
+            )
           }
         } catch (walletInfoError) {
           console.warn('Failed to fetch wallet info during session restore:', walletInfoError)
@@ -198,7 +221,12 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const testRpcConnection = async (): Promise<boolean> => {
     try {
-      return await sageWalletConnectService.testRpcConnection()
+      const result = await testRpcConnectionQuery()
+      if (!result.success) {
+        console.error('Failed to test RPC connection:', result.error)
+        return false
+      }
+      return result.data || false
     } catch (err) {
       console.error('Failed to test RPC connection:', err)
       return false
@@ -308,26 +336,32 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       if (currentSession) {
         session.value = currentSession
         accounts.value = extractAccountsFromSession(currentSession)
+        chainId.value = sageWalletConnectService.getNetworkInfo().chainId
         isConnected.value = true
 
-        const fetchedWalletInfo = await sageWalletConnectService.getWalletInfo()
-        if (fetchedWalletInfo) {
-          walletInfo.value = fetchedWalletInfo
+        const fetchedWalletInfo = await getWalletInfo()
+        if (fetchedWalletInfo.success && fetchedWalletInfo.data) {
+          walletInfo.value = fetchedWalletInfo.data
 
           // Sync with user store if user is not already authenticated
           const userStore = useUserStore()
-          if (!userStore.isAuthenticated && fetchedWalletInfo.address) {
+          if (!userStore.isAuthenticated && fetchedWalletInfo.data.address) {
             try {
-              if (fetchedWalletInfo.fingerprint) {
-                await userStore.login(fetchedWalletInfo.fingerprint, 'wallet-user')
+              if (fetchedWalletInfo.data.fingerprint) {
+                await userStore.login(fetchedWalletInfo.data.fingerprint, 'wallet-user')
               } else {
-                await userStore.login(fetchedWalletInfo.address, 'wallet-user')
+                await userStore.login(fetchedWalletInfo.data.address, 'wallet-user')
               }
               console.log('User auto-logged in with restored wallet info from event')
             } catch (loginError) {
               console.warn('Failed to auto-login with restored wallet info from event:', loginError)
             }
           }
+        } else {
+          console.error(
+            'Failed to fetch wallet info during session restore from event:',
+            fetchedWalletInfo.error
+          )
         }
       }
     } catch (err) {
@@ -364,14 +398,14 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     params: TParams
   ): Promise<{ success: boolean; data?: TResponse; error?: string }> => {
     try {
-      const result = await sageWalletConnectService.executeCommand(
-        command as WalletConnectCommand,
-        params as CommandParams
+      const result = await sageWalletConnectService.request<TResponse>(
+        command as string,
+        params as Record<string, unknown>
       )
       return {
-        success: result.success,
-        data: result.data as TResponse,
-        error: result.error,
+        success: !!result?.data,
+        data: result?.data,
+        error: result?.data ? undefined : 'Command execution failed',
       }
     } catch (err) {
       console.error(`Command execution failed (${command}):`, err)

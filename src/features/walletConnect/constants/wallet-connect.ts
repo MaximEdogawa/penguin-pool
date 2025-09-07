@@ -1,13 +1,16 @@
+import {
+  CHIA_MAINNET_CHAIN_ID,
+  CHIA_TESTNET_CHAIN_ID,
+  environment,
+} from '@/shared/config/environment'
 import type { CoreTypes } from '@walletconnect/types'
 import { SageMethods } from './sage-methods'
 
-// Determine chain ID based on environment
-const isTestnet =
-  typeof window !== 'undefined'
-    ? window.location.hostname.includes('localhost') || window.location.hostname.includes('testnet')
-    : true
+// Use chain ID from environment configuration
+export const CHIA_CHAIN_ID = environment.wallet.walletConnect.chainId
 
-export const CHIA_CHAIN_ID = isTestnet ? 'chia:testnet' : 'chia:mainnet'
+// Export chain ID constants for use in other parts of the app
+export { CHIA_MAINNET_CHAIN_ID, CHIA_TESTNET_CHAIN_ID }
 
 export const CHIA_METADATA: CoreTypes.Metadata = {
   name: 'Penguin Pool',

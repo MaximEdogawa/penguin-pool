@@ -99,7 +99,7 @@
           <h3>Connection Failed</h3>
           <p>{{ error }}</p>
           <div class="error-actions">
-            <button @click="retryConnection" class="retry-button">
+            <button @click="handleRetryConnection" class="retry-button">
               <i class="pi pi-refresh"></i>
               Try Again
             </button>
@@ -187,8 +187,10 @@
 </template>
 
 <script setup lang="ts">
+  import { sessionManager } from '@/shared/services/sessionManager'
   import QRCode from 'qrcode'
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+  import { useWalletConnectionWithBackgroundSync } from '../composables/useWalletConnection'
   import { sageWalletConnectService } from '../services/SageWalletConnectService'
   import { useWalletConnectStore } from '../stores/walletConnectStore'
   import type { SageWalletInfo } from '../types/walletConnect.types'
@@ -213,7 +215,16 @@
 
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
+
+  // Store
   const walletStore = useWalletConnectStore()
+
+  // Use the new wallet connection composable
+  const {
+    isConnected: walletIsConnected,
+    walletInfo: walletInfoData,
+    error: walletError,
+  } = useWalletConnectionWithBackgroundSync()
 
   // State
   const currentStep = ref<
@@ -271,114 +282,308 @@
     processingMessage.value = 'Initializing...'
   }
 
+  // Connection retry configuration
+  const RETRY_CONFIG = {
+    maxRetries: 5, // Increased from 3 to 5
+    baseDelay: 2000, // Increased from 1s to 2s
+    maxDelay: 15000, // Increased from 10s to 15s
+    backoffMultiplier: 1.5, // Reduced from 2 to 1.5 for more gradual backoff
+  }
+
+  // Wallet approval timeout configuration
+  const WALLET_APPROVAL_TIMEOUT = 30000 // 30 seconds for wallet approval
+
+  // Error types for better error handling
+  const ERROR_TYPES = {
+    CONNECTION_FAILED: 'CONNECTION_FAILED',
+    APPROVAL_FAILED: 'APPROVAL_FAILED',
+    APPROVAL_TIMEOUT: 'APPROVAL_TIMEOUT',
+    WALLET_INFO_FAILED: 'WALLET_INFO_FAILED',
+    WEBSOCKET_DISCONNECTED: 'WEBSOCKET_DISCONNECTED',
+    UNKNOWN: 'UNKNOWN',
+  } as const
+
+  type ErrorType = (typeof ERROR_TYPES)[keyof typeof ERROR_TYPES]
+
+  // Utility function to calculate retry delay with exponential backoff
+  const calculateRetryDelay = (attempt: number): number => {
+    const delay = RETRY_CONFIG.baseDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1)
+    return Math.min(delay, RETRY_CONFIG.maxDelay)
+  }
+
+  // Utility function to sleep for a specified duration
+  const sleep = (ms: number): Promise<void> => {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  // Utility function to update progress with smooth transitions
+  const updateProgress = (progress: number, message: string) => {
+    processingProgress.value = progress
+    processingMessage.value = message
+  }
+
+  // Utility function to handle errors with proper typing
+  const handleError = (err: unknown, errorType: ErrorType, context: string) => {
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    console.error(`${context} error:`, errorMessage)
+
+    let userMessage: string
+    switch (errorType) {
+      case ERROR_TYPES.CONNECTION_FAILED:
+        userMessage = 'Failed to establish connection. Please check your network and try again.'
+        break
+      case ERROR_TYPES.APPROVAL_FAILED:
+        userMessage = 'Wallet connection was not approved. Please try again.'
+        break
+      case ERROR_TYPES.APPROVAL_TIMEOUT:
+        userMessage = `Wallet approval timed out after ${WALLET_APPROVAL_TIMEOUT / 1000} seconds. Please try again.`
+        break
+      case ERROR_TYPES.WALLET_INFO_FAILED:
+        userMessage = 'Connected but failed to fetch wallet information. Please try reconnecting.'
+        break
+      case ERROR_TYPES.WEBSOCKET_DISCONNECTED:
+        userMessage = 'Connection lost. Attempting to reconnect...'
+        break
+      default:
+        userMessage = 'An unexpected error occurred. Please try again.'
+    }
+
+    error.value = userMessage
+    currentStep.value = 'error'
+    return userMessage
+  }
+
+  // Function to establish initial connection
+  const establishConnection = async (): Promise<{
+    uri: string
+    approval: () => Promise<unknown>
+  } | null> => {
+    try {
+      if (!sageWalletConnectService.isInitialized()) {
+        console.log('Initializing wallet service before connection...')
+        await sageWalletConnectService.initialize()
+      }
+
+      const connection = await walletStore.startConnection()
+
+      if (!connection) {
+        throw new Error('Failed to generate connection URI')
+      }
+
+      console.log('Connection URI generated:', connection.uri.substring(0, 50) + '...')
+      return connection
+    } catch (err) {
+      handleError(err, ERROR_TYPES.CONNECTION_FAILED, 'Connection establishment')
+      return null
+    }
+  }
+
+  // Function to handle wallet approval with retry logic and timeout
+  const handleWalletApproval = async (approval: () => Promise<unknown>): Promise<boolean> => {
+    for (let attempt = 1; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+      try {
+        console.log(`Wallet approval attempt ${attempt}/${RETRY_CONFIG.maxRetries}`)
+
+        // Create a timeout promise that rejects after the specified timeout
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error(`Wallet approval timed out after ${WALLET_APPROVAL_TIMEOUT}ms`))
+          }, WALLET_APPROVAL_TIMEOUT)
+        })
+
+        // Race between approval and timeout
+        const session = await Promise.race([approval(), timeoutPromise])
+
+        if (session) {
+          console.log('Wallet connection approved:', session)
+          return true
+        }
+
+        if (attempt < RETRY_CONFIG.maxRetries) {
+          const delay = calculateRetryDelay(attempt)
+          console.log(`Approval failed, retrying in ${delay}ms...`)
+          await sleep(delay)
+        }
+      } catch (err) {
+        console.error(`Approval attempt ${attempt} failed:`, err)
+
+        if (attempt === RETRY_CONFIG.maxRetries) {
+          // Check if it's a timeout error
+          const isTimeout = err instanceof Error && err.message.includes('timed out')
+          const errorType = isTimeout ? ERROR_TYPES.APPROVAL_TIMEOUT : ERROR_TYPES.APPROVAL_FAILED
+          handleError(err, errorType, 'Wallet approval')
+          return false
+        }
+
+        const delay = calculateRetryDelay(attempt)
+        await sleep(delay)
+      }
+    }
+
+    return false
+  }
+
+  // Function to fetch wallet info with websocket reconnection (single attempt)
+  const fetchWalletInfo = async (): Promise<boolean> => {
+    try {
+      updateProgress(40, 'Fetching wallet information...')
+
+      // Check if websocket is still connected, attempt reconnection if needed
+      if (!sageWalletConnectService.isConnected()) {
+        console.log('Websocket disconnected, attempting to reconnect...')
+        updateProgress(35, 'Reconnecting to wallet...')
+
+        try {
+          await sageWalletConnectService.initialize()
+          await sleep(1000) // Give time for reconnection
+        } catch (reconnectErr) {
+          console.warn('Websocket reconnection failed:', reconnectErr)
+          throw new Error('Failed to reconnect to wallet service')
+        }
+      }
+
+      console.log('Calling getWalletInfo...')
+
+      // Add timeout to wallet info fetch
+      const walletInfoPromise = sageWalletConnectService.getWalletInfo()
+      const walletInfoTimeout = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Wallet info fetch timed out after 10 seconds'))
+        }, 10000)
+      })
+
+      const fetchedWalletInfo = await Promise.race([walletInfoPromise, walletInfoTimeout])
+      console.log('Wallet info received:', fetchedWalletInfo)
+
+      if (!fetchedWalletInfo) {
+        throw new Error('No wallet info received from service')
+      }
+      // Update the store with the fetched wallet info
+      walletStore.walletInfo = fetchedWalletInfo
+
+      updateProgress(80, 'Finalizing connection...')
+      await sleep(300)
+
+      updateProgress(100, 'Connection complete!')
+      await sleep(300)
+
+      currentStep.value = 'success'
+      emit('connected', fetchedWalletInfo)
+      return true
+    } catch (err) {
+      console.error('Wallet info fetch failed:', err)
+      handleError(err, ERROR_TYPES.WALLET_INFO_FAILED, 'Wallet info fetch')
+      return false
+    }
+  }
+
+  // Main selectWallet function - now much cleaner and more maintainable
   const selectWallet = async (wallet: WalletOption) => {
     if (!wallet.available) return
 
+    // Initialize connection state
     selectedWallet.value = wallet
     currentStep.value = 'connecting'
     isConnecting.value = true
     error.value = null
 
     try {
-      console.log(`Starting connection to ${wallet.name}...`)
-      const connection = await walletStore.startConnection()
+      // Step 1: Establish connection
+      const connection = await establishConnection()
+      if (!connection) return
 
-      if (connection) {
-        console.log('Connection URI generated:', connection.uri.substring(0, 50) + '...')
-        connectionUri.value = connection.uri
-        currentStep.value = 'qr-code'
+      // Step 2: Generate QR code and show to user
+      connectionUri.value = connection.uri
+      currentStep.value = 'qr-code'
+      await generateQRCode(connection.uri)
 
-        await generateQRCode(connection.uri)
-        const session = await connection.approval()
+      // Step 3: Handle wallet approval with retry logic
+      updateProgress(20, 'Verifying connection...')
+      await sleep(1000) // Give time for wallet store to update
 
-        if (session) {
-          console.log('Wallet connection approved:', session)
+      const approvalSuccess = await handleWalletApproval(connection.approval)
+      if (!approvalSuccess) return
 
-          // Show processing state
-          currentStep.value = 'processing'
-          processingProgress.value = 20
-          processingMessage.value = 'Verifying connection...'
+      // Step 4: Fetch wallet info with websocket reconnection
+      currentStep.value = 'processing'
+      const infoSuccess = await fetchWalletInfo()
 
-          // Wait a moment for the wallet store to update
-          await new Promise(resolve => setTimeout(resolve, 1000))
-
-          // Try to fetch wallet info from the service
-          try {
-            processingProgress.value = 40
-            processingMessage.value = 'Fetching wallet information...'
-
-            const fetchedWalletInfo = await sageWalletConnectService.getWalletInfo()
-            if (fetchedWalletInfo) {
-              console.log('Fetched wallet info:', fetchedWalletInfo)
-
-              processingProgress.value = 60
-              processingMessage.value = 'Setting up account...'
-
-              // Update the store with the fetched wallet info
-              walletStore.walletInfo = fetchedWalletInfo
-
-              processingProgress.value = 80
-              processingMessage.value = 'Finalizing connection...'
-
-              // Wait a moment to show the progress
-              await new Promise(resolve => setTimeout(resolve, 300))
-
-              processingProgress.value = 100
-              processingMessage.value = 'Connection complete!'
-
-              // Wait a moment then show success
-              await new Promise(resolve => setTimeout(resolve, 300))
-
-              currentStep.value = 'success'
-              emit('connected', fetchedWalletInfo)
-            } else {
-              throw new Error('Failed to fetch wallet info from service')
-            }
-          } catch (fetchError) {
-            console.error('Failed to fetch wallet info:', fetchError)
-            error.value = 'Connected but failed to fetch wallet information'
-            currentStep.value = 'error'
-            console.log(
-              'Fetch error state set - currentStep:',
-              currentStep.value,
-              'error:',
-              error.value
-            )
-          }
-        } else {
-          error.value = 'Wallet connection was not approved'
-          currentStep.value = 'error'
-          console.log(
-            'Approval error state set - currentStep:',
-            currentStep.value,
-            'error:',
-            error.value
-          )
-        }
-      } else {
-        error.value = 'Failed to start connection - no connection URI generated'
-        currentStep.value = 'error'
-        console.log(
-          'Connection URI error state set - currentStep:',
-          currentStep.value,
-          'error:',
-          error.value
-        )
+      if (!infoSuccess) {
+        // Error handling is done in fetchWalletInfo
+        return
       }
     } catch (err) {
-      console.error('Wallet connection error:', err)
-      error.value = err instanceof Error ? err.message : 'Connection failed'
-      currentStep.value = 'error'
-      console.log('Error state set - currentStep:', currentStep.value, 'error:', error.value)
+      handleError(err, ERROR_TYPES.UNKNOWN, 'Wallet selection')
     } finally {
       isConnecting.value = false
     }
   }
 
-  const retryConnection = () => {
-    // Reset to QR code step to show wallet connection dialog again
-    currentStep.value = 'qr-code'
+  // Function to restart the approval process
+  const restartApprovalProcess = async () => {
+    console.log('Restarting approval process...')
+
+    // Reset connection state
+    currentStep.value = 'connecting'
     error.value = null
+    isConnecting.value = true
+    processingProgress.value = 0
+    processingMessage.value = 'Restarting connection...'
+
+    try {
+      // Clear any existing session data
+      await sessionManager.clearAllSessionData({
+        clearWalletConnect: true,
+        clearUserData: false,
+        clearThemeData: false,
+        clearPWAStorage: true,
+        clearServiceWorker: true,
+        clearAllCaches: false,
+      })
+
+      // Wait a moment for cleanup
+      await sleep(1000)
+
+      // Reinitialize the wallet service
+      if (sageWalletConnectService.isInitialized()) {
+        await sageWalletConnectService.forceReset()
+      }
+
+      await sageWalletConnectService.initialize()
+
+      // Start fresh connection
+      const connection = await establishConnection()
+      if (!connection) return
+
+      // Generate new QR code
+      connectionUri.value = connection.uri
+      currentStep.value = 'qr-code'
+      await generateQRCode(connection.uri)
+
+      // Handle wallet approval with fresh retry logic
+      updateProgress(20, 'Verifying connection...')
+      await sleep(1000)
+
+      const approvalSuccess = await handleWalletApproval(connection.approval)
+      if (!approvalSuccess) return
+
+      // Fetch wallet info
+      currentStep.value = 'processing'
+      const infoSuccess = await fetchWalletInfo()
+
+      if (!infoSuccess) {
+        return
+      }
+    } catch (err) {
+      handleError(err, ERROR_TYPES.UNKNOWN, 'Approval restart')
+    } finally {
+      isConnecting.value = false
+    }
+  }
+
+  const handleRetryConnection = async () => {
+    // Use the new restart approval process for better reliability
+    await restartApprovalProcess()
   }
 
   const copyUri = async () => {
@@ -486,12 +691,47 @@
     }
   )
 
+  // Watch for wallet connection changes
+  watch(walletIsConnected, connected => {
+    if (connected && currentStep.value === 'qr-code') {
+      console.log('Wallet connected, moving to processing step')
+      currentStep.value = 'processing'
+    }
+  })
+
+  // Watch for wallet info changes
+  watch(walletInfoData, info => {
+    if (info && currentStep.value === 'processing') {
+      console.log('Wallet info received, moving to success step')
+      currentStep.value = 'success'
+      emit('connected', info)
+    }
+  })
+
+  // Watch for errors from the composable
+  watch(walletError, err => {
+    if (err && currentStep.value !== 'error') {
+      console.log('Error occurred, moving to error step')
+      error.value = err instanceof Error ? err.message : String(err)
+      currentStep.value = 'error'
+    }
+  })
+
   // Handle escape key
   const handleKeydown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && props.isOpen) {
       closeModal()
     }
   }
+
+  // Expose functions to parent component
+  defineExpose({
+    selectWallet,
+    closeModal,
+    handleClose,
+    handleRetryConnection,
+    restartApprovalProcess, // Expose the new restart function
+  })
 
   onMounted(() => {
     document.addEventListener('keydown', handleKeydown)
@@ -965,6 +1205,60 @@
   /* Dark mode for processing */
   .progress-bar {
     @apply dark:bg-gray-700;
+  }
+
+  /* TanStack Query Progress Styles */
+  .tanstack-progress {
+    @apply space-y-3;
+  }
+
+  .query-status-item {
+    @apply flex items-center gap-3 p-3 rounded-lg border transition-all duration-300;
+    @apply bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700;
+  }
+
+  .query-status-item.active {
+    @apply bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700;
+  }
+
+  .query-status-item.pending {
+    @apply bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700;
+  }
+
+  .query-status-item.error {
+    @apply bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700;
+  }
+
+  .status-indicator {
+    @apply flex-shrink-0 w-6 h-6 flex items-center justify-center;
+  }
+
+  .status-text {
+    @apply flex-1 flex flex-col gap-1;
+  }
+
+  .status-label {
+    @apply text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide;
+  }
+
+  .status-value {
+    @apply text-sm font-semibold text-gray-900 dark:text-gray-100;
+  }
+
+  .query-status-item.active .status-value {
+    @apply text-green-700 dark:text-green-300;
+  }
+
+  .query-status-item.pending .status-value {
+    @apply text-blue-700 dark:text-blue-300;
+  }
+
+  .query-status-item.error .status-value {
+    @apply text-red-700 dark:text-red-300;
+  }
+
+  .retry-info {
+    @apply border border-yellow-200 dark:border-yellow-700;
   }
 
   .progress-text {

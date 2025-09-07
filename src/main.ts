@@ -1,8 +1,7 @@
 import Aura from '@primeuix/themes/aura'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import { createPinia } from 'pinia'
-import { createApp } from 'vue'
-import { watch } from 'vue'
+import { createApp, watch } from 'vue'
 
 // PrimeVue imports
 import PrimeVue from 'primevue/config'
@@ -21,9 +20,9 @@ import Tabs from 'primevue/tabs'
 import './assets/main.css'
 
 import App from './App.vue'
+import { useWalletConnectStore } from './features/walletConnect/stores/walletConnectStore'
 import router from './router'
 import { validateEnvironment } from './shared/config/environment'
-import { useWalletConnectStore } from './features/walletConnect/stores/walletConnectStore'
 
 // Validate environment configuration early
 validateEnvironment()
@@ -53,6 +52,8 @@ app.component('PrimeTabs', Tabs)
 app.component('PrimeTab', Tab)
 app.component('PrimeTabPanel', TabPanel)
 app.component('PrimeTabPanels', TabPanels)
+
+// Using TanStack Query for background execution - no service worker needed
 
 // Global wallet disconnection watcher
 app.mount('#app')

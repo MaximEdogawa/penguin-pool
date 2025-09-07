@@ -273,10 +273,14 @@
 
   const handleLogout = async () => {
     try {
+      // Use wallet store disconnect which handles comprehensive clearing
       if (walletStore.isConnected) {
         await walletStore.disconnect()
+      } else {
+        // If wallet not connected, still clear user data
+        await userStore.logout()
       }
-      await userStore.logout()
+
       // Redirect to auth page after logout
       window.location.href = '/auth'
     } catch (error) {

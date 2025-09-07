@@ -1,3 +1,7 @@
+// Chia Network Chain IDs
+export const CHIA_MAINNET_CHAIN_ID = 'chia:mainnet'
+export const CHIA_TESTNET_CHAIN_ID = 'chia:testnet'
+
 export const environment = {
   // App configuration
   appName: 'Penguin-pool',
@@ -38,8 +42,27 @@ export const environment = {
         url: 'https://penguin.pool',
         icons: ['https://penguin.pool/icon.png'],
       },
-      chainId: 'chia:testnet',
+      chainId: (() => {
+        const network = import.meta.env.VITE_CHIA_NETWORK || 'testnet'
+        return network === 'mainnet' ? CHIA_MAINNET_CHAIN_ID : CHIA_TESTNET_CHAIN_ID
+      })(),
       relayUrl: 'wss://relay.walletconnect.com',
+      // iOS-specific configuration
+      ios: {
+        // Alternative relay URLs for iOS (in order of preference)
+        relayUrls: [
+          'wss://relay.walletconnect.org', // More reliable for iOS
+          'wss://relay.walletconnect.com', // Primary relay
+          'wss://relay.walletconnect.io', // Alternative relay
+        ],
+        // Connection settings optimized for iOS
+        connectionTimeout: 30000,
+        maxReconnectionAttempts: 5,
+        reconnectionDelay: 2000,
+        // Health check settings for iOS
+        healthCheckInterval: 30000, // Check every 30 seconds on iOS
+        maxConsecutiveFailures: 2, // More aggressive reconnection
+      },
     },
   },
 
