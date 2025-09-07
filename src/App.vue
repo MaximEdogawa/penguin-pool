@@ -1,10 +1,11 @@
 <script setup lang="ts">
   import AppProvider from '@/app/providers/AppProvider.vue'
+  import PWAInstallPrompt from '@/components/PWAInstallPrompt.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useFeatureFlagsStore } from '@/stores/featureFlags'
+  import AppLayout from '@/widgets/Layout/AppLayout.vue'
   import { computed, onMounted } from 'vue'
   import { RouterView } from 'vue-router'
-  import AppLayout from '@/widgets/Layout/AppLayout.vue'
 
   const userStore = useUserStore()
   const featureFlags = useFeatureFlagsStore()
@@ -25,6 +26,7 @@
       <RouterView />
     </AppLayout>
     <RouterView v-else />
+    <PWAInstallPrompt />
   </AppProvider>
 </template>
 

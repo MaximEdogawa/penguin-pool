@@ -1,58 +1,78 @@
-# Backend Management Scripts
+# Scripts Directory
 
-This directory contains scripts to help manage the NestJS backend services.
+This directory contains utility scripts for the Penguin Pool project.
 
-## Available Scripts
+## PWA Icon Generation
 
-### `kill-backend.sh` (Linux/macOS)
+### `generate-pwa-icons.sh`
 
-Terminates all running NestJS backend services and processes on common backend ports.
+Generates all required PWA icons from a source SVG file using macOS built-in `sips` tool.
 
-**Usage:**
+#### Usage
 
 ```bash
-# From project root
-./scripts/kill-backend.sh
+# Make executable (first time only)
+chmod +x scripts/generate-pwa-icons.sh
 
-# Or using npm script
-npm run kill-backend
-
-# From backend directory
-npm run kill
+# Generate icons
+./scripts/generate-pwa-icons.sh
 ```
 
-**What it does:**
+#### Requirements
 
-- Finds all Node.js processes running NestJS
-- Terminates them gracefully (SIGTERM)
-- Force kills any that don't terminate (SIGKILL)
-- Cleans up processes on ports 3000, 3001, 3002
-- Provides detailed output of what's being terminated
+- macOS (uses built-in `sips` command)
+- Source SVG file at `src/assets/penguin-pool.svg`
 
-### `kill-backend.bat` (Windows)
+#### Generated Icons
 
-Windows equivalent of the kill script.
+The script generates the following icon sizes:
 
-**Usage:**
+- **16x16** - Favicon
+- **32x32** - Favicon
+- **72x72** - Android home screen
+- **96x96** - Android home screen
+- **128x128** - Android home screen
+- **144x144** - Windows tiles
+- **152x152** - iOS home screen
+- **192x192** - Android home screen
+- **384x384** - Android splash screen
+- **512x512** - Android splash screen
 
-```cmd
-scripts\kill-backend.bat
-```
+#### Output
 
-## When to Use
+Icons are saved to `public/icons/` directory with naming convention:
 
-Use these scripts when:
+- `icon-{size}x{size}.png`
 
-- Backend services are stuck or unresponsive
-- You need to free up ports 3000, 3001, or 3002
-- You want to ensure a clean restart of all backend services
-- Development servers are running in the background and you want to stop them
+#### Troubleshooting
 
-## Safety
+**Error: Source SVG not found**
 
-These scripts are designed to be safe and will:
+- Ensure `src/assets/penguin-pool.svg` exists
+- Check file path is correct
 
-- Show you what processes will be terminated before killing them
-- Attempt graceful shutdown first
-- Only force kill if necessary
-- Provide clear feedback about what's happening
+**Error: Permission denied**
+
+- Run `chmod +x scripts/generate-pwa-icons.sh`
+- Ensure you have write permissions to `public/icons/`
+
+**Error: sips command not found**
+
+- This script requires macOS
+- Use alternative methods on other platforms (see PWA_SETUP.md)
+
+#### Alternative Methods
+
+If you don't have macOS, use these alternatives:
+
+1. **Online Tools**:
+   - [PWA Builder](https://www.pwabuilder.com/imageGenerator)
+   - [Favicon Generator](https://realfavicongenerator.net/)
+
+2. **Design Tools**:
+   - Figma, Sketch, Adobe Illustrator
+   - Export as PNG in required sizes
+
+3. **Command Line** (Linux/Windows):
+   - ImageMagick: `convert source.svg -resize 192x192 icon-192x192.png`
+   - Inkscape: `inkscape --export-png=icon-192x192.png --export-width=192 --export-height=192 source.svg`
