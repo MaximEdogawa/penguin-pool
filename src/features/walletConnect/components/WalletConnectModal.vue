@@ -67,7 +67,14 @@
                     @click="selectUri"
                     placeholder="Connection URI"
                   />
-                  <button @click="copyUri" class="copy-button" :class="{ copied: isCopied }">
+                  <button
+                    @click="copyUri"
+                    @touchstart="handleTouchStart"
+                    @touchend="handleTouchEnd"
+                    class="copy-button"
+                    :class="{ copied: isCopied }"
+                    type="button"
+                  >
                     <i :class="isCopied ? 'pi pi-check text-sm' : 'pi pi-copy text-sm'"></i>
                   </button>
                 </div>
@@ -377,15 +384,60 @@
   const copyUri = async () => {
     if (connectionUri.value) {
       try {
-        await navigator.clipboard.writeText(connectionUri.value)
+        // Try modern Clipboard API first
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(connectionUri.value)
+        } else {
+          // Fallback for older iOS versions or non-secure contexts
+          const textArea = document.createElement('textarea')
+          textArea.value = connectionUri.value
+          textArea.style.position = 'fixed'
+          textArea.style.left = '-999999px'
+          textArea.style.top = '-999999px'
+          document.body.appendChild(textArea)
+          textArea.focus()
+          textArea.select()
+
+          try {
+            document.execCommand('copy')
+          } catch (fallbackErr) {
+            console.error('Fallback copy failed:', fallbackErr)
+            // Show the URI in an alert as last resort
+            alert(`Please copy this URI manually:\n\n${connectionUri.value}`)
+            return
+          } finally {
+            document.body.removeChild(textArea)
+          }
+        }
+
         isCopied.value = true
         setTimeout(() => {
           isCopied.value = false
         }, 2000) // Reset after 2 seconds
       } catch (err) {
         console.error('Failed to copy URI:', err)
+        // Show the URI in an alert as fallback
+        alert(`Please copy this URI manually:\n\n${connectionUri.value}`)
       }
     }
+  }
+
+  const handleTouchStart = (event: TouchEvent) => {
+    // Prevent default to avoid double-tap zoom on iOS
+    event.preventDefault()
+    // Add visual feedback for touch
+    const button = event.currentTarget as HTMLButtonElement
+    button.style.transform = 'scale(0.95)'
+  }
+
+  const handleTouchEnd = (event: TouchEvent) => {
+    // Prevent default to avoid double-tap zoom on iOS
+    event.preventDefault()
+    // Reset visual feedback
+    const button = event.currentTarget as HTMLButtonElement
+    button.style.transform = 'scale(1)'
+    // Trigger the copy action
+    copyUri()
   }
 
   const selectUri = (event: Event) => {
@@ -586,6 +638,14 @@
 
   .copy-button {
     @apply bg-white/20 text-white border border-white/30 p-2 rounded-md cursor-pointer font-medium transition-all flex items-center justify-center min-w-10 flex-shrink-0 hover:bg-white/30 hover:-translate-y-0.5 hover:shadow-lg;
+    /* iOS-specific touch improvements */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+    min-height: 44px; /* iOS minimum touch target */
+    min-width: 44px;
   }
 
   .copy-button.copied {
