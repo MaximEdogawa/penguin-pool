@@ -1,5 +1,7 @@
 <template>
   <!-- Login Screen with Loading State -->
+  <PWAInstallPrompt />
+
   <div
     class="login-page min-h-screen flex items-center justify-center px-6 py-20 md:px-20 lg:px-80 backdrop-blur-3xl bg-cover bg-center bg-no-repeat"
     :style="backgroundStyle"
@@ -124,6 +126,7 @@
 <script setup lang="ts">
   import FeatureFlag from '@/components/FeatureFlag.vue'
   import PenguinLogo from '@/components/PenguinLogo.vue'
+  import PWAInstallPrompt from '@/components/PWAInstallPrompt.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
   import { computed, defineAsyncComponent, onMounted, ref } from 'vue'

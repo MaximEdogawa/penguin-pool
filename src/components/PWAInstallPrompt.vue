@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue'
+  import { onMounted, onUnmounted, ref } from 'vue'
 
   interface BeforeInstallPromptEvent extends Event {
     preventDefault(): void
@@ -38,48 +38,56 @@
 
   const showInstallPrompt = ref(false)
   const deferredPrompt = ref<BeforeInstallPromptEvent | null>(null)
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)
 
   onMounted(() => {
-    // Check if app is already installed
-    const checkIfInstalled = () => {
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-      const isIOSStandalone = (window.navigator as NavigatorWithStandalone).standalone === true
-      const isAndroidApp = document.referrer.includes('android-app://')
-      const isChromeApp = window.matchMedia('(display-mode: minimal-ui)').matches
-
-      return isStandalone || isIOSStandalone || isAndroidApp || isChromeApp
-    }
-
-    if (checkIfInstalled()) {
+    if (deferredPrompt.value || checkIfInstalled()) {
       showInstallPrompt.value = false
       return
     }
 
-    // Listen for the beforeinstallprompt event
-    window.addEventListener('beforeinstallprompt', (e: Event) => {
-      e.preventDefault()
-      deferredPrompt.value = e as BeforeInstallPromptEvent
-      showInstallPrompt.value = true
-    })
+    if (isIOS) showInstallPrompt.value = true
 
-    // Listen for the appinstalled event
-    window.addEventListener('appinstalled', () => {
-      showInstallPrompt.value = false
-      deferredPrompt.value = null
-    })
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('appinstalled', handleAppInstalled)
 
-    // Show prompt after a short delay if no beforeinstallprompt event
     setTimeout(() => {
       if (!checkIfInstalled() && !deferredPrompt.value) {
-        showInstallPrompt.value = true
+        // Only show banner for iOS devices when there's no deferred prompt
       }
-    }, 2000)
+    }, 500)
   })
+
+  onUnmounted(() => {
+    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.removeEventListener('appinstalled', handleAppInstalled)
+  })
+
+  const handleBeforeInstallPrompt = (e: Event) => {
+    e.preventDefault()
+    deferredPrompt.value = e as BeforeInstallPromptEvent
+    showInstallPrompt.value = true
+  }
+
+  const handleAppInstalled = () => {
+    showInstallPrompt.value = false
+    deferredPrompt.value = null
+  }
+
+  const checkIfInstalled = () => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    const isIOSStandalone = (window.navigator as NavigatorWithStandalone).standalone === true
+    const isAndroidApp = document.referrer.includes('android-app://')
+    const isChromeApp = window.matchMedia('(display-mode: minimal-ui)').matches
+
+    return isStandalone || isIOSStandalone || isAndroidApp || isChromeApp
+  }
 
   const installApp = async () => {
     if (!deferredPrompt.value) {
-      // Fallback for iOS Safari
-      if (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')) {
+      // Only show instructions for iOS devices (iPhone/iPad)
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)
+      if (isIOS) {
         showIOSInstructions()
         return
       }
@@ -106,7 +114,7 @@
   const showIOSInstructions = () => {
     // Show iOS-specific installation instructions
     alert(
-      'To install Penguin Pool on your iPhone:\n\n' +
+      'To install Penguin Pool on your iOS device:\n\n' +
         '1. Tap the Share button at the bottom of Safari\n' +
         '2. Scroll down and tap "Add to Home Screen"\n' +
         '3. Tap "Add" to confirm\n\n' +
