@@ -56,9 +56,9 @@
     }
 
     // Listen for the beforeinstallprompt event
-    window.addEventListener('beforeinstallprompt', e => {
+    window.addEventListener('beforeinstallprompt', (e: Event) => {
       e.preventDefault()
-      deferredPrompt.value = e
+      deferredPrompt.value = e as BeforeInstallPromptEvent
       showInstallPrompt.value = true
     })
 
