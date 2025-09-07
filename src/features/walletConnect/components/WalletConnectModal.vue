@@ -238,6 +238,7 @@
   const isCopied = ref(false)
   const processingProgress = ref(0)
   const processingMessage = ref('Initializing...')
+  const currentApprovalFunction = ref<(() => Promise<unknown>) | null>(null)
 
   // Available wallet options
   const availableWallets = ref<WalletOption[]>([
@@ -261,6 +262,7 @@
 
   // Computed
   const walletInfo = computed(() => walletStore.walletInfo)
+
   // Methods
   const closeModal = () => {
     resetModal()
@@ -300,6 +302,7 @@
     APPROVAL_TIMEOUT: 'APPROVAL_TIMEOUT',
     WALLET_INFO_FAILED: 'WALLET_INFO_FAILED',
     WEBSOCKET_DISCONNECTED: 'WEBSOCKET_DISCONNECTED',
+    PAIRING_EXPIRED: 'PAIRING_EXPIRED',
     UNKNOWN: 'UNKNOWN',
   } as const
 
@@ -343,6 +346,9 @@
         break
       case ERROR_TYPES.WEBSOCKET_DISCONNECTED:
         userMessage = 'Connection lost. Attempting to reconnect...'
+        break
+      case ERROR_TYPES.PAIRING_EXPIRED:
+        userMessage = 'Connection code expired. Please refresh to get a new code.'
         break
       default:
         userMessage = 'An unexpected error occurred. Please try again.'
@@ -582,8 +588,60 @@
   }
 
   const handleRetryConnection = async () => {
-    // Use the new restart approval process for better reliability
-    await restartApprovalProcess()
+    // Check if it's a pairing expiry error
+    if (error.value?.includes('expired')) {
+      await refreshConnection()
+    } else {
+      // Use the new restart approval process for better reliability
+      await restartApprovalProcess()
+    }
+  }
+
+  // Function to refresh connection
+  const refreshConnection = async () => {
+    console.log('Refreshing connection...')
+
+    try {
+      // Show loading state
+      currentStep.value = 'connecting'
+      isConnecting.value = true
+      error.value = null
+      updateProgress(10, 'Refreshing connection code...')
+
+      // Get new connection from service
+      const newConnection = await sageWalletConnectService.startConnection()
+
+      if (!newConnection) {
+        throw new Error('Failed to start new connection')
+      }
+
+      // Update connection URI and QR code
+      connectionUri.value = newConnection.uri
+      await generateQRCode(newConnection.uri)
+      currentApprovalFunction.value = newConnection.approval
+
+      // Move to QR code step
+      currentStep.value = 'qr-code'
+      updateProgress(20, 'New code generated. Please try connecting again.')
+
+      // Start approval process with new connection
+      const approvalSuccess = await handleWalletApproval(newConnection.approval)
+      if (!approvalSuccess) return
+
+      // Continue with wallet info fetch
+      currentStep.value = 'processing'
+      const infoSuccess = await fetchWalletInfo()
+
+      if (infoSuccess) {
+        currentStep.value = 'success'
+        emit('connected', walletStore.walletInfo!)
+      }
+    } catch (err) {
+      console.error('Failed to refresh connection:', err)
+      handleError(err, ERROR_TYPES.CONNECTION_FAILED, 'Connection refresh')
+    } finally {
+      isConnecting.value = false
+    }
   }
 
   const copyUri = async () => {
@@ -735,6 +793,34 @@
 
   onMounted(() => {
     document.addEventListener('keydown', handleKeydown)
+
+    // Listen for pairing expiry events
+    const handlePairingExpired = (event: Event) => {
+      const customEvent = event as CustomEvent
+      console.log('Pairing expired:', customEvent.detail)
+      handleError(
+        new Error('Connection code expired. Please refresh to get a new code.'),
+        ERROR_TYPES.PAIRING_EXPIRED,
+        'Pairing expiry'
+      )
+    }
+
+    const handleRefreshPairing = async (event: Event) => {
+      const customEvent = event as CustomEvent
+      console.log('Refreshing pairing...', customEvent.detail)
+      await refreshConnection()
+    }
+
+    window.addEventListener('wallet-connect-pairing-expired', handlePairingExpired as EventListener)
+    window.addEventListener('ios-refresh-pairing', handleRefreshPairing as EventListener)
+
+    onUnmounted(() => {
+      window.removeEventListener(
+        'wallet-connect-pairing-expired',
+        handlePairingExpired as EventListener
+      )
+      window.removeEventListener('ios-refresh-pairing', handleRefreshPairing as EventListener)
+    })
   })
 
   onUnmounted(() => {

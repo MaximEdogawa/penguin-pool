@@ -26,33 +26,62 @@ export class SageWalletConnectService {
   private session: SessionTypes.Struct | null = null
   private fingerprint: string | null = null
   private healthCheckInterval: NodeJS.Timeout | null = null
-  private iosCleanup: (() => void) | null = null
   private static isInitializing = false
 
   /**
-   * Detect if the current device is iOS
+   * Try to open a URL (deep link or universal link)
    */
-  private detectIOS(): boolean {
-    if (typeof window === 'undefined') return false
+  private async tryOpenUrl(url: string): Promise<boolean> {
+    return new Promise(resolve => {
+      const startTime = Date.now()
 
-    const userAgent = window.navigator.userAgent
-    return /iPad|iPhone|iPod/.test(userAgent) && !('MSStream' in window)
+      // Create a hidden iframe to test if the app opens
+      const iframe = document.createElement('iframe')
+      iframe.style.display = 'none'
+      iframe.src = url
+      document.body.appendChild(iframe)
+
+      // Check if we return to the page quickly (app opened)
+      const checkReturn = () => {
+        const elapsed = Date.now() - startTime
+        if (elapsed > 2000) {
+          // If we're still here after 2 seconds, the app probably didn't open
+          document.body.removeChild(iframe)
+          resolve(false)
+        } else {
+          // Check again in 100ms
+          setTimeout(checkReturn, 100)
+        }
+      }
+
+      // Listen for page visibility changes
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          // Page went to background, app probably opened
+          document.body.removeChild(iframe)
+          document.removeEventListener('visibilitychange', handleVisibilityChange)
+          resolve(true)
+        }
+      }
+
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+
+      // Start checking
+      setTimeout(checkReturn, 100)
+
+      // Cleanup after 5 seconds
+      setTimeout(() => {
+        document.body.removeChild(iframe)
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        resolve(false)
+      }, 5000)
+    })
   }
 
   /**
-   * Get relay URLs with iOS-specific fallbacks
+   * Get relay URLs
    */
-  private getRelayUrls(isIOS: boolean): string[] {
-    if (isIOS) {
-      // iOS-specific relay order with more reliable options first
-      return [
-        'wss://relay.walletconnect.org', // More reliable for iOS
-        'wss://relay.walletconnect.com', // Primary relay
-        'wss://relay.walletconnect.io', // Alternative relay
-      ]
-    }
-
-    // Standard relay order for other platforms
+  private getRelayUrls(): string[] {
     return [
       'wss://relay.walletconnect.com',
       'wss://relay.walletconnect.org',
@@ -62,11 +91,11 @@ export class SageWalletConnectService {
 
   // Initialization configuration constants
   private static readonly INIT_CONFIG = {
-    maxRetries: 5, // Increased from 3 to 5
-    retryDelay: 2000, // Increased from 1s to 2s
-    connectionTimeout: 30000, // Increased from 20s to 30s
-    maxReconnectionAttempts: 8, // Increased from 5 to 8
-    reconnectionDelay: 3000, // Increased from 2s to 3s
+    maxRetries: 3,
+    retryDelay: 1000,
+    connectionTimeout: 20000,
+    maxReconnectionAttempts: 5,
+    reconnectionDelay: 2000,
   } as const
 
   // Initialization state tracking
@@ -101,28 +130,13 @@ export class SageWalletConnectService {
   }
 
   /**
-   * Create SignClient with platform-specific configuration
+   * Create SignClient with standard configuration
    */
   private async createSignClient(relayUrl: string): Promise<InstanceType<typeof SignClient>> {
-    const isIOS = this.detectIOS()
-
-    const baseConfig = {
+    return await SignClient.init({
       projectId: environment.wallet.walletConnect.projectId,
       metadata: CHIA_METADATA,
       relayUrl,
-    }
-
-    const platformConfig = isIOS
-      ? {
-          connectionTimeout: SageWalletConnectService.INIT_CONFIG.connectionTimeout,
-          maxReconnectionAttempts: SageWalletConnectService.INIT_CONFIG.maxReconnectionAttempts,
-          reconnectionDelay: SageWalletConnectService.INIT_CONFIG.reconnectionDelay,
-        }
-      : {}
-
-    return await SignClient.init({
-      ...baseConfig,
-      ...platformConfig,
     })
   }
 
@@ -149,8 +163,7 @@ export class SageWalletConnectService {
    * Initialize with relay fallback strategy
    */
   private async initializeWithRelayFallback(): Promise<InstanceType<typeof SignClient>> {
-    const isIOS = this.detectIOS()
-    const relayUrls = this.getRelayUrls(isIOS)
+    const relayUrls = this.getRelayUrls()
 
     for (let i = 0; i < relayUrls.length; i++) {
       const relayUrl = relayUrls[i]
@@ -334,12 +347,6 @@ export class SageWalletConnectService {
         this.healthCheckInterval = null
       }
 
-      // Clear iOS cleanup
-      if (this.iosCleanup) {
-        this.iosCleanup()
-        this.iosCleanup = null
-      }
-
       console.log('WalletConnect internal state cleared')
     } catch (error) {
       console.warn('Failed to clear internal state:', error)
@@ -410,106 +417,86 @@ export class SageWalletConnectService {
    * Clear PWA storage synchronously (IndexedDB, WebSQL, etc.)
    */
   private clearPWAStorageSync(): void {
-    try {
-      if (typeof window === 'undefined') return
+    if (typeof window === 'undefined') return
 
-      // Clear IndexedDB (async but fire and forget)
-      if ('indexedDB' in window) {
-        try {
-          indexedDB
-            .databases()
-            .then(databases => {
-              for (const db of databases) {
-                if (db.name && (db.name.includes('walletconnect') || db.name.includes('wc@'))) {
-                  indexedDB.deleteDatabase(db.name)
-                  console.log(`Cleared IndexedDB database: ${db.name}`)
-                }
-              }
-            })
-            .catch((error: unknown) => {
-              console.warn('Failed to clear IndexedDB:', error)
-            })
-        } catch (error) {
-          console.warn('Failed to clear IndexedDB:', error)
-        }
-      }
-
-      // Clear WebSQL (legacy)
-      if ('openDatabase' in window) {
-        try {
-          // WebSQL is deprecated but some older browsers might still use it
-          const db = (
-            window as unknown as {
-              openDatabase: (
-                name: string,
-                version: string,
-                displayName: string,
-                size: number
-              ) => unknown
+    // Clear IndexedDB (async but fire and forget)
+    if ('indexedDB' in window) {
+      indexedDB
+        .databases()
+        .then(databases => {
+          for (const db of databases) {
+            if (db.name && (db.name.includes('walletconnect') || db.name.includes('wc@'))) {
+              indexedDB.deleteDatabase(db.name)
+              console.log(`Cleared IndexedDB database: ${db.name}`)
             }
-          ).openDatabase('walletconnect', '1.0', 'WalletConnect DB', 2 * 1024 * 1024)
-          if (db) {
-            ;(
-              db as {
-                transaction: (callback: (tx: { executeSql: (sql: string) => void }) => void) => void
-              }
-            ).transaction((tx: { executeSql: (sql: string) => void }) => {
-              tx.executeSql('DROP TABLE IF EXISTS sessions')
-              tx.executeSql('DROP TABLE IF EXISTS pairings')
-            })
-            console.log('Cleared WebSQL database')
           }
-        } catch (error) {
-          console.warn('Failed to clear WebSQL:', error)
-        }
-      }
+        })
+        .catch((error: unknown) => {
+          console.warn('Failed to clear IndexedDB:', error)
+        })
+    }
 
-      // Clear caches (async but fire and forget)
-      if ('caches' in window) {
-        try {
-          caches
-            .keys()
-            .then(cacheNames => {
-              for (const cacheName of cacheNames) {
-                if (cacheName.includes('walletconnect') || cacheName.includes('wc@')) {
-                  caches
-                    .delete(cacheName)
-                    .then(() => {
-                      console.log(`Cleared cache: ${cacheName}`)
-                    })
-                    .catch((error: unknown) => {
-                      console.warn(`Failed to clear cache ${cacheName}:`, error)
-                    })
-                }
-              }
-            })
-            .catch((error: unknown) => {
-              console.warn('Failed to clear caches:', error)
-            })
-        } catch (error) {
+    // Clear WebSQL (legacy)
+    if ('openDatabase' in window) {
+      // WebSQL is deprecated but some older browsers might still use it
+      const db = (
+        window as unknown as {
+          openDatabase: (
+            name: string,
+            version: string,
+            displayName: string,
+            size: number
+          ) => unknown
+        }
+      ).openDatabase('walletconnect', '1.0', 'WalletConnect DB', 2 * 1024 * 1024)
+      if (db) {
+        ;(
+          db as {
+            transaction: (callback: (tx: { executeSql: (sql: string) => void }) => void) => void
+          }
+        ).transaction((tx: { executeSql: (sql: string) => void }) => {
+          tx.executeSql('DROP TABLE IF EXISTS sessions')
+          tx.executeSql('DROP TABLE IF EXISTS pairings')
+        })
+        console.log('Cleared WebSQL database')
+      }
+    }
+
+    // Clear caches (async but fire and forget)
+    if ('caches' in window) {
+      caches
+        .keys()
+        .then(cacheNames => {
+          for (const cacheName of cacheNames) {
+            if (cacheName.includes('walletconnect') || cacheName.includes('wc@')) {
+              caches
+                .delete(cacheName)
+                .then(() => {
+                  console.log(`Cleared cache: ${cacheName}`)
+                })
+                .catch((error: unknown) => {
+                  console.warn(`Failed to clear cache ${cacheName}:`, error)
+                })
+            }
+          }
+        })
+        .catch((error: unknown) => {
           console.warn('Failed to clear caches:', error)
-        }
-      }
+        })
+    }
 
-      // Clear any custom PWA storage (async but fire and forget)
-      if ('navigator' in window && 'storage' in navigator) {
-        try {
-          if ('clear' in navigator.storage) {
-            ;(navigator.storage as { clear: () => Promise<void> })
-              .clear()
-              .then(() => {
-                console.log('Cleared navigator.storage')
-              })
-              .catch((error: unknown) => {
-                console.warn('Failed to clear navigator.storage:', error)
-              })
-          }
-        } catch (error) {
-          console.warn('Failed to clear navigator.storage:', error)
-        }
+    // Clear any custom PWA storage (async but fire and forget)
+    if ('navigator' in window && 'storage' in navigator) {
+      if ('clear' in navigator.storage) {
+        ;(navigator.storage as { clear: () => Promise<void> })
+          .clear()
+          .then(() => {
+            console.log('Cleared navigator.storage')
+          })
+          .catch((error: unknown) => {
+            console.warn('Failed to clear navigator.storage:', error)
+          })
       }
-    } catch (error) {
-      console.warn('Failed to clear PWA storage:', error)
     }
   }
 
@@ -517,83 +504,79 @@ export class SageWalletConnectService {
    * Clear PWA storage asynchronously (for use in async contexts)
    */
   private async clearPWAStorage(): Promise<void> {
-    try {
-      if (typeof window === 'undefined') return
+    if (typeof window === 'undefined') return
 
-      // Clear IndexedDB
-      if ('indexedDB' in window) {
-        try {
-          // List all databases and clear them
-          const databases = await indexedDB.databases()
-          for (const db of databases) {
-            if (db.name && (db.name.includes('walletconnect') || db.name.includes('wc@'))) {
-              indexedDB.deleteDatabase(db.name)
-              console.log(`Cleared IndexedDB database: ${db.name}`)
+    // Clear IndexedDB
+    if ('indexedDB' in window) {
+      try {
+        // List all databases and clear them
+        const databases = await indexedDB.databases()
+        for (const db of databases) {
+          if (db.name && (db.name.includes('walletconnect') || db.name.includes('wc@'))) {
+            indexedDB.deleteDatabase(db.name)
+            console.log(`Cleared IndexedDB database: ${db.name}`)
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to clear IndexedDB:', error)
+      }
+    }
+
+    // Clear WebSQL (legacy)
+    if ('openDatabase' in window) {
+      try {
+        // WebSQL is deprecated but some older browsers might still use it
+        const db = (
+          window as unknown as {
+            openDatabase: (
+              name: string,
+              version: string,
+              displayName: string,
+              size: number
+            ) => unknown
+          }
+        ).openDatabase('walletconnect', '1.0', 'WalletConnect DB', 2 * 1024 * 1024)
+        if (db) {
+          ;(
+            db as {
+              transaction: (callback: (tx: { executeSql: (sql: string) => void }) => void) => void
             }
-          }
-        } catch (error) {
-          console.warn('Failed to clear IndexedDB:', error)
+          ).transaction((tx: { executeSql: (sql: string) => void }) => {
+            tx.executeSql('DROP TABLE IF EXISTS sessions')
+            tx.executeSql('DROP TABLE IF EXISTS pairings')
+          })
+          console.log('Cleared WebSQL database')
         }
+      } catch (error) {
+        console.warn('Failed to clear WebSQL:', error)
       }
+    }
 
-      // Clear WebSQL (legacy)
-      if ('openDatabase' in window) {
-        try {
-          // WebSQL is deprecated but some older browsers might still use it
-          const db = (
-            window as unknown as {
-              openDatabase: (
-                name: string,
-                version: string,
-                displayName: string,
-                size: number
-              ) => unknown
-            }
-          ).openDatabase('walletconnect', '1.0', 'WalletConnect DB', 2 * 1024 * 1024)
-          if (db) {
-            ;(
-              db as {
-                transaction: (callback: (tx: { executeSql: (sql: string) => void }) => void) => void
-              }
-            ).transaction((tx: { executeSql: (sql: string) => void }) => {
-              tx.executeSql('DROP TABLE IF EXISTS sessions')
-              tx.executeSql('DROP TABLE IF EXISTS pairings')
-            })
-            console.log('Cleared WebSQL database')
+    // Clear any other storage mechanisms
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys()
+        for (const cacheName of cacheNames) {
+          if (cacheName.includes('walletconnect') || cacheName.includes('wc@')) {
+            await caches.delete(cacheName)
+            console.log(`Cleared cache: ${cacheName}`)
           }
-        } catch (error) {
-          console.warn('Failed to clear WebSQL:', error)
         }
+      } catch (error) {
+        console.warn('Failed to clear caches:', error)
       }
+    }
 
-      // Clear any other storage mechanisms
-      if ('caches' in window) {
-        try {
-          const cacheNames = await caches.keys()
-          for (const cacheName of cacheNames) {
-            if (cacheName.includes('walletconnect') || cacheName.includes('wc@')) {
-              await caches.delete(cacheName)
-              console.log(`Cleared cache: ${cacheName}`)
-            }
-          }
-        } catch (error) {
-          console.warn('Failed to clear caches:', error)
+    // Clear any custom PWA storage
+    if ('navigator' in window && 'storage' in navigator) {
+      try {
+        if ('clear' in navigator.storage) {
+          await (navigator.storage as { clear: () => Promise<void> }).clear()
+          console.log('Cleared navigator.storage')
         }
+      } catch (error) {
+        console.warn('Failed to clear navigator.storage:', error)
       }
-
-      // Clear any custom PWA storage
-      if ('navigator' in window && 'storage' in navigator) {
-        try {
-          if ('clear' in navigator.storage) {
-            await (navigator.storage as { clear: () => Promise<void> }).clear()
-            console.log('Cleared navigator.storage')
-          }
-        } catch (error) {
-          console.warn('Failed to clear navigator.storage:', error)
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to clear PWA storage:', error)
     }
   }
 
@@ -639,68 +622,36 @@ export class SageWalletConnectService {
       }
       console.log('WalletConnect connection initiated, URI generated:', !!uri)
 
-      if (uri) {
-        if (this.web3Modal) {
-          this.web3Modal.openModal({ uri })
-          try {
-            console.log('Waiting for wallet approval...')
-
-            // Add timeout for approval process
-            const approvalPromise = approval()
-            const approvalTimeoutPromise = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error('Wallet approval timeout after 45 seconds')), 45000)
-            })
-
-            const session = (await Promise.race([
-              approvalPromise,
-              approvalTimeoutPromise,
-            ])) as SessionTypes.Struct
-            console.log('Wallet approval successful, session established')
-
-            // Verify session is valid before proceeding
-            if (!session || !session.topic) {
-              throw new Error('Invalid session received from wallet')
-            }
-
-            this.onSessionConnected(session)
-            this.pairings = this.client.pairing.getAll({ active: true })
-            this.web3Modal.closeModal()
-          } catch (approvalError) {
-            this.web3Modal.closeModal()
-            console.error('Wallet approval failed:', approvalError)
-            throw approvalError
-          }
-        } else {
-          try {
-            console.log('Waiting for wallet approval (no modal)...')
-
-            // Add timeout for approval process
-            const approvalPromise = approval()
-            const approvalTimeoutPromise = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error('Wallet approval timeout after 45 seconds')), 45000)
-            })
-
-            const session = (await Promise.race([
-              approvalPromise,
-              approvalTimeoutPromise,
-            ])) as SessionTypes.Struct
-            console.log('Wallet approval successful, session established')
-
-            // Verify session is valid before proceeding
-            if (!session || !session.topic) {
-              throw new Error('Invalid session received from wallet')
-            }
-
-            this.onSessionConnected(session)
-            this.pairings = this.client.pairing.getAll({ active: true })
-          } catch (approvalError) {
-            console.error('Wallet approval failed:', approvalError)
-            throw approvalError
-          }
-        }
-      } else {
+      if (!uri) {
         throw new Error('No connection URI generated')
       }
+
+      // Open Web3Modal for all platforms
+      if (this.web3Modal) {
+        this.web3Modal.openModal({ uri })
+      }
+      console.log('Waiting for wallet approval...')
+
+      // Add timeout for approval process
+      const approvalPromise = approval()
+      const approvalTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Wallet approval timeout after 45 seconds')), 45000)
+      })
+
+      const session = (await Promise.race([
+        approvalPromise,
+        approvalTimeoutPromise,
+      ])) as SessionTypes.Struct
+      console.log('Wallet approval successful, session established')
+
+      // Verify session is valid before proceeding
+      if (!session || !session.topic) {
+        throw new Error('Invalid session received from wallet')
+      }
+
+      this.onSessionConnected(session)
+      this.pairings = this.client.pairing.getAll({ active: true })
+      this.web3Modal?.closeModal()
 
       return {
         success: true,
@@ -709,6 +660,7 @@ export class SageWalletConnectService {
       }
     } catch (error) {
       console.error('Wallet connection failed:', error)
+      this.web3Modal?.closeModal()
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Connection failed',
@@ -776,6 +728,7 @@ export class SageWalletConnectService {
 
       this.clearSessionStorage()
       this.stopConnectionMonitoring()
+
       return { success: true }
     } catch (error) {
       console.error('Disconnect failed:', error)
@@ -1034,15 +987,9 @@ export class SageWalletConnectService {
   startConnectionMonitoring(): void {
     if (typeof window === 'undefined') return
 
-    const isIOS = this.detectIOS()
     let consecutiveFailures = 0
-    const maxConsecutiveFailures = isIOS ? 2 : 3 // More aggressive for iOS
-    let checkInterval = isIOS ? 30000 : 60000 // Check more frequently on iOS
-
-    // iOS-specific background/foreground handling
-    if (isIOS) {
-      this.setupIOSBackgroundHandling()
-    }
+    const maxConsecutiveFailures = 3
+    let checkInterval = 60000
 
     const performHealthCheck = async () => {
       if (!this.isConnected()) {
@@ -1054,7 +1001,7 @@ export class SageWalletConnectService {
         const health = await this.checkConnectionHealth()
         if (health.healthy) {
           consecutiveFailures = 0
-          checkInterval = isIOS ? 30000 : 60000 // Reset interval
+          checkInterval = 60000 // Reset interval
         } else {
           consecutiveFailures++
           console.warn(
@@ -1065,15 +1012,15 @@ export class SageWalletConnectService {
             console.warn('Multiple consecutive health check failures, attempting reconnection...')
             await this.handleWebSocketReconnection()
             consecutiveFailures = 0
-            checkInterval = isIOS ? 60000 : 120000 // Wait longer after reconnection attempt
+            checkInterval = 120000 // Wait longer after reconnection attempt
           } else {
-            checkInterval = Math.min(checkInterval * (isIOS ? 1.2 : 1.5), 300000) // Less aggressive backoff for iOS
+            checkInterval = Math.min(checkInterval * 1.5, 300000)
           }
         }
       } catch (error) {
         console.error('Connection monitoring error:', error)
         consecutiveFailures++
-        checkInterval = Math.min(checkInterval * (isIOS ? 1.2 : 1.5), 300000)
+        checkInterval = Math.min(checkInterval * 1.5, 300000)
       }
 
       // Schedule next check
@@ -1094,110 +1041,6 @@ export class SageWalletConnectService {
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval)
       this.healthCheckInterval = null
-    }
-  }
-
-  /**
-   * Setup iOS-specific background/foreground handling
-   */
-  private setupIOSBackgroundHandling(): void {
-    if (typeof window === 'undefined') return
-
-    let isInBackground = false
-    let backgroundStartTime = 0
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // App went to background
-        isInBackground = true
-        backgroundStartTime = Date.now()
-        console.log('iOS: App went to background, maintaining WebSocket connection...')
-
-        // Notify service worker if available
-        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({
-            type: 'WALLET_CONNECTION_BACKGROUND',
-            timestamp: Date.now(),
-          })
-        }
-      } else {
-        // App returned to foreground
-        const backgroundDuration = Date.now() - backgroundStartTime
-        console.log(`iOS: App returned to foreground after ${backgroundDuration}ms`)
-
-        // If we were in background for more than 30 seconds, check connection health
-        if (isInBackground && backgroundDuration > 30000) {
-          console.log('iOS: Long background duration, checking connection health...')
-          setTimeout(() => {
-            this.checkConnectionHealth().then(health => {
-              if (!health.healthy) {
-                console.log(
-                  'iOS: Connection unhealthy after background, attempting reconnection...'
-                )
-                this.handleWebSocketReconnection()
-              }
-            })
-          }, 1000) // Small delay to let the app fully resume
-        }
-
-        isInBackground = false
-
-        // Notify service worker if available
-        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({
-            type: 'WALLET_CONNECTION_FOREGROUND',
-            timestamp: Date.now(),
-          })
-        }
-      }
-    }
-
-    const handlePageShow = (event: PageTransitionEvent) => {
-      // Handle page show event (including back/forward navigation)
-      if (event.persisted) {
-        console.log('iOS: Page restored from cache, checking connection...')
-        setTimeout(() => {
-          this.checkConnectionHealth().then(health => {
-            if (!health.healthy) {
-              console.log(
-                'iOS: Connection unhealthy after page restore, attempting reconnection...'
-              )
-              this.handleWebSocketReconnection()
-            }
-          })
-        }, 500)
-      }
-    }
-
-    const handleBeforeUnload = () => {
-      console.log('iOS: Page unloading, preserving connection state...')
-      // Store connection state for potential restoration
-      if (this.session) {
-        try {
-          localStorage.setItem(
-            'walletConnect_ios_state',
-            JSON.stringify({
-              session: this.session.topic,
-              timestamp: Date.now(),
-              fingerprint: this.fingerprint,
-            })
-          )
-        } catch (error) {
-          console.warn('Failed to store iOS connection state:', error)
-        }
-      }
-    }
-
-    // Add event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('pageshow', handlePageShow)
-    window.addEventListener('beforeunload', handleBeforeUnload)
-
-    // Cleanup function (stored for potential future use)
-    this.iosCleanup = () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('pageshow', handlePageShow)
-      window.removeEventListener('beforeunload', handleBeforeUnload)
     }
   }
 

@@ -8,12 +8,7 @@
     <div class="content-body">
       <!-- Content will be added here -->
     </div>
-
-    <!-- Page Footer -->
-    <PageFooter />
   </div>
 </template>
 
-<script setup lang="ts">
-  import PageFooter from '@/components/PageFooter.vue'
-</script>
+<script setup lang="ts"></script>

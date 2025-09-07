@@ -56,12 +56,16 @@ export const environment = {
           'wss://relay.walletconnect.io', // Alternative relay
         ],
         // Connection settings optimized for iOS
-        connectionTimeout: 30000,
-        maxReconnectionAttempts: 5,
-        reconnectionDelay: 2000,
+        connectionTimeout: 60000, // Increased timeout for iOS app switching
+        maxReconnectionAttempts: 8, // More attempts for iOS
+        reconnectionDelay: 1500, // Faster reconnection
         // Health check settings for iOS
-        healthCheckInterval: 30000, // Check every 30 seconds on iOS
-        maxConsecutiveFailures: 2, // More aggressive reconnection
+        healthCheckInterval: 20000, // Check every 20 seconds on iOS
+        maxConsecutiveFailures: 3, // More tolerant of failures
+        // App switching specific settings
+        appSwitchTimeout: 30000, // Timeout for app switching scenarios
+        backgroundGracePeriod: 60000, // Grace period before pausing monitoring
+        foregroundReconnectDelay: 1000, // Delay before reconnecting on foreground
       },
     },
   },

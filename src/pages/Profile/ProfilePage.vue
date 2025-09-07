@@ -85,17 +85,13 @@
         </PrimeTabPanel>
       </PrimeTabs>
     </div>
-
-    <!-- Page Footer -->
-    <PageFooter />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, watch } from 'vue'
-  import { useRoute, useRouter } from 'vue-router'
   import { useThemeStore } from '@/features/theme/store/themeStore'
-  import PageFooter from '@/components/PageFooter.vue'
+  import { computed, ref, watch } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
 
   const route = useRoute()
   const router = useRouter()
