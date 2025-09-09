@@ -5,16 +5,30 @@
   "main": "dist/main.js",
   "scripts": {
     "build": "nest build",
-    "start": "nest start",
+    "build:dev": "NODE_ENV=dev nest build",
+    "build:test": "NODE_ENV=test nest build",
+    "build:staging": "NODE_ENV=staging nest build",
+    "build:production": "NODE_ENV=production nest build",
     "dev:debug": "nest start --debug --watch",
+    "dev:debug:dev": "NODE_ENV=dev nest start --debug --watch",
+    "dev:debug:test": "NODE_ENV=test nest start --debug --watch",
+    "dev:debug:staging": "NODE_ENV=staging nest start --debug --watch",
+    "dev:debug:production": "NODE_ENV=production nest start --debug --watch",
     "start:prod": "node dist/main",
-    "dev": "nest start --watch --env-file=.env",
+    "dev": "NODE_ENV=dev nest start --watch",
+    "dev:test": "NODE_ENV=test nest start --watch",
+    "dev:staging": "NODE_ENV=staging nest start --watch",
+    "dev:production": "NODE_ENV=production nest start --watch",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:validation:dev": "jest --testPathPattern=feature-flags.environment.spec.ts -- --env=dev",
+    "test:validation:test": "jest --testPathPattern=feature-flags.environment.spec.ts -- --env=test",
+    "test:validation:staging": "jest --testPathPattern=feature-flags.environment.spec.ts -- --env=staging",
+    "test:validation:production": "jest --testPathPattern=feature-flags.environment.spec.ts -- --env=production",
     "docker:build": "docker build -t kurrentdb-backend .",
-    "docker:run": "docker run -p 3000:3000 kurrentdb-backend",
+    "docker:run": "docker run -p 3001:3001 kurrentdb-backend",
     "kill": "../scripts/kill-backend.sh"
   },
   "dependencies": {
@@ -79,5 +93,30 @@
     "swagger"
   ],
   "author": "Penguin Pool Team",
-  "license": "MIT"
+  "license": "MIT",
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "testMatch": [
+      "**/*.spec.ts",
+      "**/*.test.ts"
+    ],
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.spec.ts",
+      "!src/**/*.test.ts"
+    ],
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json"
+    ],
+    "testTimeout": 10000
+  }
 }

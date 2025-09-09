@@ -1,39 +1,21 @@
 <template>
-  <div v-if="isOpen" class="wallet-connect-modal-overlay" @click="handleOverlayClick">
-    <div class="wallet-connect-modal" @click.stop>
-      <div class="modal-content">
-        <!-- Wallet Selection Step -->
-        <div v-if="currentStep === 'selection'" class="wallet-selection-step">
-          <div class="wallet-grid">
-            <button
-              v-for="wallet in availableWallets"
-              :key="wallet.id"
-              @click="selectWallet(wallet)"
-              class="wallet-option"
-              :class="{ disabled: !wallet.available }"
-              :disabled="!wallet.available"
-            >
-              <div class="wallet-icon">
-                <i :class="wallet.iconClass"></i>
-              </div>
-              <div class="wallet-info">
-                <h3 class="wallet-name">{{ wallet.name }}</h3>
-                <p class="wallet-description">{{ wallet.description }}</p>
-                <div v-if="!wallet.available" class="wallet-unavailable">
-                  <i class="pi pi-exclamation-triangle"></i>
-                  <span>Coming Soon</span>
-                </div>
-              </div>
-              <div class="wallet-status">
-                <i v-if="wallet.available" class="pi pi-arrow-right"></i>
-                <i v-else class="pi pi-lock"></i>
-              </div>
-            </button>
-          </div>
-        </div>
-
+  <PrimeDialog
+    :visible="isOpen"
+    modal
+    :closable="false"
+    :dismissable-mask="true"
+    :draggable="false"
+    :resizable="false"
+    class="wallet-connect-dialog"
+    @hide="handleClose"
+    @update:visible="handleClose"
+    pt:root:class="!border-0 !bg-transparent"
+    pt:mask:class="backdrop-blur-sm"
+  >
+    <template #container>
+      <div class="wallet-connect-container">
         <!-- Connection Status -->
-        <div v-else-if="currentStep === 'connecting'" class="connection-status">
+        <div v-if="currentStep === 'connecting'" class="connection-status text-center p-8">
           <div class="spinner"></div>
           <h3>Connecting to {{ selectedWallet?.name }}...</h3>
           <p>Please wait while we establish the connection</p>
@@ -41,85 +23,117 @@
 
         <!-- QR Code Display -->
         <div v-else-if="currentStep === 'qr-code'" class="qr-section">
-          <div class="qr-header">
-            <div class="wallet-icon-large">
-              <i :class="selectedWallet?.iconClass"></i>
+          <div class="qr-main-content">
+            <!-- Wallet Icon and Title -->
+            <div class="wallet-header-section">
+              <div class="wallet-icon-large">
+                <i :class="selectedWallet?.iconClass"></i>
+              </div>
+              <h3>Connect with {{ selectedWallet?.name }}</h3>
             </div>
-            <h3>Connect with {{ selectedWallet?.name }}</h3>
-            <p>Scan the QR code with your mobile wallet</p>
-          </div>
 
-          <div class="qr-container">
-            <div class="qr-wrapper">
-              <div v-if="qrCodeDataUrl" class="qr-code">
-                <div class="qr-code-border">
-                  <img :src="qrCodeDataUrl" alt="Wallet Connect QR Code" />
+            <!-- QR Code -->
+            <div class="qr-container">
+              <div class="qr-wrapper">
+                <div v-if="qrCodeDataUrl" class="qr-code">
+                  <div class="qr-code-border">
+                    <img :src="qrCodeDataUrl" alt="Wallet Connect QR Code" />
+                  </div>
+                  <div class="qr-code-overlay">
+                    <div class="scanning-indicator">
+                      <div class="scan-line"></div>
+                    </div>
+                  </div>
                 </div>
-                <div class="qr-code-overlay">
-                  <div class="scanning-indicator">
-                    <div class="scan-line"></div>
+                <div v-else class="qr-placeholder">
+                  <div class="qr-spinner-container">
+                    <div class="qr-spinner"></div>
+                    <p>Generating QR Code...</p>
                   </div>
                 </div>
               </div>
-              <div v-else class="qr-placeholder">
-                <div class="qr-spinner-container">
-                  <div class="qr-spinner"></div>
-                  <p>Generating QR Code...</p>
+            </div>
+
+            <!-- Wallet Connect Code -->
+            <div class="connection-options">
+              <p class="qr-instruction">Scan the QR code with your mobile wallet</p>
+
+              <div class="uri-section">
+                <div class="uri-input-container">
+                  <input
+                    :value="connectionUri"
+                    readonly
+                    class="uri-input"
+                    @click="selectUri"
+                    placeholder="Connection URI"
+                  />
+                  <button
+                    @click="copyUri"
+                    @touchstart="handleTouchStart"
+                    @touchend="handleTouchEnd"
+                    class="copy-button"
+                    :class="{ copied: isCopied }"
+                    type="button"
+                  >
+                    <i :class="isCopied ? 'pi pi-check text-sm' : 'pi pi-copy text-sm'"></i>
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div class="connection-options">
-            <div class="uri-section">
-              <div class="uri-header">
-                <i class="pi pi-link"></i>
-                <span>Or copy connection link</span>
-              </div>
-              <div class="uri-input-container">
-                <input
-                  :value="connectionUri"
-                  readonly
-                  class="uri-input"
-                  @click="selectUri"
-                  placeholder="Connection URI"
-                />
-                <button @click="copyUri" class="copy-button">
-                  <i class="pi pi-copy"></i>
-                </button>
-              </div>
+            <!-- Download Link -->
+            <div class="wallet-download-section">
+              <a href="https://sagewallet.net/" target="_blank" class="download-link">
+                <i class="pi pi-download text-sm"></i>
+                <span>Don't have {{ selectedWallet?.name }}? Download it here</span>
+              </a>
             </div>
-          </div>
-
-          <div class="wallet-download-section">
-            <a href="https://sagewallet.net/" target="_blank" class="download-link">
-              <i class="pi pi-download"></i>
-              <span>Don't have {{ selectedWallet?.name }}? Download it here</span>
-            </a>
           </div>
         </div>
 
         <!-- Error Display -->
-        <div v-else-if="currentStep === 'error'" class="error-section">
+        <div v-else-if="currentStep === 'error'" class="error-section text-center p-8">
           <div class="error-icon">
             <i class="pi pi-exclamation-triangle"></i>
           </div>
           <h3>Connection Failed</h3>
           <p>{{ error }}</p>
           <div class="error-actions">
-            <button @click="retryConnection" class="retry-button">
+            <button @click="handleRetryConnection" class="retry-button">
               <i class="pi pi-refresh"></i>
               Try Again
-            </button>
-            <button @click="goBackToSelection" class="back-button">
-              <i class="pi pi-arrow-left"></i>
-              Back to Selection
             </button>
           </div>
         </div>
 
+        <!-- Processing Display -->
+        <div v-else-if="currentStep === 'processing'" class="processing-section text-center p-8">
+          <div class="processing-animation">
+            <div class="loading-spinner">
+              <div class="spinner-ring"></div>
+              <div class="spinner-ring"></div>
+              <div class="spinner-ring"></div>
+            </div>
+            <div class="loading-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+          <h3>Processing Connection...</h3>
+          <p>Setting up your account and loading wallet information</p>
+          <div class="progress-container mt-6">
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: processingProgress + '%' }"></div>
+            </div>
+            <div class="progress-text text-sm text-gray-600 mt-2">
+              {{ processingMessage }}
+            </div>
+          </div>
+        </div>
+
         <!-- Success Display -->
-        <div v-else-if="currentStep === 'success'" class="success-section">
+        <div v-else-if="currentStep === 'success'" class="success-section text-center p-8">
           <div class="success-icon">
             <i class="pi pi-check-circle"></i>
           </div>
@@ -142,7 +156,7 @@
               >
             </div>
           </div>
-          <div class="success-actions">
+          <div class="success-actions mt-8">
             <p class="redirect-message">
               <i class="pi pi-spin pi-spinner"></i>
               Redirecting to dashboard...
@@ -155,21 +169,28 @@
         <button v-if="currentStep === 'selection'" @click="closeModal" class="cancel-button">
           Cancel
         </button>
-        <button v-else-if="currentStep === 'qr-code'" @click="goBackToLogin" class="back-button">
+        <button v-else-if="currentStep === 'qr-code'" @click="handleClose" class="back-button">
+          <i class="pi pi-arrow-left"></i>
+          Back
+        </button>
+        <button v-else-if="currentStep === 'error'" @click="handleClose" class="back-button">
           <i class="pi pi-arrow-left"></i>
           Back
         </button>
         <button v-else-if="currentStep === 'success'" @click="closeModal" class="done-button">
+          <i class="pi pi-check text-base"></i>
           Done
         </button>
       </div>
-    </div>
-  </div>
+    </template>
+  </PrimeDialog>
 </template>
 
 <script setup lang="ts">
+  import { sessionManager } from '@/shared/services/sessionManager'
   import QRCode from 'qrcode'
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+  import { useWalletConnectionWithBackgroundSync } from '../composables/useWalletConnection'
   import { sageWalletConnectService } from '../services/SageWalletConnectService'
   import { useWalletConnectStore } from '../stores/walletConnectStore'
   import type { SageWalletInfo } from '../types/walletConnect.types'
@@ -194,15 +215,30 @@
 
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
+
+  // Store
   const walletStore = useWalletConnectStore()
 
+  // Use the new wallet connection composable
+  const {
+    isConnected: walletIsConnected,
+    walletInfo: walletInfoData,
+    error: walletError,
+  } = useWalletConnectionWithBackgroundSync()
+
   // State
-  const currentStep = ref<'selection' | 'connecting' | 'qr-code' | 'error' | 'success'>('qr-code')
+  const currentStep = ref<
+    'selection' | 'connecting' | 'qr-code' | 'processing' | 'error' | 'success'
+  >('qr-code')
   const selectedWallet = ref<WalletOption | null>(null)
   const connectionUri = ref<string | null>(null)
   const qrCodeDataUrl = ref<string | null>(null)
   const isConnecting = ref(false)
   const error = ref<string | null>(null)
+  const isCopied = ref(false)
+  const processingProgress = ref(0)
+  const processingMessage = ref('Initializing...')
+  const currentApprovalFunction = ref<(() => Promise<unknown>) | null>(null)
 
   // Available wallet options
   const availableWallets = ref<WalletOption[]>([
@@ -213,14 +249,6 @@
       iconClass: 'pi pi-wallet',
       available: true,
       type: 'sage',
-    },
-    {
-      id: 'chia',
-      name: 'Chia Wallet',
-      description: 'Connect using official Chia wallet',
-      iconClass: 'pi pi-wallet',
-      available: false,
-      type: 'chia',
     },
     {
       id: 'other',
@@ -234,10 +262,15 @@
 
   // Computed
   const walletInfo = computed(() => walletStore.walletInfo)
+
   // Methods
   const closeModal = () => {
     resetModal()
     emit('close')
+  }
+
+  const handleClose = () => {
+    closeModal()
   }
 
   const resetModal = () => {
@@ -247,104 +280,427 @@
     qrCodeDataUrl.value = null
     isConnecting.value = false
     error.value = null
+    processingProgress.value = 0
+    processingMessage.value = 'Initializing...'
   }
 
-  const handleOverlayClick = (event: MouseEvent) => {
-    if (event.target === event.currentTarget) {
-      closeModal()
+  // Connection retry configuration
+  const RETRY_CONFIG = {
+    maxRetries: 5, // Increased from 3 to 5
+    baseDelay: 2000, // Increased from 1s to 2s
+    maxDelay: 15000, // Increased from 10s to 15s
+    backoffMultiplier: 1.5, // Reduced from 2 to 1.5 for more gradual backoff
+  }
+
+  // Wallet approval timeout configuration
+  const WALLET_APPROVAL_TIMEOUT = 30000 // 30 seconds for wallet approval
+
+  // Error types for better error handling
+  const ERROR_TYPES = {
+    CONNECTION_FAILED: 'CONNECTION_FAILED',
+    APPROVAL_FAILED: 'APPROVAL_FAILED',
+    APPROVAL_TIMEOUT: 'APPROVAL_TIMEOUT',
+    WALLET_INFO_FAILED: 'WALLET_INFO_FAILED',
+    WEBSOCKET_DISCONNECTED: 'WEBSOCKET_DISCONNECTED',
+    PAIRING_EXPIRED: 'PAIRING_EXPIRED',
+    UNKNOWN: 'UNKNOWN',
+  } as const
+
+  type ErrorType = (typeof ERROR_TYPES)[keyof typeof ERROR_TYPES]
+
+  // Utility function to calculate retry delay with exponential backoff
+  const calculateRetryDelay = (attempt: number): number => {
+    const delay = RETRY_CONFIG.baseDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1)
+    return Math.min(delay, RETRY_CONFIG.maxDelay)
+  }
+
+  // Utility function to sleep for a specified duration
+  const sleep = (ms: number): Promise<void> => {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  // Utility function to update progress with smooth transitions
+  const updateProgress = (progress: number, message: string) => {
+    processingProgress.value = progress
+    processingMessage.value = message
+  }
+
+  // Utility function to handle errors with proper typing
+  const handleError = (err: unknown, errorType: ErrorType, context: string) => {
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    console.error(`${context} error:`, errorMessage)
+
+    let userMessage: string
+    switch (errorType) {
+      case ERROR_TYPES.CONNECTION_FAILED:
+        userMessage = 'Failed to establish connection. Please check your network and try again.'
+        break
+      case ERROR_TYPES.APPROVAL_FAILED:
+        userMessage = 'Wallet connection was not approved. Please try again.'
+        break
+      case ERROR_TYPES.APPROVAL_TIMEOUT:
+        userMessage = `Wallet approval timed out after ${WALLET_APPROVAL_TIMEOUT / 1000} seconds. Please try again.`
+        break
+      case ERROR_TYPES.WALLET_INFO_FAILED:
+        userMessage = 'Connected but failed to fetch wallet information. Please try reconnecting.'
+        break
+      case ERROR_TYPES.WEBSOCKET_DISCONNECTED:
+        userMessage = 'Connection lost. Attempting to reconnect...'
+        break
+      case ERROR_TYPES.PAIRING_EXPIRED:
+        userMessage = 'Connection code expired. Please refresh to get a new code.'
+        break
+      default:
+        userMessage = 'An unexpected error occurred. Please try again.'
+    }
+
+    error.value = userMessage
+    currentStep.value = 'error'
+    return userMessage
+  }
+
+  // Function to establish initial connection
+  const establishConnection = async (): Promise<{
+    uri: string
+    approval: () => Promise<unknown>
+  } | null> => {
+    try {
+      if (!sageWalletConnectService.isInitialized()) {
+        console.log('Initializing wallet service before connection...')
+        await sageWalletConnectService.initialize()
+      }
+
+      const connection = await walletStore.startConnection()
+
+      if (!connection) {
+        throw new Error('Failed to generate connection URI')
+      }
+
+      console.log('Connection URI generated:', connection.uri.substring(0, 50) + '...')
+      return connection
+    } catch (err) {
+      handleError(err, ERROR_TYPES.CONNECTION_FAILED, 'Connection establishment')
+      return null
     }
   }
 
+  // Function to handle wallet approval with retry logic and timeout
+  const handleWalletApproval = async (approval: () => Promise<unknown>): Promise<boolean> => {
+    for (let attempt = 1; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+      try {
+        console.log(`Wallet approval attempt ${attempt}/${RETRY_CONFIG.maxRetries}`)
+
+        // Create a timeout promise that rejects after the specified timeout
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error(`Wallet approval timed out after ${WALLET_APPROVAL_TIMEOUT}ms`))
+          }, WALLET_APPROVAL_TIMEOUT)
+        })
+
+        // Race between approval and timeout
+        const session = await Promise.race([approval(), timeoutPromise])
+
+        if (session) {
+          console.log('Wallet connection approved:', session)
+          return true
+        }
+
+        if (attempt < RETRY_CONFIG.maxRetries) {
+          const delay = calculateRetryDelay(attempt)
+          console.log(`Approval failed, retrying in ${delay}ms...`)
+          await sleep(delay)
+        }
+      } catch (err) {
+        console.error(`Approval attempt ${attempt} failed:`, err)
+
+        if (attempt === RETRY_CONFIG.maxRetries) {
+          // Check if it's a timeout error
+          const isTimeout = err instanceof Error && err.message.includes('timed out')
+          const errorType = isTimeout ? ERROR_TYPES.APPROVAL_TIMEOUT : ERROR_TYPES.APPROVAL_FAILED
+          handleError(err, errorType, 'Wallet approval')
+          return false
+        }
+
+        const delay = calculateRetryDelay(attempt)
+        await sleep(delay)
+      }
+    }
+
+    return false
+  }
+
+  // Function to fetch wallet info with websocket reconnection (single attempt)
+  const fetchWalletInfo = async (): Promise<boolean> => {
+    try {
+      updateProgress(40, 'Fetching wallet information...')
+
+      // Check if websocket is still connected, attempt reconnection if needed
+      if (!sageWalletConnectService.isConnected()) {
+        console.log('Websocket disconnected, attempting to reconnect...')
+        updateProgress(35, 'Reconnecting to wallet...')
+
+        try {
+          await sageWalletConnectService.initialize()
+          await sleep(1000) // Give time for reconnection
+        } catch (reconnectErr) {
+          console.warn('Websocket reconnection failed:', reconnectErr)
+          throw new Error('Failed to reconnect to wallet service')
+        }
+      }
+
+      console.log('Calling getWalletInfo...')
+
+      // Add timeout to wallet info fetch
+      const walletInfoPromise = sageWalletConnectService.getWalletInfo()
+      const walletInfoTimeout = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Wallet info fetch timed out after 10 seconds'))
+        }, 10000)
+      })
+
+      const fetchedWalletInfo = await Promise.race([walletInfoPromise, walletInfoTimeout])
+      console.log('Wallet info received:', fetchedWalletInfo)
+
+      if (!fetchedWalletInfo) {
+        throw new Error('No wallet info received from service')
+      }
+      // Update the store with the fetched wallet info
+      walletStore.walletInfo = fetchedWalletInfo
+
+      updateProgress(80, 'Finalizing connection...')
+      await sleep(300)
+
+      updateProgress(100, 'Connection complete!')
+      await sleep(300)
+
+      currentStep.value = 'success'
+      emit('connected', fetchedWalletInfo)
+      return true
+    } catch (err) {
+      console.error('Wallet info fetch failed:', err)
+      handleError(err, ERROR_TYPES.WALLET_INFO_FAILED, 'Wallet info fetch')
+      return false
+    }
+  }
+
+  // Main selectWallet function - now much cleaner and more maintainable
   const selectWallet = async (wallet: WalletOption) => {
     if (!wallet.available) return
 
+    // Initialize connection state
     selectedWallet.value = wallet
     currentStep.value = 'connecting'
     isConnecting.value = true
     error.value = null
 
     try {
-      console.log(`Starting connection to ${wallet.name}...`)
-      const connection = await walletStore.startConnection()
+      // Step 1: Establish connection
+      const connection = await establishConnection()
+      if (!connection) return
 
-      if (connection) {
-        console.log('Connection URI generated:', connection.uri.substring(0, 50) + '...')
-        connectionUri.value = connection.uri
-        currentStep.value = 'qr-code'
+      // Step 2: Generate QR code and show to user
+      connectionUri.value = connection.uri
+      currentStep.value = 'qr-code'
+      await generateQRCode(connection.uri)
 
-        await generateQRCode(connection.uri)
-        const session = await connection.approval()
+      // Step 3: Handle wallet approval with retry logic
+      updateProgress(20, 'Verifying connection...')
+      await sleep(1000) // Give time for wallet store to update
 
-        if (session) {
-          console.log('Wallet connection approved:', session)
+      const approvalSuccess = await handleWalletApproval(connection.approval)
+      if (!approvalSuccess) return
 
-          // Wait a moment for the wallet store to update
-          await new Promise(resolve => setTimeout(resolve, 1000))
+      // Step 4: Fetch wallet info with websocket reconnection
+      currentStep.value = 'processing'
+      const infoSuccess = await fetchWalletInfo()
 
-          // Try to fetch wallet info from the service
-          try {
-            const fetchedWalletInfo = await sageWalletConnectService.getWalletInfo()
-            if (fetchedWalletInfo) {
-              console.log('Fetched wallet info:', fetchedWalletInfo)
-              // Update the store with the fetched wallet info
-              walletStore.walletInfo = fetchedWalletInfo
-              currentStep.value = 'success'
-              emit('connected', fetchedWalletInfo)
-            } else {
-              throw new Error('Failed to fetch wallet info from service')
-            }
-          } catch (fetchError) {
-            console.error('Failed to fetch wallet info:', fetchError)
-            error.value = 'Connected but failed to fetch wallet information'
-            currentStep.value = 'error'
-          }
-        } else {
-          error.value = 'Wallet connection was not approved'
-          currentStep.value = 'error'
-        }
-      } else {
-        error.value = 'Failed to start connection - no connection URI generated'
-        currentStep.value = 'error'
+      if (!infoSuccess) {
+        // Error handling is done in fetchWalletInfo
+        return
       }
     } catch (err) {
-      console.error('Wallet connection error:', err)
-      error.value = err instanceof Error ? err.message : 'Connection failed'
-      currentStep.value = 'error'
+      handleError(err, ERROR_TYPES.UNKNOWN, 'Wallet selection')
     } finally {
       isConnecting.value = false
     }
   }
 
-  const goBackToSelection = () => {
-    currentStep.value = 'selection'
-    selectedWallet.value = null
-    connectionUri.value = null
-    qrCodeDataUrl.value = null
+  // Function to restart the approval process
+  const restartApprovalProcess = async () => {
+    console.log('Restarting approval process...')
+
+    // Reset connection state
+    currentStep.value = 'connecting'
     error.value = null
+    isConnecting.value = true
+    processingProgress.value = 0
+    processingMessage.value = 'Restarting connection...'
+
+    try {
+      // Clear any existing session data
+      await sessionManager.clearAllSessionData({
+        clearWalletConnect: true,
+        clearUserData: false,
+        clearThemeData: false,
+        clearPWAStorage: true,
+        clearServiceWorker: true,
+        clearAllCaches: false,
+      })
+
+      // Wait a moment for cleanup
+      await sleep(1000)
+
+      // Reinitialize the wallet service
+      if (sageWalletConnectService.isInitialized()) {
+        await sageWalletConnectService.forceReset()
+      }
+
+      await sageWalletConnectService.initialize()
+
+      // Start fresh connection
+      const connection = await establishConnection()
+      if (!connection) return
+
+      // Generate new QR code
+      connectionUri.value = connection.uri
+      currentStep.value = 'qr-code'
+      await generateQRCode(connection.uri)
+
+      // Handle wallet approval with fresh retry logic
+      updateProgress(20, 'Verifying connection...')
+      await sleep(1000)
+
+      const approvalSuccess = await handleWalletApproval(connection.approval)
+      if (!approvalSuccess) return
+
+      // Fetch wallet info
+      currentStep.value = 'processing'
+      const infoSuccess = await fetchWalletInfo()
+
+      if (!infoSuccess) {
+        return
+      }
+    } catch (err) {
+      handleError(err, ERROR_TYPES.UNKNOWN, 'Approval restart')
+    } finally {
+      isConnecting.value = false
+    }
   }
 
-  const goBackToLogin = () => {
-    // Close the modal and redirect to login page
-    closeModal()
-    window.location.href = '/'
+  const handleRetryConnection = async () => {
+    // Check if it's a pairing expiry error
+    if (error.value?.includes('expired')) {
+      await refreshConnection()
+    } else {
+      // Use the new restart approval process for better reliability
+      await restartApprovalProcess()
+    }
   }
 
-  const retryConnection = () => {
-    if (selectedWallet.value) {
-      selectWallet(selectedWallet.value)
+  // Function to refresh connection
+  const refreshConnection = async () => {
+    console.log('Refreshing connection...')
+
+    try {
+      // Show loading state
+      currentStep.value = 'connecting'
+      isConnecting.value = true
+      error.value = null
+      updateProgress(10, 'Refreshing connection code...')
+
+      // Get new connection from service
+      const newConnection = await sageWalletConnectService.startConnection()
+
+      if (!newConnection) {
+        throw new Error('Failed to start new connection')
+      }
+
+      // Update connection URI and QR code
+      connectionUri.value = newConnection.uri
+      await generateQRCode(newConnection.uri)
+      currentApprovalFunction.value = newConnection.approval
+
+      // Move to QR code step
+      currentStep.value = 'qr-code'
+      updateProgress(20, 'New code generated. Please try connecting again.')
+
+      // Start approval process with new connection
+      const approvalSuccess = await handleWalletApproval(newConnection.approval)
+      if (!approvalSuccess) return
+
+      // Continue with wallet info fetch
+      currentStep.value = 'processing'
+      const infoSuccess = await fetchWalletInfo()
+
+      if (infoSuccess) {
+        currentStep.value = 'success'
+        emit('connected', walletStore.walletInfo!)
+      }
+    } catch (err) {
+      console.error('Failed to refresh connection:', err)
+      handleError(err, ERROR_TYPES.CONNECTION_FAILED, 'Connection refresh')
+    } finally {
+      isConnecting.value = false
     }
   }
 
   const copyUri = async () => {
     if (connectionUri.value) {
       try {
-        await navigator.clipboard.writeText(connectionUri.value)
-        // Could show a toast notification here
-        console.log('URI copied to clipboard')
+        // Try modern Clipboard API first
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(connectionUri.value)
+        } else {
+          // Fallback for older iOS versions or non-secure contexts
+          const textArea = document.createElement('textarea')
+          textArea.value = connectionUri.value
+          textArea.style.position = 'fixed'
+          textArea.style.left = '-999999px'
+          textArea.style.top = '-999999px'
+          document.body.appendChild(textArea)
+          textArea.focus()
+          textArea.select()
+
+          try {
+            document.execCommand('copy')
+          } catch (fallbackErr) {
+            console.error('Fallback copy failed:', fallbackErr)
+            // Show the URI in an alert as last resort
+            alert(`Please copy this URI manually:\n\n${connectionUri.value}`)
+            return
+          } finally {
+            document.body.removeChild(textArea)
+          }
+        }
+
+        isCopied.value = true
+        setTimeout(() => {
+          isCopied.value = false
+        }, 2000) // Reset after 2 seconds
       } catch (err) {
         console.error('Failed to copy URI:', err)
+        // Show the URI in an alert as fallback
+        alert(`Please copy this URI manually:\n\n${connectionUri.value}`)
       }
     }
+  }
+
+  const handleTouchStart = (event: TouchEvent) => {
+    // Prevent default to avoid double-tap zoom on iOS
+    event.preventDefault()
+    // Add visual feedback for touch
+    const button = event.currentTarget as HTMLButtonElement
+    button.style.transform = 'scale(0.95)'
+  }
+
+  const handleTouchEnd = (event: TouchEvent) => {
+    // Prevent default to avoid double-tap zoom on iOS
+    event.preventDefault()
+    // Reset visual feedback
+    const button = event.currentTarget as HTMLButtonElement
+    button.style.transform = 'scale(1)'
+    // Trigger the copy action
+    copyUri()
   }
 
   const selectUri = (event: Event) => {
@@ -366,7 +722,7 @@
     try {
       console.log('Generating QR code for URI:', uri.substring(0, 50) + '...')
       const dataUrl = await QRCode.toDataURL(uri, {
-        width: 200,
+        width: 300,
         margin: 2,
         color: {
           dark: '#000000',
@@ -393,6 +749,32 @@
     }
   )
 
+  // Watch for wallet connection changes
+  watch(walletIsConnected, connected => {
+    if (connected && currentStep.value === 'qr-code') {
+      console.log('Wallet connected, moving to processing step')
+      currentStep.value = 'processing'
+    }
+  })
+
+  // Watch for wallet info changes
+  watch(walletInfoData, info => {
+    if (info && currentStep.value === 'processing') {
+      console.log('Wallet info received, moving to success step')
+      currentStep.value = 'success'
+      emit('connected', info)
+    }
+  })
+
+  // Watch for errors from the composable
+  watch(walletError, err => {
+    if (err && currentStep.value !== 'error') {
+      console.log('Error occurred, moving to error step')
+      error.value = err instanceof Error ? err.message : String(err)
+      currentStep.value = 'error'
+    }
+  })
+
   // Handle escape key
   const handleKeydown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && props.isOpen) {
@@ -400,8 +782,45 @@
     }
   }
 
+  // Expose functions to parent component
+  defineExpose({
+    selectWallet,
+    closeModal,
+    handleClose,
+    handleRetryConnection,
+    restartApprovalProcess, // Expose the new restart function
+  })
+
   onMounted(() => {
     document.addEventListener('keydown', handleKeydown)
+
+    // Listen for pairing expiry events
+    const handlePairingExpired = (event: Event) => {
+      const customEvent = event as CustomEvent
+      console.log('Pairing expired:', customEvent.detail)
+      handleError(
+        new Error('Connection code expired. Please refresh to get a new code.'),
+        ERROR_TYPES.PAIRING_EXPIRED,
+        'Pairing expiry'
+      )
+    }
+
+    const handleRefreshPairing = async (event: Event) => {
+      const customEvent = event as CustomEvent
+      console.log('Refreshing pairing...', customEvent.detail)
+      await refreshConnection()
+    }
+
+    window.addEventListener('wallet-connect-pairing-expired', handlePairingExpired as EventListener)
+    window.addEventListener('ios-refresh-pairing', handleRefreshPairing as EventListener)
+
+    onUnmounted(() => {
+      window.removeEventListener(
+        'wallet-connect-pairing-expired',
+        handlePairingExpired as EventListener
+      )
+      window.removeEventListener('ios-refresh-pairing', handleRefreshPairing as EventListener)
+    })
   })
 
   onUnmounted(() => {
@@ -410,177 +829,406 @@
 </script>
 
 <style scoped>
-  .wallet-connect-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+  /* Base Layout */
+  .wallet-connect-container {
+    @apply flex flex-col p-2 gap-4 rounded-2xl bg-stone-950 backdrop-blur-xl max-w-2xl w-[95vw] max-h-[95vh] overflow-hidden relative border border-white/10 mt-2;
   }
 
-  .wallet-connect-modal {
-    background: white;
-    border-radius: 12px;
-    box-shadow:
-      0 20px 25px -5px rgba(0, 0, 0, 0.1),
-      0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    max-width: 500px;
-    width: 90%;
-    max-height: 90vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+  .wallet-connect-dialog :deep(.p-dialog) {
+    @apply max-w-none w-auto;
   }
 
-  .modal-header {
-    padding: 2rem 2rem 1rem 2rem;
-    text-align: center;
-    position: relative;
+  .wallet-connect-dialog :deep(.p-dialog-content) {
+    @apply p-0;
   }
 
-  .modal-header h2 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #111827;
+  /* Common Text Styles */
+  .error-section h3 {
+    @apply m-0 text-white font-semibold;
+  }
+  .wallet-header-section h3 {
+    @apply text-sm leading-tight sm:text-base md:text-lg lg:text-xl xl:text-2xl;
+  }
+  .error-section h3 {
+    @apply text-2xl mb-2;
   }
 
-  .modal-subtitle {
-    margin: 0 0 1rem 0;
-    color: #6b7280;
-    font-size: 0.875rem;
+  .qr-instruction,
+  .error-section p {
+    @apply m-0 text-gray-300;
   }
 
-  .close-button {
-    position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    color: #6b7280;
-    transition: all 0.2s;
+  .qr-instruction {
+    @apply mt-1 text-xs text-center;
+  }
+  .error-section p {
+    @apply text-base mb-8;
   }
 
-  .close-button:hover {
-    background: #f3f4f6;
-    color: #374151;
+  /* Spinner Styles */
+  .spinner,
+  .qr-spinner {
+    @apply w-10 h-10 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto mb-4;
   }
 
-  .modal-content {
-    padding: 0 2rem 2rem 2rem;
-    flex: 1;
-    overflow-y: auto;
+  /* QR Code Section */
+  .qr-section {
+    @apply text-center flex flex-col items-center justify-center flex-1 min-h-0;
   }
 
-  /* Wallet Selection Step */
-  .wallet-selection-step {
-    padding: 1rem 0;
+  .qr-main-content {
+    @apply flex flex-col items-center justify-center w-full gap-6;
   }
 
-  .wallet-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+  .wallet-header-section {
+    @apply flex flex-row items-center gap-3 text-center;
   }
 
-  .wallet-option {
-    display: flex;
-    align-items: center;
-    padding: 1rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: left;
-    width: 100%;
+  .wallet-icon-large {
+    @apply w-6 h-6 rounded-xl bg-white/20 flex items-center justify-center;
   }
 
-  .wallet-option:hover:not(.disabled) {
-    border-color: #3b82f6;
-    background: #f8fafc;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  .wallet-icon-large i {
+    @apply text-white text-base;
   }
 
-  .wallet-option.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  .qr-container {
+    @apply flex justify-center items-center flex-none;
   }
 
-  .wallet-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: #f3f4f6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 1rem;
-    flex-shrink: 0;
+  .qr-wrapper {
+    @apply relative inline-block;
   }
 
-  .wallet-icon i {
-    color: #6b7280;
-    font-size: 1.5rem;
+  .qr-placeholder {
+    @apply flex flex-col items-center justify-center w-auto h-auto border border-gray-300 rounded-xl bg-gray-50 mx-auto relative overflow-hidden;
+  }
+
+  .qr-placeholder::before {
+    content: '';
+    @apply absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-gradient-to-br from-transparent via-blue-500/10 to-transparent animate-pulse;
+  }
+
+  .qr-spinner-container {
+    @apply flex flex-col items-center justify-center z-10 relative;
+  }
+
+  .qr-placeholder p {
+    @apply m-0 text-gray-500 text-sm font-medium;
+  }
+
+  .qr-code {
+    @apply relative inline-block rounded-xl overflow-hidden shadow-lg;
+  }
+
+  .qr-code-border {
+    @apply bg-white/90 rounded-xl border border-white/30;
+  }
+
+  .qr-code img {
+    @apply block w-full h-full rounded-lg;
+  }
+
+  .qr-code-overlay {
+    @apply absolute inset-0 pointer-events-none rounded-2xl overflow-hidden;
+  }
+
+  .scanning-indicator {
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/30 to-transparent animate-pulse;
+  }
+
+  .scan-line {
+    @apply absolute top-0 -left-full w-full h-0.5 bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-pulse;
+  }
+
+  /* Connection Options */
+  .connection-options {
+    @apply flex flex-col gap-4 w-full max-w-md;
+  }
+
+  .uri-section {
+    @apply bg-white/10 border border-white/30 rounded-lg p-3 backdrop-blur-sm;
+  }
+
+  .uri-input-container {
+    @apply flex flex-row gap-2 items-center;
+  }
+
+  .uri-input {
+    @apply flex-1 p-2 border border-white/30 rounded-md text-sm bg-white/10 text-white transition-all leading-tight font-mono;
+  }
+
+  .uri-input:focus {
+    @apply outline-none border-white/50 shadow-[0_0_0_3px_rgba(255,255,255,0.1)];
+  }
+
+  .copy-button {
+    @apply bg-white/20 text-white border border-white/30 p-2 rounded-md cursor-pointer font-medium transition-all flex items-center justify-center min-w-10 flex-shrink-0 hover:bg-white/30 hover:-translate-y-0.5 hover:shadow-lg;
+    /* iOS-specific touch improvements */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+    min-height: 44px; /* iOS minimum touch target */
+    min-width: 44px;
+  }
+
+  .copy-button.copied {
+    @apply bg-green-500/20 border-green-500/50 text-green-400;
+    animation: copySuccess 0.6s ease-in-out;
+  }
+
+  @keyframes copySuccess {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .wallet-download-section {
+    @apply text-center mt-1 flex-shrink-0;
+  }
+
+  .download-link {
+    @apply inline-flex items-center gap-1.5 text-white no-underline font-medium text-xs px-3 py-1.5 border border-white/30 rounded-md transition-all bg-white/10 backdrop-blur-sm hover:bg-white/20 hover:text-white hover:-translate-y-0.5 hover:shadow-lg;
+  }
+
+  /* Error & Success Sections */
+  .error-icon {
+    @apply text-red-500 mb-4 text-6xl;
+  }
+
+  .error-actions {
+    @apply flex gap-4 justify-center flex-wrap;
+  }
+
+  .retry-button {
+    @apply bg-red-500 text-white border border-white/20 px-6 py-3 rounded-lg cursor-pointer font-medium transition-all flex items-center gap-2 shadow-[0_4px_12px_rgba(239,68,68,0.3)] hover:bg-red-600 hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(239,68,68,0.4)];
+  }
+
+  .success-icon {
+    @apply text-emerald-500 mb-4 text-5xl;
+  }
+
+  .success-section h3 {
+    @apply text-gray-900 text-xl mb-2;
+  }
+
+  .success-section p {
+    @apply text-gray-500 mb-8;
+  }
+
+  .redirect-message {
+    @apply text-gray-500 text-center flex items-center justify-center gap-2;
   }
 
   .wallet-info {
-    flex: 1;
+    @apply bg-gray-50 border border-gray-300 rounded-lg p-4 text-left;
   }
 
-  .wallet-name {
-    margin: 0 0 0.25rem 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #111827;
+  .info-item {
+    @apply flex justify-between mb-2 last:mb-0;
   }
 
-  .wallet-description {
-    margin: 0 0 0.5rem 0;
-    font-size: 0.875rem;
-    color: #6b7280;
+  .info-item .label {
+    @apply font-medium text-gray-700;
   }
 
-  .wallet-unavailable {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.75rem;
-    color: #f59e0b;
-    font-weight: 500;
+  .info-item .value {
+    @apply font-mono text-gray-500 break-all;
   }
 
-  .wallet-status {
-    color: #6b7280;
-    font-size: 1.25rem;
+  /* Modal Footer */
+  .modal-footer {
+    @apply pt-4 border-t border-white/20 flex justify-center gap-3 flex-shrink-0;
   }
 
-  .wallet-option:hover:not(.disabled) .wallet-status {
-    color: #3b82f6;
+  .cancel-button,
+  .done-button,
+  .back-button {
+    @apply px-6 py-3 border border-white/30 rounded-lg font-medium cursor-pointer transition-all flex items-center gap-2 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:-translate-y-0.5 hover:shadow-lg;
   }
 
-  .connection-status {
-    text-align: center;
-    padding: 2rem 0;
+  /* Responsive Design using Tailwind breakpoints */
+  .wallet-connect-container {
+    @apply lg:max-w-xl xl:max-w-2xl md:p-6 md:gap-4 md:max-h-[95vh] md:max-w-lg sm:p-4 sm:gap-3 sm:max-h-[98vh] sm:max-w-sm;
   }
 
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #e5e7eb;
-    border-top: 4px solid #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 1rem;
+  .qr-main-content {
+    @apply lg:gap-5;
+  }
+
+  .connection-options {
+    @apply lg:max-w-lg lg:gap-4;
+  }
+
+  .wallet-connect-dialog :deep(.p-dialog) {
+    @apply md:max-w-lg md:max-h-96;
+  }
+
+  .qr-section {
+    @apply md:gap-2;
+  }
+
+  .qr-main-content {
+    @apply md:gap-4;
+  }
+
+  .connection-options {
+    @apply md:max-w-sm md:gap-3;
+  }
+
+  .qr-placeholder,
+  .qr-code img {
+    @apply w-[15rem] h-[15rem] sm:w-[15rem] sm:h-[15rem] md:w-[17rem] md:h-[17rem] lg:w-[18rem] lg:h-[18rem] xl:w-[18rem] xl:h-[18rem];
+  }
+
+  .qr-code-border {
+    @apply md:p-3;
+  }
+
+  .wallet-icon-large {
+    @apply sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14;
+  }
+
+  .wallet-icon-large i {
+    @apply sm:text-lg md:text-xl lg:text-2xl xl:text-3xl;
+  }
+
+  .wallet-header-section {
+    @apply md:gap-2 md:flex-row;
+  }
+
+  .wallet-header-section h3 {
+    @apply md:text-xl;
+  }
+
+  .qr-section {
+    @apply sm:p-2;
+  }
+
+  .wallet-header-section {
+    @apply sm:gap-1 sm:flex-row;
+  }
+
+  .connection-options {
+    @apply sm:max-w-xs sm:gap-2;
+  }
+
+  .qr-code-border {
+    @apply sm:p-2;
+  }
+
+  .uri-section {
+    @apply sm:p-2;
+  }
+
+  .uri-input-container {
+    @apply sm:flex-row sm:gap-2;
+  }
+
+  .copy-button {
+    @apply sm:min-w-8 sm:px-2;
+  }
+
+  .modal-footer {
+    @apply sm:p-2 sm:px-4 sm:flex-col sm:gap-2;
+  }
+
+  .modal-footer button {
+    @apply sm:w-full sm:justify-center;
+  }
+
+  .wallet-connect-dialog :deep(.p-dialog) {
+    @apply sm:max-w-sm;
+  }
+
+  .qr-section {
+    @apply sm:gap-2;
+  }
+
+  .qr-main-content {
+    @apply sm:gap-3;
+  }
+
+  .connection-options {
+    @apply sm:max-w-xs sm:gap-2;
+  }
+
+  .qr-code-border {
+    @apply sm:p-2.5;
+  }
+
+  .wallet-header-section {
+    @apply sm:gap-1 sm:flex-row;
+  }
+
+  /* Dark Mode */
+  .wallet-connect-dialog :deep(.p-dialog) {
+    @apply dark:bg-gray-800 dark:text-gray-50;
+  }
+
+  .wallet-header-section h3 {
+    @apply dark:text-gray-50;
+  }
+
+  .qr-code-border {
+    @apply dark:bg-gray-700 dark:border-gray-600;
+  }
+
+  .uri-section {
+    @apply dark:bg-gray-700 dark:border-gray-600;
+  }
+
+  .uri-input {
+    @apply dark:bg-gray-800 dark:border-gray-600 dark:text-gray-50;
+  }
+
+  .uri-input:focus {
+    @apply dark:border-blue-500;
+  }
+
+  .download-link {
+    @apply dark:text-blue-400 dark:border-blue-400 dark:bg-blue-500/10;
+  }
+
+  .download-link:hover {
+    @apply dark:bg-blue-500 dark:text-white;
+  }
+
+  /* Processing Animation Styles */
+  .processing-animation {
+    @apply flex flex-col items-center gap-4 mb-6;
+  }
+
+  .loading-spinner {
+    @apply relative w-16 h-16;
+  }
+
+  .spinner-ring {
+    @apply absolute w-full h-full border-4 border-transparent rounded-full;
+    animation: spin 1.5s linear infinite;
+  }
+
+  .spinner-ring:nth-child(1) {
+    @apply border-t-blue-500 border-r-blue-400;
+    animation-delay: 0s;
+  }
+
+  .spinner-ring:nth-child(2) {
+    @apply border-t-green-500 border-r-green-400;
+    animation-delay: 0.2s;
+  }
+
+  .spinner-ring:nth-child(3) {
+    @apply border-t-purple-500 border-r-purple-400;
+    animation-delay: 0.4s;
   }
 
   @keyframes spin {
@@ -592,663 +1240,114 @@
     }
   }
 
-  .qr-section {
-    text-align: center;
-    padding: 2rem;
+  .loading-dots {
+    @apply flex gap-2;
   }
 
-  .qr-header {
-    margin-bottom: 2rem;
+  .loading-dots span {
+    @apply w-3 h-3 bg-blue-500 rounded-full;
+    animation: bounce 1.2s ease-in-out infinite both;
   }
 
-  .wallet-icon-large {
-    width: 72px;
-    height: 72px;
-    border-radius: 18px;
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+  .loading-dots span:nth-child(1) {
+    animation-delay: -0.32s;
   }
 
-  .wallet-icon-large i {
-    color: white;
-    font-size: 2.25rem;
+  .loading-dots span:nth-child(2) {
+    animation-delay: -0.16s;
   }
 
-  .qr-header h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #111827;
+  .loading-dots span:nth-child(3) {
+    animation-delay: 0s;
   }
 
-  .qr-header p {
-    margin: 0;
-    color: #6b7280;
-    font-size: 0.875rem;
-  }
-
-  .qr-container {
-    margin-bottom: 2rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .qr-wrapper {
-    position: relative;
-    display: inline-block;
-  }
-
-  .qr-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 280px;
-    height: 280px;
-    border: 2px solid #e5e7eb;
-    border-radius: 20px;
-    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-    margin: 0 auto;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .qr-placeholder::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.1), transparent);
-    animation: shimmer 2s infinite;
-  }
-
-  @keyframes shimmer {
-    0% {
-      transform: translateX(-100%) translateY(-100%) rotate(45deg);
-    }
-    100% {
-      transform: translateX(100%) translateY(100%) rotate(45deg);
-    }
-  }
-
-  .qr-spinner-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 1;
-    position: relative;
-  }
-
-  .qr-spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #e5e7eb;
-    border-top: 4px solid #3b82f6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
-  }
-
-  .qr-placeholder p {
-    margin: 0;
-    color: #6b7280;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  .qr-code {
-    position: relative;
-    display: inline-block;
-    border-radius: 24px;
-    overflow: hidden;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
-  }
-
-  .qr-code-border {
-    padding: 24px;
-    background: white;
-    border-radius: 24px;
-    border: 2px solid #e5e7eb;
-  }
-
-  .qr-code img {
-    display: block;
-    width: 260px;
-    height: 260px;
-    border-radius: 16px;
-  }
-
-  .qr-code-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    border-radius: 20px;
-    overflow: hidden;
-  }
-
-  .scanning-indicator {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
-    animation: scan 2s ease-in-out infinite;
-  }
-
-  .scan-line {
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #3b82f6, transparent);
-    animation: scanLine 2s ease-in-out infinite;
-  }
-
-  @keyframes scan {
+  @keyframes bounce {
     0%,
+    80%,
     100% {
-      opacity: 0;
+      transform: scale(0);
     }
-    50% {
-      opacity: 1;
-    }
-  }
-
-  @keyframes scanLine {
-    0% {
-      left: -100%;
-    }
-    100% {
-      left: 100%;
+    40% {
+      transform: scale(1);
     }
   }
 
-  .connection-options {
-    margin-bottom: 1.5rem;
+  .progress-container {
+    @apply w-full max-w-xs mx-auto;
   }
 
-  .uri-section {
-    background: #f8fafc;
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    padding: 1.5rem;
+  .progress-bar {
+    @apply w-full h-3 bg-gray-200 rounded-full overflow-hidden;
   }
 
-  .uri-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    color: #374151;
-    font-weight: 500;
-    font-size: 0.875rem;
+  .progress-fill {
+    @apply h-full bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-full transition-all duration-700 ease-out;
   }
 
-  .uri-header i {
-    color: #3b82f6;
-    font-size: 1rem;
+  .progress-text {
+    @apply text-center text-sm text-gray-600 mt-2;
   }
 
-  .uri-input-container {
-    display: flex;
-    gap: 0.75rem;
+  /* Dark mode for processing */
+  .progress-bar {
+    @apply dark:bg-gray-700;
   }
 
-  .uri-input {
-    flex: 1;
-    padding: 0.875rem 1rem;
-    border: 1px solid #d1d5db;
-    border-radius: 12px;
-    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-    font-size: 0.875rem;
-    background: white;
-    color: #374151;
-    transition: all 0.2s;
+  /* TanStack Query Progress Styles */
+  .tanstack-progress {
+    @apply space-y-3;
   }
 
-  .uri-input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  .query-status-item {
+    @apply flex items-center gap-3 p-3 rounded-lg border transition-all duration-300;
+    @apply bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700;
   }
 
-  .copy-button {
-    background: #3b82f6;
-    color: white;
-    border: none;
-    padding: 0.875rem 1rem;
-    border-radius: 12px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 60px;
+  .query-status-item.active {
+    @apply bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700;
   }
 
-  .copy-button:hover {
-    background: #2563eb;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  .query-status-item.pending {
+    @apply bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700;
   }
 
-  .copy-button i {
-    font-size: 0.875rem;
+  .query-status-item.error {
+    @apply bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700;
   }
 
-  .wallet-download-section {
-    text-align: center;
+  .status-indicator {
+    @apply flex-shrink-0 w-6 h-6 flex items-center justify-center;
   }
 
-  .download-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: #3b82f6;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.875rem;
-    padding: 0.75rem 1.5rem;
-    border: 1px solid #3b82f6;
-    border-radius: 12px;
-    transition: all 0.2s;
-    background: rgba(59, 130, 246, 0.05);
+  .status-text {
+    @apply flex-1 flex flex-col gap-1;
   }
 
-  .download-link:hover {
-    background: #3b82f6;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  .status-label {
+    @apply text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide;
   }
 
-  .download-link i {
-    font-size: 1rem;
+  .status-value {
+    @apply text-sm font-semibold text-gray-900 dark:text-gray-100;
   }
 
-  .error-section {
-    text-align: center;
-    padding: 2rem 0;
+  .query-status-item.active .status-value {
+    @apply text-green-700 dark:text-green-300;
   }
 
-  .error-icon {
-    color: #ef4444;
-    margin-bottom: 1rem;
-    font-size: 3rem;
+  .query-status-item.pending .status-value {
+    @apply text-blue-700 dark:text-blue-300;
   }
 
-  .error-section h3 {
-    margin: 0 0 0.5rem 0;
-    color: #111827;
-    font-size: 1.25rem;
+  .query-status-item.error .status-value {
+    @apply text-red-700 dark:text-red-300;
   }
 
-  .error-section p {
-    margin: 0 0 2rem 0;
-    color: #6b7280;
+  .retry-info {
+    @apply border border-yellow-200 dark:border-yellow-700;
   }
 
-  .error-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .retry-button {
-    background: #ef4444;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .retry-button:hover {
-    background: #dc2626;
-  }
-
-  .back-button {
-    background: #6b7280;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .back-button:hover {
-    background: #4b5563;
-  }
-
-  .success-section {
-    text-align: center;
-    padding: 2rem 0;
-  }
-
-  .success-icon {
-    color: #10b981;
-    margin-bottom: 1rem;
-    font-size: 3rem;
-  }
-
-  .success-section h3 {
-    margin: 0 0 0.5rem 0;
-    color: #111827;
-    font-size: 1.25rem;
-  }
-
-  .success-section p {
-    margin: 0 0 2rem 0;
-    color: #6b7280;
-  }
-
-  .success-actions {
-    margin-top: 2rem;
-  }
-
-  .proceed-button {
-    background: #10b981;
-    color: white;
-    border: none;
-    padding: 0.75rem 2rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0 auto;
-  }
-
-  .proceed-button:hover {
-    background: #059669;
-  }
-
-  .proceed-button i {
-    font-size: 1rem;
-  }
-
-  .redirect-message {
-    color: #6b7280;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-
-  .wallet-info {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    text-align: left;
-  }
-
-  .info-item {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-  }
-
-  .info-item:last-child {
-    margin-bottom: 0;
-  }
-
-  .info-item .label {
-    font-weight: 500;
-    color: #374151;
-  }
-
-  .info-item .value {
-    font-family: monospace;
-    color: #6b7280;
-    word-break: break-all;
-  }
-
-  .modal-footer {
-    padding: 1.5rem 2rem;
-    border-top: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-  }
-
-  .cancel-button,
-  .done-button,
-  .back-button {
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .cancel-button {
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
-  }
-
-  .cancel-button:hover {
-    background: #e5e7eb;
-  }
-
-  .done-button {
-    background: #10b981;
-    color: white;
-    border: none;
-  }
-
-  .done-button:hover {
-    background: #059669;
-  }
-
-  .back-button {
-    background: #6b7280;
-    color: white;
-    border: none;
-  }
-
-  .back-button:hover {
-    background: #4b5563;
-  }
-
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .qr-section {
-      padding: 1.5rem;
-    }
-
-    .qr-placeholder {
-      width: 240px;
-      height: 240px;
-    }
-
-    .qr-code img {
-      width: 220px;
-      height: 220px;
-    }
-
-    .qr-code-border {
-      padding: 20px;
-    }
-  }
-
-  @media (max-width: 640px) {
-    .wallet-connect-modal {
-      width: 95%;
-      max-width: none;
-      margin: 1rem;
-    }
-
-    .qr-section {
-      padding: 1rem;
-    }
-
-    .wallet-icon-large {
-      width: 64px;
-      height: 64px;
-    }
-
-    .wallet-icon-large i {
-      font-size: 2rem;
-    }
-
-    .qr-header h3 {
-      font-size: 1.25rem;
-    }
-
-    .qr-placeholder {
-      width: 200px;
-      height: 200px;
-    }
-
-    .qr-code img {
-      width: 180px;
-      height: 180px;
-    }
-
-    .qr-code-border {
-      padding: 16px;
-    }
-
-    .uri-section {
-      padding: 1rem;
-    }
-
-    .uri-input-container {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .copy-button {
-      width: 100%;
-      justify-content: center;
-    }
-
-    .modal-footer {
-      padding: 1rem 1.5rem;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .modal-footer button {
-      width: 100%;
-      justify-content: center;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .qr-placeholder {
-      width: 180px;
-      height: 180px;
-    }
-
-    .qr-code img {
-      width: 160px;
-      height: 160px;
-    }
-
-    .qr-code-border {
-      padding: 14px;
-    }
-
-    .wallet-icon-large {
-      width: 56px;
-      height: 56px;
-    }
-
-    .wallet-icon-large i {
-      font-size: 1.75rem;
-    }
-  }
-
-  /* Dark mode support */
-  @media (prefers-color-scheme: dark) {
-    .wallet-connect-modal {
-      background: #1f2937;
-      color: #f9fafb;
-    }
-
-    .modal-header h2 {
-      color: #f9fafb;
-    }
-
-    .modal-subtitle {
-      color: #9ca3af;
-    }
-
-    .qr-header h3 {
-      color: #f9fafb;
-    }
-
-    .qr-header p {
-      color: #9ca3af;
-    }
-
-    .qr-code-border {
-      background: #374151;
-      border-color: #4b5563;
-    }
-
-    .uri-section {
-      background: #374151;
-      border-color: #4b5563;
-    }
-
-    .uri-header {
-      color: #d1d5db;
-    }
-
-    .uri-input {
-      background: #1f2937;
-      border-color: #4b5563;
-      color: #f9fafb;
-    }
-
-    .uri-input:focus {
-      border-color: #3b82f6;
-    }
-
-    .download-link {
-      color: #60a5fa;
-      border-color: #60a5fa;
-      background: rgba(96, 165, 250, 0.1);
-    }
-
-    .download-link:hover {
-      background: #60a5fa;
-      color: white;
-    }
+  .progress-text {
+    @apply dark:text-gray-300;
   }
 </style>

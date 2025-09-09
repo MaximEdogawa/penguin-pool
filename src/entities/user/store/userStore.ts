@@ -1,4 +1,5 @@
 import type { UserPreferences } from '@/app/types/common'
+import { sessionManager } from '@/shared/services/sessionManager'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -96,13 +97,31 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  const logout = () => {
-    currentUser.value = null
-    isAuthenticated.value = false
-    error.value = null
+  const logout = async () => {
+    try {
+      // Clear user state
+      currentUser.value = null
+      isAuthenticated.value = false
+      error.value = null
 
-    // Clear localStorage
-    localStorage.removeItem('penguin-pool-user')
+      // Use centralized session manager for comprehensive clearing
+      await sessionManager.clearAllSessionData({
+        clearUserData: true,
+        clearThemeData: true,
+        clearWalletConnect: false, // Let wallet store handle this
+        clearPWAStorage: true,
+        clearServiceWorker: true,
+        clearAllCaches: false, // Don't clear all caches, just session-related ones
+      })
+
+      console.log('User logout completed successfully')
+    } catch (err) {
+      console.error('Error during user logout:', err)
+      // Still clear local state even if session clearing fails
+      currentUser.value = null
+      isAuthenticated.value = false
+      error.value = err instanceof Error ? err.message : 'Logout failed'
+    }
   }
 
   const updateProfile = (updates: Partial<User>) => {

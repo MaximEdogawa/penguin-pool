@@ -1,3 +1,7 @@
+// Chia Network Chain IDs
+export const CHIA_MAINNET_CHAIN_ID = 'chia:mainnet'
+export const CHIA_TESTNET_CHAIN_ID = 'chia:testnet'
+
 export const environment = {
   // App configuration
   appName: 'Penguin-pool',
@@ -38,8 +42,31 @@ export const environment = {
         url: 'https://penguin.pool',
         icons: ['https://penguin.pool/icon.png'],
       },
-      chainId: 'chia:testnet',
+      chainId: (() => {
+        const network = import.meta.env.VITE_CHIA_NETWORK || 'testnet'
+        return network === 'mainnet' ? CHIA_MAINNET_CHAIN_ID : CHIA_TESTNET_CHAIN_ID
+      })(),
       relayUrl: 'wss://relay.walletconnect.com',
+      // iOS-specific configuration
+      ios: {
+        // Alternative relay URLs for iOS (in order of preference)
+        relayUrls: [
+          'wss://relay.walletconnect.org', // More reliable for iOS
+          'wss://relay.walletconnect.com', // Primary relay
+          'wss://relay.walletconnect.io', // Alternative relay
+        ],
+        // Connection settings optimized for iOS
+        connectionTimeout: 60000, // Increased timeout for iOS app switching
+        maxReconnectionAttempts: 8, // More attempts for iOS
+        reconnectionDelay: 1500, // Faster reconnection
+        // Health check settings for iOS
+        healthCheckInterval: 20000, // Check every 20 seconds on iOS
+        maxConsecutiveFailures: 3, // More tolerant of failures
+        // App switching specific settings
+        appSwitchTimeout: 30000, // Timeout for app switching scenarios
+        backgroundGracePeriod: 60000, // Grace period before pausing monitoring
+        foregroundReconnectDelay: 1000, // Delay before reconnecting on foreground
+      },
     },
   },
 
@@ -106,7 +133,7 @@ export const validateEnvironment = () => {
     environment.wallet.walletConnect.projectId.trim() === ''
   ) {
     warnings.push(
-      'WalletConnect Project ID is not configured. Set VITE_WALLET_CONNECT_PROJECT_ID to enable wallet connection features.'
+      'WalletConnect Project ID is not configured. Create a .env.local file with VITE_WALLET_CONNECT_PROJECT_ID to enable wallet connection features. See env.local.example for reference.'
     )
   }
 
@@ -118,12 +145,12 @@ export const validateEnvironment = () => {
 
     if (!import.meta.env[apiKeyVar]) {
       warnings.push(
-        `KurrentDB API key is not configured. Set ${apiKeyVar} to enable database features.`
+        `KurrentDB API key is not configured. Add ${apiKeyVar} to .env.local for local development or CI/CD secrets for production. See env.local.example for reference.`
       )
     }
     if (!import.meta.env[secretKeyVar]) {
       warnings.push(
-        `KurrentDB secret key is not configured. Set ${secretKeyVar} to enable database features.`
+        `KurrentDB secret key is not configured. Add ${secretKeyVar} to .env.local for local development or CI/CD secrets for production. See env.local.example for reference.`
       )
     }
   }

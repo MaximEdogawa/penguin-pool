@@ -70,7 +70,7 @@
     </div>
 
     <!-- PrimeUI Theme Settings -->
-    <div v-if="isPrimeUI" class="primeui-settings-section">
+    <div v-if="isPrimeUI && primaryColorEnabled" class="primeui-settings-section">
       <h4>PrimeUI Theme Customization</h4>
       <div class="primeui-settings-grid">
         <div class="color-picker-group">
@@ -186,9 +186,11 @@
 <script setup lang="ts">
   import { ref, computed } from 'vue'
   import { useThemeStore } from '../store/themeStore'
+  import { useFeatureFlagsStore } from '@/stores/featureFlags'
   import type { CustomTheme } from '../types/theme'
 
   const themeStore = useThemeStore()
+  const featureFlags = useFeatureFlagsStore()
 
   const exportThemeId = ref('')
   const importFile = ref<File | null>(null)
@@ -202,6 +204,7 @@
   const currentPrimeUITheme = computed(() => themeStore.currentPrimeUITheme)
   const currentThemeVariant = computed(() => themeStore.currentThemeVariant)
   const availableCustomThemes = computed(() => themeStore.availableCustomThemes)
+  const primaryColorEnabled = computed(() => featureFlags.isUIFeatureEnabled('primaryColor'))
 
   const getThemePreview = (theme: CustomTheme) => {
     return {

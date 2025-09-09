@@ -5,10 +5,11 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted } from 'vue'
-  import { useThemeStore } from '@/features/theme/store/themeStore'
-  import { useNotificationStore } from '@/features/notifications/store/notificationStore'
   import { useUserStore } from '@/entities/user/store/userStore'
+  import { useNotificationStore } from '@/features/notifications/store/notificationStore'
+  import { useThemeStore } from '@/features/theme/store/themeStore'
+  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import { onMounted } from 'vue'
 
   // Lifecycle
   onMounted(async () => {
@@ -17,12 +18,16 @@
       const themeStore = useThemeStore()
       const notificationStore = useNotificationStore()
       const userStore = useUserStore()
+      const walletStore = useWalletConnectStore()
 
       // Initialize theme
       await themeStore.initializeTheme()
 
       // Initialize notifications
       await notificationStore.initialize()
+
+      // Initialize wallet connect
+      await walletStore.initialize()
 
       // Check for existing user session
       await userStore.checkSession()

@@ -1,5 +1,5 @@
-import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { io, type Socket } from 'socket.io-client'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import {
   uptimeService,
   type ServiceUptimeSummary,
@@ -119,7 +119,7 @@ export function useUptime() {
     wsError.value = ''
 
     try {
-      ws.value = io('http://localhost:3002/ws/health', {
+      ws.value = io('http://localhost:3001/ws/health', {
         transports: ['websocket'],
       })
 

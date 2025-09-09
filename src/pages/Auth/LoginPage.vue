@@ -1,4 +1,7 @@
 <template>
+  <!-- Login Screen with Loading State -->
+  <PWAInstallPrompt />
+
   <div
     class="login-page min-h-screen flex items-center justify-center px-6 py-20 md:px-20 lg:px-80 backdrop-blur-3xl bg-cover bg-center bg-no-repeat"
     :style="backgroundStyle"
@@ -59,51 +62,29 @@
 
           <!-- Secondary Wallet Options -->
           <div class="flex flex-col gap-2 mt-4">
-            <div class="text-center text-sm text-white/60 dark:text-gray-400 mb-2">
-              Other Wallets
-            </div>
-
-            <!-- Chia Wallet -->
-            <button
-              @click="connectChiaWallet"
-              class="wallet-option-secondary group relative overflow-hidden rounded-2xl bg-white/5 dark:bg-gray-800/5 border border-white/10 dark:border-gray-700/10 p-4 w-full transition-all duration-300 hover:bg-white/10 dark:hover:bg-gray-800/10"
-              :disabled="isConnecting"
-            >
-              <div class="flex items-center gap-3">
-                <div class="wallet-icon-secondary">
-                  <i class="pi pi-wallet text-lg text-white/60 dark:text-gray-400"></i>
-                </div>
-                <div class="flex-1 text-left">
-                  <h4 class="text-sm font-medium text-white/80 dark:text-gray-200">Chia Wallet</h4>
-                  <p class="text-xs text-white/50 dark:text-gray-400">Official Chia wallet</p>
-                </div>
-                <i
-                  class="pi pi-arrow-right text-sm text-white/40 group-hover:text-white/60 transition-colors"
-                ></i>
-              </div>
-            </button>
-
             <!-- Other Wallets -->
-            <button
-              @click="connectOtherWallet"
-              class="wallet-option-secondary group relative overflow-hidden rounded-2xl bg-white/5 dark:bg-gray-800/5 border border-white/10 dark:border-gray-700/10 p-4 w-full transition-all duration-300 hover:bg-white/10 dark:hover:bg-gray-800/10"
-              :disabled="isConnecting"
-            >
-              <div class="flex items-center gap-3">
-                <div class="wallet-icon-secondary">
-                  <i class="pi pi-wallet text-lg text-white/60 dark:text-gray-400"></i>
+            <FeatureFlag category="app" feature="otherWallets">
+              <button
+                @click="connectOtherWallet"
+                class="wallet-option-secondary group relative overflow-hidden rounded-2xl bg-white/5 dark:bg-gray-800/5 border border-white/10 dark:border-gray-700/10 p-4 w-full transition-all duration-300 hover:bg-white/10 dark:hover:bg-gray-800/10"
+                :disabled="isConnecting"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="wallet-icon-secondary">
+                    <i class="pi pi-wallet text-lg text-white/60 dark:text-gray-400"></i>
+                  </div>
+                  <div class="flex-1 text-left">
+                    <h4 class="text-sm font-medium text-white/80 dark:text-gray-200">
+                      Other Wallets
+                    </h4>
+                    <p class="text-xs text-white/50 dark:text-gray-400">WalletConnect compatible</p>
+                  </div>
+                  <i
+                    class="pi pi-arrow-right text-sm text-white/40 group-hover:text-white/60 transition-colors"
+                  ></i>
                 </div>
-                <div class="flex-1 text-left">
-                  <h4 class="text-sm font-medium text-white/80 dark:text-gray-200">
-                    Other Wallets
-                  </h4>
-                  <p class="text-xs text-white/50 dark:text-gray-400">WalletConnect compatible</p>
-                </div>
-                <i
-                  class="pi pi-arrow-right text-sm text-white/40 group-hover:text-white/60 transition-colors"
-                ></i>
-              </div>
-            </button>
+              </button>
+            </FeatureFlag>
           </div>
         </div>
 
@@ -143,12 +124,18 @@
 </template>
 
 <script setup lang="ts">
+  import FeatureFlag from '@/components/FeatureFlag.vue'
   import PenguinLogo from '@/components/PenguinLogo.vue'
+  import PWAInstallPrompt from '@/components/PWAInstallPrompt.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
-  import WalletConnectModal from '@/features/walletConnect/components/WalletConnectModal.vue'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
-  import { computed, onMounted, ref } from 'vue'
+  import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
+
+  // Lazy load heavy components
+  const WalletConnectModal = defineAsyncComponent(
+    () => import('@/features/walletConnect/components/WalletConnectModal.vue')
+  )
 
   const router = useRouter()
   const userStore = useUserStore()
@@ -173,10 +160,6 @@
     showWalletModal.value = true
   }
 
-  const connectChiaWallet = async () => {
-    showWalletModal.value = true
-  }
-
   const connectOtherWallet = async () => {
     showWalletModal.value = true
   }
@@ -195,10 +178,6 @@
         throw new Error('Invalid wallet info - no address found')
       }
 
-      connectionStatus.value = 'Wallet connected successfully!'
-      statusType.value = 'success'
-      statusIcon.value = 'pi pi-check-circle'
-
       // Login user with wallet fingerprint if available, otherwise use address
       if (wallet.fingerprint) {
         console.log('Logging in with wallet fingerprint:', wallet.fingerprint)
@@ -214,20 +193,12 @@
         currentUser: userStore.currentUser,
       })
 
-      // Redirect to dashboard after successful connection
-      setTimeout(() => {
-        console.log('Attempting redirect to dashboard...')
-        console.log('Current route:', router.currentRoute.value.path)
-        console.log('User authenticated:', userStore.isAuthenticated)
-        router
-          .push('/dashboard')
-          .then(() => {
-            console.log('Redirect successful, new route:', router.currentRoute.value.path)
-          })
-          .catch(error => {
-            console.error('Redirect failed:', error)
-          })
-      }, 1000)
+      console.log('Attempting redirect to dashboard...')
+      console.log('Current route:', router.currentRoute.value.path)
+      console.log('User authenticated:', userStore.isAuthenticated)
+
+      await router.push('/dashboard')
+      console.log('Successfully redirected to dashboard')
     } catch (error) {
       console.error('Failed to process wallet connection:', error)
       connectionStatus.value =

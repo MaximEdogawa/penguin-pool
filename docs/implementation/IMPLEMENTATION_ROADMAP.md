@@ -69,14 +69,14 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
 
 ### Week 3: Database & Data Layer
 
-- [ ] **TICKET-008**: Set up Kurrent DB integration
+- [x] **TICKET-008**: Set up Kurrent DB integration
   - Install and configure Kurrent DB
   - Create database connection and streams
   - Implement basic CRUD operations
   - **Effort**: 3 days
   - **Dependencies**: TICKET-004
 
-- [ ] **TICKET-008**: Create data models and types
+- [x] **TICKET-008**: Create data models and types
   - Define TypeScript interfaces for all entities
   - Create database schemas
   - Set up data validation
@@ -85,7 +85,7 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
 
 ### Week 4: Wallet Integration
 
-- [ ] **TICKET-0010**: Implement Wallet Connect integration
+- [x] **TICKET-0010**: Implement Wallet Connect integration
   - Set up Wallet Connect v2
   - Create wallet connection components
   - Implement session management

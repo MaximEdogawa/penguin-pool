@@ -168,6 +168,16 @@
   },
   "active": "762a427def224add",
   "lastOpenFiles": [
+    "PWA_SETUP.md",
+    "dependencies/LAZY_LOADING_OPTIMIZATION.md",
+    "dependencies/BUNDLE_ANALYSIS.md",
+    "dependencies/WALLET_CONNECT_DEPENDENCIES.md",
+    "dependencies/README.md",
+    "dependencies/OX_PACKAGE_DEPENDENCY.md",
+    "dependencies",
+    "FEATURE_FLAGS.md",
+    "implementation/IMMEDIATE_NEXT_STEPS.md",
+    "implementation/IMPLEMENTATION_ROADMAP.md",
     "technical-info/WALLET_CONNECT_SETUP.md",
     "technical-info/TESTING_SUMMARY.md",
     "technical-info/PORT_SETUP.md",
@@ -190,18 +200,9 @@
     "implementation/TICKET-003/README.md",
     "implementation/TICKET-003",
     "implementation/TICKET-004",
-    "implementation/IMMEDIATE_NEXT_STEPS.md",
     "implementation/TICKET-002/WALLET_CONNECT_UI/WALLET_CONNECT_UI_UPDATE.md",
-    "implementation/TICKET-002/WALLET_CONNECT_UI/README.md",
-    "implementation/TICKET-002/SIDEBAR_COLLAPSE/SIDEBAR_COLLAPSE_UPDATE.md",
-    "implementation/TICKET-002/SIDEBAR_COLLAPSE/SIDEBAR_COLLAPSE_FIXES.md",
-    "implementation/TICKET-002/SIDEBAR_COLLAPSE/README.md",
-    "implementation/TICKET-002/HEADER_SIDEBAR/README.md",
-    "implementation/TICKET-002/HEADER_SIDEBAR/HEADER_SIDEBAR_UPDATE.md",
     "implementation/TICKET-002/WALLET_CONNECT_UI",
-    "implementation/TICKET-002/TICKET-002-IMPLEMENTATION.md",
     "implementation/TICKET-002/SIDEBAR_COLLAPSE",
-    "implementation/TICKET-002/HEADER_SIDEBAR",
-    "implementation/TICKET-002"
+    "implementation/TICKET-002/HEADER_SIDEBAR"
   ]
 }

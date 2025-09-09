@@ -3,12 +3,12 @@
 
 echo "🔍 Running pre-commit checks..."
 
-# Run lint-staged to format and lint staged files
+# Run lint-staged to format and lint staged files (excludes backend)
 echo "📝 Formatting and linting staged files..."
 npm run lint-staged
 
-# Run unit tests
-echo "🧪 Running unit tests..."
+# Run frontend unit tests only (excludes backend tests)
+echo "🧪 Running frontend unit tests..."
 npm run test:run
 
 echo "✅ Pre-commit checks completed successfully!"

@@ -2,7 +2,7 @@
   <div class="content-page">
     <div class="content-body">
       <!-- Quick Stats -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 flex-shrink-0">
         <div class="card p-4 sm:p-6">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center space-x-3">
@@ -18,15 +18,32 @@
                 Wallet Balance
               </h3>
             </div>
-            <button
-              v-if="isWalletConnected"
-              @click="refreshBalance"
-              :disabled="isRefreshingBalance"
-              class="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Refresh balance"
-            >
-              <i :class="['pi', isRefreshingBalance ? 'pi-spin pi-spinner' : 'pi-refresh']"></i>
-            </button>
+            <div v-if="isWalletConnected" class="flex items-center space-x-1">
+              <button
+                @click="refreshBalance(true)"
+                :disabled="isRefreshingBalance"
+                class="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh balance"
+              >
+                <i :class="['pi', isRefreshingBalance ? 'pi-spin pi-spinner' : 'pi-refresh']"></i>
+              </button>
+              <button
+                @click="toggleAutoRefresh"
+                :class="[
+                  'p-2 transition-colors',
+                  autoRefreshEnabled
+                    ? 'text-primary-600 dark:text-primary-400'
+                    : 'text-gray-400 hover:text-primary-600 dark:hover:text-primary-400',
+                ]"
+                :title="
+                  autoRefreshEnabled
+                    ? 'Disable auto-refresh'
+                    : `Enable auto-refresh (every ${AUTO_REFRESH_INTERVAL / 60000} minutes)`
+                "
+              >
+                <i :class="['pi', autoRefreshEnabled ? 'pi-clock-fill' : 'pi-clock']"></i>
+              </button>
+            </div>
           </div>
 
           <div class="space-y-2">
@@ -140,7 +157,7 @@
       </div>
 
       <!-- Quick Actions -->
-      <div class="card p-4 sm:p-6">
+      <div class="card p-4 sm:p-6 flex-shrink-0">
         <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
           Quick Actions
         </h2>
@@ -196,19 +213,19 @@
       </div>
 
       <!-- Recent Activity -->
-      <div class="card p-4 sm:p-6">
-        <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
+      <div class="card p-3 sm:p-4 flex-1 min-h-0 max-h-64 lg:max-h-80">
+        <h2 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3">
           Recent Activity
         </h2>
-        <div class="space-y-3 sm:space-y-4">
+        <div class="space-y-2 sm:space-y-3 overflow-y-auto h-full">
           <div
-            class="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+            class="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
           >
             <div class="flex-shrink-0">
-              <i class="pi pi-info-circle text-blue-500 text-sm sm:text-base"></i>
+              <i class="pi pi-info-circle text-blue-500 text-xs sm:text-sm"></i>
             </div>
             <div class="flex-1 min-w-0">
-              <p class="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
+              <p class="text-xs font-medium text-gray-900 dark:text-white truncate">
                 Welcome to Penguin Pool!
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">Just now</p>
@@ -217,21 +234,22 @@
         </div>
       </div>
     </div>
-
-    <!-- Page Footer -->
-    <PageFooter />
   </div>
 </template>
 
 <script setup lang="ts">
-  import PageFooter from '@/components/PageFooter.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
   import { sageWalletConnectService } from '@/features/walletConnect/services/SageWalletConnectService'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
-  import { computed, onMounted, ref, watch } from 'vue'
+  import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+  import { useRouter } from 'vue-router'
 
   const userStore = ref<ReturnType<typeof useUserStore> | null>(null)
   const walletStore = useWalletConnectStore()
+  const router = useRouter()
+
+  // Constants
+  const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes in milliseconds
 
   // Computed properties for wallet balance
   const userBalance = computed(() => {
@@ -313,16 +331,26 @@
   // Flag to prevent multiple simultaneous balance refresh calls
   const isRefreshingBalance = ref(false)
 
-  // Refresh wallet balance
-  const refreshBalance = async () => {
+  // Refresh wallet balance with caching
+  const refreshBalance = async (force = false) => {
     if (isWalletConnected.value && !isRefreshingBalance.value) {
+      // Check if we should skip refresh based on cache
+      if (!force && lastBalanceRefresh.value) {
+        const timeSinceLastRefresh = Date.now() - lastBalanceRefresh.value.getTime()
+
+        if (timeSinceLastRefresh < AUTO_REFRESH_INTERVAL) {
+          console.log('Skipping balance refresh - recently updated')
+          return
+        }
+      }
+
       isRefreshingBalance.value = true
       try {
         if (walletStore.isConnected) {
           const freshWalletInfo = await sageWalletConnectService.getWalletInfo()
           if (freshWalletInfo) {
             walletStore.walletInfo = freshWalletInfo
-            console.log('Wallet info refreshed with fresh balance:', freshWalletInfo)
+            lastBalanceRefresh.value = new Date()
           }
         }
       } catch (error) {
@@ -339,27 +367,98 @@
     window.location.href = '/wallet-connect'
   }
 
+  // Start automatic refresh
+  const startAutoRefresh = () => {
+    if (refreshInterval.value) {
+      clearInterval(refreshInterval.value)
+    }
+
+    if (isWalletConnected.value && autoRefreshEnabled.value) {
+      setTimeout(() => {
+        refreshInterval.value = setInterval(() => {
+          if (isWalletConnected.value) {
+            refreshBalance()
+          }
+        }, AUTO_REFRESH_INTERVAL)
+      }, AUTO_REFRESH_INTERVAL)
+    }
+  }
+
+  // Stop automatic refresh
+  const stopAutoRefresh = () => {
+    if (refreshInterval.value) {
+      clearInterval(refreshInterval.value)
+      refreshInterval.value = null
+    }
+  }
+
+  // Toggle automatic refresh
+  const toggleAutoRefresh = () => {
+    autoRefreshEnabled.value = !autoRefreshEnabled.value
+
+    if (autoRefreshEnabled.value) {
+      startAutoRefresh()
+    } else {
+      stopAutoRefresh()
+    }
+  }
+
+  // Track if balance has been loaded to prevent unnecessary refreshes
+  const balanceLoaded = ref(false)
+  const lastBalanceRefresh = ref<Date | null>(null)
+  const autoRefreshEnabled = ref(false)
+  const refreshInterval = ref<NodeJS.Timeout | null>(null)
+
   onMounted(async () => {
     try {
       userStore.value = useUserStore()
 
-      // Initialize wallet connect if not already done
-      await walletStore.initialize()
-
-      // If wallet is connected, refresh balance
+      // Wait for wallet connection state to be properly initialized
       if (isWalletConnected.value) {
-        await refreshBalance()
+        balanceLoaded.value = true
+        lastBalanceRefresh.value = new Date()
+        startAutoRefresh()
+      } else {
+        // If wallet is not connected, wait a bit for state to be restored
+        const checkWalletConnection = () => {
+          if (isWalletConnected.value) {
+            balanceLoaded.value = true
+            lastBalanceRefresh.value = new Date()
+            startAutoRefresh()
+          } else {
+            // If still not connected after waiting, redirect to auth
+            console.log('Wallet not connected, redirecting to auth...')
+            router.push('/auth')
+          }
+        }
+
+        // Check immediately and also after a short delay
+        checkWalletConnection()
+        setTimeout(checkWalletConnection, 1000)
       }
     } catch (error) {
       console.error('Failed to initialize dashboard:', error)
     }
   })
 
-  // Watch for wallet connection changes
+  // Watch for wallet connection changes - only refresh if balance hasn't been loaded
   watch(isWalletConnected, async connected => {
-    if (connected) {
-      await refreshBalance()
+    if (connected && !balanceLoaded.value) {
+      startAutoRefresh()
+      balanceLoaded.value = true
+      lastBalanceRefresh.value = new Date()
+    } else if (!connected) {
+      // Reset balance loaded flag when wallet disconnects
+      balanceLoaded.value = false
+      lastBalanceRefresh.value = null
+      stopAutoRefresh()
+      // Router guard will handle redirect to login
     }
+  })
+
+  // Cleanup on unmount
+  onUnmounted(() => {
+    stopAutoRefresh()
   })
 </script>
 

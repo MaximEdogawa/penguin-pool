@@ -51,7 +51,7 @@
       </div>
     </div>
 
-    <div class="config-panel-section">
+    <div class="config-panel-section" v-if="primaryColorEnabled">
       <div class="config-panel-label">Primary Color</div>
       <div class="config-panel-colors">
         <PrimeButton
@@ -67,15 +67,15 @@
 </template>
 
 <script setup lang="ts">
+  import { useThemeStore } from '@/features/theme/store/themeStore'
+  import { useFeatureFlagsStore } from '@/stores/featureFlags'
   import { computed, onMounted } from 'vue'
   import { useLayout } from './composables/layout'
-  import { useThemeStore } from '@/features/theme/store/themeStore'
 
   // Layout composable
   const { layoutConfig } = useLayout()
-
-  // Theme store
   const themeStore = useThemeStore()
+  const featureFlags = useFeatureFlagsStore()
 
   // Computed
   const currentPrimary = computed(() => layoutConfig.primary)
@@ -83,6 +83,7 @@
   const hasCustomTheme = computed(() => themeStore.hasCustomTheme)
   const currentCustomTheme = computed(() => themeStore.currentCustomTheme)
   const availableCustomThemes = computed(() => themeStore.availableCustomThemes)
+  const primaryColorEnabled = computed(() => featureFlags.isUIFeatureEnabled('primaryColor'))
 
   // Primary colors
   const primaryColors = [

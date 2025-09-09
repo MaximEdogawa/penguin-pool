@@ -21,7 +21,6 @@ The new layout system provides a modern, responsive design with the following fe
 - **AppSidebar.vue**: Sidebar container that houses the navigation menu
 - **AppMenu.vue**: Hierarchical navigation menu structure
 - **AppMenuItem.vue**: Individual menu item with support for submenus and badges
-- **AppFooter.vue**: Footer component with copyright and version information
 - **AppConfigurator.vue**: Theme and layout configuration panel
 
 ### Layout Composable

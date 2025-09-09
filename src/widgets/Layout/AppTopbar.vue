@@ -83,13 +83,14 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted } from 'vue'
-  import { useRouter } from 'vue-router'
-  import { useThemeStore } from '@/features/theme/store/themeStore'
-  import { useNotificationStore } from '@/features/notifications/store/notificationStore'
-  import { useLayout } from './composables/layout'
   import PenguinLogo from '@/components/PenguinLogo.vue'
+  import { useUserStore } from '@/entities/user/store/userStore'
+  import { useNotificationStore } from '@/features/notifications/store/notificationStore'
+  import { useThemeStore } from '@/features/theme/store/themeStore'
+  import { computed, onMounted, ref } from 'vue'
+  import { useRouter } from 'vue-router'
   import AppConfigurator from './AppConfigurator.vue'
+  import { useLayout } from './composables/layout'
 
   // Router
   const router = useRouter()
@@ -157,10 +158,9 @@
 
   const handleLogout = async () => {
     try {
-      // Clear user data from localStorage
-      localStorage.removeItem('penguin-pool-user')
-      localStorage.removeItem('penguin-pool-theme')
-      localStorage.removeItem('penguin-pool-custom-theme')
+      // Use centralized logout through user store
+      const userStore = useUserStore()
+      await userStore.logout()
 
       isUserMenuVisible.value = false
 
