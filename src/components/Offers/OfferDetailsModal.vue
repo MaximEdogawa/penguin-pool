@@ -183,32 +183,67 @@
 
           <!-- Actions -->
           <div
-            class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700"
+            class="flex justify-end space-x-2 pt-4 border-t border-gray-200 dark:border-gray-700"
           >
             <button
               @click="$emit('close')"
-              class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+              class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors duration-200"
             >
               Close
+            </button>
+            <button
+              @click="deleteOffer"
+              :disabled="isDeleting"
+              class="px-3 py-1.5 text-sm bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-medium rounded-md transition-colors duration-200 flex items-center"
+            >
+              <i v-if="isDeleting" class="pi pi-spin pi-spinner mr-1.5 text-xs"></i>
+              <i v-else class="pi pi-trash mr-1.5 text-xs"></i>
+              {{ isDeleting ? 'Deleting...' : 'Delete' }}
             </button>
             <button
               v-if="offer.status === 'active'"
               @click="cancelOffer"
               :disabled="isCancelling"
-              class="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-medium rounded-lg transition-colors duration-200 flex items-center"
+              class="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-medium rounded-md transition-colors duration-200 flex items-center"
             >
-              <i v-if="isCancelling" class="pi pi-spin pi-spinner mr-2"></i>
-              <i v-else class="pi pi-times mr-2"></i>
-              {{ isCancelling ? 'Cancelling...' : 'Cancel Offer' }}
+              <i v-if="isCancelling" class="pi pi-spin pi-spinner mr-1.5 text-xs"></i>
+              <i v-else class="pi pi-times mr-1.5 text-xs"></i>
+              {{ isCancelling ? 'Cancelling...' : 'Cancel' }}
             </button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Confirmation Dialogs -->
+    <ConfirmationDialog
+      v-if="showCancelConfirmation"
+      title="Cancel Offer"
+      message="Are you sure you want to cancel this offer? This action cannot be undone."
+      :details="`Offer ID: ${offer.tradeId}`"
+      confirm-text="Cancel Offer"
+      cancel-text="Keep Offer"
+      :is-loading="isCancelling"
+      @close="showCancelConfirmation = false"
+      @confirm="confirmCancelOffer"
+    />
+
+    <ConfirmationDialog
+      v-if="showDeleteConfirmation"
+      title="Delete Offer"
+      message="Are you sure you want to permanently delete this offer? This action cannot be undone and the offer will be removed from your list."
+      :details="`Offer ID: ${offer.tradeId}`"
+      confirm-text="Delete Offer"
+      cancel-text="Keep Offer"
+      :is-loading="isDeleting"
+      @close="showDeleteConfirmation = false"
+      @confirm="confirmDeleteOffer"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+  import ConfirmationDialog from '@/components/Shared/ConfirmationDialog.vue'
   import { cancelOffer as cancelOfferRequest } from '@/features/walletConnect/queries/walletQueries'
   import type { OfferDetails } from '@/types/offer.types'
   import { ref } from 'vue'
@@ -220,6 +255,7 @@
   interface Emits {
     (e: 'close'): void
     (e: 'offer-cancelled', offer: OfferDetails): void
+    (e: 'offer-deleted', offer: OfferDetails): void
   }
 
   const props = defineProps<Props>()
@@ -227,7 +263,10 @@
 
   // State
   const isCancelling = ref(false)
+  const isDeleting = ref(false)
   const isCopied = ref(false)
+  const showCancelConfirmation = ref(false)
+  const showDeleteConfirmation = ref(false)
 
   // Methods
   const getStatusClass = (status: string) => {
@@ -269,22 +308,23 @@
     }
   }
 
-  const cancelOffer = async () => {
-    if (!confirm('Are you sure you want to cancel this offer?')) {
-      return
-    }
+  const cancelOffer = () => {
+    showCancelConfirmation.value = true
+  }
 
+  const confirmCancelOffer = async () => {
     isCancelling.value = true
 
     try {
       const result = await cancelOfferRequest({
-        tradeId: props.offer.tradeId,
+        id: props.offer.tradeId, // Use 'id' instead of 'tradeId'
         fee: props.offer.fee,
       })
 
       if (result.success) {
         const updatedOffer = { ...props.offer, status: 'cancelled' as const }
         emit('offer-cancelled', updatedOffer)
+        showCancelConfirmation.value = false
       } else {
         throw new Error(result.error || 'Failed to cancel offer')
       }
@@ -293,6 +333,26 @@
       alert('Failed to cancel offer. Please try again.')
     } finally {
       isCancelling.value = false
+    }
+  }
+
+  const deleteOffer = () => {
+    showDeleteConfirmation.value = true
+  }
+
+  const confirmDeleteOffer = async () => {
+    isDeleting.value = true
+
+    try {
+      // For now, we'll just emit the delete event
+      // In a real app, you might want to call an API to delete from backend
+      emit('offer-deleted', props.offer)
+      showDeleteConfirmation.value = false
+    } catch (error) {
+      console.error('Failed to delete offer:', error)
+      alert('Failed to delete offer. Please try again.')
+    } finally {
+      isDeleting.value = false
     }
   }
 </script>

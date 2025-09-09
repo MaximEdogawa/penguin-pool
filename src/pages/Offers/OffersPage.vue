@@ -34,7 +34,7 @@
           <div class="flex items-center space-x-2">
             <select
               v-model="filters.status"
-              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm"
             >
               <option value="">All Status</option>
               <option value="pending">Pending</option>
@@ -54,7 +54,7 @@
                 <th
                   class="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300"
                 >
-                  Offer ID
+                  Offer String
                 </th>
                 <th
                   class="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300"
@@ -86,26 +86,28 @@
               >
                 <td class="py-3 px-4 text-sm text-gray-900 dark:text-white">
                   <button
-                    @click="copyOfferId(offer.tradeId)"
-                    class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-2 py-1 rounded text-xs font-mono transition-all duration-300 cursor-pointer group relative overflow-hidden max-w-[100px] sm:max-w-[120px]"
-                    :title="isCopied === offer.tradeId ? 'Copied!' : 'Click to copy offer ID'"
+                    @click="copyOfferString(offer.offerString)"
+                    class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-2 py-1 rounded text-xs font-mono transition-all duration-300 cursor-pointer group relative overflow-hidden max-w-[200px] sm:max-w-[250px]"
+                    :title="
+                      isCopied === offer.offerString ? 'Copied!' : 'Click to copy offer string'
+                    "
                     :class="{
                       'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300':
-                        isCopied === offer.tradeId,
-                      'hover:scale-105': isCopied !== offer.tradeId,
+                        isCopied === offer.offerString,
+                      'hover:scale-105': isCopied !== offer.offerString,
                     }"
                   >
                     <span
                       class="transition-all duration-300 truncate block"
                       :class="{
-                        'animate-pulse': isCopied === offer.tradeId,
+                        'animate-pulse': isCopied === offer.offerString,
                       }"
                     >
-                      {{ offer.tradeId?.slice(0, 6) || 'Unknown' }}...
+                      {{ offer.offerString?.slice(0, 12) || 'Unknown' }}...
                     </span>
                     <!-- Animated background effect -->
                     <div
-                      v-if="isCopied === offer.tradeId"
+                      v-if="isCopied === offer.offerString"
                       class="absolute inset-0 bg-green-500 opacity-20 animate-ping rounded"
                     ></div>
                   </button>
@@ -195,28 +197,28 @@
             :key="offer.id"
             class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
           >
-            <!-- Header with Offer ID and Status -->
+            <!-- Header with Offer String and Status -->
             <div class="flex items-center justify-between mb-3">
               <button
-                @click="copyOfferId(offer.tradeId)"
-                class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-2 py-1 rounded text-xs font-mono transition-all duration-300 cursor-pointer group relative overflow-hidden max-w-[120px]"
-                :title="isCopied === offer.tradeId ? 'Copied!' : 'Click to copy offer ID'"
+                @click="copyOfferString(offer.offerString)"
+                class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-2 py-1 rounded text-xs font-mono transition-all duration-300 cursor-pointer group relative overflow-hidden max-w-[200px] sm:max-w-[250px]"
+                :title="isCopied === offer.offerString ? 'Copied!' : 'Click to copy offer string'"
                 :class="{
                   'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300':
-                    isCopied === offer.tradeId,
-                  'hover:scale-105': isCopied !== offer.tradeId,
+                    isCopied === offer.offerString,
+                  'hover:scale-105': isCopied !== offer.offerString,
                 }"
               >
                 <span
                   class="transition-all duration-300 truncate block"
                   :class="{
-                    'animate-pulse': isCopied === offer.tradeId,
+                    'animate-pulse': isCopied === offer.offerString,
                   }"
                 >
-                  {{ offer.tradeId?.slice(0, 6) || 'Unknown' }}...
+                  {{ offer.offerString?.slice(0, 12) || 'Unknown' }}...
                 </span>
                 <div
-                  v-if="isCopied === offer.tradeId"
+                  v-if="isCopied === offer.offerString"
                   class="absolute inset-0 bg-green-500 opacity-20 animate-ping rounded"
                 ></div>
               </button>
@@ -316,6 +318,20 @@
       :offer="selectedOffer"
       @close="selectedOffer = null"
       @offer-cancelled="handleOfferCancelled"
+      @offer-deleted="handleOfferDeleted"
+    />
+
+    <!-- Cancel Confirmation Dialog -->
+    <ConfirmationDialog
+      v-if="showCancelConfirmation && offerToCancel"
+      title="Cancel Offer"
+      message="Are you sure you want to cancel this offer? This action cannot be undone."
+      :details="`Offer ID: ${offerToCancel.tradeId}`"
+      confirm-text="Cancel Offer"
+      cancel-text="Keep Offer"
+      :is-loading="isCancelling"
+      @close="handleCancelDialogClose"
+      @confirm="confirmCancelOffer"
     />
   </div>
 </template>
@@ -324,6 +340,7 @@
   import CreateOfferModal from '@/components/Offers/CreateOfferModal.vue'
   import OfferDetailsModal from '@/components/Offers/OfferDetailsModal.vue'
   import TakeOfferModal from '@/components/Offers/TakeOfferModal.vue'
+  import ConfirmationDialog from '@/components/Shared/ConfirmationDialog.vue'
   import type { OfferDetails, OfferFilters } from '@/types/offer.types'
   import { computed, onMounted, ref } from 'vue'
 
@@ -334,6 +351,9 @@
   const showTakeOffer = ref(false)
   const selectedOffer = ref<OfferDetails | null>(null)
   const isCopied = ref<string | null>(null)
+  const showCancelConfirmation = ref(false)
+  const offerToCancel = ref<OfferDetails | null>(null)
+  const isCancelling = ref(false)
   const filters = ref<OfferFilters>({
     status: '',
   })
@@ -383,16 +403,32 @@
     selectedOffer.value = offer
   }
 
-  const cancelOffer = async (offer: OfferDetails) => {
-    if (confirm('Are you sure you want to cancel this offer?')) {
-      try {
-        // TODO: Implement actual offer cancellation
-        console.log('Cancelling offer:', offer.tradeId)
-        offer.status = 'cancelled'
-      } catch (error) {
-        console.error('Failed to cancel offer:', error)
-      }
+  const cancelOffer = (offer: OfferDetails) => {
+    offerToCancel.value = offer
+    showCancelConfirmation.value = true
+  }
+
+  const confirmCancelOffer = async () => {
+    if (!offerToCancel.value) return
+
+    isCancelling.value = true
+
+    try {
+      // TODO: Implement actual offer cancellation with wallet connect
+      console.log('Cancelling offer:', offerToCancel.value.tradeId)
+      offerToCancel.value.status = 'cancelled'
+      showCancelConfirmation.value = false
+      offerToCancel.value = null
+    } catch (error) {
+      console.error('Failed to cancel offer:', error)
+    } finally {
+      isCancelling.value = false
     }
+  }
+
+  const handleCancelDialogClose = () => {
+    showCancelConfirmation.value = false
+    offerToCancel.value = null
   }
 
   const handleOfferCreated = (offer: OfferDetails) => {
@@ -417,6 +453,14 @@
     selectedOffer.value = null
   }
 
+  const handleOfferDeleted = (offer: OfferDetails) => {
+    const index = offers.value.findIndex(o => o.id === offer.id)
+    if (index !== -1) {
+      offers.value.splice(index, 1)
+    }
+    selectedOffer.value = null
+  }
+
   const getStatusClass = (status: string) => {
     const classes = {
       pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300',
@@ -432,17 +476,17 @@
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString()
   }
 
-  const copyOfferId = async (offerId: string) => {
-    if (!offerId) return
+  const copyOfferString = async (offerString: string) => {
+    if (!offerString) return
 
     try {
-      await navigator.clipboard.writeText(offerId)
-      isCopied.value = offerId
+      await navigator.clipboard.writeText(offerString)
+      isCopied.value = offerString
       setTimeout(() => {
         isCopied.value = null
       }, 2000)
     } catch (error) {
-      console.error('Failed to copy offer ID:', error)
+      console.error('Failed to copy offer string:', error)
     }
   }
 

@@ -378,7 +378,7 @@ export interface TakeOfferResponse {
 }
 
 export interface CancelOfferRequest {
-  tradeId: string
+  id: string
   fee?: number
   [key: string]: unknown
 }
