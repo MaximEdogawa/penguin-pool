@@ -17,7 +17,7 @@
 
         <div v-if="offer" class="space-y-6">
           <!-- Status and Trade ID -->
-          <div class="flex items-center justify-between">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="flex items-center space-x-3">
               <span
                 :class="getStatusClass(offer.status)"
@@ -26,11 +26,11 @@
                 {{ offer.status.toUpperCase() }}
               </span>
             </div>
-            <div class="text-right">
-              <p class="text-sm text-gray-500 dark:text-gray-400">Offer ID</p>
+            <div class="flex flex-col sm:items-end">
+              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Offer ID</p>
               <button
                 @click="copyOfferId"
-                class="text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-2 py-1 rounded font-mono transition-all duration-300 cursor-pointer group relative overflow-hidden"
+                class="text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-2 py-1 rounded font-mono transition-all duration-300 cursor-pointer group relative overflow-hidden max-w-[200px] sm:max-w-[250px]"
                 :title="isCopied ? 'Copied!' : 'Click to copy offer ID'"
                 :class="{
                   'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300': isCopied,
@@ -38,12 +38,12 @@
                 }"
               >
                 <span
-                  class="transition-all duration-300"
+                  class="transition-all duration-300 truncate block"
                   :class="{
                     'animate-pulse': isCopied,
                   }"
                 >
-                  {{ offer.tradeId }}
+                  {{ offer.tradeId?.slice(0, 12) || 'Unknown' }}...
                 </span>
                 <!-- Animated background effect -->
                 <div
@@ -58,23 +58,34 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Assets Offered -->
             <div>
-              <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">Assets Offered</h3>
-              <div class="space-y-2">
+              <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">
+                Assets Offered ({{ (offer.assetsOffered || []).length }})
+              </h3>
+              <div class="space-y-2 max-h-48 overflow-y-auto">
                 <div
-                  v-for="(asset, index) in offer.assetsOffered"
+                  v-for="(asset, index) in offer.assetsOffered || []"
                   :key="`offered-${index}`"
-                  class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                  class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
                 >
-                  <div>
-                    <p class="font-medium text-gray-900 dark:text-white">
-                      {{ asset.amount }} {{ asset.symbol || asset.type.toUpperCase() }}
-                    </p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                      {{ asset.assetId }}
-                    </p>
+                  <div class="flex-1">
+                    <div class="flex items-center space-x-2">
+                      <span class="font-medium text-gray-900 dark:text-white text-lg">
+                        {{ asset.amount }}
+                      </span>
+                      <span class="text-sm font-medium text-gray-600 dark:text-gray-300">
+                        {{ asset.symbol || asset.type.toUpperCase() }}
+                      </span>
+                    </div>
+                    <div v-if="asset.assetId" class="mt-1">
+                      <p class="text-xs text-gray-500 dark:text-gray-400 font-mono break-all">
+                        {{ asset.assetId }}
+                      </p>
+                    </div>
                   </div>
                   <div class="text-right">
-                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                    <span
+                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
+                    >
                       {{ asset.type.toUpperCase() }}
                     </span>
                   </div>
@@ -85,24 +96,33 @@
             <!-- Assets Requested -->
             <div>
               <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                Assets Requested
+                Assets Requested ({{ (offer.assetsRequested || []).length }})
               </h3>
-              <div class="space-y-2">
+              <div class="space-y-2 max-h-48 overflow-y-auto">
                 <div
-                  v-for="(asset, index) in offer.assetsRequested"
+                  v-for="(asset, index) in offer.assetsRequested || []"
                   :key="`requested-${index}`"
-                  class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                  class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200"
                 >
-                  <div>
-                    <p class="font-medium text-gray-900 dark:text-white">
-                      {{ asset.amount }} {{ asset.symbol || asset.type.toUpperCase() }}
-                    </p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                      {{ asset.assetId }}
-                    </p>
+                  <div class="flex-1">
+                    <div class="flex items-center space-x-2">
+                      <span class="font-medium text-gray-900 dark:text-white text-lg">
+                        {{ asset.amount }}
+                      </span>
+                      <span class="text-sm font-medium text-gray-600 dark:text-gray-300">
+                        {{ asset.symbol || asset.type.toUpperCase() }}
+                      </span>
+                    </div>
+                    <div v-if="asset.assetId" class="mt-1">
+                      <p class="text-xs text-gray-500 dark:text-gray-400 font-mono break-all">
+                        {{ asset.assetId }}
+                      </p>
+                    </div>
                   </div>
                   <div class="text-right">
-                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                    <span
+                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+                    >
                       {{ asset.type.toUpperCase() }}
                     </span>
                   </div>
@@ -149,7 +169,7 @@
               <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Creator Address
               </h4>
-              <p class="text-sm text-gray-900 dark:text-white font-mono">
+              <p class="text-sm text-gray-900 dark:text-white font-mono break-all">
                 {{ offer.creatorAddress }}
               </p>
             </div>

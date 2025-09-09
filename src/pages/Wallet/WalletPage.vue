@@ -1,16 +1,8 @@
 <template>
   <div class="content-page">
     <div class="content-header">
-      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Wallet</h1>
-      <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-        Manage your Chia wallet and send transactions
-      </p>
-    </div>
-
-    <div class="content-body">
-      <!-- Wallet Balance Card -->
-      <div class="card p-4 sm:p-6 mb-6">
-        <div class="flex items-center justify-between mb-4">
+      <div class="card p-4 sm:p-6">
+        <div class="flex items-center justify-between mb-2">
           <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
             Wallet Balance
           </h2>
@@ -40,6 +32,10 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="content-body">
+      <!-- Wallet Balance Card -->
 
       <!-- Send Transaction Section -->
       <div class="card p-4 sm:p-6">
@@ -142,11 +138,11 @@
   }
 
   .content-header {
-    @apply mb-6 sm:mb-8;
+    @apply mb-1;
   }
 
   .content-body {
-    @apply space-y-6;
+    @apply space-y-1;
   }
 
   .card {

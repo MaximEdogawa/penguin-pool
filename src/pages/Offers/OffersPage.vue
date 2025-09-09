@@ -1,12 +1,5 @@
 <template>
   <div class="content-page">
-    <div class="content-header">
-      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Offers</h1>
-      <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-        Create, manage, and take trading offers on the Chia network
-      </p>
-    </div>
-
     <div class="content-body">
       <!-- Action Buttons -->
       <div class="flex flex-col sm:flex-row gap-4 mb-6">
@@ -53,8 +46,8 @@
           </div>
         </div>
 
-        <!-- Offers Table -->
-        <div v-if="offers.length > 0" class="overflow-x-auto">
+        <!-- Desktop Table View -->
+        <div v-if="offers.length > 0" class="hidden md:block overflow-x-auto">
           <table class="w-full">
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700">
@@ -94,7 +87,7 @@
                 <td class="py-3 px-4 text-sm text-gray-900 dark:text-white">
                   <button
                     @click="copyOfferId(offer.tradeId)"
-                    class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-2 py-1 rounded text-xs font-mono transition-all duration-300 cursor-pointer group relative overflow-hidden"
+                    class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-2 py-1 rounded text-xs font-mono transition-all duration-300 cursor-pointer group relative overflow-hidden max-w-[100px] sm:max-w-[120px]"
                     :title="isCopied === offer.tradeId ? 'Copied!' : 'Click to copy offer ID'"
                     :class="{
                       'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300':
@@ -103,12 +96,12 @@
                     }"
                   >
                     <span
-                      class="transition-all duration-300"
+                      class="transition-all duration-300 truncate block"
                       :class="{
                         'animate-pulse': isCopied === offer.tradeId,
                       }"
                     >
-                      {{ offer.tradeId?.slice(0, 8) || 'Unknown' }}...
+                      {{ offer.tradeId?.slice(0, 6) || 'Unknown' }}...
                     </span>
                     <!-- Animated background effect -->
                     <div
@@ -126,19 +119,47 @@
                   </span>
                 </td>
                 <td class="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                  <div class="space-y-1">
-                    <div
-                      v-for="asset in (offer.assetsOffered || []).slice(0, 2)"
-                      :key="asset.assetId"
-                      class="text-xs"
-                    >
-                      {{ asset.amount }} {{ asset.symbol || asset.type.toUpperCase() }}
+                  <div class="relative group">
+                    <!-- Main display - show first 2 assets -->
+                    <div class="space-y-1">
+                      <div
+                        v-for="asset in (offer.assetsOffered || []).slice(0, 2)"
+                        :key="`offered-${asset.assetId}-${asset.amount}`"
+                        class="text-xs flex items-center justify-between"
+                      >
+                        <span class="font-medium">{{ asset.amount }}</span>
+                        <span class="text-gray-500 dark:text-gray-400 ml-2">
+                          {{ asset.symbol || asset.type.toUpperCase() }}
+                        </span>
+                      </div>
+                      <div
+                        v-if="(offer.assetsOffered || []).length > 2"
+                        class="text-xs text-primary-600 dark:text-primary-400 font-medium cursor-pointer hover:underline"
+                      >
+                        +{{ (offer.assetsOffered || []).length - 2 }} more
+                      </div>
                     </div>
+
+                    <!-- Hover tooltip for all assets -->
                     <div
-                      v-if="(offer.assetsOffered || []).length > 2"
-                      class="text-xs text-gray-500"
+                      v-if="(offer.assetsOffered || []).length > 0"
+                      class="absolute left-0 top-full mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 p-3"
                     >
-                      +{{ (offer.assetsOffered || []).length - 2 }} more
+                      <div class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Assets Offered ({{ (offer.assetsOffered || []).length }})
+                      </div>
+                      <div class="space-y-1 max-h-32 overflow-y-auto">
+                        <div
+                          v-for="asset in offer.assetsOffered || []"
+                          :key="`tooltip-offered-${asset.assetId}-${asset.amount}`"
+                          class="flex items-center justify-between py-1"
+                        >
+                          <span class="font-medium">{{ asset.amount }}</span>
+                          <span class="text-gray-500 dark:text-gray-400 ml-2">
+                            {{ asset.symbol || asset.type.toUpperCase() }}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -165,6 +186,97 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div v-if="offers.length > 0" class="md:hidden space-y-4">
+          <div
+            v-for="offer in filteredOffers"
+            :key="offer.id"
+            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+          >
+            <!-- Header with Offer ID and Status -->
+            <div class="flex items-center justify-between mb-3">
+              <button
+                @click="copyOfferId(offer.tradeId)"
+                class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-2 py-1 rounded text-xs font-mono transition-all duration-300 cursor-pointer group relative overflow-hidden max-w-[120px]"
+                :title="isCopied === offer.tradeId ? 'Copied!' : 'Click to copy offer ID'"
+                :class="{
+                  'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300':
+                    isCopied === offer.tradeId,
+                  'hover:scale-105': isCopied !== offer.tradeId,
+                }"
+              >
+                <span
+                  class="transition-all duration-300 truncate block"
+                  :class="{
+                    'animate-pulse': isCopied === offer.tradeId,
+                  }"
+                >
+                  {{ offer.tradeId?.slice(0, 6) || 'Unknown' }}...
+                </span>
+                <div
+                  v-if="isCopied === offer.tradeId"
+                  class="absolute inset-0 bg-green-500 opacity-20 animate-ping rounded"
+                ></div>
+              </button>
+              <span
+                :class="getStatusClass(offer.status)"
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium shrink-0"
+              >
+                {{ offer.status }}
+              </span>
+            </div>
+
+            <!-- Assets Section -->
+            <div class="mb-3">
+              <div class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Assets Offered ({{ (offer.assetsOffered || []).length }})
+              </div>
+              <div class="space-y-1">
+                <div
+                  v-for="asset in (offer.assetsOffered || []).slice(0, 3)"
+                  :key="`mobile-offered-${asset.assetId}-${asset.amount}`"
+                  class="flex items-center justify-between text-xs py-1"
+                >
+                  <span class="font-medium">{{ asset.amount }}</span>
+                  <span class="text-gray-500 dark:text-gray-400">
+                    {{ asset.symbol || asset.type.toUpperCase() }}
+                  </span>
+                </div>
+                <div
+                  v-if="(offer.assetsOffered || []).length > 3"
+                  class="text-xs text-primary-600 dark:text-primary-400 font-medium"
+                >
+                  +{{ (offer.assetsOffered || []).length - 3 }} more assets
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer with Date and Actions -->
+            <div
+              class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700"
+            >
+              <span class="text-xs text-gray-500 dark:text-gray-400">
+                {{ formatDate(offer.createdAt) }}
+              </span>
+              <div class="flex items-center space-x-2">
+                <button
+                  @click="viewOffer(offer)"
+                  class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-xs"
+                >
+                  View
+                </button>
+                <button
+                  v-if="offer.status === 'active'"
+                  @click="cancelOffer(offer)"
+                  class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Empty State -->
@@ -342,11 +454,7 @@
 
 <style scoped>
   .content-page {
-    @apply min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8;
-  }
-
-  .content-header {
-    @apply mb-6 sm:mb-8;
+    @apply h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8 overflow-y-auto;
   }
 
   .content-body {
