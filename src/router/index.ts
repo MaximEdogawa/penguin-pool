@@ -73,6 +73,16 @@ const routes = [
     },
   },
   {
+    path: '/wallet',
+    name: 'wallet',
+    component: () => import('@/pages/Wallet/WalletPage.vue'),
+    meta: {
+      title: 'Wallet',
+      requiresAuth: true,
+      featureFlag: 'wallet',
+    },
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: () => import('@/pages/Profile/ProfilePage.vue'),

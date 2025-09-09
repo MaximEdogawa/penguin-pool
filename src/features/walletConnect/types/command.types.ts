@@ -307,3 +307,79 @@ export type ParseCommandFunction = <TParams>(
   command: WalletConnectCommand,
   params: unknown
 ) => TParams
+
+// Additional types for better type safety
+export interface CoinSpend {
+  coin: {
+    parent_coin_info: string
+    puzzle_hash: string
+    amount: number
+  }
+  puzzle_reveal: string
+  solution: string
+}
+
+export interface SignedCoinSpend extends CoinSpend {
+  // Additional fields that might be added during signing
+  signature?: string
+}
+
+export interface TransactionRequest {
+  walletId: number
+  amount: number
+  fee: number
+  address: string
+  memos?: string[]
+  [key: string]: unknown
+}
+
+export interface TransactionResponse {
+  transactionId: string
+  transaction: Record<string, unknown>
+}
+
+export interface OfferRequest {
+  walletId: number
+  offer: string
+  fee?: number
+  [key: string]: unknown
+}
+
+export interface OfferResponse {
+  offer: string
+  tradeId: string
+}
+
+export interface TakeOfferRequest {
+  offer: string
+  fee?: number
+  [key: string]: unknown
+}
+
+export interface TakeOfferResponse {
+  tradeId: string
+  success: boolean
+}
+
+export interface CancelOfferRequest {
+  tradeId: string
+  fee?: number
+  [key: string]: unknown
+}
+
+export interface CancelOfferResponse {
+  success: boolean
+}
+
+export interface SignMessageRequest {
+  message: string
+  address?: string
+  walletId?: number
+  [key: string]: unknown
+}
+
+export interface SignMessageResponse {
+  signature: string
+  message: string
+  address: string
+}

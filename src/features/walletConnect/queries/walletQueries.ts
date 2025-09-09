@@ -1,7 +1,20 @@
 import { SageMethods } from '../constants/sage-methods'
 import { CHIA_CHAIN_ID } from '../constants/wallet-connect'
 import { sageWalletConnectService } from '../services/SageWalletConnectService'
-import type { AssetType } from '../types/command.types'
+import type {
+  AssetType,
+  CancelOfferRequest,
+  CancelOfferResponse,
+  CoinSpend,
+  OfferRequest,
+  OfferResponse,
+  SignMessageRequest,
+  SignMessageResponse,
+  TakeOfferRequest,
+  TakeOfferResponse,
+  TransactionRequest,
+  TransactionResponse,
+} from '../types/command.types'
 import type { AssetBalance, AssetCoins, SageWalletInfo } from '../types/walletConnect.types'
 
 interface WalletConnectClient {
@@ -274,4 +287,142 @@ export async function testRpcConnection(): Promise<{
   }
 
   return { success: true, data: !!result.data }
+}
+
+/**
+ * Sign coin spends
+ */
+export async function signCoinSpends(params: {
+  walletId: number
+  coinSpends: CoinSpend[]
+}): Promise<{
+  success: boolean
+  data?: CoinSpend[]
+  error?: string
+}> {
+  if (!sageWalletConnectService.isConnected()) {
+    return { success: false, error: 'Wallet not connected' }
+  }
+
+  const result = await makeWalletRequest<CoinSpend[]>(SageMethods.CHIP0002_SIGN_COIN_SPENDS, params)
+
+  if (!result.success) {
+    return { success: false, error: result.error }
+  }
+
+  return { success: true, data: result.data }
+}
+
+/**
+ * Sign message
+ */
+export async function signMessage(params: SignMessageRequest): Promise<{
+  success: boolean
+  data?: SignMessageResponse
+  error?: string
+}> {
+  if (!sageWalletConnectService.isConnected()) {
+    return { success: false, error: 'Wallet not connected' }
+  }
+
+  const result = await makeWalletRequest<SignMessageResponse>(
+    SageMethods.CHIP0002_SIGN_MESSAGE,
+    params
+  )
+
+  if (!result.success) {
+    return { success: false, error: result.error }
+  }
+
+  return { success: true, data: result.data }
+}
+
+/**
+ * Send transaction
+ */
+export async function sendTransaction(params: TransactionRequest): Promise<{
+  success: boolean
+  data?: TransactionResponse
+  error?: string
+}> {
+  if (!sageWalletConnectService.isConnected()) {
+    return { success: false, error: 'Wallet not connected' }
+  }
+
+  console.log('Sending transaction with params:', params)
+
+  // Use CHIA_SEND method instead of CHIP0002_SEND_TRANSACTION
+  // CHIA_SEND is more appropriate for simple transactions
+  const result = await makeWalletRequest<TransactionResponse>(SageMethods.CHIA_SEND, params)
+
+  console.log('Transaction result:', result)
+
+  if (!result.success) {
+    return { success: false, error: result.error }
+  }
+
+  return { success: true, data: result.data }
+}
+
+/**
+ * Create offer
+ */
+export async function createOffer(params: OfferRequest): Promise<{
+  success: boolean
+  data?: OfferResponse
+  error?: string
+}> {
+  if (!sageWalletConnectService.isConnected()) {
+    return { success: false, error: 'Wallet not connected' }
+  }
+
+  const result = await makeWalletRequest<OfferResponse>(SageMethods.CHIA_CREATE_OFFER, params)
+
+  if (!result.success) {
+    return { success: false, error: result.error }
+  }
+
+  return { success: true, data: result.data }
+}
+
+/**
+ * Take offer
+ */
+export async function takeOffer(params: TakeOfferRequest): Promise<{
+  success: boolean
+  data?: TakeOfferResponse
+  error?: string
+}> {
+  if (!sageWalletConnectService.isConnected()) {
+    return { success: false, error: 'Wallet not connected' }
+  }
+
+  const result = await makeWalletRequest<TakeOfferResponse>(SageMethods.CHIA_TAKE_OFFER, params)
+
+  if (!result.success) {
+    return { success: false, error: result.error }
+  }
+
+  return { success: true, data: result.data }
+}
+
+/**
+ * Cancel offer
+ */
+export async function cancelOffer(params: CancelOfferRequest): Promise<{
+  success: boolean
+  data?: CancelOfferResponse
+  error?: string
+}> {
+  if (!sageWalletConnectService.isConnected()) {
+    return { success: false, error: 'Wallet not connected' }
+  }
+
+  const result = await makeWalletRequest<CancelOfferResponse>(SageMethods.CHIA_CANCEL_OFFER, params)
+
+  if (!result.success) {
+    return { success: false, error: result.error }
+  }
+
+  return { success: true, data: result.data }
 }

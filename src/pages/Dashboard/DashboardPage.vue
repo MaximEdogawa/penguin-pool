@@ -180,12 +180,15 @@
 
           <button
             v-else
+            @click="navigateToWallet"
             class="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border-2 border-dashed border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-primary-900/20 hover:border-primary-500 dark:hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors duration-200"
           >
-            <i class="pi pi-plus text-base sm:text-lg mb-2 text-gray-600 dark:text-gray-400"></i>
+            <i
+              class="pi pi-send text-base sm:text-lg mb-2 text-primary-600 dark:text-primary-400"
+            ></i>
             <span
-              class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center"
-              >Create Contract</span
+              class="text-xs sm:text-sm font-medium text-primary-700 dark:text-primary-300 text-center"
+              >Send Transaction</span
             >
           </button>
 
@@ -282,6 +285,11 @@
     if (!address) return ''
     if (address.length <= 10) return address
     return `${address.slice(0, 6)}...${address.slice(-4)}`
+  }
+
+  // Navigation functions
+  const navigateToWallet = () => {
+    router.push('/wallet')
   }
 
   // Copy address to clipboard

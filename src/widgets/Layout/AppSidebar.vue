@@ -229,6 +229,14 @@
         title: 'Piggy Bank',
         featureFlag: 'piggyBank',
       },
+      {
+        label: !props.isCollapsed && !isSmallScreen.value ? 'Wallet' : '',
+        icon: 'pi pi-wallet',
+        command: () => navigateTo('/wallet'),
+        class: route.path === '/wallet' ? 'nav-link-active' : '',
+        title: 'Wallet',
+        featureFlag: 'wallet',
+      },
     ]
 
     // Filter items based on feature flags

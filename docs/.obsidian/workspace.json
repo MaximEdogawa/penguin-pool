@@ -168,6 +168,7 @@
   },
   "active": "762a427def224add",
   "lastOpenFiles": [
+    "implementation/WALLET_CONNECT_METHODS.md",
     "PWA_SETUP.md",
     "dependencies/LAZY_LOADING_OPTIMIZATION.md",
     "dependencies/BUNDLE_ANALYSIS.md",
@@ -200,7 +201,6 @@
     "implementation/TICKET-003/README.md",
     "implementation/TICKET-003",
     "implementation/TICKET-004",
-    "implementation/TICKET-002/WALLET_CONNECT_UI/WALLET_CONNECT_UI_UPDATE.md",
     "implementation/TICKET-002/WALLET_CONNECT_UI",
     "implementation/TICKET-002/SIDEBAR_COLLAPSE",
     "implementation/TICKET-002/HEADER_SIDEBAR"

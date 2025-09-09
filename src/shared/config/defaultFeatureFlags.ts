@@ -24,6 +24,7 @@ export interface FeatureFlagsConfig {
     loans: FeatureFlag
     optionContracts: FeatureFlag
     piggyBank: FeatureFlag
+    wallet: FeatureFlag
     customThemes: FeatureFlag
     loginOptions: FeatureFlag
     otherWallets: FeatureFlag
@@ -89,6 +90,7 @@ export const defaultFeatureFlags: FeatureFlagsConfig = {
     loans: createFeatureFlag('Enable/disable the Loans feature', 'app'),
     optionContracts: createFeatureFlag('Enable/disable the Option Contracts feature', 'app'),
     piggyBank: createFeatureFlag('Enable/disable the Piggy Bank feature', 'app'),
+    wallet: createFeatureFlag('Enable/disable the Wallet feature', 'app'),
     customThemes: createFeatureFlag('Enable/disable custom theme functionality', 'app', true, {
       test: false,
     }),
