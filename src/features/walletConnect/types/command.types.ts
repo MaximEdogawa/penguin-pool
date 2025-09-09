@@ -64,7 +64,14 @@ export interface Chip0002SendTransactionParams {
 
 export interface ChiaCreateOfferParams {
   walletId: number
-  offer: string
+  offerAssets: Array<{
+    assetId: string
+    amount: number
+  }>
+  requestAssets: Array<{
+    assetId: string
+    amount: number
+  }>
   fee?: number
 }
 
@@ -208,6 +215,7 @@ export interface Chip0002SendTransactionResponse {
 export interface ChiaCreateOfferResponse {
   offer: string
   tradeId: string
+  id: string
 }
 
 export interface ChiaTakeOfferResponse {
@@ -340,7 +348,14 @@ export interface TransactionResponse {
 
 export interface OfferRequest {
   walletId: number
-  offer: string
+  offerAssets: Array<{
+    assetId: string
+    amount: number
+  }>
+  requestAssets: Array<{
+    assetId: string
+    amount: number
+  }>
   fee?: number
   [key: string]: unknown
 }
@@ -348,6 +363,7 @@ export interface OfferRequest {
 export interface OfferResponse {
   offer: string
   tradeId: string
+  id: string
 }
 
 export interface TakeOfferRequest {
