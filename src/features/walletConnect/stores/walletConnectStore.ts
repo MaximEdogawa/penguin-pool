@@ -52,11 +52,15 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   // Actions
   const initialize = async (): Promise<void> => {
     try {
+      // Set up event listeners immediately before any initialization
+      setupEventListeners()
+
       if (!sageWalletConnectService.isInitialized()) {
         await sageWalletConnectService.initialize()
       } else {
         console.log('WalletConnect service already initialized')
       }
+
       await restoreSession()
     } catch (err) {
       console.error('Failed to initialize Wallet Connect:', err)
@@ -327,7 +331,8 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   const handleSessionRequest = (event: WalletConnectEvent): void => {
     console.log('Session request received:', event)
     // Handle session request - this could be a method call from the wallet
-    // For now, just log it to prevent the "no listeners" error
+    // The request is handled by the CommandHandler in the service
+    // This listener prevents the "no listeners" error
   }
 
   const handleSessionRestored = async (): Promise<void> => {

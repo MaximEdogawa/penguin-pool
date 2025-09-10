@@ -149,7 +149,7 @@
               <span class="value"
                 >{{
                   walletInfo.balance
-                    ? formatBalance(walletInfo.balance.confirmed_wallet_balance)
+                    ? formatBalance(parseInt(walletInfo.balance.confirmed))
                     : '0.000000'
                 }}
                 XCH</span

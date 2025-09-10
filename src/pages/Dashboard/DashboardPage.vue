@@ -61,19 +61,16 @@
               <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>Spendable:</span>
                 <span
-                  >{{ formatBalance(walletStore.walletInfo.balance.spendable_balance) }}
+                  >{{ formatBalance(parseInt(walletStore.walletInfo.balance.spendable)) }}
                   {{ ticker }}</span
                 >
               </div>
               <div
-                v-if="walletStore.walletInfo.balance.unconfirmed_wallet_balance > 0"
+                v-if="false"
                 class="flex justify-between text-xs text-gray-500 dark:text-gray-400"
               >
                 <span>Unconfirmed:</span>
-                <span
-                  >{{ formatBalance(walletStore.walletInfo.balance.unconfirmed_wallet_balance) }}
-                  {{ ticker }}</span
-                >
+                <span>{{ formatBalance(0) }} {{ ticker }}</span>
               </div>
             </div>
 
@@ -242,7 +239,7 @@
 
 <script setup lang="ts">
   import { useUserStore } from '@/entities/user/store/userStore'
-  import { sageWalletConnectService } from '@/features/walletConnect/services/SageWalletConnectService'
+  import { getAssetBalance } from '@/features/walletConnect/queries/walletQueries'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
@@ -257,7 +254,7 @@
   // Computed properties for wallet balance
   const userBalance = computed(() => {
     if (walletStore.walletInfo?.balance) {
-      return formatBalance(walletStore.walletInfo.balance.confirmed_wallet_balance)
+      return formatBalance(parseInt(walletStore.walletInfo.balance.confirmed))
     }
     return '0.00'
   })
@@ -336,13 +333,10 @@
     }
   }
 
-  // Flag to prevent multiple simultaneous balance refresh calls
   const isRefreshingBalance = ref(false)
 
-  // Refresh wallet balance with caching
   const refreshBalance = async (force = false) => {
     if (isWalletConnected.value && !isRefreshingBalance.value) {
-      // Check if we should skip refresh based on cache
       if (!force && lastBalanceRefresh.value) {
         const timeSinceLastRefresh = Date.now() - lastBalanceRefresh.value.getTime()
 
@@ -354,12 +348,10 @@
 
       isRefreshingBalance.value = true
       try {
-        if (walletStore.isConnected) {
-          const freshWalletInfo = await sageWalletConnectService.getWalletInfo()
-          if (freshWalletInfo) {
-            walletStore.walletInfo = freshWalletInfo
-            lastBalanceRefresh.value = new Date()
-          }
+        const result = await getAssetBalance()
+        if (result.success && result.data && walletStore.walletInfo) {
+          walletStore.walletInfo.balance = result.data
+          lastBalanceRefresh.value = new Date()
         }
       } catch (error) {
         console.error('Failed to refresh wallet balance:', error)

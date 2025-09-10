@@ -3,7 +3,12 @@ import { SignClient } from '@walletconnect/sign-client'
 import type { PairingTypes, SessionTypes } from '@walletconnect/types'
 import { Web3Modal } from '@web3modal/standalone'
 import { CHIA_CHAIN_ID, CHIA_METADATA, REQUIRED_NAMESPACES } from '../constants/wallet-connect'
-import { getWalletInfo, makeWalletRequest, testRpcConnection } from '../queries/walletQueries'
+import {
+  getAssetBalance,
+  getWalletInfo,
+  makeWalletRequest,
+  testRpcConnection,
+} from '../queries/walletQueries'
 import type {
   ConnectionResult,
   DisconnectResult,
@@ -25,6 +30,7 @@ export class SageWalletConnectService {
   private pairings: PairingTypes.Struct[] = []
   private session: SessionTypes.Struct | null = null
   private fingerprint: string | null = null
+  private chainId: string | null = null
   private healthCheckInterval: NodeJS.Timeout | null = null
   private static isInitializing = false
 
@@ -117,7 +123,27 @@ export class SageWalletConnectService {
 
     const globalClient = (window as unknown as Record<string, unknown>)
       .__WALLETCONNECT_SIGN_CLIENT__
-    return globalClient as InstanceType<typeof SignClient> | null
+
+    if (!globalClient) return null
+
+    // Validate that the client is still functional
+    try {
+      const client = globalClient as InstanceType<typeof SignClient>
+
+      // Check if client has the required methods
+      if (!client.session || !client.pairing || !client.connect || !client.disconnect) {
+        console.warn('Existing client is missing required methods, will reinitialize')
+        return null
+      }
+
+      // Check if client has any active sessions
+      console.log('Found existing client with', client.session.length, 'sessions')
+
+      return client
+    } catch (error) {
+      console.warn('Existing client is corrupted, will reinitialize:', error)
+      return null
+    }
   }
 
   /**
@@ -247,8 +273,22 @@ export class SageWalletConnectService {
     if (existingClient) {
       console.log('Using existing WalletConnect client from global scope')
       this.client = existingClient
-      await this.completeInitialization()
-      return
+
+      // Set up event listeners first
+      this.setupEventListeners()
+
+      // Verify the client is properly initialized
+      if (!this.isProperlyInitialized()) {
+        console.warn('Existing client is not properly initialized, will reinitialize')
+        this.client = null
+        // Fall through to normal initialization
+      } else {
+        // Then check for persisted state and restore session
+        await this.checkPersistedState()
+
+        console.log('Existing client restored successfully')
+        return
+      }
     }
 
     // Prevent concurrent initialization
@@ -337,7 +377,8 @@ export class SageWalletConnectService {
       // Reset service state
       this.client = null
       this.session = null
-      this.fingerprint = null
+      this.setFingerprint(null)
+      this.setChainId(null)
       this.pairings = []
       this.eventListeners.clear()
 
@@ -793,6 +834,27 @@ export class SageWalletConnectService {
   }
 
   /**
+   * Check if client is properly initialized with event listeners
+   */
+  isProperlyInitialized(): boolean {
+    if (!this.client) return false
+
+    try {
+      // Check if client has the required properties and is functional
+      return !!(
+        this.client.session &&
+        this.client.pairing &&
+        typeof this.client.on === 'function' &&
+        typeof this.client.connect === 'function' &&
+        typeof this.client.disconnect === 'function'
+      )
+    } catch (error) {
+      console.warn('Error checking client initialization:', error)
+      return false
+    }
+  }
+
+  /**
    * Check if WalletConnect is properly configured
    */
   isConfigured(): boolean {
@@ -822,16 +884,115 @@ export class SageWalletConnectService {
    * Get current network info
    */
   getNetworkInfo(): { chainId: string; isTestnet: boolean } {
-    const chainId = CHIA_CHAIN_ID
+    const chainId = this.chainId || CHIA_CHAIN_ID
     const isTestnet = chainId.includes('testnet')
     return { chainId, isTestnet }
   }
 
   /**
-   * Get wallet information (for backward compatibility)
+   * Get current fingerprint
    */
+  getFingerprint(): string | null {
+    return this.fingerprint
+  }
+
+  /**
+   * Set fingerprint and emit update event if changed
+   */
+  setFingerprint(fingerprint: string | null): void {
+    const previousFingerprint = this.fingerprint
+    this.fingerprint = fingerprint
+
+    if (previousFingerprint !== fingerprint) {
+      console.log('Fingerprint updated:', { previous: previousFingerprint, current: fingerprint })
+      this.emitEvent('fingerprint_updated', { previous: previousFingerprint, current: fingerprint })
+    }
+  }
+
+  /**
+   * Get current chain ID
+   */
+  getChainId(): string | null {
+    return this.chainId
+  }
+
+  /**
+   * Set chain ID and emit update event if changed
+   */
+  setChainId(chainId: string | null): void {
+    const previousChainId = this.chainId
+    this.chainId = chainId
+
+    if (previousChainId !== chainId) {
+      console.log('Chain ID updated:', { previous: previousChainId, current: chainId })
+      this.emitEvent('chainid_updated', { previous: previousChainId, current: chainId })
+    }
+  }
+
+  /**
+   * Get session, fingerprint, chainId, and client together for easy access
+   * Throws an error if any required values are missing
+   */
+  getConnectionInfo(): {
+    session: WalletConnectSession
+    fingerprint: string
+    chainId: string
+    client: InstanceType<typeof SignClient>
+  } {
+    if (!this.isInitialized()) {
+      throw new Error('WalletConnect is not initialized')
+    }
+
+    if (!this.isConnected()) {
+      throw new Error('Wallet not connected')
+    }
+
+    const session = this.getSession()
+    if (!session) {
+      throw new Error('No active session')
+    }
+
+    const fingerprint = this.getFingerprint()
+    if (!fingerprint) {
+      throw new Error('Fingerprint is not loaded')
+    }
+
+    const chainId = this.getChainId()
+    if (!chainId) {
+      throw new Error('Chain ID is not loaded')
+    }
+
+    const client = this.getClient()
+    if (!client) {
+      throw new Error('WalletConnect client not available')
+    }
+
+    return {
+      session,
+      fingerprint,
+      chainId,
+      client,
+    }
+  }
+
+  /**
+   * Get the WalletConnect client for making requests
+   */
+  getClient(): InstanceType<typeof SignClient> | null {
+    return this.client
+  }
+
   async getWalletInfo() {
     const result = await getWalletInfo()
+    if (!result.success) {
+      console.error('Service getWalletInfo failed:', result.error)
+      throw new Error(result.error)
+    }
+    return result.data
+  }
+
+  async getAssetBalance() {
+    const result = await getAssetBalance()
     if (!result.success) {
       console.error('Service getWalletInfo failed:', result.error)
       throw new Error(result.error)
@@ -1063,6 +1224,49 @@ export class SageWalletConnectService {
     return result.data || false
   }
 
+  /**
+   * Update fingerprint and chainId from session data
+   */
+  private updateFingerprintAndChainIdFromSession(session: SessionTypes.Struct) {
+    const allNamespaceAccounts =
+      session.namespaces && typeof session.namespaces === 'object'
+        ? Object.values(session.namespaces)
+            .map(namespace => namespace.accounts)
+            .flat()
+        : []
+
+    let extractedFingerprint: string | null = null
+    let extractedChainId: string | null = null
+
+    if (allNamespaceAccounts.length > 0) {
+      const firstAccount = allNamespaceAccounts[0]
+      const parts = firstAccount.split(':')
+
+      if (parts.length >= 3) {
+        extractedChainId = `${parts[0]}:${parts[1]}`
+        extractedFingerprint = parts[2]
+      } else if (parts.length >= 2) {
+        extractedChainId = `${parts[0]}:${parts[1]}`
+        extractedFingerprint = parts[1]
+      } else {
+        extractedFingerprint = parts[0]
+        extractedChainId = CHIA_CHAIN_ID
+      }
+    } else {
+      extractedFingerprint = session.topic.substring(0, 8)
+      extractedChainId = CHIA_CHAIN_ID
+    }
+
+    // Ensure fingerprint is set
+    if (!extractedFingerprint) {
+      extractedFingerprint = session.topic.substring(0, 8)
+    }
+
+    // Update service state using setters
+    this.setFingerprint(extractedFingerprint)
+    this.setChainId(extractedChainId)
+  }
+
   private onSessionConnected(session: SessionTypes.Struct) {
     const allNamespaceAccounts =
       session.namespaces && typeof session.namespaces === 'object'
@@ -1072,26 +1276,8 @@ export class SageWalletConnectService {
         : []
     this.session = session
 
-    if (allNamespaceAccounts.length > 0) {
-      const firstAccount = allNamespaceAccounts[0]
-
-      const parts = firstAccount.split(':')
-
-      if (parts.length >= 3) {
-        this.fingerprint = parts[2]
-      } else if (parts.length >= 2) {
-        this.fingerprint = parts[1]
-      } else {
-        this.fingerprint = parts[0]
-      }
-    } else {
-      this.fingerprint = session.topic.substring(0, 8) // Use first 8 chars of topic as fallback
-    }
-
-    // Ensure fingerprint is set
-    if (!this.fingerprint) {
-      this.fingerprint = session.topic.substring(0, 8)
-    }
+    // Update fingerprint and chainId from session
+    this.updateFingerprintAndChainIdFromSession(session)
 
     // Store session data in PWA storage
     if (typeof window !== 'undefined') {
@@ -1099,8 +1285,8 @@ export class SageWalletConnectService {
         const sessionData = {
           topic: session.topic,
           fingerprint: this.fingerprint,
+          chainId: this.chainId,
           accounts: allNamespaceAccounts,
-          chainId: CHIA_CHAIN_ID,
           expiry: session.expiry,
           timestamp: Date.now(),
         }
@@ -1114,8 +1300,8 @@ export class SageWalletConnectService {
     console.log('Session connected:', {
       topic: session.topic,
       fingerprint: this.fingerprint,
+      chainId: this.chainId,
       accounts: allNamespaceAccounts,
-      chainId: CHIA_CHAIN_ID,
     })
 
     // Start connection monitoring for this session
@@ -1124,7 +1310,8 @@ export class SageWalletConnectService {
 
   private reset() {
     this.session = null
-    this.fingerprint = null
+    this.setFingerprint(null)
+    this.setChainId(null)
 
     // Clear session data from PWA storage
     if (typeof window !== 'undefined') {
@@ -1173,8 +1360,9 @@ export class SageWalletConnectService {
           if (sessionData.expiry && sessionData.expiry > Date.now() / 1000) {
             console.log('Restoring session from PWA storage:', sessionData)
 
-            // Restore fingerprint and other session data
-            this.fingerprint = sessionData.fingerprint
+            // Restore fingerprint and chainId from stored session data
+            this.setFingerprint(sessionData.fingerprint)
+            this.setChainId(sessionData.chainId)
 
             // Create a minimal session object for compatibility
             const restoredSession = {
@@ -1232,11 +1420,18 @@ export class SageWalletConnectService {
   private setupEventListeners() {
     if (!this.client) return
 
+    // Remove existing listeners first to prevent duplicates
+    // Note: WalletConnect doesn't have removeAllListeners, so we'll just set up new ones
+    // The client should handle duplicate listeners gracefully
+
     this.client.on('session_update', ({ topic, params }) => {
       const { namespaces } = params
       const session = this.client!.session.get(topic)
       const updatedSession = { ...session, namespaces }
-      this.onSessionConnected(updatedSession)
+
+      // Update fingerprint and chainId if they changed
+      this.updateFingerprintAndChainIdFromSession(updatedSession)
+
       this.emitEvent('session_update', { topic, params })
     })
 

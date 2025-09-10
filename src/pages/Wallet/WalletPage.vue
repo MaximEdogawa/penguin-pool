@@ -79,7 +79,7 @@
   // Computed properties
   const userBalance = computed(() => {
     if (walletStore.walletInfo?.balance) {
-      return formatBalance(walletStore.walletInfo.balance.confirmed_wallet_balance)
+      return formatBalance(parseInt(walletStore.walletInfo.balance.confirmed))
     }
     return '0.000000'
   })
