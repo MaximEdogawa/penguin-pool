@@ -421,7 +421,29 @@
       const fetchedWalletInfo = await walletService.getWalletInfo()
       if (!fetchedWalletInfo) throw new Error('Failed to fetch wallet information')
 
+      // Update store state to reflect successful connection
       walletStore.walletInfo = fetchedWalletInfo
+      walletStore.isConnected = true
+      walletStore.isConnecting = false
+      walletStore.error = null
+
+      // Get session info and update store
+      const session = walletService.getSession()
+      if (session) {
+        walletStore.session = session
+        // Extract accounts from session namespaces
+        const accounts: string[] = []
+        if (session.namespaces) {
+          Object.values(session.namespaces).forEach((namespace: unknown) => {
+            if (namespace.accounts && Array.isArray(namespace.accounts)) {
+              accounts.push(...namespace.accounts)
+            }
+          })
+        }
+        walletStore.accounts = accounts
+        walletStore.chainId = walletService.getNetworkInfo().chainId
+      }
+
       updateProgress(80, 'Finalizing connection...')
       await sleep(300)
       updateProgress(100, 'Connection complete!')
@@ -459,11 +481,9 @@
       })
 
       // Reinitialize the wallet service
-      if (walletService.isInitialized()) {
-        await walletService.forceReset()
+      if (!walletService.isInitialized()) {
+        await walletService.initialize()
       }
-
-      await walletService.initialize()
 
       // Start fresh connection
       const connection = await establishConnection()
@@ -662,40 +682,36 @@
 
   onMounted(async () => {
     document.addEventListener('keydown', handleKeydown)
-    await handleRetryConnection()
-
-    // Listen for pairing expiry events
-    const handlePairingExpired = (event: Event) => {
-      const customEvent = event as CustomEvent
-      console.log('Pairing expired:', customEvent.detail)
-      handleError(
-        new Error('Connection code expired. Please refresh to get a new code.'),
-        ERROR_TYPES.PAIRING_EXPIRED,
-        'Pairing expiry'
-      )
-    }
-
-    const handleRefreshPairing = async (event: Event) => {
-      const customEvent = event as CustomEvent
-      console.log('Refreshing pairing...', customEvent.detail)
-      await refreshConnection()
-    }
-
     window.addEventListener('wallet-connect-pairing-expired', handlePairingExpired as EventListener)
     window.addEventListener('ios-refresh-pairing', handleRefreshPairing as EventListener)
-
-    onUnmounted(() => {
-      window.removeEventListener(
-        'wallet-connect-pairing-expired',
-        handlePairingExpired as EventListener
-      )
-      window.removeEventListener('ios-refresh-pairing', handleRefreshPairing as EventListener)
-    })
+    await restartApprovalProcess()
   })
 
   onUnmounted(() => {
     document.removeEventListener('keydown', handleKeydown)
+    window.removeEventListener(
+      'wallet-connect-pairing-expired',
+      handlePairingExpired as EventListener
+    )
+    window.removeEventListener('ios-refresh-pairing', handleRefreshPairing as EventListener)
   })
+
+  // Listen for pairing expiry events
+  const handlePairingExpired = (event: Event) => {
+    const customEvent = event as CustomEvent
+    console.log('Pairing expired:', customEvent.detail)
+    handleError(
+      new Error('Connection code expired. Please refresh to get a new code.'),
+      ERROR_TYPES.PAIRING_EXPIRED,
+      'Pairing expiry'
+    )
+  }
+
+  const handleRefreshPairing = async (event: Event) => {
+    const customEvent = event as CustomEvent
+    console.log('Refreshing pairing...', customEvent.detail)
+    await refreshConnection()
+  }
 </script>
 
 <style scoped>

@@ -317,7 +317,20 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     }
   }
 
-  const handleSessionApprove = (): void => {}
+  const handleSessionApprove = (): void => {
+    console.log('Session approved, updating store state')
+    isConnected.value = true
+    isConnecting.value = false
+    error.value = null
+
+    // Get the current session from the service
+    const currentSession = walletConnectService.getSession()
+    if (currentSession) {
+      session.value = currentSession
+      accounts.value = extractAccountsFromSession(currentSession)
+      chainId.value = walletConnectService.getNetworkInfo().chainId
+    }
+  }
 
   const handleSessionReject = (event: WalletConnectEvent): void => {
     console.log('Session rejected:', event)

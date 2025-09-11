@@ -116,6 +116,7 @@
 
     <!-- Wallet Connect Modal -->
     <WalletConnectModal
+      v-if="showWalletModal"
       :is-open="showWalletModal"
       @close="closeWalletModal"
       @connected="handleWalletConnected"
@@ -128,14 +129,10 @@
   import PenguinLogo from '@/components/PenguinLogo.vue'
   import PWAInstallPrompt from '@/components/PWAInstallPrompt.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
+  import WalletConnectModal from '@/features/walletConnect/components/WalletConnectModal.vue'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
-  import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
-
-  // Lazy load heavy components
-  const WalletConnectModal = defineAsyncComponent(
-    () => import('@/features/walletConnect/components/WalletConnectModal.vue')
-  )
 
   const router = useRouter()
   const userStore = useUserStore()
