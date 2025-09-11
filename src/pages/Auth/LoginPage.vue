@@ -1,7 +1,6 @@
 <template>
   <!-- Login Screen with Loading State -->
   <PWAInstallPrompt />
-
   <div class="login-page" :style="backgroundStyle">
     <div class="login-container">
       <!-- Logo and Title -->
@@ -24,7 +23,7 @@
         <div class="wallet-options">
           <!-- Primary Wallet Option - Sage -->
           <button
-            @click="connectWalletConnect"
+            @click="showWalletModal = true"
             class="wallet-option-primary group"
             :disabled="isConnecting"
           >
@@ -49,7 +48,7 @@
             <!-- Other Wallets -->
             <FeatureFlag category="app" feature="otherWallets">
               <button
-                @click="connectOtherWallet"
+                @click="showWalletModal.value = true"
                 class="wallet-option-secondary group"
                 :disabled="isConnecting"
               >
@@ -124,15 +123,6 @@
       "url('https://fqjltiegiezfetthbags.supabase.co/storage/v1/object/public/block.images/blocks/signin/signin-glass.jpg')",
   }))
 
-  // Methods
-  const connectWalletConnect = async () => {
-    showWalletModal.value = true
-  }
-
-  const connectOtherWallet = async () => {
-    showWalletModal.value = true
-  }
-
   const handleWalletConnected = async (walletInfo: unknown) => {
     try {
       if (!walletInfo || typeof walletInfo !== 'object') {
@@ -168,23 +158,9 @@
   onMounted(async () => {
     try {
       if (walletConnectStore.isConnected) {
-        // Wait a moment for wallet info to be loaded during session restore
         await new Promise(resolve => setTimeout(resolve, 500))
-
         const walletInfo = walletConnectStore.walletInfo
-        if (walletInfo && walletInfo.address) {
-          // Use fingerprint if available, otherwise fall back to address
-          if (walletInfo.fingerprint) {
-            console.log('Auto-login with wallet fingerprint:', walletInfo.fingerprint)
-            await userStore.login(walletInfo.fingerprint, 'wallet-user')
-          } else {
-            console.log('Auto-login with wallet address:', walletInfo.address)
-            await userStore.login(walletInfo.address, 'wallet-user')
-          }
-          router.push('/dashboard')
-        } else {
-          console.log('Wallet connected but no wallet info available yet')
-        }
+        await handleWalletConnected(walletInfo)
       }
     } catch (error) {
       console.error('Failed to initialize Wallet Connect:', error)
