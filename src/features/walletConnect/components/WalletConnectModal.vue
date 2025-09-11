@@ -426,23 +426,7 @@
       walletStore.isConnected = true
       walletStore.isConnecting = false
       walletStore.error = null
-
-      // Get session info and update store
-      const session = walletService.getSession()
-      if (session) {
-        walletStore.session = session
-        // Extract accounts from session namespaces
-        const accounts: string[] = []
-        if (session.namespaces) {
-          Object.values(session.namespaces).forEach((namespace: unknown) => {
-            if (namespace.accounts && Array.isArray(namespace.accounts)) {
-              accounts.push(...namespace.accounts)
-            }
-          })
-        }
-        walletStore.accounts = accounts
-        walletStore.chainId = walletService.getNetworkInfo().chainId
-      }
+      walletStore.chainId = walletService.getNetworkInfo().chainId
 
       updateProgress(80, 'Finalizing connection...')
       await sleep(300)
