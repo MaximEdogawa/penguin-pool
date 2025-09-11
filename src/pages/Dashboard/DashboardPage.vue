@@ -262,7 +262,6 @@
   const isWalletConnected = computed(() => walletStore.isConnected)
   const isBalanceLoading = computed(() => walletStore.isConnecting)
 
-  // Get network info and determine ticker
   const networkInfo = computed(() => walletStore.getNetworkInfo())
   const ticker = computed(() => {
     if (networkInfo.value?.isTestnet) {
@@ -271,34 +270,26 @@
     return 'XCH'
   })
 
-  // Format balance helper
   const formatBalance = (mojos: number): string => {
     if (mojos === 0) return '0.000000'
     return (mojos / 1000000000000).toFixed(6)
   }
 
-  // Format address helper - show first 6 and last 4 characters
   const formatAddress = (address: string): string => {
     if (!address) return ''
     if (address.length <= 10) return address
     return `${address.slice(0, 6)}...${address.slice(-4)}`
   }
 
-  // Navigation functions
   const navigateToWallet = () => {
     router.push('/wallet')
   }
 
-  // Copy address to clipboard
   const copyAddress = async () => {
     if (!walletStore.walletInfo?.address) return
 
     try {
       await navigator.clipboard.writeText(walletStore.walletInfo.address)
-      // Visual feedback - you could enhance this with a proper toast notification
-      console.log('Address copied to clipboard')
-
-      // Simple visual feedback by temporarily changing the copy button
       const copyButton = document.querySelector('[title="Copy address"]') as HTMLElement
       if (copyButton) {
         const originalIcon = copyButton.innerHTML
@@ -311,30 +302,10 @@
       }
     } catch (error) {
       console.error('Failed to copy address:', error)
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea')
-      textArea.value = walletStore.walletInfo.address
-      document.body.appendChild(textArea)
-      textArea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textArea)
-
-      // Visual feedback for fallback
-      const copyButton = document.querySelector('[title="Copy address"]') as HTMLElement
-      if (copyButton) {
-        const originalIcon = copyButton.innerHTML
-        copyButton.innerHTML = '<i class="pi pi-check text-xs"></i>'
-        copyButton.style.color = 'rgb(34, 197, 94)' // green-500
-        setTimeout(() => {
-          copyButton.innerHTML = originalIcon
-          copyButton.style.color = ''
-        }, 1500)
-      }
     }
   }
 
   const isRefreshingBalance = ref(false)
-
   const refreshBalance = async (force = false) => {
     if (isWalletConnected.value && !isRefreshingBalance.value) {
       if (!force && lastBalanceRefresh.value) {
@@ -361,13 +332,10 @@
     }
   }
 
-  // Connect wallet
   const connectWallet = () => {
-    // Redirect to wallet connect page
     window.location.href = '/wallet-connect'
   }
 
-  // Start automatic refresh
   const startAutoRefresh = () => {
     if (refreshInterval.value) {
       clearInterval(refreshInterval.value)
@@ -384,7 +352,6 @@
     }
   }
 
-  // Stop automatic refresh
   const stopAutoRefresh = () => {
     if (refreshInterval.value) {
       clearInterval(refreshInterval.value)
@@ -392,7 +359,6 @@
     }
   }
 
-  // Toggle automatic refresh
   const toggleAutoRefresh = () => {
     autoRefreshEnabled.value = !autoRefreshEnabled.value
 
@@ -403,7 +369,6 @@
     }
   }
 
-  // Track if balance has been loaded to prevent unnecessary refreshes
   const balanceLoaded = ref(false)
   const lastBalanceRefresh = ref<Date | null>(null)
   const autoRefreshEnabled = ref(false)
@@ -413,50 +378,28 @@
     try {
       userStore.value = useUserStore()
 
-      // Wait for wallet connection state to be properly initialized
       if (isWalletConnected.value) {
         balanceLoaded.value = true
         lastBalanceRefresh.value = new Date()
         startAutoRefresh()
-      } else {
-        // If wallet is not connected, wait a bit for state to be restored
-        const checkWalletConnection = () => {
-          if (isWalletConnected.value) {
-            balanceLoaded.value = true
-            lastBalanceRefresh.value = new Date()
-            startAutoRefresh()
-          } else {
-            // If still not connected after waiting, redirect to auth
-            console.log('Wallet not connected, redirecting to auth...')
-            router.push('/auth')
-          }
-        }
-
-        // Check immediately and also after a short delay
-        checkWalletConnection()
-        setTimeout(checkWalletConnection, 1000)
       }
     } catch (error) {
       console.error('Failed to initialize dashboard:', error)
     }
   })
 
-  // Watch for wallet connection changes - only refresh if balance hasn't been loaded
   watch(isWalletConnected, async connected => {
     if (connected && !balanceLoaded.value) {
       startAutoRefresh()
       balanceLoaded.value = true
       lastBalanceRefresh.value = new Date()
     } else if (!connected) {
-      // Reset balance loaded flag when wallet disconnects
       balanceLoaded.value = false
       lastBalanceRefresh.value = null
       stopAutoRefresh()
-      // Router guard will handle redirect to login
     }
   })
 
-  // Cleanup on unmount
   onUnmounted(() => {
     stopAutoRefresh()
   })

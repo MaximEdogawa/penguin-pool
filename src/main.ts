@@ -66,8 +66,6 @@ watch(
     if (!connected && router.currentRoute.value.path !== '/auth') {
       console.log('Wallet disconnected, redirecting to auth...')
       await router.push('/auth')
-    } else {
-      console.log('Wallet connected, redirecting to dashboard...')
     }
   }
 )

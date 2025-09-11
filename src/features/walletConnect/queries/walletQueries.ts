@@ -1,5 +1,5 @@
 import { SageMethods } from '../constants/sage-methods'
-import { sageWalletConnectService } from '../services/SageWalletConnectService'
+import { useWalletConnectService } from '../services/WalletConnectService'
 import type {
   AssetType,
   CancelOfferRequest,
@@ -14,14 +14,14 @@ import type {
   TransactionRequest,
   TransactionResponse,
 } from '../types/command.types'
-import type { AssetBalance, AssetCoins, SageWalletInfo } from '../types/walletConnect.types'
+import type { AssetBalance, AssetCoins, WalletInfo } from '../types/walletConnect.types'
 
 export async function makeWalletRequest<T>(
   method: string,
   data: Record<string, unknown>
 ): Promise<{ success: boolean; data?: T; error?: string }> {
   try {
-    const { session, fingerprint, chainId, client } = sageWalletConnectService.getConnectionInfo()
+    const { session, fingerprint, chainId, client } = useWalletConnectService.getConnectionInfo()
     const result = (await client.request({
       topic: session.topic,
       chainId: chainId,
@@ -45,11 +45,11 @@ export async function makeWalletRequest<T>(
 
 export async function getWalletInfo(): Promise<{
   success: boolean
-  data?: SageWalletInfo
+  data?: WalletInfo
   error?: string
 }> {
   try {
-    const { fingerprint } = sageWalletConnectService.getConnectionInfo()
+    const { fingerprint } = useWalletConnectService.getConnectionInfo()
 
     const [addressResult, balanceResult] = await Promise.all([
       getWalletAddress(),
@@ -63,7 +63,7 @@ export async function getWalletInfo(): Promise<{
       return { success: false, error: balanceResult.error }
     }
 
-    const walletInfo: SageWalletInfo = {
+    const walletInfo: WalletInfo = {
       address: addressResult.data!.address,
       balance: balanceResult.data ?? null,
       fingerprint: parseInt(fingerprint),

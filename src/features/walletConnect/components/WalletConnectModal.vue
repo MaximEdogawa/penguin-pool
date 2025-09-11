@@ -189,11 +189,10 @@
 <script setup lang="ts">
   import { sessionManager } from '@/shared/services/sessionManager'
   import QRCode from 'qrcode'
-  import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-  import { useWalletConnectionWithBackgroundSync } from '../composables/useWalletConnection'
-  import { sageWalletConnectService } from '../services/SageWalletConnectService'
+  import { computed, onMounted, onUnmounted, ref } from 'vue'
+  import { useWalletConnectService } from '../services/WalletConnectService'
   import { useWalletConnectStore } from '../stores/walletConnectStore'
-  import type { SageWalletInfo } from '../types/walletConnect.types'
+  import type { WalletInfo } from '../types/walletConnect.types'
 
   interface WalletOption {
     id: string
@@ -210,7 +209,7 @@
 
   interface Emits {
     (e: 'close'): void
-    (e: 'connected', walletInfo: SageWalletInfo): void
+    (e: 'connected', walletInfo: WalletInfo): void
   }
 
   const props = defineProps<Props>()
@@ -218,13 +217,7 @@
 
   // Store
   const walletStore = useWalletConnectStore()
-
-  // Use the new wallet connection composable
-  const {
-    isConnected: walletIsConnected,
-    walletInfo: walletInfoData,
-    error: walletError,
-  } = useWalletConnectionWithBackgroundSync()
+  const walletService = useWalletConnectService
 
   // State
   const currentStep = ref<
@@ -239,26 +232,6 @@
   const processingProgress = ref(0)
   const processingMessage = ref('Initializing...')
   const currentApprovalFunction = ref<(() => Promise<unknown>) | null>(null)
-
-  // Available wallet options
-  const availableWallets = ref<WalletOption[]>([
-    {
-      id: 'sage',
-      name: 'Sage Wallet',
-      description: 'Connect using Sage wallet for Chia Network',
-      iconClass: 'pi pi-wallet',
-      available: true,
-      type: 'sage',
-    },
-    {
-      id: 'other',
-      name: 'Other Wallets',
-      description: 'Connect using other compatible wallets',
-      iconClass: 'pi pi-link',
-      available: false,
-      type: 'other',
-    },
-  ])
 
   // Computed
   const walletInfo = computed(() => walletStore.walletInfo)
@@ -365,9 +338,9 @@
     approval: () => Promise<unknown>
   } | null> => {
     try {
-      if (!sageWalletConnectService.isInitialized()) {
+      if (!walletService.isInitialized()) {
         console.log('Initializing wallet service before connection...')
-        await sageWalletConnectService.initialize()
+        await walletService.initialize()
       }
 
       const connection = await walletStore.startConnection()
@@ -429,50 +402,30 @@
     return false
   }
 
-  // Function to fetch wallet info with websocket reconnection (single attempt)
   const fetchWalletInfo = async (): Promise<boolean> => {
     try {
       updateProgress(40, 'Fetching wallet information...')
 
-      // Check if websocket is still connected, attempt reconnection if needed
-      if (!sageWalletConnectService.isConnected()) {
+      if (!walletService.isConnected()) {
         console.log('Websocket disconnected, attempting to reconnect...')
         updateProgress(35, 'Reconnecting to wallet...')
 
         try {
-          await sageWalletConnectService.initialize()
-          await sleep(1000) // Give time for reconnection
+          await walletService.initialize()
         } catch (reconnectErr) {
           console.warn('Websocket reconnection failed:', reconnectErr)
           throw new Error('Failed to reconnect to wallet service')
         }
       }
 
-      console.log('Calling getWalletInfo...')
+      const fetchedWalletInfo = await walletService.getWalletInfo()
+      if (!fetchedWalletInfo) throw new Error('Failed to fetch wallet information')
 
-      // Add timeout to wallet info fetch
-      const walletInfoPromise = sageWalletConnectService.getWalletInfo()
-      const walletInfoTimeout = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Wallet info fetch timed out after 10 seconds'))
-        }, 10000)
-      })
-
-      const fetchedWalletInfo = await Promise.race([walletInfoPromise, walletInfoTimeout])
-      console.log('Wallet info received:', fetchedWalletInfo)
-
-      if (!fetchedWalletInfo) {
-        throw new Error('No wallet info received from service')
-      }
-      // Update the store with the fetched wallet info
       walletStore.walletInfo = fetchedWalletInfo
-
       updateProgress(80, 'Finalizing connection...')
       await sleep(300)
-
       updateProgress(100, 'Connection complete!')
       await sleep(300)
-
       currentStep.value = 'success'
       emit('connected', fetchedWalletInfo)
       return true
@@ -480,48 +433,6 @@
       console.error('Wallet info fetch failed:', err)
       handleError(err, ERROR_TYPES.WALLET_INFO_FAILED, 'Wallet info fetch')
       return false
-    }
-  }
-
-  // Main selectWallet function - now much cleaner and more maintainable
-  const selectWallet = async (wallet: WalletOption) => {
-    if (!wallet.available) return
-
-    // Initialize connection state
-    selectedWallet.value = wallet
-    currentStep.value = 'connecting'
-    isConnecting.value = true
-    error.value = null
-
-    try {
-      // Step 1: Establish connection
-      const connection = await establishConnection()
-      if (!connection) return
-
-      // Step 2: Generate QR code and show to user
-      connectionUri.value = connection.uri
-      currentStep.value = 'qr-code'
-      await generateQRCode(connection.uri)
-
-      // Step 3: Handle wallet approval with retry logic
-      updateProgress(20, 'Verifying connection...')
-      await sleep(1000) // Give time for wallet store to update
-
-      const approvalSuccess = await handleWalletApproval(connection.approval)
-      if (!approvalSuccess) return
-
-      // Step 4: Fetch wallet info with websocket reconnection
-      currentStep.value = 'processing'
-      const infoSuccess = await fetchWalletInfo()
-
-      if (!infoSuccess) {
-        // Error handling is done in fetchWalletInfo
-        return
-      }
-    } catch (err) {
-      handleError(err, ERROR_TYPES.UNKNOWN, 'Wallet selection')
-    } finally {
-      isConnecting.value = false
     }
   }
 
@@ -547,15 +458,12 @@
         clearAllCaches: false,
       })
 
-      // Wait a moment for cleanup
-      await sleep(1000)
-
       // Reinitialize the wallet service
-      if (sageWalletConnectService.isInitialized()) {
-        await sageWalletConnectService.forceReset()
+      if (walletService.isInitialized()) {
+        await walletService.forceReset()
       }
 
-      await sageWalletConnectService.initialize()
+      await walletService.initialize()
 
       // Start fresh connection
       const connection = await establishConnection()
@@ -609,7 +517,7 @@
       updateProgress(10, 'Refreshing connection code...')
 
       // Get new connection from service
-      const newConnection = await sageWalletConnectService.startConnection()
+      const newConnection = await walletService.startConnection()
 
       if (!newConnection) {
         throw new Error('Failed to start new connection')
@@ -737,44 +645,6 @@
     }
   }
 
-  // Watch for modal open state
-  watch(
-    () => props.isOpen,
-    async isOpen => {
-      if (isOpen) {
-        resetModal()
-        // Automatically start connection process
-        await selectWallet(availableWallets.value[0]) // Start with Sage wallet
-      }
-    }
-  )
-
-  // Watch for wallet connection changes
-  watch(walletIsConnected, connected => {
-    if (connected && currentStep.value === 'qr-code') {
-      console.log('Wallet connected, moving to processing step')
-      currentStep.value = 'processing'
-    }
-  })
-
-  // Watch for wallet info changes
-  watch(walletInfoData, info => {
-    if (info && currentStep.value === 'processing') {
-      console.log('Wallet info received, moving to success step')
-      currentStep.value = 'success'
-      emit('connected', info)
-    }
-  })
-
-  // Watch for errors from the composable
-  watch(walletError, err => {
-    if (err && currentStep.value !== 'error') {
-      console.log('Error occurred, moving to error step')
-      error.value = err instanceof Error ? err.message : String(err)
-      currentStep.value = 'error'
-    }
-  })
-
   // Handle escape key
   const handleKeydown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && props.isOpen) {
@@ -784,15 +654,15 @@
 
   // Expose functions to parent component
   defineExpose({
-    selectWallet,
     closeModal,
     handleClose,
     handleRetryConnection,
     restartApprovalProcess, // Expose the new restart function
   })
 
-  onMounted(() => {
+  onMounted(async () => {
     document.addEventListener('keydown', handleKeydown)
+    await handleRetryConnection()
 
     // Listen for pairing expiry events
     const handlePairingExpired = (event: Event) => {

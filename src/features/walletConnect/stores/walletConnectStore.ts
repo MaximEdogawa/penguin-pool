@@ -6,15 +6,14 @@ import {
   getWalletInfo,
   testRpcConnection as testRpcConnectionQuery,
 } from '../queries/walletQueries'
-import { sageWalletConnectService } from '../services/SageWalletConnectService'
+import { useWalletConnectService } from '../services/WalletConnectService'
 import type {
-  ChiaConnectionState,
   ConnectionResult,
   DisconnectResult,
-  SageWalletInfo,
   WalletConnectEvent,
   WalletConnectSession,
   WalletConnectState,
+  WalletInfo,
 } from '../types/walletConnect.types'
 
 export const useWalletConnectStore = defineStore('walletConnect', () => {
@@ -25,7 +24,8 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   const accounts = ref<string[]>([])
   const chainId = ref<string | null>(null)
   const error = ref<string | null>(null)
-  const walletInfo = ref<SageWalletInfo | null>(null)
+  const walletInfo = ref<WalletInfo | null>(null)
+  const walletConnectService = useWalletConnectService
 
   // Getters
   const state = computed<WalletConnectState>(() => ({
@@ -55,13 +55,11 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       // Set up event listeners immediately before any initialization
       setupEventListeners()
 
-      if (!sageWalletConnectService.isInitialized()) {
-        await sageWalletConnectService.initialize()
+      if (!walletConnectService.isInitialized()) {
+        await walletConnectService.initialize()
       } else {
         console.log('WalletConnect service already initialized')
       }
-
-      await restoreSession()
     } catch (err) {
       console.error('Failed to initialize Wallet Connect:', err)
       error.value = err instanceof Error ? err.message : 'Initialization failed'
@@ -73,12 +71,12 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       isConnecting.value = true
       error.value = null
 
-      const result = await sageWalletConnectService.connect(pairing)
+      const result = await walletConnectService.connect(pairing)
 
       if (result.success && result.session) {
         session.value = result.session
         accounts.value = result.accounts || []
-        chainId.value = sageWalletConnectService.getNetworkInfo().chainId
+        chainId.value = walletConnectService.getNetworkInfo().chainId
         isConnected.value = true
         setupEventListeners()
       } else {
@@ -100,11 +98,11 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     approval: () => Promise<unknown>
   } | null> => {
     try {
-      if (!sageWalletConnectService.isInitialized()) {
-        await sageWalletConnectService.initialize()
+      if (!walletConnectService.isInitialized()) {
+        await walletConnectService.initialize()
       }
 
-      return await sageWalletConnectService.startConnection()
+      return await walletConnectService.startConnection()
     } catch (err) {
       console.error('Failed to start connection:', err)
       return null
@@ -134,7 +132,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       })
 
       // Reset the wallet connect service after clearing storage
-      await sageWalletConnectService.forceReset()
+      await walletConnectService.forceReset()
 
       console.log('Wallet disconnect completed successfully')
       return { success: true }
@@ -148,13 +146,13 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const restoreSession = async (): Promise<void> => {
     try {
-      const currentSession = sageWalletConnectService.getSession()
-      const isCurrentlyConnected = sageWalletConnectService.isConnected()
+      const currentSession = walletConnectService.getSession()
+      const isCurrentlyConnected = walletConnectService.isConnected()
 
       if (currentSession && isCurrentlyConnected) {
         session.value = currentSession
         accounts.value = extractAccountsFromSession(currentSession)
-        chainId.value = sageWalletConnectService.getNetworkInfo().chainId
+        chainId.value = walletConnectService.getNetworkInfo().chainId
         isConnected.value = true
         setupEventListeners()
 
@@ -207,7 +205,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
         throw new Error('Not connected to wallet')
       }
 
-      return await sageWalletConnectService.request(method, params)
+      return await walletConnectService.request(method, params)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Request failed'
       error.value = errorMessage
@@ -220,7 +218,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   }
 
   const getNetworkInfo = () => {
-    return sageWalletConnectService.getNetworkInfo()
+    return walletConnectService.getNetworkInfo()
   }
 
   const testRpcConnection = async (): Promise<boolean> => {
@@ -259,25 +257,24 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const setupEventListeners = (): void => {
     // Session events
-    sageWalletConnectService.on('session_delete', handleSessionDelete)
-    sageWalletConnectService.on('session_expire', handleSessionExpire)
-    sageWalletConnectService.on('session_update', handleSessionUpdate)
-    sageWalletConnectService.on('session_restored', handleSessionRestored)
+    walletConnectService.on('session_delete', handleSessionDelete)
+    walletConnectService.on('session_expire', handleSessionExpire)
+    walletConnectService.on('session_update', handleSessionUpdate)
+    walletConnectService.on('session_restored', handleSessionRestored)
 
     // Connection events
-    sageWalletConnectService.on('session_approve', handleSessionApprove)
-    sageWalletConnectService.on('session_reject', handleSessionReject)
-    sageWalletConnectService.on('session_request', handleSessionRequest)
+    walletConnectService.on('session_approve', handleSessionApprove)
+    walletConnectService.on('session_reject', handleSessionReject)
   }
 
   const removeEventListeners = (): void => {
-    sageWalletConnectService.off('session_delete')
-    sageWalletConnectService.off('session_expire')
-    sageWalletConnectService.off('session_update')
-    sageWalletConnectService.off('session_restored')
-    sageWalletConnectService.off('session_approve')
-    sageWalletConnectService.off('session_reject')
-    sageWalletConnectService.off('session_request')
+    walletConnectService.off('session_delete')
+    walletConnectService.off('session_expire')
+    walletConnectService.off('session_update')
+    walletConnectService.off('session_restored')
+    walletConnectService.off('session_approve')
+    walletConnectService.off('session_reject')
+    walletConnectService.off('session_request')
   }
 
   const handleSessionDelete = (): void => {
@@ -328,20 +325,13 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     isConnecting.value = false
   }
 
-  const handleSessionRequest = (event: WalletConnectEvent): void => {
-    console.log('Session request received:', event)
-    // Handle session request - this could be a method call from the wallet
-    // The request is handled by the CommandHandler in the service
-    // This listener prevents the "no listeners" error
-  }
-
   const handleSessionRestored = async (): Promise<void> => {
     try {
-      const currentSession = sageWalletConnectService.getSession()
+      const currentSession = walletConnectService.getSession()
       if (currentSession) {
         session.value = currentSession
         accounts.value = extractAccountsFromSession(currentSession)
-        chainId.value = sageWalletConnectService.getNetworkInfo().chainId
+        chainId.value = walletConnectService.getNetworkInfo().chainId
         isConnected.value = true
 
         const fetchedWalletInfo = await getWalletInfo()
@@ -374,36 +364,16 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     }
   }
 
-  const getChiaConnectionState = computed((): ChiaConnectionState => {
-    return sageWalletConnectService.getConnectionState()
-  })
-
   const getPairings = computed(() => {
-    return sageWalletConnectService.getPairings()
+    return walletConnectService.getPairings()
   })
-
-  const makeChiaRequest = async <T>(method: string, data: Record<string, unknown>): Promise<T> => {
-    try {
-      const result = await sageWalletConnectService.request<T>(method, data)
-      if (!result) {
-        throw new Error('Request failed: No response received')
-      }
-      if ('error' in result) {
-        throw new Error(`Request failed: ${JSON.stringify(result.error)}`)
-      }
-      return result.data
-    } catch (err) {
-      console.error(`Chia RPC request failed (${method}):`, err)
-      throw err
-    }
-  }
 
   const executeCommand = async <TParams extends Record<string, unknown>, TResponse>(
     command: string,
     params: TParams
   ): Promise<{ success: boolean; data?: TResponse; error?: string }> => {
     try {
-      const result = await sageWalletConnectService.request<TResponse>(
+      const result = await walletConnectService.request<TResponse>(
         command as string,
         params as Record<string, unknown>
       )
@@ -422,7 +392,6 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   }
 
   return {
-    // State
     isConnected,
     isConnecting,
     session,
@@ -430,13 +399,9 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     chainId,
     error,
     walletInfo,
-
-    // Getters
     state,
     hasChiaAccount,
     primaryAccount,
-
-    // Actions
     initialize,
     connect,
     disconnect,
@@ -445,11 +410,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     clearError,
     getNetworkInfo,
     startConnection,
-
-    // Chia-specific methods
-    getChiaConnectionState,
     getPairings,
-    makeChiaRequest,
     testRpcConnection,
     executeCommand,
   }

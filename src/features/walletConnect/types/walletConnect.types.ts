@@ -11,31 +11,6 @@ export interface WalletConnectConfig {
   events?: string[]
 }
 
-export interface WalletInfo {
-  id: string
-  name: string
-  description: string
-  icon: string
-  homepage: string
-  chains: string[]
-  app: {
-    browser: string
-    ios: string
-    android: string
-    mac: string
-    windows: string
-    linux: string
-  }
-  mobile: {
-    native: string
-    universal: string
-  }
-  desktop: {
-    native: string
-    universal: string
-  }
-}
-
 export interface WalletConnectSession {
   topic: string
   pairingTopic: string
@@ -142,15 +117,12 @@ export interface AssetCoin {
 
 export type AssetCoins = AssetCoin[]
 
-export interface SageWalletInfo {
+export interface WalletInfo {
   fingerprint: number
   address: string
   balance: AssetBalance | null
   isConnected: boolean
 }
-
-// Alias for backward compatibility
-export type ChiaWalletInfo = SageWalletInfo
 
 // Command execution result type
 export interface CommandExecutionResult<T = unknown> {
@@ -163,22 +135,4 @@ export interface CommandExecutionResult<T = unknown> {
 export interface WalletCommand {
   command: string
   params: Record<string, unknown>
-}
-
-// Chia connection state interface
-export interface ChiaConnectionState {
-  isConnected: boolean
-  isConnecting: boolean
-  fingerprint?: number
-  address?: string
-  balance?: {
-    confirmed_wallet_balance: number
-    unconfirmed_wallet_balance: number
-    spendable_balance: number
-    pending_change: number
-    max_send_amount: number
-    unspent_coin_count: number
-    pending_coin_removal_count: number
-  }
-  error?: string
 }
