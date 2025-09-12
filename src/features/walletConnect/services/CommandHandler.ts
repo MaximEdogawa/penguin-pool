@@ -1,12 +1,26 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { SageMethods } from '../constants/sage-methods'
+import {
+  cancelOffer,
+  createOffer,
+  sendTransaction,
+  signCoinSpends,
+  signMessage,
+  takeOffer,
+} from '../queries/walletQueries'
 import type {
   AssetType,
+  CancelOfferRequest,
+  CoinSpend,
   CommandHandler,
   CommandParams,
   CommandResponse,
   HandlerContext,
+  OfferRequest,
   ParseCommandFunction,
+  SignMessageRequest,
+  TakeOfferRequest,
+  TransactionRequest,
   WalletConnectCommand,
 } from '../types/command.types'
 
@@ -166,93 +180,110 @@ export class CommandHandlerService {
   /**
    * CHIP-0002 Sign Coin Spends handler
    */
-  private async handleSignCoinSpends(
-    _params: unknown,
+  private async handleSignCoinSpends(params: unknown, _context: HandlerContext): Promise<unknown> {
+    const typedParams = params as {
+      walletId: number
+      coinSpends: CoinSpend[]
+    }
 
-    _context: HandlerContext
-  ): Promise<unknown> {
-    // This would typically make an RPC call to sign coin spends
-    // For now, return the same coin spends - implement based on actual wallet RPC
-    const typedParams = _params as { coinSpends: unknown[] }
+    const result = await signCoinSpends(typedParams)
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to sign coin spends')
+    }
+
     return {
-      signedCoinSpends: typedParams.coinSpends || [],
+      signedCoinSpends: result.data || [],
     }
   }
 
   /**
    * CHIP-0002 Sign Message handler
    */
-  private async handleSignMessage(
-    _params: unknown,
+  private async handleSignMessage(params: unknown, _context: HandlerContext): Promise<unknown> {
+    const typedParams = params as SignMessageRequest
 
-    _context: HandlerContext
-  ): Promise<unknown> {
-    // This would typically make an RPC call to sign message
-    // For now, return empty signature - implement based on actual wallet RPC
-    const typedParams = _params as { message: string; address?: string }
+    const result = await signMessage(typedParams)
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to sign message')
+    }
+
     return {
-      signature: '',
-      message: typedParams.message || '',
-      address: typedParams.address || '',
+      signature: result.data?.signature || '',
+      message: result.data?.message || typedParams.message,
+      address: result.data?.address || typedParams.address || '',
     }
   }
 
   /**
    * CHIP-0002 Send Transaction handler
    */
-  private async handleSendTransaction(
-    _params: unknown,
+  private async handleSendTransaction(params: unknown, _context: HandlerContext): Promise<unknown> {
+    const typedParams = params as TransactionRequest
 
-    _context: HandlerContext
-  ): Promise<unknown> {
-    // This would typically make an RPC call to send transaction
-    // For now, return empty transaction - implement based on actual wallet RPC
+    const result = await sendTransaction(typedParams)
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to send transaction')
+    }
+
     return {
-      transactionId: '',
-      transaction: {},
+      transactionId: result.data?.transactionId || '',
+      transaction: result.data?.transaction || {},
     }
   }
 
   /**
    * Chia Create Offer handler
    */
-  private async handleCreateOffer(
-    _params: unknown,
+  private async handleCreateOffer(params: unknown, _context: HandlerContext): Promise<unknown> {
+    const typedParams = params as OfferRequest
 
-    _context: HandlerContext
-  ): Promise<unknown> {
-    // This would typically make an RPC call to create offer
-    // For now, return empty offer - implement based on actual wallet RPC
+    const result = await createOffer(typedParams)
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to create offer')
+    }
+
     return {
-      offer: '',
-      tradeId: '',
+      offer: result.data?.offer || '',
+      tradeId: result.data?.tradeId || '',
     }
   }
 
   /**
    * Chia Take Offer handler
    */
-  private async handleTakeOffer(
-    _params: unknown,
+  private async handleTakeOffer(params: unknown, _context: HandlerContext): Promise<unknown> {
+    const typedParams = params as TakeOfferRequest
 
-    _context: HandlerContext
-  ): Promise<unknown> {
-    // This would typically make an RPC call to take offer
-    // For now, return failure - implement based on actual wallet RPC
+    const result = await takeOffer(typedParams)
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to take offer')
+    }
+
     return {
-      tradeId: '',
-      success: false,
+      tradeId: result.data?.tradeId || '',
+      success: result.data?.success || false,
     }
   }
 
   /**
    * Chia Cancel Offer handler
    */
-  private async handleCancelOffer(_params: unknown, context: HandlerContext): Promise<unknown> {
-    // This would typically make an RPC call to cancel offer
-    // For now, return failure - implement based on actual wallet RPC
+  private async handleCancelOffer(params: unknown, _context: HandlerContext): Promise<unknown> {
+    const typedParams = params as CancelOfferRequest
+
+    const result = await cancelOffer(typedParams)
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to cancel offer')
+    }
+
     return {
-      success: false,
+      success: result.data?.success || false,
     }
   }
 
@@ -270,12 +301,18 @@ export class CommandHandlerService {
   /**
    * Chia Send handler
    */
-  private async handleSend(_params: unknown, context: HandlerContext): Promise<unknown> {
-    // This would typically make an RPC call to send
-    // For now, return empty transaction - implement based on actual wallet RPC
+  private async handleSend(params: unknown, _context: HandlerContext): Promise<unknown> {
+    const typedParams = params as TransactionRequest
+
+    const result = await sendTransaction(typedParams)
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to send transaction')
+    }
+
     return {
-      transactionId: '',
-      transaction: {},
+      transactionId: result.data?.transactionId || '',
+      transaction: result.data?.transaction || {},
     }
   }
 

@@ -210,47 +210,6 @@ export class SessionManager {
       }
     }
 
-    // Clear WebSQL (legacy support)
-    if ('openDatabase' in window) {
-      try {
-        const db = (
-          window as unknown as {
-            openDatabase: (
-              name: string,
-              version: string,
-              displayName: string,
-              size: number
-            ) => unknown
-          }
-        ).openDatabase('penguin-pool', '1.0', 'Penguin Pool DB', 2 * 1024 * 1024)
-        if (db) {
-          await new Promise<void>((resolve, reject) => {
-            ;(
-              db as {
-                transaction: (
-                  callback: (tx: { executeSql: (sql: string) => void }) => void,
-                  errorCallback: (error: unknown) => void,
-                  successCallback: () => void
-                ) => void
-              }
-            ).transaction(
-              (tx: { executeSql: (sql: string) => void }) => {
-                tx.executeSql('DROP TABLE IF EXISTS sessions')
-                tx.executeSql('DROP TABLE IF EXISTS users')
-                tx.executeSql('DROP TABLE IF EXISTS contracts')
-                tx.executeSql('DROP TABLE IF EXISTS loans')
-              },
-              reject,
-              resolve
-            )
-          })
-          console.log('Cleared WebSQL database')
-        }
-      } catch (error) {
-        console.warn('Failed to clear WebSQL:', error)
-      }
-    }
-
     // Clear navigator.storage
     if ('navigator' in window && 'storage' in navigator) {
       try {

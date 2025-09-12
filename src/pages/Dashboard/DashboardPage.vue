@@ -61,19 +61,16 @@
               <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>Spendable:</span>
                 <span
-                  >{{ formatBalance(walletStore.walletInfo.balance.spendable_balance) }}
+                  >{{ formatBalance(parseInt(walletStore.walletInfo.balance.spendable)) }}
                   {{ ticker }}</span
                 >
               </div>
               <div
-                v-if="walletStore.walletInfo.balance.unconfirmed_wallet_balance > 0"
+                v-if="false"
                 class="flex justify-between text-xs text-gray-500 dark:text-gray-400"
               >
                 <span>Unconfirmed:</span>
-                <span
-                  >{{ formatBalance(walletStore.walletInfo.balance.unconfirmed_wallet_balance) }}
-                  {{ ticker }}</span
-                >
+                <span>{{ formatBalance(0) }} {{ ticker }}</span>
               </div>
             </div>
 
@@ -180,12 +177,15 @@
 
           <button
             v-else
+            @click="navigateToWallet"
             class="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border-2 border-dashed border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-primary-900/20 hover:border-primary-500 dark:hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors duration-200"
           >
-            <i class="pi pi-plus text-base sm:text-lg mb-2 text-gray-600 dark:text-gray-400"></i>
+            <i
+              class="pi pi-send text-base sm:text-lg mb-2 text-primary-600 dark:text-primary-400"
+            ></i>
             <span
-              class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center"
-              >Create Contract</span
+              class="text-xs sm:text-sm font-medium text-primary-700 dark:text-primary-300 text-center"
+              >Send Transaction</span
             >
           </button>
 
@@ -239,7 +239,7 @@
 
 <script setup lang="ts">
   import { useUserStore } from '@/entities/user/store/userStore'
-  import { sageWalletConnectService } from '@/features/walletConnect/services/SageWalletConnectService'
+  import { getAssetBalance } from '@/features/walletConnect/queries/walletQueries'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
@@ -254,7 +254,7 @@
   // Computed properties for wallet balance
   const userBalance = computed(() => {
     if (walletStore.walletInfo?.balance) {
-      return formatBalance(walletStore.walletInfo.balance.confirmed_wallet_balance)
+      return formatBalance(parseInt(walletStore.walletInfo.balance.confirmed))
     }
     return '0.00'
   })
@@ -262,7 +262,6 @@
   const isWalletConnected = computed(() => walletStore.isConnected)
   const isBalanceLoading = computed(() => walletStore.isConnecting)
 
-  // Get network info and determine ticker
   const networkInfo = computed(() => walletStore.getNetworkInfo())
   const ticker = computed(() => {
     if (networkInfo.value?.isTestnet) {
@@ -271,29 +270,26 @@
     return 'XCH'
   })
 
-  // Format balance helper
   const formatBalance = (mojos: number): string => {
     if (mojos === 0) return '0.000000'
     return (mojos / 1000000000000).toFixed(6)
   }
 
-  // Format address helper - show first 6 and last 4 characters
   const formatAddress = (address: string): string => {
     if (!address) return ''
     if (address.length <= 10) return address
     return `${address.slice(0, 6)}...${address.slice(-4)}`
   }
 
-  // Copy address to clipboard
+  const navigateToWallet = () => {
+    router.push('/wallet')
+  }
+
   const copyAddress = async () => {
     if (!walletStore.walletInfo?.address) return
 
     try {
       await navigator.clipboard.writeText(walletStore.walletInfo.address)
-      // Visual feedback - you could enhance this with a proper toast notification
-      console.log('Address copied to clipboard')
-
-      // Simple visual feedback by temporarily changing the copy button
       const copyButton = document.querySelector('[title="Copy address"]') as HTMLElement
       if (copyButton) {
         const originalIcon = copyButton.innerHTML
@@ -306,35 +302,12 @@
       }
     } catch (error) {
       console.error('Failed to copy address:', error)
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea')
-      textArea.value = walletStore.walletInfo.address
-      document.body.appendChild(textArea)
-      textArea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textArea)
-
-      // Visual feedback for fallback
-      const copyButton = document.querySelector('[title="Copy address"]') as HTMLElement
-      if (copyButton) {
-        const originalIcon = copyButton.innerHTML
-        copyButton.innerHTML = '<i class="pi pi-check text-xs"></i>'
-        copyButton.style.color = 'rgb(34, 197, 94)' // green-500
-        setTimeout(() => {
-          copyButton.innerHTML = originalIcon
-          copyButton.style.color = ''
-        }, 1500)
-      }
     }
   }
 
-  // Flag to prevent multiple simultaneous balance refresh calls
   const isRefreshingBalance = ref(false)
-
-  // Refresh wallet balance with caching
   const refreshBalance = async (force = false) => {
     if (isWalletConnected.value && !isRefreshingBalance.value) {
-      // Check if we should skip refresh based on cache
       if (!force && lastBalanceRefresh.value) {
         const timeSinceLastRefresh = Date.now() - lastBalanceRefresh.value.getTime()
 
@@ -346,12 +319,10 @@
 
       isRefreshingBalance.value = true
       try {
-        if (walletStore.isConnected) {
-          const freshWalletInfo = await sageWalletConnectService.getWalletInfo()
-          if (freshWalletInfo) {
-            walletStore.walletInfo = freshWalletInfo
-            lastBalanceRefresh.value = new Date()
-          }
+        const result = await getAssetBalance()
+        if (result.success && result.data && walletStore.walletInfo) {
+          walletStore.walletInfo.balance = result.data
+          lastBalanceRefresh.value = new Date()
         }
       } catch (error) {
         console.error('Failed to refresh wallet balance:', error)
@@ -361,13 +332,10 @@
     }
   }
 
-  // Connect wallet
   const connectWallet = () => {
-    // Redirect to wallet connect page
     window.location.href = '/wallet-connect'
   }
 
-  // Start automatic refresh
   const startAutoRefresh = () => {
     if (refreshInterval.value) {
       clearInterval(refreshInterval.value)
@@ -384,7 +352,6 @@
     }
   }
 
-  // Stop automatic refresh
   const stopAutoRefresh = () => {
     if (refreshInterval.value) {
       clearInterval(refreshInterval.value)
@@ -392,7 +359,6 @@
     }
   }
 
-  // Toggle automatic refresh
   const toggleAutoRefresh = () => {
     autoRefreshEnabled.value = !autoRefreshEnabled.value
 
@@ -403,7 +369,6 @@
     }
   }
 
-  // Track if balance has been loaded to prevent unnecessary refreshes
   const balanceLoaded = ref(false)
   const lastBalanceRefresh = ref<Date | null>(null)
   const autoRefreshEnabled = ref(false)
@@ -413,50 +378,28 @@
     try {
       userStore.value = useUserStore()
 
-      // Wait for wallet connection state to be properly initialized
       if (isWalletConnected.value) {
         balanceLoaded.value = true
         lastBalanceRefresh.value = new Date()
         startAutoRefresh()
-      } else {
-        // If wallet is not connected, wait a bit for state to be restored
-        const checkWalletConnection = () => {
-          if (isWalletConnected.value) {
-            balanceLoaded.value = true
-            lastBalanceRefresh.value = new Date()
-            startAutoRefresh()
-          } else {
-            // If still not connected after waiting, redirect to auth
-            console.log('Wallet not connected, redirecting to auth...')
-            router.push('/auth')
-          }
-        }
-
-        // Check immediately and also after a short delay
-        checkWalletConnection()
-        setTimeout(checkWalletConnection, 1000)
       }
     } catch (error) {
       console.error('Failed to initialize dashboard:', error)
     }
   })
 
-  // Watch for wallet connection changes - only refresh if balance hasn't been loaded
   watch(isWalletConnected, async connected => {
     if (connected && !balanceLoaded.value) {
       startAutoRefresh()
       balanceLoaded.value = true
       lastBalanceRefresh.value = new Date()
     } else if (!connected) {
-      // Reset balance loaded flag when wallet disconnects
       balanceLoaded.value = false
       lastBalanceRefresh.value = null
       stopAutoRefresh()
-      // Router guard will handle redirect to login
     }
   })
 
-  // Cleanup on unmount
   onUnmounted(() => {
     stopAutoRefresh()
   })

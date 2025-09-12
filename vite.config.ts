@@ -26,11 +26,21 @@ export default defineConfig(({ mode }) => {
         '@features': fileURLToPath(new URL('./src/features', import.meta.url)),
         '@entities': fileURLToPath(new URL('./src/entities', import.meta.url)),
         '@shared': fileURLToPath(new URL('./src/shared', import.meta.url)),
+        vue: 'vue/dist/vue.esm-bundler.js',
       },
     },
     build: {
       target: 'esnext',
       minify: 'esbuild',
+      assetsInclude: [
+        '**/*.svg',
+        '**/*.ico',
+        '**/*.png',
+        '**/*.jpg',
+        '**/*.jpeg',
+        '**/*.gif',
+        '**/*.webp',
+      ],
       rollupOptions: {
         external: [
           'fs',
@@ -80,6 +90,18 @@ export default defineConfig(({ mode }) => {
             'walletconnect-ui': ['@walletconnect/modal', '@web3modal/standalone'],
             'socket-vendor': ['socket.io-client'],
             'qrcode-vendor': ['qrcode'],
+          },
+          assetFileNames: assetInfo => {
+            if (!assetInfo.name) {
+              return `assets/[name]-[hash][extname]`
+            }
+            if (/\.(png|jpe?g|gif|svg|ico|webp)$/i.test(assetInfo.name)) {
+              return `assets/images/[name]-[hash][extname]`
+            }
+            if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
+              return `assets/fonts/[name]-[hash][extname]`
+            }
+            return `assets/[name]-[hash][extname]`
           },
         },
       },

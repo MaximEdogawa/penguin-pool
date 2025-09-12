@@ -141,19 +141,6 @@ const txResult = await walletStore.makeChiaRequest('chia_sendTransaction', {
 })
 ```
 
-#### Getting Chia-Specific Information
-
-```typescript
-// Get Chia connection state
-const chiaState = walletStore.getChiaConnectionState
-console.log('Fingerprint:', chiaState.fingerprint)
-console.log('Address:', chiaState.address)
-
-// Get available pairings
-const pairings = walletStore.getPairings
-console.log('Available pairings:', pairings)
-```
-
 ## 🧪 Testing
 
 ### Demo Mode (No Project ID)
@@ -228,20 +215,6 @@ Once properly set up, users can:
 - ✅ Create and manage offers
 - ✅ Interact with CATs and NFTs
 - ✅ Use all Chia wallet features
-
-## 🔄 Migration from Generic WalletConnect
-
-The new implementation is backward compatible. Existing code will continue to work, but you can now use Chia-specific methods:
-
-```typescript
-// Old way (still works)
-const result = await walletStore.connect()
-
-// New Chia-specific way
-const result = await walletStore.connect(pairing)
-const chiaState = walletStore.getChiaConnectionState
-const balance = await walletStore.makeChiaRequest('chia_getWalletBalance', { walletId: 1 })
-```
 
 ---
 

@@ -1,25 +1,17 @@
 <template>
   <!-- Login Screen with Loading State -->
   <PWAInstallPrompt />
-
-  <div
-    class="login-page min-h-screen flex items-center justify-center px-6 py-20 md:px-20 lg:px-80 backdrop-blur-3xl bg-cover bg-center bg-no-repeat"
-    :style="backgroundStyle"
-  >
-    <div
-      class="px-8 md:px-12 lg:px-20 flex py-4 flex-col items-center gap-2 w-full backdrop-blur-2xl rounded-2xl bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 max-w-md"
-    >
+  <div class="login-page" :style="backgroundStyle">
+    <div class="login-container">
       <!-- Logo and Title -->
-      <div class="flex flex-col items-center gap-2 w-full">
+      <div class="logo-section">
         <div class="logo-container">
-          <PenguinLogo class="h-12 w-12" />
+          <PenguinLogo class="logo-icon" />
         </div>
-        <div class="flex flex-col gap-2 w-full">
-          <div class="text-center text-2xl font-medium text-white dark:text-gray-100 leading-tight">
-            Penguin Pool
-          </div>
-          <div class="text-center text-sm">
-            <span class="text-white/80 dark:text-gray-300/80"
+        <div class="title-section">
+          <div class="main-title">Penguin Pool</div>
+          <div class="subtitle">
+            <span class="subtitle-text"
               >Connect your wallet to access the decentralized lending platform</span
             >
           </div>
@@ -27,61 +19,48 @@
       </div>
 
       <!-- Wallet Connection Section -->
-      <div class="flex flex-col items-center w-full">
-        <div class="flex flex-col w-full">
+      <div class="wallet-section">
+        <div class="wallet-options">
           <!-- Primary Wallet Option - Sage -->
           <button
-            @click="connectWalletConnect"
-            class="wallet-option-primary group relative overflow-hidden rounded-3xl bg-white/10 dark:bg-gray-800/10 border border-white/20 dark:border-gray-700/20 p-6 w-full transition-all duration-300 hover:bg-white/20 dark:hover:bg-gray-800/20 hover:scale-105 hover:shadow-xl"
+            @click="showWalletModal = true"
+            class="wallet-option-primary group"
             :disabled="isConnecting"
           >
-            <div class="flex items-center gap-2">
+            <div class="wallet-button-content">
               <div class="wallet-icon-primary">
-                <i class="pi pi-wallet text-2xl text-white dark:text-gray-100"></i>
+                <i class="wallet-icon pi pi-wallet"></i>
               </div>
-              <div class="flex-1 text-left">
-                <h3 class="text-lg font-semibold text-white dark:text-gray-100 mb-1">
-                  Sage Wallet
-                </h3>
-                <p class="text-sm text-white/70 dark:text-gray-300/70">
-                  Recommended for Chia Network
-                </p>
+              <div class="wallet-text-content">
+                <h3 class="wallet-title">Sage Wallet</h3>
+                <p class="wallet-subtitle">Recommended for Chia Network</p>
               </div>
               <div class="wallet-status">
-                <i v-if="isConnecting" class="pi pi-spin pi-spinner text-lg text-white/70"></i>
-                <i
-                  v-else
-                  class="pi pi-arrow-right text-lg text-white/70 group-hover:text-white transition-colors"
-                ></i>
+                <i v-if="isConnecting" class="wallet-spinner pi pi-spin pi-spinner"></i>
+                <i v-else class="wallet-arrow pi pi-arrow-right"></i>
               </div>
             </div>
-            <div
-              class="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl"
-            ></div>
+            <div class="wallet-hover-overlay"></div>
           </button>
 
           <!-- Secondary Wallet Options -->
-          <div class="flex flex-col gap-2 mt-4">
+          <div class="secondary-wallet-options">
             <!-- Other Wallets -->
             <FeatureFlag category="app" feature="otherWallets">
               <button
-                @click="connectOtherWallet"
-                class="wallet-option-secondary group relative overflow-hidden rounded-2xl bg-white/5 dark:bg-gray-800/5 border border-white/10 dark:border-gray-700/10 p-4 w-full transition-all duration-300 hover:bg-white/10 dark:hover:bg-gray-800/10"
+                @click="showWalletModal = true"
+                class="wallet-option-secondary group"
                 :disabled="isConnecting"
               >
-                <div class="flex items-center gap-3">
-                  <div class="wallet-icon-secondary">
-                    <i class="pi pi-wallet text-lg text-white/60 dark:text-gray-400"></i>
+                <div class="secondary-wallet-content">
+                  <div class="secondary-wallet-icon">
+                    <i class="secondary-wallet-icon-symbol pi pi-wallet"></i>
                   </div>
-                  <div class="flex-1 text-left">
-                    <h4 class="text-sm font-medium text-white/80 dark:text-gray-200">
-                      Other Wallets
-                    </h4>
-                    <p class="text-xs text-white/50 dark:text-gray-400">WalletConnect compatible</p>
+                  <div class="secondary-wallet-text">
+                    <h4 class="secondary-wallet-title">Other Wallets</h4>
+                    <p class="secondary-wallet-subtitle">WalletConnect compatible</p>
                   </div>
-                  <i
-                    class="pi pi-arrow-right text-sm text-white/40 group-hover:text-white/60 transition-colors"
-                  ></i>
+                  <i class="secondary-wallet-arrow pi pi-arrow-right"></i>
                 </div>
               </button>
             </FeatureFlag>
@@ -89,33 +68,26 @@
         </div>
 
         <!-- Connection Status -->
-        <div v-if="connectionStatus" class="connection-status w-full" :class="statusType">
+        <div v-if="connectionStatus" class="connection-status" :class="statusType">
           <i :class="statusIcon" class="status-icon"></i>
           <span class="status-text">{{ connectionStatus }}</span>
         </div>
       </div>
 
       <!-- Footer -->
-      <div class="text-center">
-        <p class="text-white/60 dark:text-gray-400 text-sm">
+      <div class="footer">
+        <p class="footer-text">
           By connecting your wallet, you agree to our
-          <a
-            href="#"
-            class="text-white/80 dark:text-gray-300 hover:text-white dark:hover:text-gray-100 underline transition-colors"
-            >Terms of Service</a
-          >
+          <a href="#" class="footer-link">Terms of Service</a>
           and
-          <a
-            href="#"
-            class="text-white/80 dark:text-gray-300 hover:text-white dark:hover:text-gray-100 underline transition-colors"
-            >Privacy Policy</a
-          >
+          <a href="#" class="footer-link">Privacy Policy</a>
         </p>
       </div>
     </div>
 
     <!-- Wallet Connect Modal -->
     <WalletConnectModal
+      v-if="showWalletModal"
       :is-open="showWalletModal"
       @close="closeWalletModal"
       @connected="handleWalletConnected"
@@ -128,14 +100,10 @@
   import PenguinLogo from '@/components/PenguinLogo.vue'
   import PWAInstallPrompt from '@/components/PWAInstallPrompt.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
+  import WalletConnectModal from '@/features/walletConnect/components/WalletConnectModal.vue'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
-  import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
-
-  // Lazy load heavy components
-  const WalletConnectModal = defineAsyncComponent(
-    () => import('@/features/walletConnect/components/WalletConnectModal.vue')
-  )
 
   const router = useRouter()
   const userStore = useUserStore()
@@ -151,24 +119,11 @@
   const isConnecting = computed(() => walletConnectStore.isConnecting)
 
   const backgroundStyle = computed(() => ({
-    backgroundImage:
-      "url('https://fqjltiegiezfetthbags.supabase.co/storage/v1/object/public/block.images/blocks/signin/signin-glass.jpg')",
+    backgroundImage: "url('/src/assets/signin-glass.jpg')",
   }))
-
-  // Methods
-  const connectWalletConnect = async () => {
-    showWalletModal.value = true
-  }
-
-  const connectOtherWallet = async () => {
-    showWalletModal.value = true
-  }
 
   const handleWalletConnected = async (walletInfo: unknown) => {
     try {
-      console.log('Received wallet info:', walletInfo)
-
-      // Verify wallet info is valid
       if (!walletInfo || typeof walletInfo !== 'object') {
         throw new Error('Invalid wallet info - no wallet data received')
       }
@@ -178,27 +133,13 @@
         throw new Error('Invalid wallet info - no address found')
       }
 
-      // Login user with wallet fingerprint if available, otherwise use address
       if (wallet.fingerprint) {
-        console.log('Logging in with wallet fingerprint:', wallet.fingerprint)
         await userStore.login(wallet.fingerprint, 'wallet-user')
       } else {
-        console.log('Logging in with wallet address:', wallet.address)
         await userStore.login(wallet.address, 'wallet-user')
       }
 
-      // Check authentication state after login
-      console.log('User store state after login:', {
-        isAuthenticated: userStore.isAuthenticated,
-        currentUser: userStore.currentUser,
-      })
-
-      console.log('Attempting redirect to dashboard...')
-      console.log('Current route:', router.currentRoute.value.path)
-      console.log('User authenticated:', userStore.isAuthenticated)
-
       await router.push('/dashboard')
-      console.log('Successfully redirected to dashboard')
     } catch (error) {
       console.error('Failed to process wallet connection:', error)
       connectionStatus.value =
@@ -206,8 +147,6 @@
         (error instanceof Error ? error.message : 'Unknown error')
       statusType.value = 'error'
       statusIcon.value = 'pi pi-exclamation-triangle'
-    } finally {
-      showWalletModal.value = false
     }
   }
 
@@ -217,26 +156,10 @@
 
   onMounted(async () => {
     try {
-      await walletConnectStore.initialize()
-
       if (walletConnectStore.isConnected) {
-        // Wait a moment for wallet info to be loaded during session restore
         await new Promise(resolve => setTimeout(resolve, 500))
-
         const walletInfo = walletConnectStore.walletInfo
-        if (walletInfo && walletInfo.address) {
-          // Use fingerprint if available, otherwise fall back to address
-          if (walletInfo.fingerprint) {
-            console.log('Auto-login with wallet fingerprint:', walletInfo.fingerprint)
-            await userStore.login(walletInfo.fingerprint, 'wallet-user')
-          } else {
-            console.log('Auto-login with wallet address:', walletInfo.address)
-            await userStore.login(walletInfo.address, 'wallet-user')
-          }
-          router.push('/dashboard')
-        } else {
-          console.log('Wallet connected but no wallet info available yet')
-        }
+        await handleWalletConnected(walletInfo)
       }
     } catch (error) {
       console.error('Failed to initialize Wallet Connect:', error)
@@ -246,11 +169,48 @@
 
 <style scoped>
   .login-page {
-    min-height: 100vh;
+    @apply min-h-screen flex items-center justify-center px-6 py-20 md:px-20 lg:px-80 backdrop-blur-3xl bg-cover bg-center bg-no-repeat;
     position: relative;
   }
 
+  .login-container {
+    @apply px-8 md:px-12 lg:px-20 flex py-4 flex-col items-center gap-2 w-full backdrop-blur-2xl rounded-2xl bg-white/10 dark:bg-gray-800/10 border border-white/10 dark:border-gray-700/10 max-w-md;
+  }
+
+  .logo-section {
+    @apply flex flex-col items-center gap-2 w-full;
+  }
+
+  .logo-icon {
+    @apply h-12 w-12;
+  }
+
+  .title-section {
+    @apply flex flex-col gap-2 w-full;
+  }
+
+  .main-title {
+    @apply text-center text-2xl font-medium text-white dark:text-gray-100 leading-tight;
+  }
+
+  .subtitle {
+    @apply text-center text-sm;
+  }
+
+  .subtitle-text {
+    @apply text-white/80 dark:text-gray-300/80;
+  }
+
+  .wallet-section {
+    @apply flex flex-col items-center w-full;
+  }
+
+  .wallet-options {
+    @apply flex flex-col w-full;
+  }
+
   .wallet-option-primary {
+    @apply relative overflow-hidden rounded-3xl bg-white/10 dark:bg-gray-800/10 border border-white/20 dark:border-gray-700/20 p-6 w-full transition-all duration-300 hover:bg-white/20 dark:hover:bg-gray-800/20 hover:scale-105 hover:shadow-xl;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
   }
@@ -259,7 +219,48 @@
     @apply opacity-50 cursor-not-allowed hover:scale-100 hover:shadow-none;
   }
 
+  .wallet-button-content {
+    @apply flex items-center gap-2;
+  }
+
+  .wallet-icon-primary {
+    @apply w-12 h-12 bg-white/20 dark:bg-gray-800/20 rounded-xl flex items-center justify-center backdrop-blur-sm;
+  }
+
+  .wallet-icon {
+    @apply text-2xl text-white dark:text-gray-100;
+  }
+
+  .wallet-text-content {
+    @apply flex-1 text-left;
+  }
+
+  .wallet-title {
+    @apply text-lg font-semibold text-white dark:text-gray-100 mb-1;
+  }
+
+  .wallet-subtitle {
+    @apply text-sm text-white/70 dark:text-gray-300/70;
+  }
+
+  .wallet-spinner {
+    @apply text-lg text-white/70;
+  }
+
+  .wallet-arrow {
+    @apply text-lg text-white/70 group-hover:text-white transition-colors;
+  }
+
+  .wallet-hover-overlay {
+    @apply absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl;
+  }
+
+  .secondary-wallet-options {
+    @apply flex flex-col gap-2 mt-4;
+  }
+
   .wallet-option-secondary {
+    @apply relative overflow-hidden rounded-2xl bg-white/5 dark:bg-gray-800/5 border border-white/10 dark:border-gray-700/10 p-4 w-full transition-all duration-300 hover:bg-white/10 dark:hover:bg-gray-800/10;
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
   }
@@ -268,16 +269,36 @@
     @apply opacity-50 cursor-not-allowed;
   }
 
-  .wallet-icon-primary {
-    @apply w-12 h-12 bg-white/20 dark:bg-gray-800/20 rounded-xl flex items-center justify-center backdrop-blur-sm;
+  .secondary-wallet-content {
+    @apply flex items-center gap-3;
   }
 
-  .wallet-icon-secondary {
+  .secondary-wallet-icon {
     @apply w-8 h-8 bg-white/10 dark:bg-gray-800/10 rounded-lg flex items-center justify-center backdrop-blur-sm;
   }
 
+  .secondary-wallet-icon-symbol {
+    @apply text-lg text-white/60 dark:text-gray-400;
+  }
+
+  .secondary-wallet-text {
+    @apply flex-1 text-left;
+  }
+
+  .secondary-wallet-title {
+    @apply text-sm font-medium text-white/80 dark:text-gray-200;
+  }
+
+  .secondary-wallet-subtitle {
+    @apply text-xs text-white/50 dark:text-gray-400;
+  }
+
+  .secondary-wallet-arrow {
+    @apply text-sm text-white/40 group-hover:text-white/60 transition-colors;
+  }
+
   .connection-status {
-    @apply p-4 rounded-2xl text-sm font-medium flex items-center gap-3 backdrop-blur-sm;
+    @apply p-4 rounded-2xl text-sm font-medium flex items-center gap-3 backdrop-blur-sm w-full;
   }
 
   .connection-status.info {
@@ -294,6 +315,18 @@
 
   .status-icon {
     @apply text-lg;
+  }
+
+  .footer {
+    @apply text-center;
+  }
+
+  .footer-text {
+    @apply text-white/60 dark:text-gray-400 text-sm;
+  }
+
+  .footer-link {
+    @apply text-white/80 dark:text-gray-300 hover:text-white dark:hover:text-gray-100 underline transition-colors;
   }
 
   /* Glass morphism effects */

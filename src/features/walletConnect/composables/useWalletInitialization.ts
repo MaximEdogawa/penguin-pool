@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, ref } from 'vue'
-import { sageWalletConnectService } from '../services/SageWalletConnectService'
+import { useWalletConnectService } from '../services/WalletConnectService'
 
 // Query keys for wallet initialization
 export const WALLET_INIT_QUERY_KEYS = {
@@ -15,6 +15,7 @@ export type InitializationStatus = 'idle' | 'initializing' | 'initialized' | 'er
 // Global initialization state
 const initializationStatus = ref<InitializationStatus>('idle')
 const initializationError = ref<Error | null>(null)
+const walletConnectService = useWalletConnectService
 
 /**
  * Composable for managing wallet initialization with TanStack Query
@@ -26,11 +27,11 @@ export function useWalletInitialization() {
   const initializationQuery = useQuery({
     queryKey: WALLET_INIT_QUERY_KEYS.status,
     queryFn: async (): Promise<InitializationStatus> => {
-      if (sageWalletConnectService.isInitialized()) {
+      if (walletConnectService.isInitialized()) {
         return 'initialized'
       }
 
-      if (sageWalletConnectService.isInitializationInProgress()) {
+      if (walletConnectService.isInitializationInProgress()) {
         return 'initializing'
       }
 
@@ -51,7 +52,7 @@ export function useWalletInitialization() {
       initializationError.value = null
 
       try {
-        await sageWalletConnectService.initialize()
+        await walletConnectService.initialize()
         initializationStatus.value = 'initialized'
 
         // Invalidate related queries
@@ -77,8 +78,8 @@ export function useWalletInitialization() {
   const reinitializeMutation = useMutation({
     mutationFn: async (): Promise<void> => {
       // Clear session storage and reset the service first
-      sageWalletConnectService.clearSessionStorage()
-      await sageWalletConnectService.forceReset()
+      walletConnectService.clearSessionStorage()
+      await walletConnectService.forceReset()
 
       // Clear all wallet-related queries
       queryClient.clear()
@@ -120,7 +121,7 @@ export function useWalletInitialization() {
     () =>
       initializeMutation.error.value ||
       initializationError.value ||
-      sageWalletConnectService.getLastInitializationError()
+      walletConnectService.getLastInitializationError()
   )
 
   // Methods

@@ -92,7 +92,7 @@ The Penguin-pool platform will be developed in 5 phases over 14 weeks, with each
   - **Effort**: 2 days
   - **Dependencies**: TICKET-004
 
-- [ ] **TICKET-011**: Integrate Sage Wallet
+- [x] **TICKET-011**: Integrate Sage Wallet
   - Connect to Chia network
   - Implement wallet operations
   - Set up transaction signing
