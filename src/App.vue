@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import AppProvider from '@/app/providers/AppProvider.vue'
+  import OfflineIndicator from '@/components/OfflineIndicator.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useFeatureFlagsStore } from '@/stores/featureFlags'
   import AppLayout from '@/widgets/Layout/AppLayout.vue'
@@ -21,6 +22,7 @@
 
 <template>
   <AppProvider>
+    <OfflineIndicator />
     <AppLayout v-if="isAuthenticated">
       <RouterView />
     </AppLayout>

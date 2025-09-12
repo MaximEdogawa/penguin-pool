@@ -7,7 +7,16 @@ import {
 import '@/types/router'
 import { createRouter, createWebHistory } from 'vue-router'
 
-// Create static routes that will be filtered by the router guard
+import LoginPage from '@/pages/Auth/LoginPage.vue'
+import DashboardPage from '@/pages/Dashboard/DashboardPage.vue'
+import OffersPage from '@/pages/Offers/OffersPage.vue'
+import LoansPage from '@/pages/Loans/LoansPage.vue'
+import OptionContractsPage from '@/pages/OptionContracts/OptionContractsPage.vue'
+import PiggyBankPage from '@/pages/PiggyBank/PiggyBankPage.vue'
+import WalletPage from '@/pages/Wallet/WalletPage.vue'
+import ProfilePage from '@/pages/Profile/ProfilePage.vue'
+import ServiceHealthPage from '@/pages/ServiceHealth/ServiceHealthPage.vue'
+
 const routes = [
   {
     path: '/',
@@ -16,7 +25,7 @@ const routes = [
   {
     path: '/auth',
     name: 'auth',
-    component: () => import('@/pages/Auth/LoginPage.vue'),
+    component: LoginPage,
     meta: {
       title: 'Authentication',
       requiresAuth: false,
@@ -25,7 +34,7 @@ const routes = [
   {
     path: '/dashboard',
     name: 'dashboard',
-    component: () => import('@/pages/Dashboard/DashboardPage.vue'),
+    component: DashboardPage,
     meta: {
       title: 'Dashboard',
       requiresAuth: true,
@@ -35,7 +44,7 @@ const routes = [
   {
     path: '/offers',
     name: 'offers',
-    component: () => import('@/pages/Offers/OffersPage.vue'),
+    component: OffersPage,
     meta: {
       title: 'Offers',
       requiresAuth: true,
@@ -45,7 +54,7 @@ const routes = [
   {
     path: '/loans',
     name: 'loans',
-    component: () => import('@/pages/Loans/LoansPage.vue'),
+    component: LoansPage,
     meta: {
       title: 'Loans',
       requiresAuth: true,
@@ -55,7 +64,7 @@ const routes = [
   {
     path: '/option-contracts',
     name: 'option-contracts',
-    component: () => import('@/pages/OptionContracts/OptionContractsPage.vue'),
+    component: OptionContractsPage,
     meta: {
       title: 'Option Contracts',
       requiresAuth: true,
@@ -65,7 +74,7 @@ const routes = [
   {
     path: '/piggy-bank',
     name: 'piggy-bank',
-    component: () => import('@/pages/PiggyBank/PiggyBankPage.vue'),
+    component: PiggyBankPage,
     meta: {
       title: 'Piggy Bank',
       requiresAuth: true,
@@ -75,7 +84,7 @@ const routes = [
   {
     path: '/wallet',
     name: 'wallet',
-    component: () => import('@/pages/Wallet/WalletPage.vue'),
+    component: WalletPage,
     meta: {
       title: 'Wallet',
       requiresAuth: true,
@@ -85,7 +94,7 @@ const routes = [
   {
     path: '/profile',
     name: 'profile',
-    component: () => import('@/pages/Profile/ProfilePage.vue'),
+    component: ProfilePage,
     meta: {
       title: 'Profile',
       requiresAuth: true,
@@ -95,7 +104,7 @@ const routes = [
   {
     path: '/service-health',
     name: 'service-health',
-    component: () => import('@/pages/ServiceHealth/ServiceHealthPage.vue'),
+    component: ServiceHealthPage,
     meta: {
       title: 'Service Health',
       requiresAuth: true,

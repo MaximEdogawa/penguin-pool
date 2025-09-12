@@ -48,7 +48,7 @@
             <!-- Other Wallets -->
             <FeatureFlag category="app" feature="otherWallets">
               <button
-                @click="showWalletModal.value = true"
+                @click="showWalletModal = true"
                 class="wallet-option-secondary group"
                 :disabled="isConnecting"
               >
@@ -119,8 +119,7 @@
   const isConnecting = computed(() => walletConnectStore.isConnecting)
 
   const backgroundStyle = computed(() => ({
-    backgroundImage:
-      "url('https://fqjltiegiezfetthbags.supabase.co/storage/v1/object/public/block.images/blocks/signin/signin-glass.jpg')",
+    backgroundImage: "url('/src/assets/signin-glass.jpg')",
   }))
 
   const handleWalletConnected = async (walletInfo: unknown) => {

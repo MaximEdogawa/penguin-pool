@@ -23,6 +23,7 @@ import App from './App.vue'
 import { useWalletConnectStore } from './features/walletConnect/stores/walletConnectStore'
 import router from './router'
 import { validateEnvironment } from './shared/config/environment'
+import { queryClient, setupOfflineHandling } from './shared/config/queryClient'
 
 // Validate environment configuration early
 validateEnvironment()
@@ -32,7 +33,9 @@ const app = createApp(App)
 // Install plugins
 app.use(createPinia())
 app.use(router)
-app.use(VueQueryPlugin)
+app.use(VueQueryPlugin, {
+  queryClient,
+})
 
 app.use(PrimeVue, {
   theme: {
@@ -53,7 +56,8 @@ app.component('PrimeTab', Tab)
 app.component('PrimeTabPanel', TabPanel)
 app.component('PrimeTabPanels', TabPanels)
 
-// Using TanStack Query for background execution - no service worker needed
+// Setup offline handling with TanStack Query
+setupOfflineHandling()
 
 // Global wallet disconnection watcher
 app.mount('#app')
