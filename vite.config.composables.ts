@@ -63,13 +63,6 @@ export const pwaBuildConfig = (): Partial<UserConfig> => ({
     },
     rollupOptions: {
       onwarn(warning, warn) {
-        // Suppress chunk size warnings for our specific case
-        if (
-          warning.code === 'CHUNK_SIZE_WARNING' ||
-          (warning.message && warning.message.includes('Some chunks are larger than 500 kB'))
-        ) {
-          return
-        }
         warn(warning)
       },
       external: [
