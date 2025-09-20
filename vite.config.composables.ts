@@ -31,6 +31,9 @@ export const baseConfig = (): Partial<UserConfig> => ({
     include: ['vue', 'vue-router', 'pinia', '@tanstack/vue-query', 'primevue', 'events'],
     force: true, // Force re-optimization
   },
+  build: {
+    chunkSizeWarningLimit: 10000, // Effectively disable chunk size warnings
+  },
 })
 
 // PWA-optimized build configuration
@@ -55,7 +58,20 @@ export const pwaBuildConfig = (): Partial<UserConfig> => ({
     cssCodeSplit: false, // Single CSS file for PWA
     sourcemap: false,
     reportCompressedSize: false, // Faster builds
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress chunk size warnings for our specific case
+        if (
+          warning.code === 'CHUNK_SIZE_WARNING' ||
+          (warning.message && warning.message.includes('Some chunks are larger than 500 kB'))
+        ) {
+          return
+        }
+        warn(warning)
+      },
       external: [
         'fs',
         'path',
@@ -82,25 +98,29 @@ export const pwaBuildConfig = (): Partial<UserConfig> => ({
         'vm',
         'worker_threads',
         '@kurrent/kurrentdb-client',
+        '@kurrent/bridge-darwin-arm64',
+        '@grpc/grpc-js',
+        '@grpc/proto-loader',
       ],
-      onwarn(warning, warn) {
-        // Suppress warnings about /*#__PURE__*/ comments in ox package
-        if (
-          warning.message &&
-          warning.message.includes('/*#__PURE__*/') &&
-          warning.message.includes('ox')
-        ) {
-          return
-        }
-        warn(warning)
+      treeshake: {
+        moduleSideEffects: false,
+        propertyReadSideEffects: false,
+        tryCatchDeoptimization: false,
+        unknownGlobalSideEffects: false,
+        annotations: true,
       },
       output: {
         manualChunks: {
           'vue-vendor': ['vue', 'vue-router', 'pinia'],
           'ui-vendor': ['primevue'],
-          'utils-vendor': ['@tanstack/vue-query'],
-          'walletconnect-core': ['@walletconnect/sign-client', '@walletconnect/types'],
+          'query-vendor': ['@tanstack/vue-query'],
+          'walletconnect-core': [
+            '@walletconnect/sign-client',
+            '@walletconnect/types',
+            '@walletconnect/utils',
+          ],
           'walletconnect-ui': ['@walletconnect/modal', '@web3modal/standalone'],
+          'crypto-vendor': ['viem', 'ox'],
           'socket-vendor': ['socket.io-client'],
           'qrcode-vendor': ['qrcode'],
         },
@@ -160,6 +180,21 @@ export const assetOptimizationConfig = (): Partial<UserConfig> => ({
   build: {
     rollupOptions: {
       output: {
+        // Manual chunks for better code splitting
+        manualChunks: {
+          'vue-vendor': ['vue', 'vue-router', 'pinia'],
+          'ui-vendor': ['primevue'],
+          'query-vendor': ['@tanstack/vue-query'],
+          'walletconnect-core': [
+            '@walletconnect/sign-client',
+            '@walletconnect/types',
+            '@walletconnect/utils',
+          ],
+          'walletconnect-ui': ['@walletconnect/modal', '@web3modal/standalone'],
+          'crypto-vendor': ['viem', 'ox'],
+          'socket-vendor': ['socket.io-client'],
+          'qrcode-vendor': ['qrcode'],
+        },
         // Ensure critical assets are properly handled
         assetFileNames: assetInfo => {
           if (!assetInfo.name) {
