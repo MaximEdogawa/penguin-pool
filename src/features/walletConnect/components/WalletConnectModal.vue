@@ -187,7 +187,6 @@
 </template>
 
 <script setup lang="ts">
-  import { sessionManager } from '@/shared/services/sessionManager'
   import QRCode from 'qrcode'
   import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { useWalletConnectService } from '../services/WalletConnectService'
@@ -351,7 +350,7 @@
     approval: () => Promise<unknown>
   } | null> => {
     try {
-      if (!walletService.isInitialized()) {
+      if (!walletService.isInitialized) {
         console.log('Initializing wallet service before connection...')
         await walletService.initialize()
       }
@@ -652,18 +651,11 @@
     processingMessage.value = 'Restarting connection...'
 
     try {
-      // Clear any existing session data
-      await sessionManager.clearAllSessionData({
-        clearWalletConnect: true,
-        clearUserData: false,
-        clearThemeData: false,
-        clearPWAStorage: true,
-        clearServiceWorker: true,
-        clearAllCaches: false,
-      })
+      // Don't clear session data during connection restart - only clear on logout
+      // The session clearing should only happen in the logout process
 
       // Reinitialize the wallet service
-      if (!walletService.isInitialized()) {
+      if (!walletService.isInitialized) {
         await walletService.initialize()
       }
 
@@ -774,7 +766,7 @@
       updateProgress(10, 'Refreshing connection code...')
 
       // Get new connection from service
-      const newConnection = await walletService.startConnection()
+      const newConnection = await walletService.connect()
 
       if (!newConnection) {
         throw new Error('Failed to start new connection')

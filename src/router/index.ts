@@ -7,16 +7,16 @@ import {
 import '@/types/router'
 import { createRouter, createWebHistory } from 'vue-router'
 
-// Dynamic imports for better code splitting
-const LoginPage = () => import('@/pages/Auth/LoginPage.vue')
-const DashboardPage = () => import('@/pages/Dashboard/DashboardPage.vue')
-const OffersPage = () => import('@/pages/Offers/OffersPage.vue')
-const LoansPage = () => import('@/pages/Loans/LoansPage.vue')
-const OptionContractsPage = () => import('@/pages/OptionContracts/OptionContractsPage.vue')
-const PiggyBankPage = () => import('@/pages/PiggyBank/PiggyBankPage.vue')
-const WalletPage = () => import('@/pages/Wallet/WalletPage.vue')
-const ProfilePage = () => import('@/pages/Profile/ProfilePage.vue')
-const ServiceHealthPage = () => import('@/pages/ServiceHealth/ServiceHealthPage.vue')
+// Static imports to avoid dynamic import issues
+import LoginPage from '@/pages/Auth/LoginPage.vue'
+import DashboardPage from '@/pages/Dashboard/DashboardPage.vue'
+import LoansPage from '@/pages/Loans/LoansPage.vue'
+import OffersPage from '@/pages/Offers/OffersPage.vue'
+import OptionContractsPage from '@/pages/OptionContracts/OptionContractsPage.vue'
+import PiggyBankPage from '@/pages/PiggyBank/PiggyBankPage.vue'
+import ProfilePage from '@/pages/Profile/ProfilePage.vue'
+import ServiceHealthPage from '@/pages/ServiceHealth/ServiceHealthPage.vue'
+import WalletPage from '@/pages/Wallet/WalletPage.vue'
 
 const routes = [
   {

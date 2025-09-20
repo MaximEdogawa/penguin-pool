@@ -2,6 +2,53 @@
 export const CHIA_MAINNET_CHAIN_ID = 'chia:mainnet'
 export const CHIA_TESTNET_CHAIN_ID = 'chia:testnet'
 
+// Helper function to get the current URL dynamically
+const getCurrentUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin
+  }
+  // This should not happen in the browser, but just in case
+  return 'https://penguin.pool'
+}
+
+/**
+ * Detect if the current platform is iOS (iPhone/iPad)
+ * Handles the case where iPhone user agents contain "Mac OS X"
+ */
+export const isIOS = (): boolean => {
+  if (typeof window === 'undefined') return false
+
+  const userAgent = navigator.userAgent
+
+  // Check for actual iOS devices first (iPhone/iPad/iPod)
+  const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent)
+
+  if (!isIOSDevice) {
+    console.log('🖥️ Non-iOS platform detected - user agent:', userAgent)
+    return false
+  }
+
+  // Check if it's actually macOS (not iOS)
+  // Modern iPhones report as "Mac OS X" in user agent but are still iOS
+  const isMacOS = /Mac OS X/.test(userAgent) && !/iPhone|iPad|iPod/.test(userAgent)
+
+  if (isMacOS) {
+    console.log('🖥️ macOS detected - not iOS')
+    return false
+  }
+
+  // If it has iPhone/iPad/iPod in user agent, it's iOS regardless of Mac OS X
+  const result = isIOSDevice && !('MSStream' in window)
+
+  if (result) {
+    console.log('🍎 iOS detected - user agent:', userAgent)
+  } else {
+    console.log('🖥️ Non-iOS platform detected - user agent:', userAgent)
+  }
+
+  return result
+}
+
 export const environment = {
   // App configuration
   appName: 'Penguin-pool',
@@ -39,33 +86,55 @@ export const environment = {
       metadata: {
         name: 'Penguin Pool',
         description: 'Decentralized lending platform on Chia Network',
-        url: import.meta.env.DEV ? window.location.origin : 'https://penguin.pool',
+        url: getCurrentUrl(),
         icons: ['https://penguin.pool/icon.png'],
       },
       chainId: (() => {
         const network = import.meta.env.VITE_CHIA_NETWORK || 'testnet'
         return network === 'mainnet' ? CHIA_MAINNET_CHAIN_ID : CHIA_TESTNET_CHAIN_ID
       })(),
-      relayUrl: 'wss://relay.walletconnect.com',
-      // iOS-specific configuration
+      // Alternative relay URLs (in order of preference)
+      relayUrls: (() => {
+        if (isIOS()) {
+          // For iOS, try WebSocket first (needed for URI generation), then HTTPS for receiving
+          return [
+            'wss://relay.walletconnect.org', // WebSocket primary for iOS (generates URIs)
+            'wss://relay.walletconnect.com', // WebSocket secondary for iOS
+            'wss://relay.walletconnect.io', // WebSocket tertiary for iOS
+            'https://relay.walletconnect.org', // HTTPS fallback (for receiving only)
+            'https://relay.walletconnect.com', // HTTPS fallback (for receiving only)
+          ]
+        } else {
+          // Use WebSocket relays for other platforms
+          return [
+            'wss://relay.walletconnect.org', // More reliable
+            'wss://relay.walletconnect.com', // Primary relay
+            'wss://relay.walletconnect.io', // Alternative relay
+          ]
+        }
+      })(),
+      // Connection settings optimized for mobile and desktop
+      connectionTimeout: (() => {
+        return isIOS() ? 90000 : 60000 // Longer timeout for iOS HTTP connections
+      })(),
+      maxReconnectionAttempts: 8, // More attempts for better reliability
+      reconnectionDelay: (() => {
+        return isIOS() ? 2000 : 1500 // Slightly longer delay for iOS
+      })(),
+      // Health check settings
+      healthCheckInterval: 20000, // Check every 20 seconds
+      maxConsecutiveFailures: 3, // More tolerant of failures
+      // App switching specific settings
+      appSwitchTimeout: 30000, // Timeout for app switching scenarios
+      backgroundGracePeriod: 60000, // Grace period before pausing monitoring
+      foregroundReconnectDelay: 1000, // Delay before reconnecting on foreground
+      // iOS-specific settings
       ios: {
-        // Alternative relay URLs for iOS (in order of preference)
-        relayUrls: [
-          'wss://relay.walletconnect.org', // More reliable for iOS
-          'wss://relay.walletconnect.com', // Primary relay
-          'wss://relay.walletconnect.io', // Alternative relay
-        ],
-        // Connection settings optimized for iOS
-        connectionTimeout: 60000, // Increased timeout for iOS app switching
-        maxReconnectionAttempts: 8, // More attempts for iOS
-        reconnectionDelay: 1500, // Faster reconnection
-        // Health check settings for iOS
-        healthCheckInterval: 20000, // Check every 20 seconds on iOS
-        maxConsecutiveFailures: 3, // More tolerant of failures
-        // App switching specific settings
-        appSwitchTimeout: 30000, // Timeout for app switching scenarios
-        backgroundGracePeriod: 60000, // Grace period before pausing monitoring
-        foregroundReconnectDelay: 1000, // Delay before reconnecting on foreground
+        useHttpRelay: false, // Use WebSocket first for URI generation, HTTPS as fallback
+        extendedTimeout: true, // Use extended timeouts for iOS
+        fallbackToWebSocket: false, // WebSocket is primary, not fallback
+        requiresHttps: true, // iOS requires HTTPS for relay to work properly
+        retryRelays: true, // Try multiple relay URLs
       },
     },
   },

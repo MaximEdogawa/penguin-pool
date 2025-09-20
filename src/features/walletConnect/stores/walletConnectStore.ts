@@ -55,7 +55,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       // Set up event listeners immediately before any initialization
       setupEventListeners()
 
-      if (!walletConnectService.isInitialized()) {
+      if (!walletConnectService.isInitialized) {
         await walletConnectService.initialize()
       } else {
         console.log('WalletConnect service already initialized')
@@ -73,17 +73,29 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
       const result = await walletConnectService.connect(pairing)
 
-      if (result.success && result.session) {
-        session.value = result.session
-        accounts.value = result.accounts || []
-        chainId.value = walletConnectService.getNetworkInfo().chainId
-        isConnected.value = true
-        setupEventListeners()
-      } else {
-        error.value = result.error || 'Connection failed'
-      }
+      if (result) {
+        // Wait for approval
+        const sessionResult = await result.approval()
 
-      return result
+        if (sessionResult) {
+          const sessionData = walletConnectService.getSession()
+          const accountsData = walletConnectService.getAccounts()
+
+          session.value = sessionData
+          accounts.value = accountsData
+          chainId.value = walletConnectService.getNetworkInfo().chainId
+          isConnected.value = true
+          setupEventListeners()
+
+          return { success: true, session: sessionData || undefined, accounts: accountsData }
+        } else {
+          error.value = 'Connection failed - no session received'
+          return { success: false, error: 'Connection failed - no session received' }
+        }
+      } else {
+        error.value = 'Connection failed'
+        return { success: false, error: 'Connection failed' }
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Connection failed'
       error.value = errorMessage
@@ -98,11 +110,11 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     approval: () => Promise<unknown>
   } | null> => {
     try {
-      if (!walletConnectService.isInitialized()) {
+      if (!walletConnectService.isInitialized) {
         await walletConnectService.initialize()
       }
 
-      return await walletConnectService.startConnection()
+      return await walletConnectService.connect()
     } catch (err) {
       console.error('Failed to start connection:', err)
       return null
@@ -111,7 +123,16 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const disconnect = async (): Promise<DisconnectResult> => {
     try {
-      // Clear wallet state first
+      // First, properly disconnect from the wallet
+      if (walletConnectService.isConnected()) {
+        console.log('Disconnecting from Sage wallet...')
+        const disconnectResult = await walletConnectService.disconnect()
+        if (!disconnectResult.success) {
+          console.warn('Failed to disconnect from wallet:', disconnectResult.error)
+        }
+      }
+
+      // Clear wallet state
       isConnected.value = false
       session.value = null
       accounts.value = []
@@ -132,7 +153,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       })
 
       // Reset the wallet connect service after clearing storage
-      await walletConnectService.forceReset()
+      walletConnectService.forceReset()
 
       console.log('Wallet disconnect completed successfully')
       return { success: true }
@@ -159,8 +180,11 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
         // Fetch wallet info when restoring session
         try {
           const fetchedWalletInfo = await getWalletInfo()
+          console.log('🔍 restoreSession - Fetched wallet info:', fetchedWalletInfo)
           if (fetchedWalletInfo.success && fetchedWalletInfo.data) {
             walletInfo.value = fetchedWalletInfo.data
+            console.log('🔍 restoreSession - Updated walletInfo.value:', walletInfo.value)
+            console.log('🔍 restoreSession - Balance in walletInfo:', walletInfo.value.balance)
 
             // Sync with user store if user is not already authenticated
             const userStore = useUserStore()
@@ -205,7 +229,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
         throw new Error('Not connected to wallet')
       }
 
-      return await walletConnectService.request(method, params)
+      return await walletConnectService.request(method, Object.values(params))
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Request failed'
       error.value = errorMessage
@@ -283,8 +307,6 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     accounts.value = []
     chainId.value = null
     walletInfo.value = null
-    const userStore = useUserStore()
-    userStore.logout()
   }
 
   const handleSessionExpire = (): void => {
@@ -293,8 +315,6 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     accounts.value = []
     chainId.value = null
     walletInfo.value = null
-    const userStore = useUserStore()
-    userStore.logout()
   }
 
   const handleSessionUpdate = (event: WalletConnectEvent): void => {
@@ -348,8 +368,10 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
         isConnected.value = true
 
         const fetchedWalletInfo = await getWalletInfo()
+        console.log('🔍 handleSessionUpdate - Fetched wallet info:', fetchedWalletInfo)
         if (fetchedWalletInfo.success && fetchedWalletInfo.data) {
           walletInfo.value = fetchedWalletInfo.data
+          console.log('🔍 handleSessionUpdate - Updated walletInfo.value:', walletInfo.value)
 
           // Sync with user store if user is not already authenticated
           const userStore = useUserStore()
@@ -381,6 +403,22 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     return walletConnectService.getPairings()
   })
 
+  const balance = computed(() => {
+    const bal = walletInfo.value?.balance || null
+    console.log('🔍 balance computed - walletInfo.value:', walletInfo.value)
+    console.log('🔍 balance computed - balance:', bal)
+    return bal
+  })
+
+  const formattedBalance = computed(() => {
+    if (!balance.value) return '0.000000000000'
+    const balanceInXCH = parseFloat(balance.value.spendable) / 1000000000000
+    const formatted = balanceInXCH.toFixed(12)
+    console.log('🔍 formattedBalance computed - balance.value:', balance.value)
+    console.log('🔍 formattedBalance computed - formatted:', formatted)
+    return formatted
+  })
+
   const executeCommand = async <TParams extends Record<string, unknown>, TResponse>(
     command: string,
     params: TParams
@@ -388,12 +426,12 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     try {
       const result = await walletConnectService.request<TResponse>(
         command as string,
-        params as Record<string, unknown>
+        Object.values(params as Record<string, unknown>)
       )
       return {
-        success: !!result?.data,
-        data: result?.data,
-        error: result?.data ? undefined : 'Command execution failed',
+        success: !!result,
+        data: result,
+        error: result ? undefined : 'Command execution failed',
       }
     } catch (err) {
       console.error(`Command execution failed (${command}):`, err)
@@ -412,6 +450,8 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     chainId,
     error,
     walletInfo,
+    balance,
+    formattedBalance,
     state,
     hasChiaAccount,
     primaryAccount,

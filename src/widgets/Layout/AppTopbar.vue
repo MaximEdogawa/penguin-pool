@@ -87,6 +87,7 @@
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useNotificationStore } from '@/features/notifications/store/notificationStore'
   import { useThemeStore } from '@/features/theme/store/themeStore'
+  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import AppConfigurator from './AppConfigurator.vue'
@@ -158,9 +159,15 @@
 
   const handleLogout = async () => {
     try {
-      // Use centralized logout through user store
-      const userStore = useUserStore()
-      await userStore.logout()
+      // Use wallet store disconnect which handles comprehensive clearing
+      const walletStore = useWalletConnectStore()
+      if (walletStore.isConnected) {
+        await walletStore.disconnect()
+      } else {
+        // If wallet not connected, still clear user data
+        const userStore = useUserStore()
+        await userStore.logout()
+      }
 
       isUserMenuVisible.value = false
 

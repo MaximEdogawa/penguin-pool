@@ -13,13 +13,13 @@ export const CHIA_CHAIN_ID = environment.wallet.walletConnect.chainId
 export { CHIA_MAINNET_CHAIN_ID, CHIA_TESTNET_CHAIN_ID }
 
 export const CHIA_METADATA: CoreTypes.Metadata = {
-  name: 'Penguin Pool',
-  description: 'Decentralized lending platform on Chia Network',
-  url: typeof window !== 'undefined' ? window.location.origin : 'https://penguin.pool',
-  icons: ['https://penguin.pool/icon.png'],
+  name: environment.wallet.walletConnect.metadata.name,
+  description: environment.wallet.walletConnect.metadata.description,
+  url: environment.wallet.walletConnect.metadata.url,
+  icons: [...environment.wallet.walletConnect.metadata.icons],
 }
 
-// Required namespaces for Sage wallet connect commands
+// Namespaces for Sage wallet connect commands (used as optional namespaces in WalletConnect v2)
 export const REQUIRED_NAMESPACES = {
   chia: {
     methods: [
