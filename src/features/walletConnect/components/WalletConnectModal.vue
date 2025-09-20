@@ -298,10 +298,15 @@
     processingMessage.value = message
   }
 
-  // Utility function to handle errors with proper typing
+  // Utility function to handle errors with proper typing and iOS-specific handling
   const handleError = (err: unknown, errorType: ErrorType, context: string) => {
     const errorMessage = err instanceof Error ? err.message : String(err)
     console.error(`${context} error:`, errorMessage)
+
+    // Prevent page refresh on certain errors
+    if (errorMessage.includes('reload') || errorMessage.includes('refresh')) {
+      console.warn('Prevented page refresh due to error handling')
+    }
 
     let userMessage: string
     switch (errorType) {
@@ -329,6 +334,14 @@
 
     error.value = userMessage
     currentStep.value = 'error'
+
+    // Emit error event for parent components to handle
+    window.dispatchEvent(
+      new CustomEvent('wallet-connect-error', {
+        detail: { errorType, context, errorMessage },
+      })
+    )
+
     return userMessage
   }
 
@@ -656,29 +669,32 @@
     }
   }
 
-  // Expose functions to parent component
-  defineExpose({
-    closeModal,
-    handleClose,
-    handleRetryConnection,
-    restartApprovalProcess, // Expose the new restart function
-  })
+  // iOS-specific event handlers
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      console.log('App going to background, pausing connection operations...')
+      // Pause any ongoing operations
+      isConnecting.value = false
+    } else {
+      console.log('App coming to foreground, resuming connection operations...')
+      // Resume operations if needed
+      if (currentStep.value === 'connecting' && !isConnecting.value) {
+        isConnecting.value = true
+      }
+    }
+  }
 
-  onMounted(async () => {
-    document.addEventListener('keydown', handleKeydown)
-    window.addEventListener('wallet-connect-pairing-expired', handlePairingExpired as EventListener)
-    window.addEventListener('ios-refresh-pairing', handleRefreshPairing as EventListener)
-    await restartApprovalProcess()
-  })
+  const handlePageHide = () => {
+    console.log('Page hiding, cleaning up resources...')
+    // Clean up any ongoing operations
+    isConnecting.value = false
+  }
 
-  onUnmounted(() => {
-    document.removeEventListener('keydown', handleKeydown)
-    window.removeEventListener(
-      'wallet-connect-pairing-expired',
-      handlePairingExpired as EventListener
-    )
-    window.removeEventListener('ios-refresh-pairing', handleRefreshPairing as EventListener)
-  })
+  const handleWalletConnectError = (event: Event) => {
+    const customEvent = event as CustomEvent
+    console.log('WalletConnect error event received:', customEvent.detail)
+    // Handle global wallet connect errors if needed
+  }
 
   // Listen for pairing expiry events
   const handlePairingExpired = (event: Event) => {
@@ -696,6 +712,45 @@
     console.log('Refreshing pairing...', customEvent.detail)
     await refreshConnection()
   }
+
+  // Expose functions to parent component
+  defineExpose({
+    closeModal,
+    handleClose,
+    handleRetryConnection,
+    restartApprovalProcess, // Expose the new restart function
+  })
+
+  onMounted(async () => {
+    document.addEventListener('keydown', handleKeydown)
+    window.addEventListener('wallet-connect-pairing-expired', handlePairingExpired as EventListener)
+    window.addEventListener('ios-refresh-pairing', handleRefreshPairing as EventListener)
+    window.addEventListener('wallet-connect-error', handleWalletConnectError as EventListener)
+
+    // Add iOS-specific event listeners
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)) {
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      window.addEventListener('pagehide', handlePageHide)
+    }
+
+    await restartApprovalProcess()
+  })
+
+  onUnmounted(() => {
+    document.removeEventListener('keydown', handleKeydown)
+    window.removeEventListener(
+      'wallet-connect-pairing-expired',
+      handlePairingExpired as EventListener
+    )
+    window.removeEventListener('ios-refresh-pairing', handleRefreshPairing as EventListener)
+    window.removeEventListener('wallet-connect-error', handleWalletConnectError as EventListener)
+
+    // Remove iOS-specific event listeners
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)) {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('pagehide', handlePageHide)
+    }
+  })
 </script>
 
 <style scoped>

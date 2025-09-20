@@ -36,6 +36,20 @@ export class WalletConnectService {
   private initializationPromise: Promise<void> | null = null
   private lastInitializationError: Error | null = null
 
+  // iOS-specific properties for app switching
+  private isIOS = false
+  private isInBackground = false
+  private backgroundGracePeriod: NodeJS.Timeout | null = null
+  private visibilityChangeHandler: (() => void) | null = null
+  private beforeUnloadHandler: (() => void) | null = null
+  private pageHideHandler: (() => void) | null = null
+  private reconnectionAttempts = 0
+  private maxReconnectionAttempts = 3
+  private reconnectionDelay = 1000
+  private isReconnecting = false
+  private lastActiveTime = 0
+  private connectionRestoreTimeout: NodeJS.Timeout | null = null
+
   private async tryOpenUrl(url: string): Promise<boolean> {
     return new Promise(resolve => {
       const startTime = Date.now()
@@ -73,11 +87,239 @@ export class WalletConnectService {
   }
 
   private getRelayUrls(): string[] {
+    // Use iOS-optimized relay URLs if on iOS
+    if (this.isIOS) {
+      return environment.wallet.walletConnect.ios?.relayUrls
+        ? [...environment.wallet.walletConnect.ios.relayUrls]
+        : [
+            'wss://relay.walletconnect.org', // More reliable for iOS
+            'wss://relay.walletconnect.com', // Primary relay
+            'wss://relay.walletconnect.io', // Alternative relay
+          ]
+    }
+
     return [
       'wss://relay.walletconnect.com',
       'wss://relay.walletconnect.org',
       'wss://relay.walletconnect.io',
     ]
+  }
+
+  private detectIOS(): boolean {
+    if (typeof window === 'undefined') return false
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)
+  }
+
+  /**
+   * Initialize iOS-specific event handlers for app switching
+   */
+  private initializeIOSHandlers(): void {
+    if (typeof window === 'undefined' || !this.isIOS) return
+
+    // Handle visibility changes (app switching)
+    this.visibilityChangeHandler = () => {
+      if (document.hidden) {
+        this.handleAppBackground()
+      } else {
+        this.handleAppForeground()
+      }
+    }
+
+    // Handle page unload (cleanup)
+    this.beforeUnloadHandler = () => {
+      this.cleanupOnUnload()
+    }
+
+    // Handle page hide (iOS specific)
+    this.pageHideHandler = () => {
+      this.cleanupOnUnload()
+    }
+
+    // Add event listeners
+    document.addEventListener('visibilitychange', this.visibilityChangeHandler)
+    window.addEventListener('beforeunload', this.beforeUnloadHandler)
+    window.addEventListener('pagehide', this.pageHideHandler)
+
+    console.log('iOS app switching handlers initialized')
+  }
+
+  /**
+   * Clean up iOS-specific event handlers
+   */
+  private cleanupIOSHandlers(): void {
+    if (typeof window === 'undefined') return
+
+    if (this.visibilityChangeHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler)
+      this.visibilityChangeHandler = null
+    }
+
+    if (this.beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this.beforeUnloadHandler)
+      this.beforeUnloadHandler = null
+    }
+
+    if (this.pageHideHandler) {
+      window.removeEventListener('pagehide', this.pageHideHandler)
+      this.pageHideHandler = null
+    }
+
+    console.log('iOS-specific event handlers cleaned up')
+  }
+
+  /**
+   * Handle app going to background
+   */
+  private handleAppBackground(): void {
+    if (!this.isIOS) return
+
+    console.log('App going to background, preserving connection state...')
+    this.isInBackground = true
+    this.lastActiveTime = Date.now()
+
+    // Don't pause operations immediately - just mark as background
+    // This allows the connection to remain active during app switching
+  }
+
+  /**
+   * Handle app coming to foreground
+   */
+  private handleAppForeground(): void {
+    if (!this.isIOS) return
+
+    console.log('App coming to foreground, checking connection...')
+    this.isInBackground = false
+
+    // Check if we need to restore the connection
+    const timeInBackground = Date.now() - this.lastActiveTime
+    if (timeInBackground > 1000) {
+      // If we were in background for more than 1 second
+      this.restoreConnectionAfterAppSwitch()
+    }
+  }
+
+  /**
+   * Restore connection after app switching on iOS
+   */
+  private async restoreConnectionAfterAppSwitch(): Promise<void> {
+    if (!this.isIOS || !this.client) return
+
+    console.log('Restoring connection after app switch...')
+
+    try {
+      // Check if we have an active session
+      if (this.session) {
+        // Verify the session is still valid
+        const isConnected = this.isConnected()
+        if (!isConnected) {
+          console.log('Session lost during app switch, attempting to restore...')
+
+          // Try to restore the session from storage
+          await this.restoreSessionFromStorage()
+        } else {
+          console.log('Session is still active after app switch')
+        }
+      } else {
+        console.log('No active session to restore')
+      }
+    } catch (error) {
+      console.error('Failed to restore connection after app switch:', error)
+    }
+  }
+
+  /**
+   * Restore session from storage after app switch
+   */
+  private async restoreSessionFromStorage(): Promise<void> {
+    if (typeof window === 'undefined') return
+
+    try {
+      const storedSessionData = localStorage.getItem('walletConnect_session')
+      if (storedSessionData) {
+        const sessionData = JSON.parse(storedSessionData)
+
+        // Check if session is still valid (with some tolerance for clock drift)
+        const now = Math.floor(Date.now() / 1000)
+        const expiryBuffer = 300 // 5 minutes buffer
+        if (sessionData.expiry && sessionData.expiry > now - expiryBuffer) {
+          console.log('Restoring session from storage after app switch:', sessionData)
+
+          // Restore fingerprint and chainId from stored session data
+          this.setFingerprint(sessionData.fingerprint)
+          this.setChainId(sessionData.chainId)
+
+          // Create a minimal session object for compatibility
+          const restoredSession = {
+            topic: sessionData.topic,
+            expiry: sessionData.expiry,
+            namespaces: sessionData.namespaces || {},
+            requiredNamespaces: sessionData.requiredNamespaces || {},
+            optionalNamespaces: sessionData.optionalNamespaces || {},
+            self: sessionData.self || {},
+            peer: sessionData.peer || {},
+            acknowledged: true,
+            controller: sessionData.controller || '',
+            pairingTopic: sessionData.pairingTopic || '',
+            relay: sessionData.relay || { protocol: 'irn' },
+          } as SessionTypes.Struct
+
+          this.onSessionConnected(restoredSession)
+          console.log('Session restored from storage after app switch')
+        } else {
+          console.log('Stored session has expired, clearing...')
+          localStorage.removeItem('walletConnect_session')
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to restore session from storage after app switch:', error)
+      localStorage.removeItem('walletConnect_session')
+    }
+  }
+
+  /**
+   * Pause connection monitoring to save resources
+   */
+  private pauseConnectionMonitoring(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval)
+      this.healthCheckInterval = null
+      console.log('Connection monitoring paused')
+    }
+  }
+
+  /**
+   * Resume connection monitoring
+   */
+  private resumeConnectionMonitoring(): void {
+    if (this.isConnected() && !this.healthCheckInterval) {
+      console.log('Resuming connection monitoring...')
+      this.startConnectionMonitoring()
+    }
+  }
+
+  /**
+   * Clean up resources on page unload
+   */
+  private cleanupOnUnload(): void {
+    console.log('Cleaning up WalletConnect resources on unload...')
+
+    // Stop all monitoring
+    this.stopConnectionMonitoring()
+
+    // Clear iOS handlers
+    this.cleanupIOSHandlers()
+
+    // Clear background grace period
+    if (this.backgroundGracePeriod) {
+      clearTimeout(this.backgroundGracePeriod)
+      this.backgroundGracePeriod = null
+    }
+
+    // Clear event listeners
+    this.eventListeners.clear()
+
+    // Don't clear session data on unload - let it persist for restoration
+    console.log('WalletConnect cleanup completed')
   }
 
   private static readonly INIT_CONFIG = {
@@ -191,6 +433,13 @@ export class WalletConnectService {
       return
     }
 
+    // Detect iOS and initialize handlers
+    this.isIOS = this.detectIOS()
+    if (this.isIOS) {
+      console.log('iOS detected, initializing iOS-specific handlers')
+      this.initializeIOSHandlers()
+    }
+
     if (!this.isProperlyConfigured()) {
       const error = new Error('WalletConnect is not properly configured')
       console.error('Initialization failed:', error.message)
@@ -280,10 +529,23 @@ export class WalletConnectService {
       this.pairings = []
       this.eventListeners.clear()
 
+      // Reset iOS-specific state
+      this.isInBackground = false
+      this.reconnectionAttempts = 0
+      this.isReconnecting = false
+
       if (this.healthCheckInterval) {
         clearInterval(this.healthCheckInterval)
         this.healthCheckInterval = null
       }
+
+      if (this.backgroundGracePeriod) {
+        clearTimeout(this.backgroundGracePeriod)
+        this.backgroundGracePeriod = null
+      }
+
+      // Clean up iOS handlers
+      this.cleanupIOSHandlers()
 
       console.log('WalletConnect internal state cleared')
     } catch (error) {
@@ -891,9 +1153,16 @@ export class WalletConnectService {
   }
 
   /**
-   * Handle WebSocket reconnection
+   * Handle WebSocket reconnection with iOS-specific optimizations
    */
   async handleWebSocketReconnection(): Promise<boolean> {
+    if (this.isReconnecting) {
+      console.log('Reconnection already in progress, skipping...')
+      return false
+    }
+
+    this.isReconnecting = true
+
     try {
       if (!this.client) {
         console.log('No client available for reconnection')
@@ -916,6 +1185,16 @@ export class WalletConnectService {
         }
       }
 
+      // For iOS, use exponential backoff with jitter
+      if (this.isIOS) {
+        const baseDelay = this.reconnectionDelay
+        const jitter = Math.random() * 1000 // Add up to 1 second of jitter
+        const delay = baseDelay * Math.pow(2, this.reconnectionAttempts) + jitter
+
+        console.log(`iOS reconnection delay: ${delay}ms (attempt ${this.reconnectionAttempts + 1})`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+
       // Try to reconnect by reinitializing the client
       console.log('Reinitializing WalletConnect client...')
       await this.initialize()
@@ -923,6 +1202,7 @@ export class WalletConnectService {
       // Check if we can restore the session
       if (this.session) {
         console.log('Session restored after reconnection')
+        this.reconnectionAttempts = 0 // Reset on success
         return true
       }
 
@@ -930,21 +1210,41 @@ export class WalletConnectService {
       return false
     } catch (error) {
       console.error('WebSocket reconnection failed:', error)
+      this.reconnectionAttempts++
+
+      // If we've exceeded max attempts, reset the counter
+      if (this.reconnectionAttempts >= this.maxReconnectionAttempts) {
+        console.warn('Max reconnection attempts reached, resetting counter')
+        this.reconnectionAttempts = 0
+      }
+
       return false
+    } finally {
+      this.isReconnecting = false
     }
   }
 
   /**
-   * Monitor connection health and auto-reconnect if needed
+   * Monitor connection health and auto-reconnect if needed with iOS optimizations
    */
   startConnectionMonitoring(): void {
     if (typeof window === 'undefined') return
 
     let consecutiveFailures = 0
-    const maxConsecutiveFailures = 3
-    let checkInterval = 60000
+    const maxConsecutiveFailures = this.isIOS
+      ? environment.wallet.walletConnect.ios?.maxConsecutiveFailures || 3
+      : 3
+    let checkInterval = this.isIOS
+      ? environment.wallet.walletConnect.ios?.healthCheckInterval || 20000
+      : 60000
 
     const performHealthCheck = async () => {
+      // Skip health checks if in background on iOS
+      if (this.isIOS && this.isInBackground) {
+        console.log('Skipping health check - app in background')
+        return
+      }
+
       if (!this.isConnected()) {
         clearInterval(this.healthCheckInterval!)
         return
@@ -954,7 +1254,7 @@ export class WalletConnectService {
         const health = await this.checkConnectionHealth()
         if (health.healthy) {
           consecutiveFailures = 0
-          checkInterval = 60000 // Reset interval
+          checkInterval = this.isIOS ? 20000 : 60000 // Reset interval
         } else {
           consecutiveFailures++
           console.warn(
@@ -963,17 +1263,22 @@ export class WalletConnectService {
 
           if (consecutiveFailures >= maxConsecutiveFailures) {
             console.warn('Multiple consecutive health check failures, attempting reconnection...')
-            await this.handleWebSocketReconnection()
-            consecutiveFailures = 0
-            checkInterval = 120000 // Wait longer after reconnection attempt
+            const reconnected = await this.handleWebSocketReconnection()
+            if (reconnected) {
+              consecutiveFailures = 0
+              checkInterval = this.isIOS ? 30000 : 120000 // Wait longer after reconnection attempt
+            } else {
+              // If reconnection failed, increase interval more aggressively
+              checkInterval = Math.min(checkInterval * 2, this.isIOS ? 300000 : 600000)
+            }
           } else {
-            checkInterval = Math.min(checkInterval * 1.5, 300000)
+            checkInterval = Math.min(checkInterval * 1.5, this.isIOS ? 300000 : 600000)
           }
         }
       } catch (error) {
         console.error('Connection monitoring error:', error)
         consecutiveFailures++
-        checkInterval = Math.min(checkInterval * 1.5, 300000)
+        checkInterval = Math.min(checkInterval * 1.5, this.isIOS ? 300000 : 600000)
       }
 
       // Schedule next check
@@ -1071,7 +1376,7 @@ export class WalletConnectService {
     // Update fingerprint and chainId from session
     this.updateFingerprintAndChainIdFromSession(session)
 
-    // Store session data in PWA storage
+    // Store session data in PWA storage with iOS-specific optimizations
     if (typeof window !== 'undefined') {
       try {
         const sessionData = {
@@ -1081,8 +1386,19 @@ export class WalletConnectService {
           accounts: allNamespaceAccounts,
           expiry: session.expiry,
           timestamp: Date.now(),
+          isIOS: this.isIOS, // Store iOS flag for restoration
+          version: '2.0', // Version for future compatibility
         }
-        localStorage.setItem('walletConnect_session', JSON.stringify(sessionData))
+
+        // Use both localStorage and sessionStorage for iOS reliability
+        const sessionDataString = JSON.stringify(sessionData)
+        localStorage.setItem('walletConnect_session', sessionDataString)
+
+        // Also store in sessionStorage for iOS PWA reliability
+        if (this.isIOS) {
+          sessionStorage.setItem('walletConnect_session', sessionDataString)
+        }
+
         console.log('Session data stored in PWA storage:', sessionData)
       } catch (error) {
         console.warn('Failed to store session data in PWA storage:', error)
@@ -1094,6 +1410,7 @@ export class WalletConnectService {
       fingerprint: this.fingerprint,
       chainId: this.chainId,
       accounts: allNamespaceAccounts,
+      isIOS: this.isIOS,
     })
 
     // Start connection monitoring for this session
@@ -1109,6 +1426,9 @@ export class WalletConnectService {
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('walletConnect_session')
+        if (this.isIOS) {
+          sessionStorage.removeItem('walletConnect_session')
+        }
         console.log('Session data cleared from PWA storage')
       } catch (error) {
         console.warn('Failed to clear session data from PWA storage:', error)
@@ -1144,7 +1464,12 @@ export class WalletConnectService {
     // If no WalletConnect session, try to restore from PWA storage
     if (typeof window !== 'undefined') {
       try {
-        const storedSessionData = localStorage.getItem('walletConnect_session')
+        // Try localStorage first, then sessionStorage for iOS
+        let storedSessionData = localStorage.getItem('walletConnect_session')
+        if (!storedSessionData && this.isIOS) {
+          storedSessionData = sessionStorage.getItem('walletConnect_session')
+        }
+
         if (storedSessionData) {
           const sessionData = JSON.parse(storedSessionData)
 
@@ -1200,11 +1525,17 @@ export class WalletConnectService {
           } else {
             console.log('Stored session expired, clearing PWA storage')
             localStorage.removeItem('walletConnect_session')
+            if (this.isIOS) {
+              sessionStorage.removeItem('walletConnect_session')
+            }
           }
         }
       } catch (error) {
         console.warn('Failed to restore session from PWA storage:', error)
         localStorage.removeItem('walletConnect_session')
+        if (this.isIOS) {
+          sessionStorage.removeItem('walletConnect_session')
+        }
       }
     }
   }

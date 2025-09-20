@@ -96,9 +96,10 @@
 </template>
 
 <script setup lang="ts">
+  import signinGlassImage from '@/assets/signin-glass.jpg'
   import FeatureFlag from '@/components/FeatureFlag.vue'
-  import PenguinLogo from '@/components/PenguinLogo.vue'
   import PWAInstallPrompt from '@/components/PWAInstallPrompt.vue'
+  import PenguinLogo from '@/components/PenguinLogo.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
   import WalletConnectModal from '@/features/walletConnect/components/WalletConnectModal.vue'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
@@ -119,7 +120,7 @@
   const isConnecting = computed(() => walletConnectStore.isConnecting)
 
   const backgroundStyle = computed(() => ({
-    backgroundImage: "url('/src/assets/signin-glass.jpg')",
+    backgroundImage: `url('${signinGlassImage}')`,
   }))
 
   const handleWalletConnected = async (walletInfo: unknown) => {

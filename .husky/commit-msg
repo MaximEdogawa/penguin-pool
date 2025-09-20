@@ -1,5 +1,4 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
 
 # Conventional commit message format
 # Format: <type>(<scope>): <description>
