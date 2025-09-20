@@ -39,7 +39,7 @@ export const environment = {
       metadata: {
         name: 'Penguin Pool',
         description: 'Decentralized lending platform on Chia Network',
-        url: 'https://penguin.pool',
+        url: import.meta.env.DEV ? window.location.origin : 'https://penguin.pool',
         icons: ['https://penguin.pool/icon.png'],
       },
       chainId: (() => {

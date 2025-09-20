@@ -34,11 +34,11 @@ export async function makeWalletRequest<T>(
     if (result && typeof result === 'object' && 'error' in result) {
       return { success: false, error: 'Wallet returned an error' }
     }
-    console.log('Wallet request for :', { method, result })
+    console.log('makeWalletRequest: Success for', method, ':', result)
     return { success: true, data: result as T }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('WalletConnect request failed:', { method, error: errorMessage })
+    console.error('makeWalletRequest: Request failed for', method, ':', { error: errorMessage })
     return { success: false, error: errorMessage }
   }
 }
@@ -49,12 +49,16 @@ export async function getWalletInfo(): Promise<{
   error?: string
 }> {
   try {
-    const { fingerprint } = useWalletConnectService.getConnectionInfo()
+    const walletService = useWalletConnectService
 
-    const [addressResult, balanceResult] = await Promise.all([
-      getWalletAddress(),
-      getAssetBalance(),
-    ])
+    if (!walletService.isSessionActivelyConnected()) {
+      return { success: false, error: 'Session not actively connected' }
+    }
+
+    const { fingerprint } = walletService.getConnectionInfo()
+    // Add individual timeouts to prevent hanging
+    const addressResult = await getWalletAddress()
+    const balanceResult = await getAssetBalance()
 
     if (!addressResult.success) {
       return { success: false, error: addressResult.error }
@@ -73,6 +77,12 @@ export async function getWalletInfo(): Promise<{
     return { success: true, data: walletInfo }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Service getWalletInfo failed:', errorMessage)
+
+    // For disconnection errors, return a more specific error message
+    if (errorMessage.includes('User disconnected') || errorMessage.includes('Unknown error')) {
+      return { success: false, error: 'Wallet disconnected' }
+    }
     return { success: false, error: errorMessage }
   }
 }

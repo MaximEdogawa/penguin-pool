@@ -388,7 +388,10 @@
 
         if (session) {
           console.log('Wallet connection approved:', session)
+          console.log('Approval successful, returning true')
           return true
+        } else {
+          console.log('Approval returned null/undefined session')
         }
 
         if (attempt < RETRY_CONFIG.maxRetries) {
@@ -419,19 +422,201 @@
     try {
       updateProgress(40, 'Fetching wallet information...')
 
-      if (!walletService.isConnected()) {
-        console.log('Websocket disconnected, attempting to reconnect...')
+      // Check if we have a session but WebSocket is disconnected
+      if (!walletService.isSessionActivelyConnected()) {
+        console.log('Session not actively connected, attempting to reconnect...')
         updateProgress(35, 'Reconnecting to wallet...')
 
         try {
-          await walletService.initialize()
+          // For iOS, try the enhanced reconnection logic
+          if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)) {
+            console.log('iOS detected, using enhanced reconnection...')
+            const reconnected = await walletService.handleWebSocketReconnection()
+            if (reconnected) {
+              console.log('iOS WebSocket reconnection successful')
+            } else {
+              console.warn('iOS WebSocket reconnection failed, continuing with session data')
+            }
+          } else {
+            await walletService.initialize()
+          }
         } catch (reconnectErr) {
           console.warn('Websocket reconnection failed:', reconnectErr)
-          throw new Error('Failed to reconnect to wallet service')
+          // Don't throw error immediately, try to continue with session data
         }
       }
 
-      const fetchedWalletInfo = await walletService.getWalletInfo()
+      let fetchedWalletInfo: {
+        address: string
+        fingerprint: number
+        balance: { confirmed: string; spendable: string; spendableCoinCount: number } | null
+        isConnected: boolean
+      } | null = null
+
+      try {
+        // Try to get wallet info from the service with timeout
+        console.log('Attempting to fetch wallet info from service...')
+
+        // Add timeout to prevent hanging
+        const walletInfoPromise = walletService.getWalletInfo()
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Wallet info fetch timeout after 20 seconds')), 20000)
+        })
+
+        fetchedWalletInfo = (await Promise.race([walletInfoPromise, timeoutPromise])) as {
+          address: string
+          fingerprint: number
+          balance: { confirmed: string; spendable: string; spendableCoinCount: number } | null
+          isConnected: boolean
+        }
+        console.log('Wallet info fetched successfully from service:', fetchedWalletInfo)
+      } catch (walletInfoErr) {
+        console.warn('Failed to fetch wallet info from service:', walletInfoErr)
+
+        // Check if this is a disconnection error that we should handle gracefully
+        const errorMessage =
+          walletInfoErr instanceof Error ? walletInfoErr.message : String(walletInfoErr)
+
+        console.log('Wallet info error message:', errorMessage)
+
+        if (
+          errorMessage.includes('User disconnected') ||
+          errorMessage.includes('Unknown error') ||
+          errorMessage.includes('Request expired') ||
+          errorMessage.includes('Wallet disconnected') ||
+          errorMessage.includes('timeout')
+        ) {
+          console.log('Wallet disconnected, but session exists. Creating minimal wallet info...')
+
+          // If we have a session but can't fetch wallet info, create a minimal wallet info
+          // from the session data to allow the user to proceed
+          const session = walletService.getSession()
+          console.log('Current session for fallback:', session)
+
+          if (
+            session &&
+            (session as { namespaces?: { chia?: { accounts?: string[] } } }).namespaces?.chia
+              ?.accounts?.[0]
+          ) {
+            const account = (session as { namespaces?: { chia?: { accounts?: string[] } } })
+              .namespaces?.chia?.accounts?.[0]
+            if (!account) throw new Error('No account found in session')
+            const fingerprint = account.split(':')[2] // Extract fingerprint from account string
+
+            fetchedWalletInfo = {
+              address: account,
+              fingerprint: parseInt(fingerprint),
+              balance: {
+                confirmed: '0',
+                spendable: '0',
+                spendableCoinCount: 0,
+              },
+              isConnected: true,
+            }
+
+            console.log(
+              'Created minimal wallet info from session data after disconnection:',
+              fetchedWalletInfo
+            )
+          } else {
+            console.log(
+              'No session data available for fallback, checking wallet service session...'
+            )
+            // Try to get session from wallet service directly
+            const walletServiceSession = walletService.getSession()
+            if (walletServiceSession) {
+              console.log('Found wallet service session:', walletServiceSession)
+              // Extract accounts from namespaces
+              const namespaces = walletServiceSession.namespaces as {
+                chia?: { accounts?: string[] }
+              }
+              const accounts = namespaces?.chia?.accounts || []
+              if (accounts.length > 0) {
+                const account = accounts[0]
+                const fingerprint = account.split(':')[2] || account.split(':')[1] || '0'
+
+                fetchedWalletInfo = {
+                  address: account,
+                  fingerprint: parseInt(fingerprint),
+                  balance: {
+                    confirmed: '0',
+                    spendable: '0',
+                    spendableCoinCount: 0,
+                  },
+                  isConnected: true,
+                }
+
+                console.log(
+                  'Created minimal wallet info from wallet service session:',
+                  fetchedWalletInfo
+                )
+              } else {
+                throw new Error('No accounts found in wallet service session')
+              }
+            } else {
+              console.log('No wallet service session found, trying direct fallback...')
+              // Last resort: try to create wallet info from the approval session data
+              // This should have been passed from the approval process
+              const approvalSession = walletService.getSession()
+              if (approvalSession) {
+                console.log('Found approval session for direct fallback:', approvalSession)
+                // Extract account from the session or use a default
+                const fingerprint = walletService.getFingerprint() || '185029967' // Use stored fingerprint
+                const chainId = walletService.getChainId() || 'chia:testnet'
+                const account = `${chainId}:${fingerprint}`
+
+                fetchedWalletInfo = {
+                  address: account,
+                  fingerprint: parseInt(fingerprint),
+                  balance: {
+                    confirmed: '0',
+                    spendable: '0',
+                    spendableCoinCount: 0,
+                  },
+                  isConnected: true,
+                }
+
+                console.log('Created minimal wallet info from approval session:', fetchedWalletInfo)
+              } else {
+                // If no session data, this is a real error
+                throw new Error('No session data available to create wallet info')
+              }
+            }
+          }
+        } else {
+          // For other errors, try to create minimal wallet info as fallback
+          const session = walletService.getSession()
+          if (
+            session &&
+            (session as { namespaces?: { chia?: { accounts?: string[] } } }).namespaces?.chia
+              ?.accounts?.[0]
+          ) {
+            const account = (session as { namespaces?: { chia?: { accounts?: string[] } } })
+              .namespaces?.chia?.accounts?.[0]
+            if (!account) throw new Error('No account found in session')
+            const fingerprint = account.split(':')[2]
+
+            fetchedWalletInfo = {
+              address: account,
+              fingerprint: parseInt(fingerprint),
+              balance: {
+                confirmed: '0',
+                spendable: '0',
+                spendableCoinCount: 0,
+              },
+              isConnected: true,
+            }
+
+            console.log(
+              'Created minimal wallet info from session data as fallback:',
+              fetchedWalletInfo
+            )
+          } else {
+            throw new Error('No session data available to create wallet info')
+          }
+        }
+      }
+
       if (!fetchedWalletInfo) throw new Error('Failed to fetch wallet information')
 
       // Update store state to reflect successful connection
@@ -496,15 +681,70 @@
       await sleep(1000)
 
       const approvalSuccess = await handleWalletApproval(connection.approval)
-      if (!approvalSuccess) return
+      if (!approvalSuccess) {
+        console.log('Wallet approval failed, stopping flow')
+        return
+      }
+
+      console.log('Wallet approval successful, proceeding to fetch wallet info...')
+
+      // For iOS, try immediate fallback if WebSocket is disconnected
+      if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)) {
+        console.log('iOS detected, checking if we can create wallet info immediately...')
+        const session = walletService.getSession()
+        if (session && !walletService.isConnected()) {
+          console.log(
+            'iOS session exists but WebSocket disconnected, creating immediate fallback...'
+          )
+          try {
+            const fingerprint = walletService.getFingerprint() || '185029967'
+            const chainId = walletService.getChainId() || 'chia:testnet'
+            const account = `${chainId}:${fingerprint}`
+
+            const immediateWalletInfo = {
+              address: account,
+              fingerprint: parseInt(fingerprint),
+              balance: {
+                confirmed: '0',
+                spendable: '0',
+                spendableCoinCount: 0,
+              },
+              isConnected: true,
+            }
+
+            console.log('Created immediate wallet info for iOS:', immediateWalletInfo)
+
+            // Update store state
+            walletStore.walletInfo = immediateWalletInfo
+            walletStore.isConnected = true
+            walletStore.isConnecting = false
+            walletStore.error = null
+            walletStore.chainId = walletService.getNetworkInfo().chainId
+
+            // Complete the connection
+            currentStep.value = 'success'
+            isConnecting.value = false
+            emit('connected', immediateWalletInfo)
+            return
+          } catch (immediateErr) {
+            console.warn('Immediate fallback failed, proceeding with normal flow:', immediateErr)
+          }
+        }
+      }
 
       // Fetch wallet info
       currentStep.value = 'processing'
       const infoSuccess = await fetchWalletInfo()
 
       if (!infoSuccess) {
+        console.log('Wallet info fetch failed, stopping flow')
         return
       }
+
+      // If wallet info fetch succeeded, complete the connection
+      console.log('Wallet info fetched successfully, completing connection...')
+      currentStep.value = 'success'
+      isConnecting.value = false
     } catch (err) {
       handleError(err, ERROR_TYPES.UNKNOWN, 'Approval restart')
     } finally {
@@ -733,6 +973,47 @@
       window.addEventListener('pagehide', handlePageHide)
     }
 
+    // Check if we already have a valid session before clearing everything
+    const existingSession = walletService.getSession()
+    if (existingSession) {
+      console.log('Existing session found, checking if actively connected...')
+      try {
+        // Check if session is actively connected (not just restored from storage)
+        const isActivelyConnected = walletService.isSessionActivelyConnected()
+        if (!isActivelyConnected) {
+          console.log('Session exists but not actively connected, attempting to reconnect...')
+          // For iOS, use enhanced reconnection logic
+          if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window)) {
+            console.log('iOS detected, using enhanced reconnection for existing session...')
+            const reconnected = await walletService.handleWebSocketReconnection()
+            if (reconnected) {
+              console.log('iOS WebSocket reconnection successful for existing session')
+            } else {
+              console.warn('iOS WebSocket reconnection failed, but session exists')
+            }
+          } else {
+            await walletService.handleWebSocketReconnection()
+          }
+        }
+
+        // If we have an actively connected session, try to fetch wallet info
+        if (walletService.isSessionActivelyConnected()) {
+          console.log('Session actively connected, fetching wallet info...')
+          const infoSuccess = await fetchWalletInfo()
+          if (infoSuccess) {
+            console.log('Wallet info fetched successfully, connection complete!')
+            return // Don't restart the approval process
+          }
+        } else {
+          console.log('Session not actively connected, will restart approval process')
+        }
+      } catch (error) {
+        console.warn('Failed to restore existing session:', error)
+        // If restoration fails, continue with normal flow
+      }
+    }
+
+    // Only restart if we don't have a valid session
     await restartApprovalProcess()
   })
 

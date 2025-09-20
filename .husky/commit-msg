@@ -19,4 +19,4 @@ if ! grep -qE "$commit_regex" "$1"; then
     exit 1
 fi
 
-echo "✅ Commit message format is valid!" 
+echo "✅ Commit message format is valid!"

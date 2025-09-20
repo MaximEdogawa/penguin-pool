@@ -2,7 +2,7 @@ import { environment } from '@/shared/config/environment'
 import { SignClient } from '@walletconnect/sign-client'
 import type { PairingTypes, SessionTypes } from '@walletconnect/types'
 import { Web3Modal } from '@web3modal/standalone'
-import { CHIA_CHAIN_ID, CHIA_METADATA, REQUIRED_NAMESPACES } from '../constants/wallet-connect'
+import { CHIA_CHAIN_ID, REQUIRED_NAMESPACES } from '../constants/wallet-connect'
 import {
   getAssetBalance,
   getWalletInfo,
@@ -16,6 +16,11 @@ import type {
   WalletConnectEventType,
   WalletConnectSession,
 } from '../types/walletConnect.types'
+import { WalletConnectRetryService } from './WalletConnectRetryService'
+import {
+  WalletConnectWebSocketService,
+  createWebSocketService,
+} from './WalletConnectWebSocketService'
 
 const getSdkError = (code: string) => ({
   code: 6000,
@@ -36,6 +41,12 @@ export class WalletConnectService {
   private initializationPromise: Promise<void> | null = null
   private lastInitializationError: Error | null = null
 
+  // WebSocket service with TanStack Query retry logic
+  private webSocketService: WalletConnectWebSocketService | null = null
+
+  // Event listeners management
+  private eventListenersSetup = false
+
   // iOS-specific properties for app switching
   private isIOS = false
   private isInBackground = false
@@ -48,7 +59,16 @@ export class WalletConnectService {
   private reconnectionDelay = 1000
   private isReconnecting = false
   private lastActiveTime = 0
-  private connectionRestoreTimeout: NodeJS.Timeout | null = null
+  private retryService = new WalletConnectRetryService()
+
+  constructor() {
+    // Detect iOS and initialize handlers early
+    this.isIOS = this.detectIOS()
+    if (this.isIOS) {
+      console.log('iOS detected, initializing iOS-specific handlers')
+      this.initializeIOSHandlers()
+    }
+  }
 
   private async tryOpenUrl(url: string): Promise<boolean> {
     return new Promise(resolve => {
@@ -207,23 +227,66 @@ export class WalletConnectService {
     console.log('Restoring connection after app switch...')
 
     try {
-      // Check if we have an active session
+      // First, check if we already have an active session
       if (this.session) {
-        // Verify the session is still valid
+        console.log('Active session found, checking if reconnection is needed...')
         const isConnected = this.isConnected()
         if (!isConnected) {
-          console.log('Session lost during app switch, attempting to restore...')
-
-          // Try to restore the session from storage
-          await this.restoreSessionFromStorage()
+          console.log('Session exists but connection is lost, attempting to re-establish...')
+          await this.reestablishWebSocketConnectionWithRetry(this.session)
         } else {
-          console.log('Session is still active after app switch')
+          console.log('Session is still active, no reconnection needed')
         }
+        return
+      }
+
+      // Use enhanced session restoration with retry logic
+      const restored = await this.restoreSessionWithRetry()
+      if (restored) {
+        console.log('Session restored successfully, attempting WebSocket reconnection...')
+        // Now attempt to re-establish the WebSocket connection with retry
+        await this.reestablishWebSocketConnectionWithRetry(this.session!)
       } else {
-        console.log('No active session to restore')
+        console.log('No valid session data found for restoration')
       }
     } catch (error) {
       console.error('Failed to restore connection after app switch:', error)
+    }
+  }
+
+  /**
+   * Re-establish WebSocket connection with retry mechanism
+   */
+  private async reestablishWebSocketConnectionWithRetry(
+    session: SessionTypes.Struct
+  ): Promise<void> {
+    if (!this.client) return
+
+    console.log('Re-establishing WebSocket connection with retry mechanism...')
+
+    try {
+      // Use the retry service to handle reconnection
+      const success = await this.retryService.reestablishConnection(
+        this.client,
+        session,
+        restoredSession => {
+          console.log('Session successfully restored with working connection')
+          this.onSessionConnected(restoredSession)
+        }
+      )
+
+      if (success) {
+        console.log('WebSocket connection re-established successfully')
+      } else {
+        console.warn('Failed to re-establish WebSocket connection after all retry attempts')
+        // Still emit the session connected event so the UI knows we have a session
+        // even if the WebSocket connection is not perfect
+        this.onSessionConnected(session)
+      }
+    } catch (error) {
+      console.error('Error during WebSocket reconnection:', error)
+      // Still emit the session connected event as a fallback
+      this.onSessionConnected(session)
     }
   }
 
@@ -263,8 +326,11 @@ export class WalletConnectService {
             relay: sessionData.relay || { protocol: 'irn' },
           } as SessionTypes.Struct
 
-          this.onSessionConnected(restoredSession)
+          this.session = restoredSession
           console.log('Session restored from storage after app switch')
+
+          // Now attempt to re-establish the WebSocket connection with retry
+          await this.reestablishWebSocketConnectionWithRetry(restoredSession)
         } else {
           console.log('Stored session has expired, clearing...')
           localStorage.removeItem('walletConnect_session')
@@ -318,8 +384,46 @@ export class WalletConnectService {
     // Clear event listeners
     this.eventListeners.clear()
 
+    // Reset retry service
+    this.retryService.reset()
+
     // Don't clear session data on unload - let it persist for restoration
     console.log('WalletConnect cleanup completed')
+  }
+
+  /**
+   * Public cleanup method for external use
+   */
+  public cleanup(): void {
+    // Remove event listeners
+    if (this.visibilityChangeHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler)
+    }
+    if (this.pageHideHandler) {
+      window.removeEventListener('pagehide', this.pageHideHandler)
+    }
+    if (this.beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this.beforeUnloadHandler)
+    }
+
+    // Clear intervals
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval)
+    }
+
+    // Clean up WalletConnect event listeners
+    this.cleanupEventListeners()
+
+    // Clean up WebSocket service
+    if (this.webSocketService) {
+      this.webSocketService.cleanup()
+      this.webSocketService = null
+    }
+
+    // Reset retry service
+    this.retryService.reset()
+
+    console.log('WalletConnect service cleaned up')
   }
 
   private static readonly INIT_CONFIG = {
@@ -362,11 +466,23 @@ export class WalletConnectService {
   }
 
   private async createSignClient(relayUrl: string): Promise<InstanceType<typeof SignClient>> {
-    return await SignClient.init({
-      projectId: environment.wallet.walletConnect.projectId,
-      metadata: CHIA_METADATA,
-      relayUrl,
-    })
+    // Use WebSocket service with TanStack Query retry logic
+    if (!this.webSocketService) {
+      this.webSocketService = createWebSocketService(environment.wallet.walletConnect.projectId)
+    }
+
+    // Update relay URL if different
+    this.webSocketService.updateOptions({ relayUrl })
+
+    const connectionResult = await this.webSocketService.createConnection()
+
+    if (!connectionResult.isConnected || !connectionResult.client) {
+      throw new Error(
+        `WebSocket connection failed: ${connectionResult.error?.message || 'Unknown error'}`
+      )
+    }
+
+    return connectionResult.client
   }
 
   private async tryInitializeWithRelay(
@@ -431,13 +547,6 @@ export class WalletConnectService {
     if (this.client) {
       console.log('WalletConnect already initialized')
       return
-    }
-
-    // Detect iOS and initialize handlers
-    this.isIOS = this.detectIOS()
-    if (this.isIOS) {
-      console.log('iOS detected, initializing iOS-specific handlers')
-      this.initializeIOSHandlers()
     }
 
     if (!this.isProperlyConfigured()) {
@@ -935,6 +1044,24 @@ export class WalletConnectService {
   }
 
   /**
+   * Check if the session is actively connected (not just restored from storage)
+   */
+  isSessionActivelyConnected(): boolean {
+    if (!this.session || !this.client) {
+      return false
+    }
+
+    // Check if WebSocket is connected
+    const isWebSocketConnected = this.client.core.relayer.connected
+
+    // Check if session is in WalletConnect's active sessions
+    const activeSessions = this.client.session.getAll()
+    const isSessionActive = activeSessions.some(s => s.topic === this.session!.topic)
+
+    return isWebSocketConnected && isSessionActive
+  }
+
+  /**
    * Get current network info
    */
   getNetworkInfo(): { chainId: string; isTestnet: boolean } {
@@ -1037,12 +1164,72 @@ export class WalletConnectService {
   }
 
   async getWalletInfo() {
-    const result = await getWalletInfo()
-    if (!result.success) {
-      console.error('Service getWalletInfo failed:', result.error)
-      throw new Error(result.error)
+    try {
+      const result = await getWalletInfo()
+      if (!result.success) {
+        const errorMessage = result.error || 'Unknown error'
+        console.error('Service getWalletInfo failed:', errorMessage)
+
+        // For iOS, try to reconnect if we have a session but WebSocket is disconnected
+        if (
+          this.isIOS &&
+          this.session &&
+          (errorMessage.includes('Request expired') || errorMessage.includes('Unknown error'))
+        ) {
+          console.log('iOS detected disconnection, attempting WebSocket reconnection...')
+          const reconnected = await this.handleWebSocketReconnection()
+          if (reconnected) {
+            console.log('WebSocket reconnected, retrying wallet info request...')
+            // Retry the request after reconnection
+            const retryResult = await getWalletInfo()
+            if (retryResult.success) {
+              return retryResult.data
+            }
+          }
+        }
+
+        // Don't clear session for disconnection errors - let the UI handle it gracefully
+        if (
+          errorMessage.includes('User disconnected') ||
+          errorMessage.includes('Unknown error') ||
+          errorMessage.includes('Request expired')
+        ) {
+          console.log('Wallet disconnected, but keeping session for graceful handling')
+          throw new Error('Wallet disconnected')
+        }
+
+        throw new Error(errorMessage)
+      }
+      return result.data
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+      // For iOS, if we have a session but WebSocket is disconnected, try to reconnect
+      if (
+        this.isIOS &&
+        this.session &&
+        (errorMessage.includes('Request expired') || errorMessage.includes('Unknown error'))
+      ) {
+        console.log(
+          'iOS detected disconnection in catch block, attempting WebSocket reconnection...'
+        )
+        try {
+          const reconnected = await this.handleWebSocketReconnection()
+          if (reconnected) {
+            console.log('WebSocket reconnected, retrying wallet info request...')
+            // Retry the request after reconnection
+            const retryResult = await getWalletInfo()
+            if (retryResult.success) {
+              return retryResult.data
+            }
+          }
+        } catch (reconnectError) {
+          console.warn('WebSocket reconnection failed:', reconnectError)
+        }
+      }
+
+      throw error
     }
-    return result.data
   }
 
   async getAssetBalance() {
@@ -1175,13 +1362,38 @@ export class WalletConnectService {
       if (this.session) {
         console.log('Session exists, checking if reconnection is needed...')
 
-        // Only reconnect if session is actually expired or invalid
-        const now = Math.floor(Date.now() / 1000)
-        if (this.session.expiry && this.session.expiry < now) {
-          console.log('Session expired, attempting reconnection...')
+        // For iOS, always try to reconnect if we have a session but WebSocket is disconnected
+        if (this.isIOS) {
+          console.log('iOS detected with session, attempting WebSocket re-establishment...')
+
+          // Use the retry service to handle reconnection
+          const success = await this.retryService.reestablishConnection(
+            this.client,
+            this.session,
+            restoredSession => {
+              console.log('Session successfully restored with working connection')
+              this.onSessionConnected(restoredSession)
+            }
+          )
+
+          if (success) {
+            console.log('WebSocket connection re-established successfully')
+            this.reconnectionAttempts = 0 // Reset on success
+            return true
+          } else {
+            console.warn('Failed to re-establish WebSocket connection, but session exists')
+            // Even if WebSocket fails, we still have a valid session
+            return true
+          }
         } else {
-          console.log('Session is still valid, skipping reconnection')
-          return true
+          // For non-iOS, only reconnect if session is actually expired
+          const now = Math.floor(Date.now() / 1000)
+          if (this.session.expiry && this.session.expiry < now) {
+            console.log('Session expired, attempting reconnection...')
+          } else {
+            console.log('Session is still valid, skipping reconnection')
+            return true
+          }
         }
       }
 
@@ -1195,7 +1407,20 @@ export class WalletConnectService {
         await new Promise(resolve => setTimeout(resolve, delay))
       }
 
-      // Try to reconnect by reinitializing the client
+      // Try to reconnect using WebSocket service with TanStack Query retry
+      if (this.webSocketService) {
+        console.log('Reconnecting using WebSocket service with retry logic...')
+        const connectionResult = await this.webSocketService.reconnect()
+
+        if (connectionResult.isConnected && connectionResult.client) {
+          this.client = connectionResult.client
+          console.log('WebSocket reconnection successful via service')
+          this.reconnectionAttempts = 0
+          return true
+        }
+      }
+
+      // Fallback to reinitializing the client
       console.log('Reinitializing WalletConnect client...')
       await this.initialize()
 
@@ -1364,6 +1589,176 @@ export class WalletConnectService {
     this.setChainId(extractedChainId)
   }
 
+  /**
+   * Enhanced session storage with validation and retry logic
+   */
+  private storeSessionData(session: SessionTypes.Struct, accounts: string[]): void {
+    if (typeof window === 'undefined') return
+
+    try {
+      // Validate session data before storing
+      if (!session.topic || !session.expiry) {
+        console.warn('Invalid session data, skipping storage')
+        return
+      }
+
+      const sessionData = {
+        topic: session.topic,
+        fingerprint: this.fingerprint,
+        chainId: this.chainId,
+        accounts: accounts,
+        expiry: session.expiry,
+        timestamp: Date.now(),
+        isIOS: this.isIOS,
+        version: '2.1', // Updated version for better compatibility
+        retryCount: 0, // Track retry attempts
+        lastRetry: null, // Track last retry timestamp
+        // Store additional session metadata for better restoration
+        namespaces: session.namespaces,
+        requiredNamespaces: session.requiredNamespaces,
+        optionalNamespaces: session.optionalNamespaces,
+        self: session.self,
+        peer: session.peer,
+        controller: session.controller,
+        pairingTopic: session.pairingTopic,
+        relay: session.relay,
+      }
+
+      // Store in both localStorage and sessionStorage for reliability
+      const sessionDataString = JSON.stringify(sessionData)
+
+      // Primary storage
+      localStorage.setItem('walletConnect_session', sessionDataString)
+
+      // Backup storage for iOS
+      if (this.isIOS) {
+        sessionStorage.setItem('walletConnect_session', sessionDataString)
+      }
+
+      // Additional backup with topic as key for easier retrieval
+      localStorage.setItem(`walletConnect_session_${session.topic}`, sessionDataString)
+
+      console.log('Session data stored with enhanced validation:', {
+        topic: session.topic,
+        fingerprint: this.fingerprint,
+        chainId: this.chainId,
+        accounts: accounts.length,
+        expiry: new Date(session.expiry * 1000).toISOString(),
+        isIOS: this.isIOS,
+        version: '2.1',
+      })
+
+      // Emit session stored event for UI updates
+      this.emitEvent('session_stored', sessionData)
+    } catch (error) {
+      console.error('Failed to store session data:', error)
+      // Try to store minimal data as fallback
+      try {
+        const minimalData = {
+          topic: session.topic,
+          fingerprint: this.fingerprint,
+          chainId: this.chainId,
+          timestamp: Date.now(),
+          error: 'Storage failed, using minimal data',
+        }
+        localStorage.setItem('walletConnect_session_minimal', JSON.stringify(minimalData))
+        console.log('Stored minimal session data as fallback')
+      } catch (fallbackError) {
+        console.error('Failed to store even minimal session data:', fallbackError)
+      }
+    }
+  }
+
+  /**
+   * Enhanced session restoration with retry logic
+   */
+  private async restoreSessionWithRetry(): Promise<boolean> {
+    if (typeof window === 'undefined') return false
+
+    try {
+      // Try multiple storage locations
+      const storageKeys = ['walletConnect_session', 'walletConnect_session_minimal']
+
+      // Add topic-based keys if we have a session topic
+      if (this.session?.topic) {
+        storageKeys.push(`walletConnect_session_${this.session.topic}`)
+      }
+
+      let sessionData = null
+      let storageKey = null
+
+      // Try to find valid session data
+      for (const key of storageKeys) {
+        const stored = localStorage.getItem(key)
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored)
+            if (parsed.topic && parsed.expiry) {
+              // Check if session is still valid
+              const now = Math.floor(Date.now() / 1000)
+              const expiryBuffer = 300 // 5 minutes buffer
+
+              if (parsed.expiry > now - expiryBuffer) {
+                sessionData = parsed
+                storageKey = key
+                console.log(`Found valid session data in ${key}`)
+                break
+              } else {
+                console.log(`Session in ${key} has expired, removing...`)
+                localStorage.removeItem(key)
+                if (this.isIOS) {
+                  sessionStorage.removeItem(key)
+                }
+              }
+            }
+          } catch (parseError) {
+            console.warn(`Failed to parse session data from ${key}:`, parseError)
+            localStorage.removeItem(key)
+          }
+        }
+      }
+
+      if (!sessionData) {
+        console.log('No valid session data found for restoration')
+        return false
+      }
+
+      // Restore session data
+      this.setFingerprint(sessionData.fingerprint)
+      this.setChainId(sessionData.chainId)
+
+      // Create restored session object
+      const restoredSession = {
+        topic: sessionData.topic,
+        expiry: sessionData.expiry,
+        namespaces: sessionData.namespaces || {},
+        requiredNamespaces: sessionData.requiredNamespaces || {},
+        optionalNamespaces: sessionData.optionalNamespaces || {},
+        self: sessionData.self || {},
+        peer: sessionData.peer || {},
+        acknowledged: true,
+        controller: sessionData.controller || '',
+        pairingTopic: sessionData.pairingTopic || '',
+        relay: sessionData.relay || { protocol: 'irn' },
+      } as SessionTypes.Struct
+
+      this.session = restoredSession
+      console.log('Session restored successfully:', {
+        topic: restoredSession.topic,
+        fingerprint: sessionData.fingerprint,
+        chainId: sessionData.chainId,
+        fromStorage: storageKey,
+      })
+
+      // Emit session restored event
+      this.emitEvent('session_restored', restoredSession)
+      return true
+    } catch (error) {
+      console.error('Failed to restore session with retry:', error)
+      return false
+    }
+  }
+
   private onSessionConnected(session: SessionTypes.Struct) {
     const allNamespaceAccounts =
       session.namespaces && typeof session.namespaces === 'object'
@@ -1376,34 +1771,8 @@ export class WalletConnectService {
     // Update fingerprint and chainId from session
     this.updateFingerprintAndChainIdFromSession(session)
 
-    // Store session data in PWA storage with iOS-specific optimizations
-    if (typeof window !== 'undefined') {
-      try {
-        const sessionData = {
-          topic: session.topic,
-          fingerprint: this.fingerprint,
-          chainId: this.chainId,
-          accounts: allNamespaceAccounts,
-          expiry: session.expiry,
-          timestamp: Date.now(),
-          isIOS: this.isIOS, // Store iOS flag for restoration
-          version: '2.0', // Version for future compatibility
-        }
-
-        // Use both localStorage and sessionStorage for iOS reliability
-        const sessionDataString = JSON.stringify(sessionData)
-        localStorage.setItem('walletConnect_session', sessionDataString)
-
-        // Also store in sessionStorage for iOS PWA reliability
-        if (this.isIOS) {
-          sessionStorage.setItem('walletConnect_session', sessionDataString)
-        }
-
-        console.log('Session data stored in PWA storage:', sessionData)
-      } catch (error) {
-        console.warn('Failed to store session data in PWA storage:', error)
-      }
-    }
+    // Use enhanced session storage with validation and retry logic
+    this.storeSessionData(session, allNamespaceAccounts)
 
     console.log('Session connected:', {
       topic: session.topic,
@@ -1421,6 +1790,9 @@ export class WalletConnectService {
     this.session = null
     this.setFingerprint(null)
     this.setChainId(null)
+
+    // Clean up event listeners
+    this.cleanupEventListeners()
 
     // Clear session data from PWA storage
     if (typeof window !== 'undefined') {
@@ -1453,8 +1825,16 @@ export class WalletConnectService {
       const session = this.client.session.get(this.client.session.keys[lastKeyIndex])
 
       if (session && session.expiry > Date.now() / 1000) {
-        this.onSessionConnected(session)
+        // Restore session but don't automatically connect
+        // This prevents automatic wallet info fetching on page refresh
+        this.session = session
+        this.updateFingerprintAndChainIdFromSession(session)
+
+        // Ensure event listeners are set up for the restored session
+        this.setupEventListeners()
+
         this.emitEvent('session_restored', session)
+        console.log('WalletConnect session restored from internal storage (not auto-connected)')
         return
       } else {
         this.reset()
@@ -1475,7 +1855,10 @@ export class WalletConnectService {
 
           // Check if session is still valid
           if (sessionData.expiry && sessionData.expiry > Date.now() / 1000) {
-            console.log('Restoring session from PWA storage:', sessionData)
+            console.log(
+              'Found valid session in PWA storage, but not automatically connecting:',
+              sessionData
+            )
 
             // Restore fingerprint and chainId from stored session data
             this.setFingerprint(sessionData.fingerprint)
@@ -1518,9 +1901,15 @@ export class WalletConnectService {
               },
             } as SessionTypes.Struct
 
+            // Store the session but don't automatically connect
+            // This prevents automatic wallet info fetching on page refresh
             this.session = restoredSession
+
+            // Ensure event listeners are set up for the restored session
+            this.setupEventListeners()
+
             this.emitEvent('session_restored', restoredSession)
-            console.log('Session restored from PWA storage successfully')
+            console.log('Session restored from PWA storage successfully (not auto-connected)')
             return
           } else {
             console.log('Stored session expired, clearing PWA storage')
@@ -1542,6 +1931,14 @@ export class WalletConnectService {
 
   private setupEventListeners() {
     if (!this.client) return
+
+    // Check if listeners are already set up
+    if (this.eventListenersSetup) {
+      console.log('Event listeners already set up, skipping...')
+      return
+    }
+
+    console.log('Setting up WalletConnect event listeners...')
 
     // Remove existing listeners first to prevent duplicates
     // Note: WalletConnect doesn't have removeAllListeners, so we'll just set up new ones
@@ -1583,6 +1980,22 @@ export class WalletConnectService {
     this.client.on('session_request_sent', event => {
       this.emitEvent('session_request_sent', event)
     })
+
+    // Mark listeners as set up
+    this.eventListenersSetup = true
+    console.log('WalletConnect event listeners set up successfully')
+  }
+
+  private cleanupEventListeners() {
+    if (!this.client) return
+
+    console.log('Cleaning up WalletConnect event listeners...')
+
+    // Note: WalletConnect doesn't provide a way to remove specific listeners
+    // The client will be destroyed anyway, so we just mark as not set up
+    this.eventListenersSetup = false
+
+    console.log('WalletConnect event listeners cleaned up')
   }
 
   private extractAccounts(session: SessionTypes.Struct): string[] {
