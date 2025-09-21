@@ -262,7 +262,7 @@
   const isWalletConnected = computed(() => walletStore.isConnected)
   const isBalanceLoading = computed(() => walletStore.isConnecting)
 
-  const networkInfo = computed(() => walletStore.getNetworkInfo())
+  const networkInfo = computed(() => walletStore.service.getNetworkInfo())
   const ticker = computed(() => {
     if (networkInfo.value?.isTestnet) {
       return 'TXCH'

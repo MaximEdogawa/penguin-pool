@@ -18,6 +18,16 @@ const getSdkError = (code: string) => ({
   message: code,
 })
 
+/**
+ * Unified WalletConnect Service
+ *
+ * This service combines the best features from both the original and V2 implementations:
+ * - Enhanced iOS support with automatic detection and optimizations
+ * - Composable-based architecture for better state management
+ * - Automatic reconnection with exponential backoff
+ * - Health monitoring and error recovery
+ * - Simplified API with backward compatibility
+ */
 export class WalletConnectService {
   public client: InstanceType<typeof SignClient> | null = null
   public web3Modal: Web3Modal | null = null
@@ -36,12 +46,22 @@ export class WalletConnectService {
   private eventListenersSetup = false
   private retryService = new WalletConnectRetryService()
 
+  // V2 enhancements
+  private isConnectedState = false
+  private isConnectingState = false
+  private error: string | null = null
+  private connectionAttempts = 0
+  private maxRetries = isIOS() ? 8 : 5
+  private consecutiveFailures = 0
+  private maxConsecutiveFailures = 3
+  private lastReconnectionAttempt: Date | null = null
+
   constructor() {
     // Simple constructor - no platform-specific initialization needed
   }
 
   /**
-   * Initialize WalletConnect
+   * Initialize WalletConnect with V2 enhancements
    *
    * Flow Steps:
    * 1. Check if already initialized
@@ -49,7 +69,7 @@ export class WalletConnectService {
    * 3. Handle concurrent initialization
    * 4. Try to restore existing client
    * 5. Create new client if needed
-   * 6. Complete initialization
+   * 6. Complete initialization with V2 features
    */
   async initialize(): Promise<void> {
     // Step 1: Check if already initialized
@@ -393,6 +413,10 @@ export class WalletConnectService {
 
   private onSessionConnected(session: SessionTypes.Struct): void {
     this.session = session
+    this.isConnectedState = true
+    this.error = null
+    this.connectionAttempts = 0
+    this.consecutiveFailures = 0
 
     console.log('🔗 onSessionConnected - Session namespaces:', session.namespaces)
 
@@ -408,6 +432,7 @@ export class WalletConnectService {
 
   private onSessionDisconnected(): void {
     this.session = null
+    this.isConnectedState = false
     this.setFingerprint(null)
     this.setChainId(null)
     this.clearSessionStorage()
@@ -451,7 +476,7 @@ export class WalletConnectService {
   }
 
   /**
-   * Connect to wallet
+   * Connect to wallet with V2 improvements
    */
   async connect(pairing?: {
     topic: string
@@ -461,6 +486,9 @@ export class WalletConnectService {
     }
 
     try {
+      this.isConnectingState = true
+      this.error = null
+
       // iOS-specific connection handling
       if (isIOS()) {
         console.log('🍎 iOS connection - using extended timeout and WebSocket relay')
@@ -478,19 +506,28 @@ export class WalletConnectService {
         if (typeof window !== 'undefined') {
           if (isIOS()) {
             console.log('🍎 iOS - opening wallet app with URI:', uri.substring(0, 50) + '...')
+            // iOS may need special handling for deep links
+            window.location.href = uri
+          } else {
+            window.open(uri, '_blank')
           }
-          window.open(uri, '_blank')
         }
       }
 
       return { uri: uri || '', approval }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Connection failed'
+      this.error = errorMessage
+      this.isConnectingState = false
+
       if (isIOS()) {
         console.error('🍎 iOS connection failed:', error)
       } else {
         console.error('Connection failed:', error)
       }
       return null
+    } finally {
+      this.isConnectingState = false
     }
   }
 
@@ -503,6 +540,9 @@ export class WalletConnectService {
     }
 
     try {
+      this.isConnectingState = true
+      this.error = null
+
       const connectParams = {
         optionalNamespaces: REQUIRED_NAMESPACES,
         pairingTopic: pairing?.topic,
@@ -513,7 +553,12 @@ export class WalletConnectService {
       if (uri) {
         // Open wallet app
         if (typeof window !== 'undefined') {
-          window.open(uri, '_blank')
+          if (isIOS()) {
+            console.log('🍎 iOS - opening wallet app with URI')
+            window.location.href = uri
+          } else {
+            window.open(uri, '_blank')
+          }
         }
       }
 
@@ -530,8 +575,12 @@ export class WalletConnectService {
 
       return { success: false, error: 'Connection failed' }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Connection failed'
+      this.error = errorMessage
       console.error('Connection failed:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Connection failed' }
+      return { success: false, error: errorMessage }
+    } finally {
+      this.isConnectingState = false
     }
   }
 
@@ -586,7 +635,7 @@ export class WalletConnectService {
    * Check if connected
    */
   isConnected(): boolean {
-    return !!this.client && !!this.session
+    return !!this.client && !!this.session && this.isConnectedState
   }
 
   /**
@@ -754,6 +803,9 @@ export class WalletConnectService {
     this.clearSessionStorage()
     this.client = null
     this.session = null
+    this.isConnectedState = false
+    this.isConnectingState = false
+    this.error = null
     this.setFingerprint(null)
     this.setChainId(null)
     this.pairings = []
@@ -764,6 +816,9 @@ export class WalletConnectService {
     this.initializationPromise = null
     this.lastInitializationError = null
     this.eventListenersSetup = false
+    this.connectionAttempts = 0
+    this.consecutiveFailures = 0
+    this.lastReconnectionAttempt = null
     console.log('WalletConnect service force reset completed')
   }
 
@@ -850,8 +905,15 @@ export class WalletConnectService {
 
       if (this.client && this.session) {
         console.log('Connection health check passed')
+        this.consecutiveFailures = 0
       } else {
         console.warn('Connection health check failed - no client or session')
+        this.consecutiveFailures += 1
+
+        if (this.consecutiveFailures >= this.maxConsecutiveFailures) {
+          console.error('❌ Too many consecutive health check failures, triggering reconnection')
+          this.handleWebSocketReconnection()
+        }
       }
 
       if (this.healthCheckInterval) {
@@ -937,6 +999,7 @@ export class WalletConnectService {
           } as SessionTypes.Struct
 
           this.session = restoredSession
+          this.isConnectedState = true
           console.log('✅ Session restored from storage')
         } else {
           console.log('⚠️ Stored session has expired, clearing...')
@@ -955,6 +1018,51 @@ export class WalletConnectService {
 
   private setChainId(chainId: string | null): void {
     this.chainId = chainId
+  }
+
+  // V2 Enhanced methods
+  /**
+   * Get connection state
+   */
+  getState() {
+    return {
+      isConnected: this.isConnectedState,
+      isConnecting: this.isConnectingState,
+      isInitialized: this.isInitialized,
+      session: this.getSession(),
+      accounts: this.getAccounts(),
+      chainId: this.chainId,
+      error: this.error,
+    }
+  }
+
+  /**
+   * Get connection attempts count
+   */
+  getConnectionAttempts(): number {
+    return this.connectionAttempts
+  }
+
+  /**
+   * Get max retries
+   */
+  getMaxRetries(): number {
+    return this.maxRetries
+  }
+
+  /**
+   * Set max retries
+   */
+  setMaxRetries(retries: number): void {
+    this.maxRetries = retries
+  }
+
+  /**
+   * Reset connection attempts
+   */
+  resetConnectionAttempts(): void {
+    this.connectionAttempts = 0
+    this.consecutiveFailures = 0
   }
 
   // Legacy methods for compatibility

@@ -85,7 +85,7 @@
   })
 
   const ticker = computed(() => {
-    const networkInfo = walletStore.getNetworkInfo()
+    const networkInfo = walletStore.service.getNetworkInfo()
     if (networkInfo?.isTestnet) {
       return 'TXCH'
     }

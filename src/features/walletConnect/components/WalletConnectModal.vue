@@ -355,7 +355,10 @@
         await walletService.initialize()
       }
 
-      const connection = await walletStore.startConnection()
+      await walletStore.startConnection()
+
+      // Get the connection from the service
+      const connection = await walletService.connect()
 
       if (!connection) {
         throw new Error('Failed to generate connection URI')
@@ -619,11 +622,8 @@
       if (!fetchedWalletInfo) throw new Error('Failed to fetch wallet information')
 
       // Update store state to reflect successful connection
-      walletStore.walletInfo = fetchedWalletInfo
-      walletStore.isConnected = true
-      walletStore.isConnecting = false
-      walletStore.error = null
-      walletStore.chainId = walletService.getNetworkInfo().chainId
+      // The store will automatically sync with the service state
+      console.log('Wallet connected successfully')
 
       updateProgress(80, 'Finalizing connection...')
       await sleep(300)
@@ -707,11 +707,8 @@
             console.log('Created immediate wallet info for iOS:', immediateWalletInfo)
 
             // Update store state
-            walletStore.walletInfo = immediateWalletInfo
-            walletStore.isConnected = true
-            walletStore.isConnecting = false
-            walletStore.error = null
-            walletStore.chainId = walletService.getNetworkInfo().chainId
+            // The store will automatically sync with the service state
+            console.log('iOS wallet connected successfully')
 
             // Complete the connection
             currentStep.value = 'success'

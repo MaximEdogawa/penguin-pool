@@ -1,21 +1,20 @@
-import { useUserStore } from '@/entities/user/store/userStore'
-import { sessionManager } from '@/shared/services/sessionManager'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
-import {
-  getWalletInfo,
-  testRpcConnection as testRpcConnectionQuery,
-} from '../queries/walletQueries'
+import { computed, ref, watch } from 'vue'
 import { useWalletConnectService } from '../services/WalletConnectService'
 import type {
   ConnectionResult,
   DisconnectResult,
-  WalletConnectEvent,
   WalletConnectSession,
   WalletConnectState,
   WalletInfo,
 } from '../types/walletConnect.types'
 
+/**
+ * Unified WalletConnect Store
+ *
+ * This store uses the unified WalletConnectService that combines
+ * the best features from both the original and V2 implementations.
+ */
 export const useWalletConnectStore = defineStore('walletConnect', () => {
   // State
   const isConnected = ref(false)
@@ -49,9 +48,31 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     )
   })
 
+  // Sync with service state
+  const syncWithService = () => {
+    const serviceState = walletConnectService.getState()
+    isConnected.value = serviceState.isConnected
+    isConnecting.value = serviceState.isConnecting
+    session.value = serviceState.session
+    accounts.value = serviceState.accounts
+    chainId.value = serviceState.chainId
+    error.value = serviceState.error
+  }
+
+  // Watch for service state changes
+  watch(
+    () => walletConnectService.getState(),
+    () => {
+      syncWithService()
+    },
+    { immediate: true, deep: true }
+  )
+
   // Actions
   const initialize = async (): Promise<void> => {
     try {
+      console.log('🚀 Initializing WalletConnect store...')
+
       // Set up event listeners immediately before any initialization
       setupEventListeners()
 
@@ -60,9 +81,16 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       } else {
         console.log('WalletConnect service already initialized')
       }
+
+      // Sync state after initialization
+      syncWithService()
+
+      console.log('✅ WalletConnect store initialized successfully')
     } catch (err) {
-      console.error('Failed to initialize Wallet Connect:', err)
-      error.value = err instanceof Error ? err.message : 'Initialization failed'
+      const errorMessage = err instanceof Error ? err.message : 'Initialization failed'
+      error.value = errorMessage
+      console.error('❌ Failed to initialize WalletConnect store:', errorMessage)
+      throw err
     }
   }
 
@@ -71,6 +99,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       isConnecting.value = true
       error.value = null
 
+      console.log('🔗 Connecting to wallet...')
       const result = await walletConnectService.connect(pairing)
 
       if (result) {
@@ -99,372 +128,232 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Connection failed'
       error.value = errorMessage
+      console.error('❌ Wallet connection error:', errorMessage)
       return { success: false, error: errorMessage }
     } finally {
       isConnecting.value = false
     }
   }
 
-  const startConnection = async (): Promise<{
-    uri: string
-    approval: () => Promise<unknown>
-  } | null> => {
-    try {
-      if (!walletConnectService.isInitialized) {
-        await walletConnectService.initialize()
-      }
-
-      return await walletConnectService.connect()
-    } catch (err) {
-      console.error('Failed to start connection:', err)
-      return null
-    }
+  const startConnection = async (): Promise<void> => {
+    await initialize()
   }
 
   const disconnect = async (): Promise<DisconnectResult> => {
     try {
-      // First, properly disconnect from the wallet
-      if (walletConnectService.isConnected()) {
-        console.log('Disconnecting from Sage wallet...')
-        const disconnectResult = await walletConnectService.disconnect()
-        if (!disconnectResult.success) {
-          console.warn('Failed to disconnect from wallet:', disconnectResult.error)
-        }
+      console.log('🔌 Disconnecting from wallet...')
+      const result = await walletConnectService.disconnect()
+
+      if (result.success) {
+        session.value = null
+        accounts.value = []
+        chainId.value = null
+        isConnected.value = false
+        walletInfo.value = null
+        console.log('✅ Wallet disconnected successfully')
+      } else {
+        console.error('❌ Wallet disconnect failed:', result.error)
       }
 
-      // Clear wallet state
-      isConnected.value = false
-      session.value = null
-      accounts.value = []
-      chainId.value = null
-      walletInfo.value = null
-      error.value = null
-
-      removeEventListeners()
-
-      // Use centralized session manager for comprehensive clearing
-      await sessionManager.clearAllSessionData({
-        clearWalletConnect: true,
-        clearUserData: true,
-        clearThemeData: true,
-        clearPWAStorage: true,
-        clearServiceWorker: true,
-        clearAllCaches: false, // Don't clear all caches, just session-related ones
-      })
-
-      // Reset the wallet connect service after clearing storage
-      walletConnectService.forceReset()
-
-      console.log('Wallet disconnect completed successfully')
-      return { success: true }
+      return result
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Disconnect failed'
-      error.value = errorMessage
-      console.error('Error during wallet disconnect:', err)
+      console.error('❌ Wallet disconnect error:', errorMessage)
       return { success: false, error: errorMessage }
     }
   }
 
-  const restoreSession = async (): Promise<void> => {
+  const loadWalletInfo = async (): Promise<void> => {
     try {
-      const currentSession = walletConnectService.getSession()
-      const isCurrentlyConnected = walletConnectService.isConnected()
-
-      if (currentSession && isCurrentlyConnected) {
-        session.value = currentSession
-        accounts.value = extractAccountsFromSession(currentSession)
-        chainId.value = walletConnectService.getNetworkInfo().chainId
-        isConnected.value = true
-        setupEventListeners()
-
-        // Fetch wallet info when restoring session
-        try {
-          const fetchedWalletInfo = await getWalletInfo()
-          console.log('🔍 restoreSession - Fetched wallet info:', fetchedWalletInfo)
-          if (fetchedWalletInfo.success && fetchedWalletInfo.data) {
-            walletInfo.value = fetchedWalletInfo.data
-            console.log('🔍 restoreSession - Updated walletInfo.value:', walletInfo.value)
-            console.log('🔍 restoreSession - Balance in walletInfo:', walletInfo.value.balance)
-
-            // Sync with user store if user is not already authenticated
-            const userStore = useUserStore()
-            if (!userStore.isAuthenticated && fetchedWalletInfo.data.address) {
-              try {
-                if (fetchedWalletInfo.data.fingerprint) {
-                  await userStore.login(fetchedWalletInfo.data.fingerprint, 'wallet-user')
-                } else {
-                  await userStore.login(fetchedWalletInfo.data.address, 'wallet-user')
-                }
-                console.log('User auto-logged in with restored wallet info')
-              } catch (loginError) {
-                console.warn('Failed to auto-login with restored wallet info:', loginError)
-              }
-            }
-          } else {
-            console.error(
-              'Failed to fetch wallet info during session restore:',
-              fetchedWalletInfo.error
-            )
-          }
-        } catch (walletInfoError) {
-          console.warn('Failed to fetch wallet info during session restore:', walletInfoError)
-          // Don't fail the entire restore process if wallet info fetch fails
-        }
-      } else {
-        console.log('No valid session to restore')
+      if (!isConnected.value) {
+        console.warn('⚠️ Not connected to wallet, cannot load wallet info')
+        return
       }
+
+      console.log('📊 Loading wallet info...')
+      const info = await walletConnectService.getWalletInfo()
+      walletInfo.value = info || null
+      console.log('✅ Wallet info loaded successfully')
     } catch (err) {
-      console.error('Failed to restore session:', err)
-      // Clear invalid session
-      await disconnect()
+      console.error('❌ Failed to load wallet info:', err)
+      // Don't throw error, just log it
     }
   }
 
-  const sendRequest = async (
-    method: string,
-    params: Record<string, unknown> = {}
-  ): Promise<unknown> => {
+  const refreshWalletInfo = async (): Promise<void> => {
+    await loadWalletInfo()
+  }
+
+  const testConnection = async (): Promise<boolean> => {
+    try {
+      return await walletConnectService.testConnection()
+    } catch (err) {
+      console.error('❌ Connection test failed:', err)
+      return false
+    }
+  }
+
+  const getAssetBalance = async (assetId: string) => {
     try {
       if (!isConnected.value) {
         throw new Error('Not connected to wallet')
       }
 
-      return await walletConnectService.request(method, Object.values(params))
+      return await walletConnectService.getAssetBalance(assetId)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Request failed'
-      error.value = errorMessage
+      console.error('❌ Failed to get asset balance:', err)
       throw err
     }
   }
 
-  const clearError = (): void => {
-    error.value = null
-  }
-
-  const getNetworkInfo = () => {
-    return walletConnectService.getNetworkInfo()
-  }
-
-  const testRpcConnection = async (): Promise<boolean> => {
+  const handleWebSocketReconnection = async (): Promise<boolean> => {
     try {
-      const result = await testRpcConnectionQuery()
-      if (!result.success) {
-        console.error('Failed to test RPC connection:', result.error)
-        return false
+      console.log('🔄 Handling WebSocket reconnection...')
+      const reconnected = await walletConnectService.handleWebSocketReconnection()
+
+      if (reconnected) {
+        // Sync state after reconnection
+        syncWithService()
+        console.log('✅ Reconnection successful')
       }
-      return result.data || false
+
+      return reconnected
     } catch (err) {
-      console.error('Failed to test RPC connection:', err)
+      console.error('❌ WebSocket reconnection failed:', err)
       return false
     }
   }
 
-  // Helper function to extract accounts from session
-  const extractAccountsFromSession = (session: WalletConnectSession): string[] => {
-    const accounts: string[] = []
+  const forceReset = (): void => {
+    console.log('🔄 Force resetting WalletConnect store...')
+    walletConnectService.forceReset()
 
-    if (session.namespaces) {
-      Object.values(session.namespaces).forEach((namespace: unknown) => {
-        if (
-          namespace &&
-          typeof namespace === 'object' &&
-          'accounts' in namespace &&
-          Array.isArray((namespace as { accounts: unknown }).accounts)
-        ) {
-          accounts.push(...(namespace as { accounts: string[] }).accounts)
-        }
-      })
-    }
-
-    return accounts
-  }
-
-  const setupEventListeners = (): void => {
-    // Session events
-    walletConnectService.on('session_delete', handleSessionDelete)
-    walletConnectService.on('session_expire', handleSessionExpire)
-    walletConnectService.on('session_update', handleSessionUpdate)
-    walletConnectService.on('session_restored', handleSessionRestored)
-
-    // Connection events
-    walletConnectService.on('session_approve', handleSessionApprove)
-    walletConnectService.on('session_reject', handleSessionReject)
-  }
-
-  const removeEventListeners = (): void => {
-    walletConnectService.off('session_delete')
-    walletConnectService.off('session_expire')
-    walletConnectService.off('session_update')
-    walletConnectService.off('session_restored')
-    walletConnectService.off('session_approve')
-    walletConnectService.off('session_reject')
-    walletConnectService.off('session_request')
-  }
-
-  const handleSessionDelete = (): void => {
+    // Reset local state
     isConnected.value = false
-    session.value = null
-    accounts.value = []
-    chainId.value = null
-    walletInfo.value = null
-  }
-
-  const handleSessionExpire = (): void => {
-    isConnected.value = false
-    session.value = null
-    accounts.value = []
-    chainId.value = null
-    walletInfo.value = null
-  }
-
-  const handleSessionUpdate = (event: WalletConnectEvent): void => {
-    if (event.data && typeof event.data === 'object' && 'namespaces' in event.data) {
-      const eventData = event.data as { namespaces: Record<string, unknown> }
-      const updatedAccounts: string[] = []
-      if (eventData.namespaces) {
-        Object.values(eventData.namespaces).forEach((namespace: unknown) => {
-          if (
-            namespace &&
-            typeof namespace === 'object' &&
-            'accounts' in namespace &&
-            Array.isArray((namespace as { accounts: unknown }).accounts)
-          ) {
-            updatedAccounts.push(...(namespace as { accounts: string[] }).accounts)
-          }
-        })
-      }
-      accounts.value = updatedAccounts
-    }
-  }
-
-  const handleSessionApprove = (): void => {
-    console.log('Session approved, updating store state')
-    isConnected.value = true
     isConnecting.value = false
+    session.value = null
+    accounts.value = []
+    chainId.value = null
     error.value = null
+    walletInfo.value = null
 
-    // Get the current session from the service
-    const currentSession = walletConnectService.getSession()
-    if (currentSession) {
-      session.value = currentSession
-      accounts.value = extractAccountsFromSession(currentSession)
-      chainId.value = walletConnectService.getNetworkInfo().chainId
-    }
+    console.log('✅ WalletConnect store reset completed')
   }
 
-  const handleSessionReject = (event: WalletConnectEvent): void => {
-    console.log('Session rejected:', event)
-    error.value = 'Wallet connection was rejected'
+  // Event handling
+  const setupEventListeners = (): void => {
+    walletConnectService.on('session_connected', async () => {
+      console.log('🔗 Session connected event received')
+      syncWithService()
+      await loadWalletInfo()
+    })
+
+    walletConnectService.on('session_disconnected', () => {
+      console.log('🔌 Session disconnected event received')
+      syncWithService()
+      walletInfo.value = null
+    })
+
+    walletConnectService.on('session_reject', () => {
+      console.log('❌ Session rejected event received')
+      error.value = 'Connection rejected by wallet'
+    })
+
+    walletConnectService.on('session_proposal', () => {
+      console.log('📋 Session proposal event received')
+      // Handle session proposal if needed
+    })
+
+    walletConnectService.on('session_update', () => {
+      console.log('🔄 Session update event received')
+      syncWithService()
+    })
+  }
+
+  // Remove event listeners (for cleanup)
+  const removeEventListeners = (): void => {
+    walletConnectService.off('session_connected')
+    walletConnectService.off('session_disconnected')
+    walletConnectService.off('session_reject')
+    walletConnectService.off('session_proposal')
+    walletConnectService.off('session_update')
+  }
+
+  // Use removeEventListeners in cleanup
+  const cleanup = (): void => {
+    console.log('🧹 Cleaning up WalletConnect store...')
+    removeEventListeners()
+    walletConnectService.cleanup()
+
+    // Reset local state
+    isConnected.value = false
     isConnecting.value = false
+    session.value = null
+    accounts.value = []
+    chainId.value = null
+    error.value = null
+    walletInfo.value = null
+
+    console.log('✅ WalletConnect store cleanup completed')
   }
 
-  const handleSessionRestored = async (): Promise<void> => {
+  // Legacy methods for compatibility
+  const connectLegacy = async (pairing?: { topic: string }): Promise<ConnectionResult> => {
     try {
-      const currentSession = walletConnectService.getSession()
-      if (currentSession) {
-        session.value = currentSession
-        accounts.value = extractAccountsFromSession(currentSession)
-        chainId.value = walletConnectService.getNetworkInfo().chainId
-        isConnected.value = true
+      isConnecting.value = true
+      error.value = null
 
-        const fetchedWalletInfo = await getWalletInfo()
-        console.log('🔍 handleSessionUpdate - Fetched wallet info:', fetchedWalletInfo)
-        if (fetchedWalletInfo.success && fetchedWalletInfo.data) {
-          walletInfo.value = fetchedWalletInfo.data
-          console.log('🔍 handleSessionUpdate - Updated walletInfo.value:', walletInfo.value)
+      const result = await walletConnectService.connectLegacy(pairing)
 
-          // Sync with user store if user is not already authenticated
-          const userStore = useUserStore()
-          if (!userStore.isAuthenticated && fetchedWalletInfo.data.address) {
-            try {
-              if (fetchedWalletInfo.data.fingerprint) {
-                await userStore.login(fetchedWalletInfo.data.fingerprint, 'wallet-user')
-              } else {
-                await userStore.login(fetchedWalletInfo.data.address, 'wallet-user')
-              }
-              console.log('User auto-logged in with restored wallet info from event')
-            } catch (loginError) {
-              console.warn('Failed to auto-login with restored wallet info from event:', loginError)
-            }
-          }
-        } else {
-          console.error(
-            'Failed to fetch wallet info during session restore from event:',
-            fetchedWalletInfo.error
-          )
-        }
+      if (result.success) {
+        syncWithService()
+        setupEventListeners()
       }
+
+      return result
     } catch (err) {
-      console.error('Failed to restore session from event:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Connection failed'
+      error.value = errorMessage
+      return { success: false, error: errorMessage }
+    } finally {
+      isConnecting.value = false
     }
   }
 
-  const getPairings = computed(() => {
-    return walletConnectService.getPairings()
-  })
-
-  const balance = computed(() => {
-    const bal = walletInfo.value?.balance || null
-    console.log('🔍 balance computed - walletInfo.value:', walletInfo.value)
-    console.log('🔍 balance computed - balance:', bal)
-    return bal
-  })
-
-  const formattedBalance = computed(() => {
-    if (!balance.value) return '0.000000000000'
-    const balanceInXCH = parseFloat(balance.value.spendable) / 1000000000000
-    const formatted = balanceInXCH.toFixed(12)
-    console.log('🔍 formattedBalance computed - balance.value:', balance.value)
-    console.log('🔍 formattedBalance computed - formatted:', formatted)
-    return formatted
-  })
-
-  const executeCommand = async <TParams extends Record<string, unknown>, TResponse>(
-    command: string,
-    params: TParams
-  ): Promise<{ success: boolean; data?: TResponse; error?: string }> => {
-    try {
-      const result = await walletConnectService.request<TResponse>(
-        command as string,
-        Object.values(params as Record<string, unknown>)
-      )
-      return {
-        success: !!result,
-        data: result,
-        error: result ? undefined : 'Command execution failed',
-      }
-    } catch (err) {
-      console.error(`Command execution failed (${command}):`, err)
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : 'Command execution failed',
-      }
-    }
-  }
+  // Setup event listeners on store creation
+  setupEventListeners()
 
   return {
-    isConnected,
-    isConnecting,
-    session,
-    accounts,
-    chainId,
-    error,
-    walletInfo,
-    balance,
-    formattedBalance,
-    state,
-    hasChiaAccount,
-    primaryAccount,
+    // State
+    state: computed(() => state.value),
+    isConnected: computed(() => isConnected.value),
+    isConnecting: computed(() => isConnecting.value),
+    isInitialized: computed(() => walletConnectService.isInitialized),
+    session: computed(() => session.value),
+    accounts: computed(() => accounts.value),
+    chainId: computed(() => chainId.value),
+    error: computed(() => error.value),
+    walletInfo: computed(() => walletInfo.value),
+
+    // Computed
+    hasChiaAccount: computed(() => hasChiaAccount.value),
+    primaryAccount: computed(() => primaryAccount.value),
+
+    // Methods
     initialize,
     connect,
-    disconnect,
-    restoreSession,
-    sendRequest,
-    clearError,
-    getNetworkInfo,
+    connectLegacy,
     startConnection,
-    getPairings,
-    testRpcConnection,
-    executeCommand,
+    disconnect,
+    loadWalletInfo,
+    refreshWalletInfo,
+    testConnection,
+    getAssetBalance,
+    handleWebSocketReconnection,
+    forceReset,
+    cleanup,
+
+    // Service access (for advanced usage)
+    service: walletConnectService,
   }
 })
