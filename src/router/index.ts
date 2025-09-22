@@ -1,4 +1,5 @@
 import { useUserStore } from '@/entities/user/store/userStore'
+import { useIOSWalletConnection } from '@/features/walletConnect/composables/useIOSWalletConnection'
 import { useWalletConnectService } from '@/features/walletConnect/services/WalletConnectService'
 import {
   defaultFeatureFlags,
@@ -135,11 +136,47 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to, from, next) => {
+/**
+ * Wait for iOS relay healing to complete
+ * This ensures WebSocket connections are stable before navigation
+ */
+const waitForIOSRelayHealing = async (): Promise<void> => {
+  const iosConnection = useIOSWalletConnection()
+
+  if (!iosConnection.state.value.isIOS) {
+    return // Not iOS, no need to wait
+  }
+
+  console.log('🍎 iOS detected - waiting for relay healing...')
+
+  // Wait for relay healing to complete (max 5 seconds)
+  const maxWaitTime = 5000
+  const startTime = Date.now()
+
+  while (iosConnection.state.value.relayHealing && Date.now() - startTime < maxWaitTime) {
+    await new Promise(resolve => setTimeout(resolve, 100))
+  }
+
+  if (iosConnection.state.value.relayHealing) {
+    console.warn('🍎 Relay healing timeout - proceeding anyway')
+  } else {
+    console.log('🍎 Relay healing completed or not needed')
+  }
+}
+
+router.beforeEach(async (to, from, next) => {
   document.title = `${to.meta.title} - Penguin-pool`
+
+  // Wait for iOS relay healing before navigation
+  await waitForIOSRelayHealing()
 
   const userStore = useUserStore()
   const walletService = useWalletConnectService
+
+  // Wait for WalletConnect service initialization to complete
+  // This ensures session restoration is finished before checking auth state
+  await walletService.waitForInitialization()
+
   const isAuthenticated = userStore.isAuthenticated
   const isWalletConnected = walletService.getState().isConnected
 

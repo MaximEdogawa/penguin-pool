@@ -89,9 +89,8 @@ export interface WalletConnectEvent {
 }
 
 export interface AssetBalance {
-  confirmed: string
-  spendable: string
-  spendableCoinCount: number
+  balance: number
+  assetId: string
 }
 
 export interface CoinInfo {

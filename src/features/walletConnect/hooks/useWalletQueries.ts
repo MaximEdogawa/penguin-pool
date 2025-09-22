@@ -1,11 +1,66 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { computed } from 'vue'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/vue-query'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useWalletConnectService } from '../services/WalletConnectService'
+import { isIOS } from '@/shared/config/environment'
+import type { AssetBalance } from '../types/walletConnect.types'
 
 /**
  * TanStack Query hooks for wallet operations
  * Provides reactive data fetching, caching, and mutation capabilities
  */
+
+/**
+ * iOS-specific balance fetching using direct WalletConnect request
+ */
+async function fetchBalanceForIOS(): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  try {
+    const walletConnectService = useWalletConnectService
+    const state = walletConnectService.getState()
+
+    if (!state.isConnected || !state.session) {
+      throw new Error('Wallet not connected')
+    }
+
+    console.log('🍎 Fetching balance for iOS using direct request...')
+
+    // Make direct request to get balance
+    const result = await walletConnectService.request('chip0002_getAssetBalance', [
+      {
+        fingerprint: parseInt(state.accounts[0] || '0'),
+        type: null,
+        assetId: null,
+      },
+    ])
+
+    console.log('🍎 iOS balance request result:', result)
+    return { success: true, data: result }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('🍎 iOS balance request failed:', errorMessage)
+    return { success: false, error: errorMessage }
+  }
+}
+
+/**
+ * Set up session restore listener to refresh queries when session is restored
+ */
+function setupSessionRestoreListener(queryClient: QueryClient) {
+  const walletConnectService = useWalletConnectService
+
+  const handleSessionRestore = () => {
+    console.log('🔄 Session restored, refreshing wallet queries...')
+    // Invalidate all wallet-related queries to trigger refetch
+    queryClient.invalidateQueries({ queryKey: walletQueryKeys.all })
+  }
+
+  // Listen for session restore events
+  walletConnectService.on('session_restore', handleSessionRestore)
+
+  // Return cleanup function
+  return () => {
+    walletConnectService.off('session_restore')
+  }
+}
 
 // Query keys for consistent caching
 export const walletQueryKeys = {
@@ -105,14 +160,26 @@ export function useWalletBalance() {
   const walletConnectService = useWalletConnectService
   const queryClient = useQueryClient()
 
-  const query = useQuery({
+  const query = useQuery<AssetBalance | null>({
     queryKey: walletQueryKeys.balance(),
-    queryFn: async () => {
+    queryFn: async (): Promise<AssetBalance | null> => {
       if (!walletConnectService.getState().isConnected) {
         throw new Error('Wallet not connected')
       }
 
-      // Import only the balance query to avoid duplicate requests
+      // Use iOS-specific balance fetching for iOS devices
+      if (isIOS()) {
+        console.log('🍎 Using iOS-specific balance fetching')
+        const result = await fetchBalanceForIOS()
+
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to load wallet balance on iOS')
+        }
+
+        return result.data as AssetBalance | null
+      }
+
+      // Use standard balance query for non-iOS devices
       const { getAssetBalance } = await import('../queries/walletQueries')
       const result = await getAssetBalance()
 
@@ -120,7 +187,7 @@ export function useWalletBalance() {
         throw new Error(result.error || 'Failed to load wallet balance')
       }
 
-      return result.data
+      return result.data ?? null
     },
     enabled: computed(() => walletConnectService.getState().isConnected),
     staleTime: 10000, // Consider data stale after 10 seconds
@@ -264,6 +331,13 @@ export function useWallet() {
   const accounts = useWalletAccounts()
   const mutations = useWalletConnectionMutations()
   const initialization = useWalletInitialization()
+  const queryClient = useQueryClient()
+
+  // Set up session restore listener
+  onMounted(() => {
+    const cleanup = setupSessionRestoreListener(queryClient)
+    onUnmounted(cleanup)
+  })
 
   // Computed properties for easy access
   const isConnected = computed(() => connection.data.value?.isConnected ?? false)

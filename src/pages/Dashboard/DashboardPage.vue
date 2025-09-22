@@ -267,14 +267,14 @@
 
   // Get formatted balance
   const userBalance = computed(() => {
-    if (!walletBalance.value?.confirmed) return '0.000000'
-    return formatBalance(parseInt(walletBalance.value.confirmed))
+    if (!walletBalance.value?.balance) return '0.000000'
+    return formatBalance(walletBalance.value.balance)
   })
 
-  // Get spendable balance
+  // Get spendable balance (using balance as spendable for now)
   const spendableBalance = computed(() => {
-    if (!walletBalance.value?.spendable) return '0.000000'
-    return formatBalance(parseInt(walletBalance.value.spendable))
+    if (!walletBalance.value?.balance) return '0.000000'
+    return formatBalance(walletBalance.value.balance)
   })
 
   // Get ticker symbol

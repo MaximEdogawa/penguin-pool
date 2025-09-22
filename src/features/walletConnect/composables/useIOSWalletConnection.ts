@@ -18,9 +18,16 @@ export interface IOSConnectionState {
   visibilityChangeHandler?: () => void
   pageShowHandler?: () => void
   pageHideHandler?: () => void
+  // Relay healing state
+  relayHealing: boolean
+  relayReconnectAttempts: number
+  maxRelayReconnectAttempts: number
+  relayReconnectDelay: number
+  lastRelayError: number
+  relayHealthCheckInterval: NodeJS.Timeout | null
 }
 
-interface SignClientInterface {
+export interface SignClientInterface {
   session: {
     getAll: () => Array<{
       topic: string
@@ -41,6 +48,14 @@ interface SignClientInterface {
       params: unknown[]
     }
   }) => Promise<unknown>
+  core: {
+    relayer: {
+      connected: boolean
+      on: (event: string, callback: (data: unknown) => void) => void
+      disconnect?: () => Promise<void>
+      connect?: () => Promise<void>
+    }
+  }
 }
 
 export function useIOSWalletConnection() {
@@ -49,6 +64,13 @@ export function useIOSWalletConnection() {
     connectionMonitor: null,
     lastHeartbeat: 0,
     isMonitoring: false,
+    // Relay healing state
+    relayHealing: false,
+    relayReconnectAttempts: 0,
+    maxRelayReconnectAttempts: 5,
+    relayReconnectDelay: 1000,
+    lastRelayError: 0,
+    relayHealthCheckInterval: null,
   })
 
   /**
@@ -411,6 +433,482 @@ export function useIOSWalletConnection() {
     ]
   }
 
+  /**
+   * Initialize iOS-specific relay healing
+   */
+  const initializeRelayHealing = (signClient: SignClientInterface): void => {
+    try {
+      if (!state.value.isIOS || !signClient) return
+
+      console.log('🍎 Initializing iOS relay healing...')
+
+      // Set up relay event listeners
+      const core = signClient.core
+      if (core && core.relayer) {
+        // Listen for relay connection errors
+        core.relayer.on('relayer_connect_error', (error: unknown) => {
+          try {
+            console.error('🍎 Relay connection error:', error)
+            handleRelayError(signClient)
+          } catch (eventError) {
+            console.error('🍎 Error in relay_connect_error handler:', eventError)
+          }
+        })
+
+        // Listen for relay disconnections
+        core.relayer.on('relayer_disconnect', (error: unknown) => {
+          try {
+            console.warn('🍎 Relay disconnected:', error)
+            handleRelayDisconnect(signClient)
+          } catch (eventError) {
+            console.error('🍎 Error in relay_disconnect handler:', eventError)
+          }
+        })
+
+        // Listen for relay errors
+        core.relayer.on('relayer_error', (error: unknown) => {
+          try {
+            console.error('🍎 Relay error:', error)
+            handleRelayError(signClient)
+          } catch (eventError) {
+            console.error('🍎 Error in relay_error handler:', eventError)
+          }
+        })
+
+        // Listen for relay reconnection
+        core.relayer.on('relayer_connect', () => {
+          try {
+            console.log('🍎 Relay reconnected successfully!')
+            handleRelayReconnect(signClient)
+          } catch (eventError) {
+            console.error('🍎 Error in relay_connect handler:', eventError)
+          }
+        })
+
+        // Listen for page visibility changes to trigger healing
+        const handleVisibilityChange = () => {
+          try {
+            if (document.hidden) {
+              console.log('🍎 Page hidden, pausing relay healing')
+              stopRelayHealthCheck()
+            } else {
+              console.log('🍎 Page visible, resuming relay healing')
+              startRelayHealthCheck(signClient)
+              // Trigger immediate healing check when page becomes visible
+              setTimeout(() => {
+                try {
+                  checkRelayHealth(signClient)
+                } catch (timeoutError) {
+                  console.error('🍎 Error in visibility change timeout:', timeoutError)
+                }
+              }, 1000)
+            }
+          } catch (visibilityError) {
+            console.error('🍎 Error in visibility change handler:', visibilityError)
+          }
+        }
+
+        // Listen for page show/hide events
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+        window.addEventListener('pageshow', () => {
+          try {
+            console.log('🍎 Page show event - triggering relay healing')
+            // Only trigger healing if we have a valid session
+            const sessions = signClient.session.getAll()
+            if (sessions.length > 0) {
+              setTimeout(() => {
+                try {
+                  checkRelayHealth(signClient)
+                } catch (timeoutError) {
+                  console.error('🍎 Error in pageshow timeout:', timeoutError)
+                }
+              }, 500)
+            } else {
+              console.log('🍎 Page show event - no active sessions, skipping healing')
+            }
+          } catch (pageshowError) {
+            console.error('🍎 Error in pageshow handler:', pageshowError)
+          }
+        })
+
+        // Health checks will only start after relay disconnect errors
+        console.log(
+          '🍎 Relay healing initialized - health checks will start after disconnect errors'
+        )
+      }
+    } catch (error) {
+      console.error('🍎 Error initializing relay healing:', error)
+    }
+  }
+
+  /**
+   * Handle relay connection errors
+   */
+  const handleRelayError = (signClient: SignClientInterface): void => {
+    try {
+      if (!state.value.isIOS || !signClient) return
+
+      const now = Date.now()
+      const timeSinceLastError = now - state.value.lastRelayError
+
+      // Throttle error handling to prevent spam
+      if (timeSinceLastError < 5000) {
+        console.log('🍎 Relay error throttled, ignoring...')
+        return
+      }
+
+      state.value.lastRelayError = now
+      console.log('🍎 Handling relay error, attempting reconnection...')
+
+      // Reset reconnection attempts if it's been a while
+      if (timeSinceLastError > 30000) {
+        state.value.relayReconnectAttempts = 0
+      }
+
+      // Use setTimeout to prevent blocking the main thread
+      setTimeout(() => {
+        try {
+          attemptRelayReconnection(signClient)
+        } catch (timeoutError) {
+          console.error('🍎 Error in relay error timeout:', timeoutError)
+        }
+      }, 100)
+    } catch (error) {
+      console.error('🍎 Error in handleRelayError:', error)
+    }
+  }
+
+  /**
+   * Handle relay disconnections
+   */
+  const handleRelayDisconnect = (signClient: SignClientInterface): void => {
+    try {
+      if (!state.value.isIOS || !signClient) return
+
+      console.log('🍎 Relay disconnected, attempting reconnection...')
+
+      // Start health checks only after a disconnect occurs
+      startRelayHealthCheck(signClient)
+
+      attemptRelayReconnection(signClient)
+    } catch (error) {
+      console.error('🍎 Error in handleRelayDisconnect:', error)
+    }
+  }
+
+  /**
+   * Handle relay reconnections
+   */
+  const handleRelayReconnect = (signClient: SignClientInterface): void => {
+    try {
+      if (!state.value.isIOS || !signClient) return
+
+      console.log('🍎 Relay reconnected, updating state...')
+
+      // Reset reconnection state since we're now connected
+      state.value.relayHealing = false
+      state.value.relayReconnectAttempts = 0
+      state.value.relayReconnectDelay = 1000 // Reset to initial delay
+
+      // Stop health checks since we're reconnected
+      stopRelayHealthCheck()
+
+      // Test the reconnected relay with a health check
+      setTimeout(async () => {
+        try {
+          await checkRelayHealth(signClient)
+
+          // After successful health check, restore session if needed
+          await restoreSessionAfterReconnect(signClient)
+        } catch (error) {
+          console.warn('🍎 Health check after relay reconnect failed:', error)
+        }
+      }, 2000) // Wait 2 seconds for the connection to stabilize
+
+      console.log('🍎 Relay reconnection handling completed')
+    } catch (error) {
+      console.error('🍎 Error in handleRelayReconnect:', error)
+    }
+  }
+
+  /**
+   * Restore session after relay reconnection
+   */
+  const restoreSessionAfterReconnect = async (signClient: SignClientInterface): Promise<void> => {
+    try {
+      if (!state.value.isIOS || !signClient) return
+
+      console.log('🍎 Checking for session restoration after relay reconnect...')
+
+      // Get all active sessions
+      const sessions = signClient.session.getAll()
+
+      if (sessions.length === 0) {
+        console.log('🍎 No sessions found after relay reconnect')
+        return
+      }
+
+      // Find the most recent session
+      const activeSession = sessions[sessions.length - 1]
+
+      // Check if the session is still valid
+      if (activeSession && activeSession.expiry && activeSession.expiry > Date.now() / 1000) {
+        console.log('🍎 Valid session found after relay reconnect, restoring...')
+
+        // Import the user store here to avoid circular dependencies
+        const { useUserStore } = await import('@/entities/user/store/userStore')
+        const userStore = useUserStore()
+
+        // Extract wallet information from session
+        const accounts =
+          activeSession.namespaces?.chia?.accounts?.map(
+            (account: string) => account.split(':')[2]
+          ) || []
+
+        if (accounts.length > 0) {
+          // Use the first account as the wallet identifier
+          const walletIdentifier = accounts[0]
+          await userStore.login(walletIdentifier)
+          console.log('🍎 User authentication state updated after relay reconnect')
+        }
+      } else {
+        console.log('🍎 Session expired or invalid after relay reconnect')
+      }
+    } catch (error) {
+      console.error('🍎 Error in restoreSessionAfterReconnect:', error)
+    }
+  }
+
+  /**
+   * Attempt to reconnect the relay
+   */
+  const attemptRelayReconnection = async (signClient: SignClientInterface): Promise<void> => {
+    try {
+      if (!state.value.isIOS || state.value.relayHealing || !signClient) return
+
+      if (state.value.relayReconnectAttempts >= state.value.maxRelayReconnectAttempts) {
+        console.error('🍎 Max relay reconnection attempts reached, giving up')
+        return
+      }
+
+      state.value.relayHealing = true
+      state.value.relayReconnectAttempts++
+
+      console.log(
+        `🍎 Attempting relay reconnection ${state.value.relayReconnectAttempts}/${state.value.maxRelayReconnectAttempts}...`
+      )
+
+      try {
+        // Force disconnect the current relay
+        const core = signClient?.core
+        if (core?.relayer) {
+          // Use the actual relayer methods - they may be different
+          if (typeof core.relayer.disconnect === 'function') {
+            await core.relayer.disconnect()
+          }
+          console.log('🍎 Relay disconnected, waiting before reconnection...')
+
+          // Wait before reconnecting
+          await new Promise(resolve => setTimeout(resolve, state.value.relayReconnectDelay))
+
+          // Reconnect the relay
+          if (typeof core.relayer.connect === 'function') {
+            await core.relayer.connect()
+          }
+          console.log('🍎 Relay reconnected successfully')
+
+          // Test the reconnection with a health check (but don't await to prevent blocking)
+          setTimeout(async () => {
+            try {
+              await checkRelayHealth(signClient)
+            } catch (error) {
+              console.warn('🍎 Health check after reconnection failed:', error)
+            }
+          }, 1000)
+
+          // Reset reconnection state
+          state.value.relayReconnectAttempts = 0
+          state.value.relayHealing = false
+
+          // Health checks will only restart if there's another disconnect
+        } else {
+          console.warn('🍎 No relayer available for reconnection')
+          state.value.relayHealing = false
+        }
+      } catch (reconnectionError) {
+        console.error('🍎 Relay reconnection failed:', reconnectionError)
+        state.value.relayHealing = false
+
+        // Exponential backoff for next attempt
+        state.value.relayReconnectDelay = Math.min(state.value.relayReconnectDelay * 2, 10000)
+
+        // Retry after delay
+        setTimeout(() => {
+          try {
+            attemptRelayReconnection(signClient)
+          } catch (retryError) {
+            console.error('🍎 Error in relay reconnection retry:', retryError)
+          }
+        }, state.value.relayReconnectDelay)
+      }
+    } catch (error) {
+      console.error('🍎 Error in attemptRelayReconnection:', error)
+      state.value.relayHealing = false
+    }
+  }
+
+  /**
+   * Start periodic relay health checks
+   */
+  const startRelayHealthCheck = (signClient: SignClientInterface): void => {
+    try {
+      if (!state.value.isIOS || !signClient) return
+
+      // Clear existing health check
+      if (state.value.relayHealthCheckInterval) {
+        clearInterval(state.value.relayHealthCheckInterval)
+      }
+
+      console.log('🍎 Starting relay health checks...')
+      state.value.relayHealthCheckInterval = setInterval(() => {
+        try {
+          // Only run health checks if we have a valid signClient
+          if (signClient && signClient.core && signClient.core.relayer) {
+            checkRelayHealth(signClient)
+          } else {
+            console.log('🍎 Skipping health check - no valid signClient or relayer')
+          }
+        } catch (intervalError) {
+          console.error('🍎 Error in relay health check interval:', intervalError)
+        }
+      }, 10000) // Check every 10 seconds
+    } catch (error) {
+      console.error('🍎 Error in startRelayHealthCheck:', error)
+    }
+  }
+
+  /**
+   * Check relay health
+   */
+  const checkRelayHealth = async (signClient: SignClientInterface): Promise<void> => {
+    try {
+      if (!state.value.isIOS || !signClient) return
+
+      try {
+        const core = signClient.core
+        if (core && core.relayer) {
+          // Check if relay is connected
+          const isConnected = core.relayer.connected
+          if (!isConnected) {
+            console.warn('🍎 Relay health check failed - not connected')
+            handleRelayDisconnect(signClient)
+            return
+          }
+
+          // If relay is connected and we have active sessions, skip health checks
+          // Only run health checks when disconnected or during healing
+          if (isConnected && !state.value.relayHealing) {
+            console.log('🍎 Relay is connected and healthy, skipping health check')
+            return
+          }
+
+          // Only test with wallet requests if we have active sessions
+          const sessions = signClient.session.getAll()
+          if (sessions.length > 0) {
+            // Check if session is still valid (not expired)
+            const session = sessions[0]
+            const now = Date.now()
+            const sessionExpiry = session.expiry ? session.expiry * 1000 : 0
+
+            if (sessionExpiry > 0 && now > sessionExpiry) {
+              console.warn('🍎 Session expired, skipping health check')
+              return
+            }
+
+            try {
+              // Test with a simple request to verify relay is working
+              await Promise.race([
+                signClient.request({
+                  topic: session.topic,
+                  chainId: 'chia:testnet',
+                  request: {
+                    method: 'chia_getAddress',
+                    params: [],
+                  },
+                }),
+                // Timeout after 5 seconds (increased from 3)
+                new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error('Request timeout')), 5000)
+                ),
+              ])
+              console.log('🍎 Relay health check passed')
+            } catch (requestError) {
+              // If the request fails, it might be a relay issue
+              console.warn('🍎 Relay health check failed - request error:', requestError)
+              // Only trigger healing if it's a network/timeout error, not a wallet rejection
+              if (
+                requestError instanceof Error &&
+                (requestError.message.includes('timeout') ||
+                  requestError.message.includes('network') ||
+                  requestError.message.includes('connection'))
+              ) {
+                handleRelayError(signClient)
+              } else {
+                console.log('🍎 Request failed but not a relay issue, skipping healing')
+              }
+            }
+          } else {
+            // No active sessions, but relay should still be healthy
+            console.log('🍎 Relay health check passed (no active sessions)')
+          }
+        }
+      } catch (coreError) {
+        console.warn('🍎 Relay health check failed:', coreError)
+        // Only trigger healing for actual relay errors
+        if (
+          coreError instanceof Error &&
+          (coreError.message.includes('relay') ||
+            coreError.message.includes('connection') ||
+            coreError.message.includes('network'))
+        ) {
+          handleRelayError(signClient)
+        }
+      }
+    } catch (error) {
+      console.error('🍎 Error in checkRelayHealth:', error)
+    }
+  }
+
+  /**
+   * Stop relay health checks
+   */
+  const stopRelayHealthCheck = (): void => {
+    try {
+      if (state.value.relayHealthCheckInterval) {
+        clearInterval(state.value.relayHealthCheckInterval)
+        state.value.relayHealthCheckInterval = null
+        console.log('🍎 Stopped relay health checks')
+      }
+    } catch (error) {
+      console.error('🍎 Error in stopRelayHealthCheck:', error)
+    }
+  }
+
+  /**
+   * Clean up relay healing
+   */
+  const cleanupRelayHealing = (): void => {
+    try {
+      stopRelayHealthCheck()
+      state.value.relayHealing = false
+      state.value.relayReconnectAttempts = 0
+      state.value.relayReconnectDelay = 1000
+      console.log('🍎 Cleaned up relay healing')
+    } catch (error) {
+      console.error('🍎 Error in cleanupRelayHealing:', error)
+    }
+  }
+
   return {
     state,
     detectIOS,
@@ -427,5 +925,15 @@ export function useIOSWalletConnection() {
     getConnectionTimeout,
     getIOSErrorMessage,
     getIOSInstructions,
+    // Relay healing methods
+    initializeRelayHealing,
+    handleRelayError,
+    handleRelayDisconnect,
+    handleRelayReconnect,
+    attemptRelayReconnection,
+    startRelayHealthCheck,
+    checkRelayHealth,
+    stopRelayHealthCheck,
+    cleanupRelayHealing,
   }
 }

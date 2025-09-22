@@ -151,10 +151,6 @@
   const handleNetworkChange = async () => {
     try {
       console.log('🔄 Network changed to:', selectedNetwork.value)
-      // Update the wallet service with the new network
-      // Note: switchNetwork is not available in the wallet hook
-      // This would need to be implemented in the service or as a separate mutation
-      console.log('🔄 Network switch not implemented in TanStack Query hooks yet')
       connectionStatus.value = `Switched to ${selectedNetwork.value === 'chia:mainnet' ? 'Mainnet' : 'Testnet'}`
       statusType.value = 'success'
       statusIcon.value = 'pi pi-check-circle'

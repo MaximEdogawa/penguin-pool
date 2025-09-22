@@ -5,6 +5,7 @@
  * using WalletConnect v2.
  */
 
+import { useUserStore } from '@/entities/user/store/userStore'
 import {
   CHIA_MAINNET_CHAIN_ID,
   CHIA_TESTNET_CHAIN_ID,
@@ -14,7 +15,10 @@ import { WalletConnectModal, type WalletConnectModalConfig } from '@walletconnec
 import { SignClient } from '@walletconnect/sign-client'
 import type { SessionTypes, SignClientTypes } from '@walletconnect/types'
 import { reactive } from 'vue'
-import { useIOSWalletConnection } from '../composables/useIOSWalletConnection'
+import {
+  useIOSWalletConnection,
+  type SignClientInterface,
+} from '../composables/useIOSWalletConnection'
 
 // Define WalletConnect network interface
 interface WalletConnectNetwork {
@@ -177,8 +181,16 @@ export class WalletConnectService {
 
       this.signClient = await SignClient.init(signClientOptions)
 
+      // Set up global error handling to prevent page reloads
+      this.setupGlobalErrorHandling()
+
       // Set up event listeners immediately after SignClient creation
       this.setupEventListeners()
+
+      // Initialize iOS-specific relay healing if on iOS
+      if (this.iosConnection.state.value.isIOS) {
+        this.iosConnection.initializeRelayHealing(this.signClient as unknown as SignClientInterface)
+      }
 
       // Initialize Modal with base configuration
       const baseModalOptions: WalletConnectModalConfig = {
@@ -199,11 +211,14 @@ export class WalletConnectService {
 
       // Set up iOS-specific connection monitoring
       if (this.iosConnection.state.value.isIOS) {
-        this.iosConnection.setupConnectionMonitoring(this.signClient, () => {
-          this.state.isConnected = false
-          this.state.session = null
-          this.emitEvent('disconnect', { reason: 'Connection lost' })
-        })
+        this.iosConnection.setupConnectionMonitoring(
+          this.signClient as unknown as SignClientInterface,
+          () => {
+            this.state.isConnected = false
+            this.state.session = null
+            this.emitEvent('disconnect', { reason: 'Connection lost' })
+          }
+        )
       }
 
       // Check for existing sessions and restore state
@@ -298,6 +313,15 @@ export class WalletConnectService {
           network: this.state.currentNetwork?.name,
         })
 
+        // Update user store authentication state
+        const userStore = useUserStore()
+        if (accounts.length > 0) {
+          // Use the first account as the wallet identifier
+          const walletIdentifier = accounts[0]
+          await userStore.login(walletIdentifier)
+          console.log('✅ User authentication state updated after session restoration')
+        }
+
         // Emit restore event
         this.emitEvent('session_restore', activeSession)
       } else {
@@ -309,35 +333,106 @@ export class WalletConnectService {
     }
   }
 
+  /**
+   * Set up global error handling to prevent page reloads
+   */
+  private setupGlobalErrorHandling(): void {
+    try {
+      // Handle unhandled promise rejections
+      window.addEventListener('unhandledrejection', event => {
+        console.error('🚨 Unhandled promise rejection:', event.reason)
+
+        // Check if it's a WebSocket or WalletConnect related error
+        const errorMessage = event.reason?.message || event.reason?.toString() || ''
+        if (
+          errorMessage.includes('WebSocket') ||
+          errorMessage.includes('relay') ||
+          errorMessage.includes('WalletConnect') ||
+          errorMessage.includes('connection') ||
+          errorMessage.includes('network')
+        ) {
+          console.warn('🚨 WebSocket/WalletConnect error caught, preventing page reload')
+          event.preventDefault() // Prevent the default behavior (page reload)
+        }
+      })
+
+      // Handle uncaught errors
+      window.addEventListener('error', event => {
+        console.error('🚨 Uncaught error:', event.error)
+
+        // Check if it's a WebSocket or WalletConnect related error
+        const errorMessage = event.error?.message || event.message || ''
+        if (
+          errorMessage.includes('WebSocket') ||
+          errorMessage.includes('relay') ||
+          errorMessage.includes('WalletConnect') ||
+          errorMessage.includes('connection') ||
+          errorMessage.includes('network')
+        ) {
+          console.warn('🚨 WebSocket/WalletConnect error caught, preventing page reload')
+          event.preventDefault() // Prevent the default behavior (page reload)
+        }
+      })
+
+      // Handle WebSocket errors specifically
+      window.addEventListener('error', event => {
+        if (event.target && (event.target as HTMLElement).tagName === 'SCRIPT') {
+          const src = (event.target as HTMLScriptElement).src
+          if (src && src.includes('.map')) {
+            console.warn('🚨 Source map error ignored:', src)
+            event.preventDefault()
+          }
+        }
+      })
+
+      console.log('🚨 Global error handling set up to prevent page reloads')
+    } catch (error) {
+      console.error('🚨 Error setting up global error handling:', error)
+    }
+  }
+
   private setupEventListeners(): void {
     if (!this.signClient) return
 
     // Listen for session events
     this.signClient.on('session_event', (event: unknown) => {
-      console.log('🔗 WalletConnect session event:', event)
-      this.emitEvent('session_event', event)
+      try {
+        console.log('🔗 WalletConnect session event:', event)
+        this.emitEvent('session_event', event)
+      } catch (error) {
+        console.error('🚨 Error in session_event handler:', error)
+      }
     })
 
     // Listen for session requests
     this.signClient.on('session_request', (event: unknown) => {
-      console.log('📨 WalletConnect session request:', event)
-      this.emitEvent('session_request', event)
+      try {
+        console.log('📨 WalletConnect session request:', event)
+        this.emitEvent('session_request', event)
+      } catch (error) {
+        console.error('🚨 Error in session_request handler:', error)
+      }
     })
 
     // Listen for session update
     this.signClient.on('session_update', (event: unknown) => {
-      console.log('🔄 WalletConnect session update:', event)
-      const eventData = event as { topic?: string }
-      this.state.session = eventData.topic
-        ? this.signClient?.session.get(eventData.topic) || null
-        : null
-      this.state.accounts =
-        this.state.session?.namespaces?.chia?.accounts?.map(
-          (account: string) => account.split(':')[2]
-        ) || []
-      this.state.chainId = this.state.session?.namespaces?.chia?.chains?.[0]?.split(':')[2] || null
-      this.state.currentNetwork = this.getNetworkById(this.state.chainId)
-      this.emitEvent('session_update', event)
+      try {
+        console.log('🔄 WalletConnect session update:', event)
+        const eventData = event as { topic?: string }
+        this.state.session = eventData.topic
+          ? this.signClient?.session.get(eventData.topic) || null
+          : null
+        this.state.accounts =
+          this.state.session?.namespaces?.chia?.accounts?.map(
+            (account: string) => account.split(':')[2]
+          ) || []
+        this.state.chainId =
+          this.state.session?.namespaces?.chia?.chains?.[0]?.split(':')[2] || null
+        this.state.currentNetwork = this.getNetworkById(this.state.chainId)
+        this.emitEvent('session_update', event)
+      } catch (error) {
+        console.error('🚨 Error in session_update handler:', error)
+      }
     })
 
     // Listen for session delete
@@ -355,20 +450,54 @@ export class WalletConnectService {
 
     // Listen for connection events
     this.signClient.on('session_connect', (event: unknown) => {
-      console.log('🔗 WalletConnect connected:', event)
-      const eventData = event as { session?: SessionTypes.Struct }
-      this.state.isConnected = true
-      this.state.isConnecting = false
-      this.state.session = eventData.session || null
-      this.state.accounts =
-        eventData.session?.namespaces?.chia?.accounts?.map(
-          (account: string) => account.split(':')[2]
-        ) || []
-      this.state.chainId = eventData.session?.namespaces?.chia?.chains?.[0]?.split(':')[2] || null
-      this.state.currentNetwork = this.getNetworkById(this.state.chainId)
-      this.state.error = null
-      this.emitEvent('connect', event)
+      try {
+        console.log('🔗 WalletConnect connected:', event)
+        const eventData = event as { session?: SessionTypes.Struct }
+        this.state.isConnected = true
+        this.state.isConnecting = false
+        this.state.session = eventData.session || null
+        this.state.accounts =
+          eventData.session?.namespaces?.chia?.accounts?.map(
+            (account: string) => account.split(':')[2]
+          ) || []
+        this.state.chainId = eventData.session?.namespaces?.chia?.chains?.[0]?.split(':')[2] || null
+        this.state.currentNetwork = this.getNetworkById(this.state.chainId)
+        this.state.error = null
+        this.emitEvent('connect', event)
+      } catch (error) {
+        console.error('🚨 Error in session_connect handler:', error)
+      }
     })
+
+    // Listen for relayer events
+    if (this.signClient.core && this.signClient.core.relayer) {
+      this.signClient.core.relayer.on('relayer_connect', () => {
+        try {
+          console.log('🛜 Relayer connected - WebSocket reestablished')
+          this.emitEvent('relayer_connect', { timestamp: Date.now() })
+        } catch (error) {
+          console.error('🚨 Error in relayer_connect handler:', error)
+        }
+      })
+
+      this.signClient.core.relayer.on('relayer_disconnect', (error: unknown) => {
+        try {
+          console.warn('🛑 Relayer disconnected - WebSocket lost:', error)
+          this.emitEvent('relayer_disconnect', { error, timestamp: Date.now() })
+        } catch (eventError) {
+          console.error('🚨 Error in relayer_disconnect handler:', eventError)
+        }
+      })
+
+      this.signClient.core.relayer.on('relayer_error', (error: unknown) => {
+        try {
+          console.error('❌ Relayer error:', error)
+          this.emitEvent('relayer_error', { error, timestamp: Date.now() })
+        } catch (eventError) {
+          console.error('🚨 Error in relayer_error handler:', eventError)
+        }
+      })
+    }
 
     // Listen for disconnection events
     this.signClient.on('session_delete', (event: unknown) => {
@@ -714,6 +843,15 @@ export class WalletConnectService {
   }
 
   /**
+   * Wait for initialization to complete
+   */
+  async waitForInitialization(): Promise<void> {
+    if (this.initializationPromise) {
+      await this.initializationPromise
+    }
+  }
+
+  /**
    * Get reactive state for watching
    */
   getReactiveState() {
@@ -824,6 +962,12 @@ export class WalletConnectService {
    */
   cleanup(): void {
     this.eventListeners.clear()
+
+    // Clean up iOS-specific relay healing
+    if (this.iosConnection.state.value.isIOS) {
+      this.iosConnection.cleanupRelayHealing()
+    }
+
     this.state = {
       isConnected: false,
       isConnecting: false,
