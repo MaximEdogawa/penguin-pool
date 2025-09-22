@@ -34,6 +34,7 @@
               >
                 <i class="pi pi-bug text-xs"></i>
               </button>
+
               <button
                 @click="toggleAutoRefresh"
                 :class="[
@@ -80,7 +81,7 @@
 
             <!-- Wallet Address (only when connected) -->
             <div
-              v-if="isWalletConnected && walletStore.walletInfo?.address"
+              v-if="isWalletConnected && wallet.walletInfo.value?.address"
               class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
             >
               <div class="flex items-center justify-between">
@@ -90,10 +91,10 @@
                   ></i>
                   <span
                     class="text-xs text-gray-600 dark:text-gray-400 font-mono truncate cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                    :title="walletStore.walletInfo.address"
+                    :title="wallet.walletInfo.value.address"
                     @click="copyAddress"
                   >
-                    {{ formatAddress(walletStore.walletInfo.address) }}
+                    {{ formatAddress(wallet.walletInfo.value.address) }}
                   </span>
                 </div>
                 <button
@@ -243,19 +244,18 @@
 
 <script setup lang="ts">
   import { useUserStore } from '@/entities/user/store/userStore'
-  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import { useWallet } from '@/features/walletConnect/hooks/useWalletQueries'
   import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
 
   const userStore = ref<ReturnType<typeof useUserStore> | null>(null)
-  const walletStore = useWalletConnectStore()
+  const wallet = useWallet()
   const router = useRouter()
 
-  // Use walletConnectStore directly for balance management
-  const isWalletConnected = computed(() => walletStore.isConnected)
-  const walletBalance = computed(() => walletStore.walletInfo?.balance || null)
-  const isBalanceLoading = ref(false)
-  const balanceError = ref<string | null>(null)
+  // Use TanStack Query for wallet data
+  const isWalletConnected = computed(() => wallet.isConnected.value)
+  const walletBalance = computed(() => wallet.walletBalance.value || null)
+  const isBalanceLoading = computed(() => wallet.balance.isLoading.value)
   const balanceLastUpdated = ref<Date | null>(null)
   const autoRefreshEnabled = ref(true)
 
@@ -279,8 +279,8 @@
 
   // Get ticker symbol
   const ticker = computed(() => {
-    const networkInfo = walletStore.service.getNetworkInfo()
-    return networkInfo.isTestnet ? 'TXCH' : 'XCH'
+    const networkInfo = wallet.walletSession.value?.currentNetwork
+    return networkInfo?.name?.includes('testnet') ? 'TXCH' : 'XCH'
   })
 
   // Actions
@@ -295,20 +295,14 @@
       return
     }
 
-    isBalanceLoading.value = true
-    balanceError.value = null
-
     try {
       console.log('💰 Refreshing wallet balance...')
-      await walletStore.loadWalletInfo()
+      await wallet.balance.refreshBalance()
       balanceLastUpdated.value = new Date()
       console.log('✅ Wallet balance refreshed successfully')
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      balanceError.value = errorMessage
       console.error('❌ Failed to refresh wallet balance:', errorMessage)
-    } finally {
-      isBalanceLoading.value = false
     }
   }
 
@@ -355,10 +349,10 @@
   }
 
   const copyAddress = async () => {
-    if (!walletStore.walletInfo?.address) return
+    if (!wallet.walletInfo.value?.address) return
 
     try {
-      await navigator.clipboard.writeText(walletStore.walletInfo.address)
+      await navigator.clipboard.writeText(wallet.walletInfo.value.address)
       const copyButton = document.querySelector('[title="Copy address"]') as HTMLElement
       if (copyButton) {
         const originalIcon = copyButton.innerHTML
@@ -388,6 +382,9 @@
     console.log('🧪 Testing reactivity...')
     console.log('🧪 Current walletBalance:', walletBalance.value)
     console.log('🧪 Current userBalance computed:', userBalance.value)
+    console.log('🧪 Current isWalletConnected:', isWalletConnected.value)
+    console.log('🧪 Current wallet state:', wallet.connection.data.value)
+    console.log('🧪 Current balance query state:', wallet.balance.data.value)
 
     // Force a balance refresh to test reactivity
     refreshBalance(true)

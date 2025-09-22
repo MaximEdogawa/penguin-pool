@@ -87,7 +87,7 @@
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useNotificationStore } from '@/features/notifications/store/notificationStore'
   import { useThemeStore } from '@/features/theme/store/themeStore'
-  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import { useWalletConnectService } from '@/features/walletConnect/services/WalletConnectService'
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import AppConfigurator from './AppConfigurator.vue'
@@ -99,6 +99,9 @@
   // Stores
   const themeStore = useThemeStore()
   const notificationStore = useNotificationStore()
+
+  // Services
+  const walletService = useWalletConnectService
 
   // Layout composable
   const { toggleMenu, layoutState } = useLayout()
@@ -162,13 +165,12 @@
       console.log('🚪 Starting logout process...')
 
       // Always disconnect wallet and logout user
-      const walletStore = useWalletConnectStore()
       const userStore = useUserStore()
 
       // Disconnect wallet if connected
-      if (walletStore.isConnected) {
+      if (walletService.getState().isConnected) {
         console.log('🔌 Disconnecting wallet...')
-        await walletStore.disconnect()
+        await walletService.disconnect()
       }
 
       // Always logout user (this clears user data and localStorage)

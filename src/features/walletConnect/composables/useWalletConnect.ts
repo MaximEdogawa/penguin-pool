@@ -25,7 +25,9 @@ export function useWalletConnect() {
   const walletConnectService = useWalletConnectService
 
   // Reactive state - use the reactive state from the service
-  const state = computed(() => walletConnectService.getReactiveState())
+  // Store the reactive state reference to ensure it works in production builds
+  const reactiveState = walletConnectService.getReactiveState()
+  const state = computed(() => reactiveState)
 
   // Computed properties
   const isConnected = computed(() => state.value.isConnected)

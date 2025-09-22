@@ -1,5 +1,5 @@
 import { useUserStore } from '@/entities/user/store/userStore'
-import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+import { useWalletConnectService } from '@/features/walletConnect/services/WalletConnectService'
 import {
   defaultFeatureFlags,
   getCurrentEnvironment,
@@ -139,9 +139,9 @@ router.beforeEach((to, from, next) => {
   document.title = `${to.meta.title} - Penguin-pool`
 
   const userStore = useUserStore()
-  const walletStore = useWalletConnectStore()
+  const walletService = useWalletConnectService
   const isAuthenticated = userStore.isAuthenticated
-  const isWalletConnected = walletStore.isConnected
+  const isWalletConnected = walletService.getState().isConnected
 
   // Check if route requires a feature flag
   if (to.meta.featureFlag) {

@@ -1,21 +1,21 @@
 /**
- * WalletConnect V2 Usage Example
+ * WalletConnect V2 Usage Example with TanStack Query
  *
- * This file demonstrates how to use the new simplified WalletConnect implementation
- * with improved iOS support and automatic reconnection.
+ * This file demonstrates how to use the new TanStack Query-based WalletConnect implementation
+ * with improved data management, caching, and reactivity.
  */
 
 import { useWalletConnect } from '../composables/useWalletConnect'
-import { useWalletConnectStore } from '../stores/walletConnectStore'
+import { useWallet, useWalletBalance, useWalletConnection } from '../hooks/useWalletQueries'
 
-// Example 1: Using the Store (Recommended for most use cases)
-export function useWalletConnectWithStore() {
-  const store = useWalletConnectStore()
+// Example 1: Using TanStack Query Hooks (Recommended for most use cases)
+export function useWalletConnectWithTanStackQuery() {
+  const wallet = useWallet()
 
   // Initialize WalletConnect
   const initializeWallet = async () => {
     try {
-      await store.initialize()
+      await wallet.initialization.mutateAsync()
       console.log('✅ WalletConnect initialized')
     } catch (error) {
       console.error('❌ Failed to initialize WalletConnect:', error)
@@ -25,14 +25,10 @@ export function useWalletConnectWithStore() {
   // Connect to wallet
   const connectWallet = async () => {
     try {
-      const result = await store.connect()
-      if (result.success) {
-        console.log('✅ Wallet connected:', result.session)
-        console.log('📊 Accounts:', store.accounts)
-        console.log('🔗 Chain ID:', store.chainId)
-      } else {
-        console.error('❌ Connection failed:', result.error)
-      }
+      const result = await wallet.mutations.connect.mutateAsync()
+      console.log('✅ Wallet connected:', result.session)
+      console.log('📊 Accounts:', wallet.walletAccounts.value?.accounts)
+      console.log('🔗 Chain ID:', wallet.walletSession.value?.chainId)
     } catch (error) {
       console.error('❌ Connection error:', error)
     }
@@ -41,63 +37,89 @@ export function useWalletConnectWithStore() {
   // Disconnect from wallet
   const disconnectWallet = async () => {
     try {
-      const result = await store.disconnect()
-      if (result.success) {
-        console.log('✅ Wallet disconnected')
-      } else {
-        console.error('❌ Disconnect failed:', result.error)
-      }
+      await wallet.mutations.disconnect.mutateAsync()
+      console.log('✅ Wallet disconnected')
     } catch (error) {
       console.error('❌ Disconnect error:', error)
     }
   }
 
-  // Make a request to the wallet
-  const makeWalletRequest = async (method: string, params: unknown[]) => {
+  // Refresh wallet balance
+  const refreshBalance = async () => {
     try {
-      if (!store.isConnected) {
-        throw new Error('Not connected to wallet')
-      }
-
-      const result = await store.service.request(method, params)
-      console.log('✅ Wallet request successful:', result)
-      return result
+      await wallet.balance.refreshBalance()
+      console.log('✅ Wallet balance refreshed')
     } catch (error) {
-      console.error('❌ Wallet request failed:', error)
-      throw error
+      console.error('❌ Failed to refresh balance:', error)
     }
   }
 
   return {
     // State
-    isConnected: store.isConnected,
-    isConnecting: store.isConnecting,
-    isInitialized: store.isInitialized,
-    session: store.session,
-    accounts: store.accounts,
-    chainId: store.chainId,
-    error: store.error,
-    walletInfo: store.walletInfo,
+    isConnected: wallet.isConnected,
+    isConnecting: wallet.isConnecting,
+    isInitialized: wallet.isInitialized,
+    error: wallet.error,
+    walletInfo: wallet.walletInfo,
+    walletBalance: wallet.walletBalance,
+    walletAccounts: wallet.walletAccounts,
+    walletSession: wallet.walletSession,
 
-    // Computed
-    hasChiaAccount: store.hasChiaAccount,
-    primaryAccount: store.primaryAccount,
-
-    // Methods
+    // Actions
     initializeWallet,
     connectWallet,
     disconnectWallet,
-    makeWalletRequest,
-    loadWalletInfo: store.loadWalletInfo,
-    refreshWalletInfo: store.refreshWalletInfo,
-    testConnection: store.testConnection,
+    refreshBalance,
+    refreshAll: wallet.refreshAll,
   }
 }
 
-// Example 2: Using Composables Directly (For advanced use cases)
+// Example 2: Using Individual Query Hooks (For specific use cases)
+export function useWalletConnectWithIndividualQueries() {
+  const connection = useWalletConnection()
+  const balance = useWalletBalance()
+
+  // Connect to wallet
+  const connectWallet = async () => {
+    try {
+      // Note: Connection is handled by the wallet service, not through queries
+      console.log('✅ Wallet connection is handled by the service')
+    } catch (error) {
+      console.error('❌ Connection error:', error)
+    }
+  }
+
+  // Refresh balance
+  const refreshBalance = async () => {
+    try {
+      await balance.refreshBalance()
+      console.log('✅ Balance refreshed')
+    } catch (error) {
+      console.error('❌ Failed to refresh balance:', error)
+    }
+  }
+
+  return {
+    // Connection state
+    isConnected: connection.data.value?.isConnected ?? false,
+    isConnecting: connection.data.value?.isConnecting ?? false,
+    isInitialized: connection.data.value?.isInitialized ?? false,
+    error: connection.data.value?.error ?? null,
+
+    // Balance data
+    balance: balance.data.value,
+    isBalanceLoading: balance.isLoading.value,
+    balanceError: balance.error.value,
+
+    // Actions
+    connectWallet,
+    refreshBalance,
+  }
+}
+
+// Example 3: Using Composables Directly (For advanced use cases)
 export function useWalletConnectWithComposables() {
   const walletConnect = useWalletConnect()
-  // Connection state is managed by the walletConnect composable
 
   // Initialize WalletConnect
   const initializeWallet = async () => {
@@ -144,25 +166,6 @@ export function useWalletConnectWithComposables() {
     }
   }
 
-  // Make a request to the wallet
-  const makeWalletRequest = async (method: string, params: unknown[]) => {
-    try {
-      if (!walletConnect.isConnected.value) {
-        throw new Error('Not connected to wallet')
-      }
-
-      // Use the service directly for requests
-      const { useWalletConnectService } = await import('../services/WalletConnectService')
-      const service = useWalletConnectService
-      const result = await service.request(method, params)
-      console.log('✅ Wallet request successful:', result)
-      return result
-    } catch (error) {
-      console.error('❌ Wallet request failed:', error)
-      throw error
-    }
-  }
-
   return {
     // State
     isConnected: walletConnect.isConnected,
@@ -177,13 +180,12 @@ export function useWalletConnectWithComposables() {
     initializeWallet,
     connectWallet,
     disconnectWallet,
-    makeWalletRequest,
   }
 }
 
-// Example 3: iOS-Specific Usage
+// Example 4: iOS-Specific Usage with TanStack Query
 export function useWalletConnectForIOS() {
-  const store = useWalletConnectStore()
+  const wallet = useWallet()
 
   // iOS-specific initialization
   const initializeForIOS = async () => {
@@ -191,7 +193,7 @@ export function useWalletConnectForIOS() {
       console.log('🍎 Initializing WalletConnect for iOS...')
 
       // The service automatically detects iOS and applies optimizations
-      await store.initialize()
+      await wallet.initialization.mutateAsync()
 
       console.log('✅ WalletConnect initialized for iOS')
       console.log('📱 iOS optimizations applied:')
@@ -213,14 +215,10 @@ export function useWalletConnectForIOS() {
       try {
         console.log(`🍎 iOS connection attempt ${attempts + 1}/${maxRetries}`)
 
-        const result = await store.connect()
+        const result = await wallet.mutations.connect.mutateAsync()
 
-        if (result.success) {
-          console.log('✅ iOS wallet connected successfully')
-          return result
-        } else {
-          throw new Error(result.error || 'Connection failed')
-        }
+        console.log('✅ iOS wallet connected successfully')
+        return result
       } catch (error) {
         attempts++
         console.warn(`⚠️ iOS connection attempt ${attempts} failed:`, error)
@@ -240,61 +238,42 @@ export function useWalletConnectForIOS() {
 
   return {
     // State
-    isConnected: store.isConnected,
-    isConnecting: store.isConnecting,
-    isInitialized: store.isInitialized,
-    session: store.session,
-    accounts: store.accounts,
-    chainId: store.chainId,
-    error: store.error,
+    isConnected: wallet.isConnected,
+    isConnecting: wallet.isConnecting,
+    isInitialized: wallet.isInitialized,
+    error: wallet.error,
+    walletInfo: wallet.walletInfo,
+    walletBalance: wallet.walletBalance,
 
     // Methods
     initializeForIOS,
     connectForIOS,
-    disconnectWallet: store.disconnect,
-    makeWalletRequest: (method: string, params: unknown[]) => store.service.request(method, params),
+    disconnectWallet: () => wallet.mutations.disconnect.mutateAsync(),
+    refreshBalance: () => wallet.balance.refreshBalance(),
   }
 }
 
-// Example 4: Event Handling
+// Example 5: Event Handling with TanStack Query
 export function useWalletConnectEvents() {
-  const store = useWalletConnectStore()
+  const wallet = useWallet()
 
   // Setup event listeners
   const setupEventListeners = () => {
-    // Listen for connection events
-    store.service.on('session_connected', (event: unknown) => {
-      console.log('🔗 Wallet connected:', (event as Record<string, unknown>).data)
-      // Handle successful connection
-    })
-
-    store.service.on('session_disconnected', (event: unknown) => {
-      console.log('🔌 Wallet disconnected:', (event as Record<string, unknown>).data)
-      // Handle disconnection
-    })
-
-    store.service.on('session_reject', (event: unknown) => {
-      console.log('❌ Connection rejected:', (event as Record<string, unknown>).data)
-      // Handle rejection
-    })
-
-    store.service.on('session_proposal', (event: unknown) => {
-      console.log('📋 Session proposal:', (event as Record<string, unknown>).data)
-      // Handle session proposal
-    })
+    // TanStack Query automatically handles data updates
+    // You can also listen to query state changes
+    console.log('🎧 TanStack Query automatically handles wallet state changes')
+    console.log('📊 Connection state:', wallet.connection.data.value)
+    console.log('💰 Balance state:', wallet.balance.data.value)
   }
 
-  // Remove event listeners
-  const removeEventListeners = () => {
-    store.service.off('session_connected')
-    store.service.off('session_disconnected')
-    store.service.off('session_reject')
-    store.service.off('session_proposal')
+  // Refresh all data
+  const refreshAll = () => {
+    wallet.refreshAll()
   }
 
   return {
     setupEventListeners,
-    removeEventListeners,
-    store,
+    refreshAll,
+    wallet,
   }
 }

@@ -44,7 +44,7 @@
           <div class="user-info-section">
             <div class="user-avatar">
               <i
-                :class="walletStore.isConnected ? 'pi pi-wallet' : 'pi pi-user'"
+                :class="walletService.getState().isConnected ? 'pi pi-wallet' : 'pi pi-user'"
                 class="text-xl text-white"
               ></i>
             </div>
@@ -53,11 +53,11 @@
               <p class="user-email">{{ userEmail }}</p>
 
               <!-- Wallet Connection Info -->
-              <div v-if="walletStore.isConnected" class="wallet-info">
+              <div v-if="walletService.getState().isConnected" class="wallet-info">
                 <div class="wallet-fingerprint">
                   <i class="pi pi-key text-sm"></i>
                   <span class="fingerprint-text">{{
-                    walletStore.walletInfo?.fingerprint || 'N/A'
+                    walletService.getState().accounts[0] || 'N/A'
                   }}</span>
                 </div>
               </div>
@@ -73,7 +73,7 @@
           <!-- Wallet Connect/Disconnect Button -->
           <div class="wallet-section">
             <PrimeButton
-              v-if="walletStore.isConnecting"
+              v-if="walletService.getState().isConnecting"
               :icon="'pi pi-spin pi-spinner'"
               :label="!isCollapsed && !isSmallScreen ? 'Connecting...' : ''"
               :title="isCollapsed || isSmallScreen ? 'Connecting...' : ''"
@@ -82,7 +82,7 @@
               disabled
             />
             <PrimeButton
-              v-else-if="!walletStore.isConnected"
+              v-else-if="!walletService.getState().isConnected"
               @click="navigateTo('/auth')"
               :icon="'pi pi-wallet'"
               :label="!isCollapsed && !isSmallScreen ? 'Connect Wallet' : ''"
@@ -134,7 +134,7 @@
 
 <script setup lang="ts">
   import { useUserStore } from '@/entities/user/store/userStore'
-  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import { useWalletConnectService } from '@/features/walletConnect/services/WalletConnectService'
   import {
     defaultFeatureFlags,
     getCurrentEnvironment,
@@ -149,7 +149,7 @@
 
   // Stores
   const userStore = useUserStore()
-  const walletStore = useWalletConnectStore()
+  const walletService = useWalletConnectService
 
   // Props
   interface Props {
@@ -267,11 +267,11 @@
   })
 
   const connectionStatusClass = computed(() => {
-    return walletStore.isConnected ? 'connected' : 'disconnected'
+    return walletService.getState().isConnected ? 'connected' : 'disconnected'
   })
 
   const connectionStatusText = computed(() => {
-    return walletStore.isConnected ? 'Wallet Connected' : 'Wallet Disconnected'
+    return walletService.getState().isConnected ? 'Wallet Connected' : 'Wallet Disconnected'
   })
 
   // Methods
@@ -285,9 +285,9 @@
 
       // Always disconnect wallet and logout user
       // Disconnect wallet if connected
-      if (walletStore.isConnected) {
+      if (walletService.getState().isConnected) {
         console.log('🔌 Disconnecting wallet...')
-        await walletStore.disconnect()
+        await walletService.disconnect()
       }
 
       // Always logout user (this clears user data and localStorage)

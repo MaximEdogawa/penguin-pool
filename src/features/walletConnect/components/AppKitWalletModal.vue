@@ -81,7 +81,7 @@
         // Close modal after successful connection
         setTimeout(() => {
           closeModal()
-        }, 2000) // Show success message for 2 seconds
+        }, 500)
       } else {
         console.error('❌ Connection failed:', result.error)
       }

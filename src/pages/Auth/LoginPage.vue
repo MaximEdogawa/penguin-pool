@@ -119,14 +119,14 @@
   import { useUserStore } from '@/entities/user/store/userStore'
   import AppKitWalletModal from '@/features/walletConnect/components/AppKitWalletModal.vue'
   import { useWalletRequestService } from '@/features/walletConnect/composables/useWalletRequestService'
-  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import { useWallet } from '@/features/walletConnect/hooks/useWalletQueries'
   import type { ExtendedWalletInfo } from '@/features/walletConnect/types/walletConnect.types'
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
 
   const router = useRouter()
   const userStore = useUserStore()
-  const walletConnectStore = useWalletConnectStore()
+  const wallet = useWallet()
   const walletRequestService = useWalletRequestService()
 
   // State
@@ -137,7 +137,7 @@
   const selectedNetwork = ref('chia:testnet')
 
   // Computed
-  const isConnecting = computed(() => walletConnectStore.isConnecting)
+  const isConnecting = computed(() => wallet.isConnecting.value)
 
   const backgroundStyle = computed(() => ({
     backgroundImage: `url('${signinGlassImage}')`,
@@ -148,7 +148,9 @@
     try {
       console.log('🔄 Network changed to:', selectedNetwork.value)
       // Update the wallet service with the new network
-      await walletConnectStore.switchNetwork(selectedNetwork.value)
+      // Note: switchNetwork is not available in the wallet hook
+      // This would need to be implemented in the service or as a separate mutation
+      console.log('🔄 Network switch not implemented in TanStack Query hooks yet')
       connectionStatus.value = `Switched to ${selectedNetwork.value === 'chia:mainnet' ? 'Mainnet' : 'Testnet'}`
       statusType.value = 'success'
       statusIcon.value = 'pi pi-check-circle'
@@ -189,7 +191,7 @@
         console.log('💾 Storing wallet session')
         // The session is already stored in the WalletConnect service
         // We just need to ensure the store is updated
-        await walletConnectStore.initialize()
+        await wallet.initialization.mutateAsync()
       }
 
       // Login with wallet address
@@ -218,7 +220,7 @@
 
   onMounted(async () => {
     try {
-      if (walletConnectStore.isConnected) {
+      if (wallet.isConnected.value) {
         await new Promise(resolve => setTimeout(resolve, 500))
         const walletInfo = walletRequestService.getWalletInfo()
         await handleWalletConnected(walletInfo)
