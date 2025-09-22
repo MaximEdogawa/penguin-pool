@@ -89,30 +89,17 @@ export const environment = {
         url: getCurrentUrl(),
         icons: ['https://penguin.pool/icon.png'],
       },
-      chainId: (() => {
-        const network = import.meta.env.VITE_CHIA_NETWORK || 'testnet'
-        return network === 'mainnet' ? CHIA_MAINNET_CHAIN_ID : CHIA_TESTNET_CHAIN_ID
-      })(),
-      // Alternative relay URLs (in order of preference)
-      relayUrls: (() => {
-        if (isIOS()) {
-          // For iOS, try WebSocket first (needed for URI generation), then HTTPS for receiving
-          return [
-            'wss://relay.walletconnect.org', // WebSocket primary for iOS (generates URIs)
-            'wss://relay.walletconnect.com', // WebSocket secondary for iOS
-            'wss://relay.walletconnect.io', // WebSocket tertiary for iOS
-            'https://relay.walletconnect.org', // HTTPS fallback (for receiving only)
-            'https://relay.walletconnect.com', // HTTPS fallback (for receiving only)
-          ]
-        } else {
-          // Use WebSocket relays for other platforms
-          return [
-            'wss://relay.walletconnect.org', // More reliable
-            'wss://relay.walletconnect.com', // Primary relay
-            'wss://relay.walletconnect.io', // Alternative relay
-          ]
-        }
-      })(),
+      // Chia network configuration
+      networks: {
+        chia: {
+          mainnet: CHIA_MAINNET_CHAIN_ID,
+          testnet: CHIA_TESTNET_CHAIN_ID,
+          current: (() => {
+            const network = import.meta.env.VITE_CHIA_NETWORK || 'testnet'
+            return network === 'mainnet' ? CHIA_MAINNET_CHAIN_ID : CHIA_TESTNET_CHAIN_ID
+          })(),
+        },
+      },
       // Connection settings optimized for mobile and desktop
       connectionTimeout: (() => {
         return isIOS() ? 90000 : 60000 // Longer timeout for iOS HTTP connections
@@ -130,9 +117,7 @@ export const environment = {
       foregroundReconnectDelay: 1000, // Delay before reconnecting on foreground
       // iOS-specific settings
       ios: {
-        useHttpRelay: false, // Use WebSocket first for URI generation, HTTPS as fallback
         extendedTimeout: true, // Use extended timeouts for iOS
-        fallbackToWebSocket: false, // WebSocket is primary, not fallback
         requiresHttps: true, // iOS requires HTTPS for relay to work properly
         retryRelays: true, // Try multiple relay URLs
       },

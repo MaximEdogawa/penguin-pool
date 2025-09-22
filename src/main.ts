@@ -1,3 +1,6 @@
+// Import polyfills first to fix circular dependency issues
+import './polyfills/global.js'
+
 import Aura from '@primeuix/themes/aura'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import { createPinia } from 'pinia'

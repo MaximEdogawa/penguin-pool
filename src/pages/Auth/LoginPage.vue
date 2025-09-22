@@ -74,6 +74,22 @@
         </div>
       </div>
 
+      <!-- Network Selection -->
+      <div class="network-section">
+        <div class="network-selector">
+          <label for="network-select" class="network-label">Network:</label>
+          <select
+            id="network-select"
+            v-model="selectedNetwork"
+            class="network-dropdown"
+            @change="handleNetworkChange"
+          >
+            <option value="chia:testnet">Testnet</option>
+            <option value="chia:mainnet">Mainnet</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Footer -->
       <div class="footer">
         <p class="footer-text">
@@ -86,7 +102,7 @@
     </div>
 
     <!-- Wallet Connect Modal -->
-    <WalletConnectModal
+    <AppKitWalletModal
       v-if="showWalletModal"
       :is-open="showWalletModal"
       @close="closeWalletModal"
@@ -101,20 +117,24 @@
   import PWAInstallPrompt from '@/components/PWAInstallPrompt.vue'
   import PenguinLogo from '@/components/PenguinLogo.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
-  import WalletConnectModal from '@/features/walletConnect/components/WalletConnectModal.vue'
+  import AppKitWalletModal from '@/features/walletConnect/components/AppKitWalletModal.vue'
+  import { useWalletRequestService } from '@/features/walletConnect/composables/useWalletRequestService'
   import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import type { ExtendedWalletInfo } from '@/features/walletConnect/types/walletConnect.types'
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
 
   const router = useRouter()
   const userStore = useUserStore()
   const walletConnectStore = useWalletConnectStore()
+  const walletRequestService = useWalletRequestService()
 
   // State
   const showWalletModal = ref(false)
   const connectionStatus = ref('')
   const statusType = ref<'info' | 'success' | 'error'>('info')
   const statusIcon = ref('pi pi-info-circle')
+  const selectedNetwork = ref('chia:testnet')
 
   // Computed
   const isConnecting = computed(() => walletConnectStore.isConnecting)
@@ -123,26 +143,67 @@
     backgroundImage: `url('${signinGlassImage}')`,
   }))
 
-  const handleWalletConnected = async (walletInfo: unknown) => {
+  // Methods
+  const handleNetworkChange = async () => {
     try {
+      console.log('🔄 Network changed to:', selectedNetwork.value)
+      // Update the wallet service with the new network
+      await walletConnectStore.switchNetwork(selectedNetwork.value)
+      connectionStatus.value = `Switched to ${selectedNetwork.value === 'chia:mainnet' ? 'Mainnet' : 'Testnet'}`
+      statusType.value = 'success'
+      statusIcon.value = 'pi pi-check-circle'
+    } catch (error) {
+      console.error('Failed to switch network:', error)
+      connectionStatus.value = 'Failed to switch network'
+      statusType.value = 'error'
+      statusIcon.value = 'pi pi-exclamation-triangle'
+    }
+  }
+
+  const handleWalletConnected = async (walletInfo: ExtendedWalletInfo | null) => {
+    try {
+      console.log('🔗 Processing wallet connection:', walletInfo)
+      console.log('🔍 Wallet info type:', typeof walletInfo)
+      console.log(
+        '🔍 Wallet info keys:',
+        walletInfo && typeof walletInfo === 'object' ? Object.keys(walletInfo) : 'N/A'
+      )
+
       if (!walletInfo || typeof walletInfo !== 'object') {
         throw new Error('Invalid wallet info - no wallet data received')
       }
 
-      const wallet = walletInfo as { address: string; fingerprint?: number }
-      if (!wallet.address) {
+      if (!walletInfo.address) {
         throw new Error('Invalid wallet info - no address found')
       }
 
-      if (wallet.fingerprint) {
-        await userStore.login(wallet.fingerprint, 'wallet-user')
-      } else {
-        await userStore.login(wallet.address, 'wallet-user')
+      console.log('📝 Wallet details:', {
+        address: walletInfo.address,
+        chainId: walletInfo.chainId,
+        network: walletInfo.network,
+        accounts: walletInfo.accounts?.length || 0,
+      })
+
+      // Store wallet session in the store
+      if (walletInfo.session) {
+        console.log('💾 Storing wallet session')
+        // The session is already stored in the WalletConnect service
+        // We just need to ensure the store is updated
+        await walletConnectStore.initialize()
       }
 
+      // Login with wallet address
+      await userStore.login(walletInfo.address, 'wallet-user')
+
+      console.log('✅ Wallet connection processed successfully')
+      connectionStatus.value = 'Connected successfully!'
+      statusType.value = 'success'
+      statusIcon.value = 'pi pi-check-circle'
+
+      // Redirect to dashboard
       await router.push('/dashboard')
     } catch (error) {
-      console.error('Failed to process wallet connection:', error)
+      console.error('❌ Failed to process wallet connection:', error)
       connectionStatus.value =
         'Failed to process wallet connection: ' +
         (error instanceof Error ? error.message : 'Unknown error')
@@ -159,7 +220,7 @@
     try {
       if (walletConnectStore.isConnected) {
         await new Promise(resolve => setTimeout(resolve, 500))
-        const walletInfo = walletConnectStore.walletInfo
+        const walletInfo = walletRequestService.getWalletInfo()
         await handleWalletConnected(walletInfo)
       }
     } catch (error) {
@@ -200,6 +261,26 @@
 
   .subtitle-text {
     @apply text-white/80 dark:text-gray-300/80;
+  }
+
+  .network-section {
+    @apply w-full max-w-md mx-auto mt-2 mb-2;
+  }
+
+  .network-selector {
+    @apply flex flex-row items-center justify-center gap-1;
+  }
+
+  .network-label {
+    @apply text-xs font-normal text-white/50 dark:text-gray-500;
+  }
+
+  .network-dropdown {
+    @apply px-1.5 py-0.5 text-xs rounded-md bg-white/5 dark:bg-gray-800/5 backdrop-blur-sm border border-white/10 dark:border-gray-700/20 text-white/70 dark:text-gray-400 focus:outline-none focus:ring-0 focus:border-white/20 transition-all duration-200;
+  }
+
+  .network-dropdown option {
+    @apply bg-gray-800 text-white text-xs;
   }
 
   .wallet-section {

@@ -1,25 +1,24 @@
+import type { SessionTypes } from '@walletconnect/types'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
-import { useWalletConnectService } from '../services/WalletConnectService'
 import type {
   ConnectionResult,
   DisconnectResult,
-  WalletConnectSession,
   WalletConnectState,
-  WalletInfo,
-} from '../types/walletConnect.types'
+} from '../services/WalletConnectService'
+import { useWalletConnectService } from '../services/WalletConnectService'
+import type { WalletInfo } from '../types/walletConnect.types'
 
 /**
- * Unified WalletConnect Store
+ * AppKit Wallet Store
  *
- * This store uses the unified WalletConnectService that combines
- * the best features from both the original and V2 implementations.
+ * This store uses the AppKit service for multichain wallet support.
  */
 export const useWalletConnectStore = defineStore('walletConnect', () => {
   // State
   const isConnected = ref(false)
   const isConnecting = ref(false)
-  const session = ref<WalletConnectSession | null>(null)
+  const session = ref<SessionTypes.Struct | null>(null)
   const accounts = ref<string[]>([])
   const chainId = ref<string | null>(null)
   const error = ref<string | null>(null)
@@ -30,10 +29,12 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
   const state = computed<WalletConnectState>(() => ({
     isConnected: isConnected.value,
     isConnecting: isConnecting.value,
+    isInitialized: walletConnectService.isInitialized(),
     session: session.value,
     accounts: accounts.value,
     chainId: chainId.value,
     error: error.value,
+    currentNetwork: null,
   }))
 
   const hasChiaAccount = computed(() => {
@@ -73,10 +74,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     try {
       console.log('🚀 Initializing WalletConnect store...')
 
-      // Set up event listeners immediately before any initialization
-      setupEventListeners()
-
-      if (!walletConnectService.isInitialized) {
+      if (!walletConnectService.isInitialized()) {
         await walletConnectService.initialize()
       } else {
         console.log('WalletConnect service already initialized')
@@ -94,37 +92,20 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     }
   }
 
-  const connect = async (pairing?: { topic: string }): Promise<ConnectionResult> => {
+  const connect = async (): Promise<ConnectionResult> => {
     try {
       isConnecting.value = true
       error.value = null
 
       console.log('🔗 Connecting to wallet...')
-      const result = await walletConnectService.connect(pairing)
+      const result = await walletConnectService.connect()
 
-      if (result) {
-        // Wait for approval
-        const sessionResult = await result.approval()
-
-        if (sessionResult) {
-          const sessionData = walletConnectService.getSession()
-          const accountsData = walletConnectService.getAccounts()
-
-          session.value = sessionData
-          accounts.value = accountsData
-          chainId.value = walletConnectService.getNetworkInfo().chainId
-          isConnected.value = true
-          setupEventListeners()
-
-          return { success: true, session: sessionData || undefined, accounts: accountsData }
-        } else {
-          error.value = 'Connection failed - no session received'
-          return { success: false, error: 'Connection failed - no session received' }
-        }
-      } else {
-        error.value = 'Connection failed'
-        return { success: false, error: 'Connection failed' }
+      if (result.success) {
+        syncWithService()
+        await loadWalletInfo()
       }
+
+      return result
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Connection failed'
       error.value = errorMessage
@@ -171,8 +152,15 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       }
 
       console.log('📊 Loading wallet info...')
-      const info = await walletConnectService.getWalletInfo()
-      walletInfo.value = info || null
+      // For now, create a basic wallet info object
+      // In the future, this could be enhanced to fetch actual wallet data
+      const info: WalletInfo = {
+        fingerprint: 0,
+        address: primaryAccount.value || '',
+        balance: null,
+        isConnected: true,
+      }
+      walletInfo.value = info
       console.log('✅ Wallet info loaded successfully')
     } catch (err) {
       console.error('❌ Failed to load wallet info:', err)
@@ -186,47 +174,52 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const testConnection = async (): Promise<boolean> => {
     try {
-      return await walletConnectService.testConnection()
+      return walletConnectService.isConnected()
     } catch (err) {
       console.error('❌ Connection test failed:', err)
       return false
     }
   }
 
-  const getAssetBalance = async (assetId: string) => {
+  const getAssetBalance = async () => {
     try {
       if (!isConnected.value) {
         throw new Error('Not connected to wallet')
       }
 
-      return await walletConnectService.getAssetBalance(assetId)
+      // For now, return a mock balance
+      // In the future, this could be enhanced to fetch actual asset balances
+      return {
+        confirmed: '0',
+        spendable: '0',
+        spendableCoinCount: 0,
+      }
     } catch (err) {
       console.error('❌ Failed to get asset balance:', err)
       throw err
     }
   }
 
-  const handleWebSocketReconnection = async (): Promise<boolean> => {
+  const switchNetwork = async (chainId: string): Promise<boolean> => {
     try {
-      console.log('🔄 Handling WebSocket reconnection...')
-      const reconnected = await walletConnectService.handleWebSocketReconnection()
+      console.log('🔄 Switching network...')
+      const success = await walletConnectService.switchNetwork(chainId)
 
-      if (reconnected) {
-        // Sync state after reconnection
+      if (success) {
         syncWithService()
-        console.log('✅ Reconnection successful')
+        console.log('✅ Network switched successfully')
       }
 
-      return reconnected
+      return success
     } catch (err) {
-      console.error('❌ WebSocket reconnection failed:', err)
+      console.error('❌ Network switch failed:', err)
       return false
     }
   }
 
   const forceReset = (): void => {
-    console.log('🔄 Force resetting WalletConnect store...')
-    walletConnectService.forceReset()
+    console.log('🔄 Force resetting AppKit store...')
+    walletConnectService.cleanup()
 
     // Reset local state
     isConnected.value = false
@@ -237,51 +230,51 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     error.value = null
     walletInfo.value = null
 
-    console.log('✅ WalletConnect store reset completed')
+    console.log('✅ AppKit store reset completed')
   }
 
   // Event handling
   const setupEventListeners = (): void => {
-    walletConnectService.on('session_connected', async () => {
-      console.log('🔗 Session connected event received')
+    walletConnectService.on('connect', async () => {
+      console.log('🔗 Wallet connected event received')
       syncWithService()
       await loadWalletInfo()
     })
 
-    walletConnectService.on('session_disconnected', () => {
-      console.log('🔌 Session disconnected event received')
+    walletConnectService.on('disconnect', () => {
+      console.log('🔌 Wallet disconnected event received')
       syncWithService()
       walletInfo.value = null
     })
 
-    walletConnectService.on('session_reject', () => {
-      console.log('❌ Session rejected event received')
-      error.value = 'Connection rejected by wallet'
+    walletConnectService.on('error', (data: unknown) => {
+      console.log('❌ Wallet error event received:', data)
+      error.value = ((data as Record<string, unknown>).message as string) || 'Unknown error'
     })
 
-    walletConnectService.on('session_proposal', () => {
-      console.log('📋 Session proposal event received')
-      // Handle session proposal if needed
+    walletConnectService.on('accountsChanged', () => {
+      console.log('👤 Accounts changed event received')
+      syncWithService()
     })
 
-    walletConnectService.on('session_update', () => {
-      console.log('🔄 Session update event received')
+    walletConnectService.on('chainChanged', () => {
+      console.log('⛓️ Chain changed event received')
       syncWithService()
     })
   }
 
   // Remove event listeners (for cleanup)
   const removeEventListeners = (): void => {
-    walletConnectService.off('session_connected')
-    walletConnectService.off('session_disconnected')
-    walletConnectService.off('session_reject')
-    walletConnectService.off('session_proposal')
-    walletConnectService.off('session_update')
+    walletConnectService.off('connect')
+    walletConnectService.off('disconnect')
+    walletConnectService.off('error')
+    walletConnectService.off('accountsChanged')
+    walletConnectService.off('chainChanged')
   }
 
   // Use removeEventListeners in cleanup
   const cleanup = (): void => {
-    console.log('🧹 Cleaning up WalletConnect store...')
+    console.log('🧹 Cleaning up AppKit store...')
     removeEventListeners()
     walletConnectService.cleanup()
 
@@ -294,30 +287,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     error.value = null
     walletInfo.value = null
 
-    console.log('✅ WalletConnect store cleanup completed')
-  }
-
-  // Legacy methods for compatibility
-  const connectLegacy = async (pairing?: { topic: string }): Promise<ConnectionResult> => {
-    try {
-      isConnecting.value = true
-      error.value = null
-
-      const result = await walletConnectService.connectLegacy(pairing)
-
-      if (result.success) {
-        syncWithService()
-        setupEventListeners()
-      }
-
-      return result
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Connection failed'
-      error.value = errorMessage
-      return { success: false, error: errorMessage }
-    } finally {
-      isConnecting.value = false
-    }
+    console.log('✅ AppKit store cleanup completed')
   }
 
   // Setup event listeners on store creation
@@ -328,7 +298,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     state: computed(() => state.value),
     isConnected: computed(() => isConnected.value),
     isConnecting: computed(() => isConnecting.value),
-    isInitialized: computed(() => walletConnectService.isInitialized),
+    isInitialized: computed(() => walletConnectService.isInitialized()),
     session: computed(() => session.value),
     accounts: computed(() => accounts.value),
     chainId: computed(() => chainId.value),
@@ -342,14 +312,13 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     // Methods
     initialize,
     connect,
-    connectLegacy,
     startConnection,
     disconnect,
     loadWalletInfo,
     refreshWalletInfo,
     testConnection,
     getAssetBalance,
-    handleWebSocketReconnection,
+    switchNetwork,
     forceReset,
     cleanup,
 

@@ -1,12 +1,11 @@
 import { computed, onUnmounted, readonly, ref, watch } from 'vue'
 import { useWalletConnectService } from '../services/WalletConnectService'
-import type { WalletConnectSession } from '../types/walletConnect.types'
 
 export interface ConnectionState {
   isConnected: boolean
   isConnecting: boolean
   isInitialized: boolean
-  session: WalletConnectSession | null
+  session: unknown | null
   accounts: string[]
   chainId: string | null
   error: string | null
@@ -18,8 +17,8 @@ export interface ConnectionState {
 /**
  * Connection State Composable
  *
- * This composable provides reactive state management for WalletConnect
- * using the unified service.
+ * This composable provides reactive state management for AppKit
+ * with multichain support.
  */
 export function useConnectionState() {
   const service = useWalletConnectService
@@ -28,13 +27,13 @@ export function useConnectionState() {
   const isConnected = ref(false)
   const isConnecting = ref(false)
   const isInitialized = ref(false)
-  const session = ref<WalletConnectSession | null>(null)
+  const session = ref<unknown | null>(null)
   const accounts = ref<string[]>([])
   const chainId = ref<string | null>(null)
   const error = ref<string | null>(null)
   const lastConnected = ref<Date | null>(null)
   const connectionAttempts = ref(0)
-  const maxRetries = ref(service.getMaxRetries())
+  const maxRetries = ref(5) // Default max retries
 
   // Computed state
   const state = computed<ConnectionState>(() => ({
@@ -76,8 +75,6 @@ export function useConnectionState() {
     accounts.value = serviceState.accounts
     chainId.value = serviceState.chainId
     error.value = serviceState.error
-    connectionAttempts.value = service.getConnectionAttempts()
-    maxRetries.value = service.getMaxRetries()
   }
 
   // State management methods
@@ -101,7 +98,7 @@ export function useConnectionState() {
     isInitialized.value = initialized
   }
 
-  function setSession(newSession: WalletConnectSession | null) {
+  function setSession(newSession: unknown | null) {
     session.value = newSession
     setConnected(!!newSession)
   }
@@ -123,12 +120,10 @@ export function useConnectionState() {
 
   function setMaxRetries(retries: number) {
     maxRetries.value = retries
-    service.setMaxRetries(retries)
   }
 
   function resetConnectionAttempts() {
     connectionAttempts.value = 0
-    service.resetConnectionAttempts()
   }
 
   function incrementConnectionAttempts() {
@@ -161,15 +156,11 @@ export function useConnectionState() {
   watch(session, newSession => {
     if (newSession) {
       // Extract accounts from session
-      const sessionAccounts =
-        (newSession.namespaces as Record<string, { accounts?: string[] }>)?.chia?.accounts?.map(
-          (account: string) => account.split(':')[2] || account
-        ) || []
+      const sessionAccounts = ((newSession as Record<string, unknown>).accounts as string[]) || []
       setAccounts(sessionAccounts)
 
       // Extract chain ID from session
-      const sessionChainId =
-        (newSession.namespaces as Record<string, { chains?: string[] }>)?.chia?.chains?.[0] || null
+      const sessionChainId = ((newSession as Record<string, unknown>).chainId as string) || null
       setChainId(sessionChainId)
     } else {
       setAccounts([])

@@ -1,209 +1,192 @@
-import type { PairingTypes } from '@walletconnect/types'
-import { computed, readonly, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useWalletConnectService } from '../services/WalletConnectService'
-import type {
-  ConnectionResult,
-  DisconnectResult,
-  WalletConnectEvent,
-} from '../types/walletConnect.types'
+
+// Define WalletConnectNetwork interface for Chia networks
+interface WalletConnectNetwork {
+  id: string
+  name: string
+  rpcUrls: {
+    default: { http: string[] }
+  }
+  blockExplorers: {
+    default: { name: string; url: string }
+  }
+  nativeCurrency: {
+    name: string
+    symbol: string
+    decimals: number
+  }
+}
 
 /**
- * WalletConnect Composable
- *
- * This composable provides a reactive interface to the unified WalletConnectService
- * with enhanced iOS support and automatic state management.
+ * Main composable for AppKit wallet operations
  */
 export function useWalletConnect() {
-  // Use the unified service
-  const service = useWalletConnectService
+  const walletConnectService = useWalletConnectService
 
   // Reactive state
-  const isConnecting = ref(false)
-  const error = ref<string | null>(null)
-  const eventListeners = new Map<string, (event: WalletConnectEvent) => void>()
+  const state = ref(walletConnectService.getState())
 
-  // Computed state from service
-  const isConnected = computed(() => service.isConnected())
-  const isInitialized = computed(() => service.isInitialized)
-  const session = computed(() => service.getSession())
-  const accounts = computed(() => service.getAccounts())
-  const chainId = computed(() => service.getChainId())
+  // Computed properties
+  const isConnected = computed(() => state.value.isConnected)
+  const isConnecting = computed(() => state.value.isConnecting)
+  const isInitialized = computed(() => state.value.isInitialized)
+  const session = computed(() => state.value.session)
+  const accounts = computed(() => state.value.accounts)
+  const chainId = computed(() => state.value.chainId)
+  const error = computed(() => state.value.error)
+  const currentNetwork = computed(() => state.value.currentNetwork)
 
-  // State object for external consumption
-  const state = computed(() => ({
-    isConnected: isConnected.value,
-    isConnecting: isConnecting.value,
-    isInitialized: isInitialized.value,
-    session: session.value,
-    accounts: accounts.value,
-    chainId: chainId.value,
-    error: error.value,
-  }))
+  // Network-specific computed properties
+  const isChiaNetwork = computed(() => chainId.value?.startsWith('chia:'))
 
-  /**
-   * Initialize WalletConnect with iOS optimizations
-   */
-  async function initialize(): Promise<void> {
-    try {
-      console.log('🚀 Initializing WalletConnect...')
+  // Primary account (first account in the list)
+  const primaryAccount = computed(() => accounts.value[0] || null)
 
-      await service.initialize()
+  // Network info
+  const networkInfo = computed(() => {
+    return walletConnectService.getNetworkInfo()
+  })
 
-      console.log('✅ WalletConnect initialized successfully')
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to initialize WalletConnect'
-      error.value = errorMessage
-      console.error('❌ WalletConnect initialization failed:', errorMessage)
-      throw err
-    }
+  // Methods
+  const connect = async () => {
+    const result = await walletConnectService.connect()
+    updateState()
+    return result
   }
 
-  /**
-   * Connect to wallet with improved iOS support
-   */
-  async function connect(pairing?: { topic: string }): Promise<ConnectionResult> {
-    try {
-      isConnecting.value = true
-      error.value = null
-
-      console.log('🔗 Connecting to wallet...')
-
-      const result = await service.connect(pairing)
-
-      if (result) {
-        // Wait for approval
-        const sessionResult = await result.approval()
-
-        if (sessionResult) {
-          console.log('✅ Wallet connected successfully')
-          return {
-            success: true,
-            session: service.getSession() || undefined,
-            accounts: service.getAccounts(),
-          }
-        } else {
-          throw new Error('Connection failed - no session received')
-        }
-      } else {
-        throw new Error('Connection failed')
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Connection failed'
-      error.value = errorMessage
-      console.error('❌ Connection failed:', errorMessage)
-      return { success: false, error: errorMessage }
-    } finally {
-      isConnecting.value = false
-    }
+  const disconnect = async () => {
+    const result = await walletConnectService.disconnect()
+    updateState()
+    return result
   }
 
-  /**
-   * Disconnect from wallet
-   */
-  async function disconnect(): Promise<DisconnectResult> {
-    try {
-      console.log('🔌 Disconnecting from wallet...')
-
-      const result = await service.disconnect()
-
-      if (result.success) {
-        console.log('✅ Wallet disconnected successfully')
-      } else {
-        console.error('❌ Wallet disconnect failed:', result.error)
-      }
-
-      return result
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Disconnect failed'
-      console.error('❌ Wallet disconnect error:', errorMessage)
-      return { success: false, error: errorMessage }
-    }
+  const switchNetwork = async (chainId: string) => {
+    const result = await walletConnectService.switchNetwork(chainId)
+    updateState()
+    return result
   }
 
-  /**
-   * Make a request to the wallet
-   */
-  async function request<T = unknown>(method: string, params: unknown[]): Promise<T> {
-    try {
-      return await service.request<T>(method, params)
-    } catch (err) {
-      console.error('❌ Request failed:', err)
-      throw err
-    }
+  const getSupportedNetworks = (): WalletConnectNetwork[] => {
+    return walletConnectService.getSupportedNetworks()
   }
 
-  /**
-   * Get connection info
-   */
-  function getConnectionInfo() {
-    return service.getConnectionInfo()
+  const getNetworksByType = (type: 'chia'): WalletConnectNetwork[] => {
+    return walletConnectService.getNetworksByType(type)
   }
 
-  /**
-   * Get pairings
-   */
-  function getPairings(): PairingTypes.Struct[] {
-    return service.getPairings()
+  const getChiaNetworks = (): WalletConnectNetwork[] => {
+    return getNetworksByType('chia')
   }
 
-  /**
-   * Add event listener
-   */
-  function on(event: string, callback: (event: WalletConnectEvent) => void): void {
-    eventListeners.set(event, callback)
-    service.on(event, callback)
+  // Helper function to update state from service
+  const updateState = () => {
+    state.value = walletConnectService.getState()
   }
 
-  /**
-   * Remove event listener
-   */
-  function off(event: string): void {
-    eventListeners.delete(event)
-    service.off(event)
+  // Event listeners
+  const on = (event: string, callback: (data: unknown) => void) => {
+    walletConnectService.on(event, callback)
   }
 
-  // Event emission is handled by the service
-
-  /**
-   * Cleanup resources
-   */
-  function cleanup(): void {
-    eventListeners.clear()
-    service.cleanup()
+  const off = (event: string) => {
+    walletConnectService.off(event)
   }
-
-  // Watch for service state changes and update local state
-  watch(
-    () => service.getState(),
-    newState => {
-      error.value = newState.error
-    },
-    { deep: true }
-  )
 
   return {
     // State
-    state: readonly(state),
-    isConnected: readonly(isConnected),
-    isConnecting: readonly(isConnecting),
-    isInitialized: readonly(isInitialized),
-    session: readonly(session),
-    accounts: readonly(accounts),
-    chainId: readonly(chainId),
-    error: readonly(error),
+    state,
+    isConnected,
+    isConnecting,
+    isInitialized,
+    session,
+    accounts,
+    chainId,
+    error,
+    currentNetwork,
+
+    // Network-specific state
+    isChiaNetwork,
+    primaryAccount,
+    networkInfo,
 
     // Methods
-    initialize,
     connect,
     disconnect,
-    request,
-    getConnectionInfo,
-    getPairings,
+    switchNetwork,
+    getSupportedNetworks,
+    getNetworksByType,
+    getChiaNetworks,
     on,
     off,
-    cleanup,
+  }
+}
 
-    // Service access
-    service,
+/**
+ * Composable for Chia-specific wallet operations
+ */
+export function useChiaWallet() {
+  const {
+    isConnected,
+    isChiaNetwork,
+    chainId,
+    currentNetwork,
+    connect,
+    disconnect,
+    switchNetwork,
+    getChiaNetworks,
+  } = useWalletConnect()
+
+  const chiaNetworks = computed(() => {
+    return getChiaNetworks()
+  })
+
+  const currentChiaNetwork = computed(() => {
+    if (!isChiaNetwork.value || !currentNetwork.value) return null
+    return currentNetwork.value
+  })
+
+  const isMainnet = computed(() => {
+    return chainId.value?.includes('mainnet') || false
+  })
+
+  const isTestnet = computed(() => {
+    return chainId.value?.includes('testnet') || false
+  })
+
+  const switchToMainnet = async () => {
+    const mainnetNetwork = chiaNetworks.value.find((n: WalletConnectNetwork) =>
+      n.name.includes('Mainnet')
+    )
+    if (mainnetNetwork) {
+      return await switchNetwork(String(mainnetNetwork.id))
+    }
+    return false
+  }
+
+  const switchToTestnet = async () => {
+    const testnetNetwork = chiaNetworks.value.find((n: WalletConnectNetwork) =>
+      n.name.includes('Testnet')
+    )
+    if (testnetNetwork) {
+      return await switchNetwork(String(testnetNetwork.id))
+    }
+    return false
+  }
+
+  return {
+    isConnected,
+    isChiaNetwork,
+    currentNetwork,
+    currentChiaNetwork,
+    chainId,
+    isMainnet,
+    isTestnet,
+    chiaNetworks,
+    connect,
+    disconnect,
+    switchNetwork,
+    switchToMainnet,
+    switchToTestnet,
   }
 }

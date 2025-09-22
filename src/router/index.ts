@@ -8,6 +8,7 @@ import '@/types/router'
 import { createRouter, createWebHistory } from 'vue-router'
 
 // Static imports to avoid dynamic import issues
+import AppKitTestPage from '@/pages/AppKitTest.vue'
 import LoginPage from '@/pages/Auth/LoginPage.vue'
 import DashboardPage from '@/pages/Dashboard/DashboardPage.vue'
 import LoansPage from '@/pages/Loans/LoansPage.vue'
@@ -110,6 +111,15 @@ const routes = [
       title: 'Service Health',
       requiresAuth: true,
       featureFlag: 'serviceHealth',
+    },
+  },
+  {
+    path: '/appkit-test',
+    name: 'appkit-test',
+    component: AppKitTestPage,
+    meta: {
+      title: 'AppKit Test',
+      requiresAuth: false,
     },
   },
   {

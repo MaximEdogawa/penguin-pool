@@ -124,6 +124,31 @@ export interface WalletInfo {
   isConnected: boolean
 }
 
+export interface ExtendedWalletInfo {
+  address: string | null
+  chainId: string | null
+  network: WalletConnectNetwork | null
+  accounts: string[]
+  session: WalletConnectSession | null
+}
+
+// Define WalletConnectNetwork interface for Chia networks
+export interface WalletConnectNetwork {
+  id: string
+  name: string
+  rpcUrls: {
+    default: { http: string[] }
+  }
+  blockExplorers: {
+    default: { name: string; url: string }
+  }
+  nativeCurrency: {
+    name: string
+    symbol: string
+    decimals: number
+  }
+}
+
 // Command execution result type
 export interface CommandExecutionResult<T = unknown> {
   success: boolean
@@ -136,3 +161,57 @@ export interface WalletCommand {
   command: string
   params: Record<string, unknown>
 }
+
+// Wallet request parameter types
+export interface WalletRequestParams {
+  [key: string]: unknown
+}
+
+// Specific parameter interfaces for different wallet methods
+export interface GetAssetBalanceParams {
+  type?: string | null
+  assetId?: string | null
+}
+
+export interface GetAssetCoinsParams {
+  type?: string | null
+  assetId?: string | null
+}
+
+export interface SignMessageParams {
+  message: string
+  address?: string
+}
+
+export interface SendTransactionParams {
+  transaction: unknown
+}
+
+export interface CreateOfferParams {
+  offer: unknown
+}
+
+export interface TakeOfferParams {
+  offer: string
+}
+
+export interface CancelOfferParams {
+  offerId: string
+}
+
+export interface SignCoinSpendsParams {
+  walletId: number
+  coinSpends: unknown[]
+}
+
+// Method-specific parameter mapping
+export type WalletMethodParams =
+  | GetAssetBalanceParams
+  | GetAssetCoinsParams
+  | SignMessageParams
+  | SendTransactionParams
+  | CreateOfferParams
+  | TakeOfferParams
+  | CancelOfferParams
+  | SignCoinSpendsParams
+  | Record<string, never> // For methods with no parameters

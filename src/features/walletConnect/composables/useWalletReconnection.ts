@@ -25,7 +25,7 @@ export function useWalletReconnection() {
   const retryCount = ref(0)
   const consecutiveFailures = ref(0)
   const lastReconnectionAttempt = ref<Date | null>(null)
-  const healthCheckInterval = ref<NodeJS.Timeout | null>(null)
+  const healthCheckInterval = ref<number | null>(null)
   const isHealthCheckActive = ref(false)
 
   // Configuration
@@ -159,12 +159,18 @@ export function useWalletReconnection() {
 
       // Schedule next health check
       if (isHealthCheckActive.value) {
-        healthCheckInterval.value = setTimeout(performHealthCheck, config.value.healthCheckInterval)
+        healthCheckInterval.value = setTimeout(
+          performHealthCheck,
+          config.value.healthCheckInterval
+        ) as unknown as number
       }
     }
 
     // Start first health check
-    healthCheckInterval.value = setTimeout(performHealthCheck, config.value.healthCheckInterval)
+    healthCheckInterval.value = setTimeout(
+      performHealthCheck,
+      config.value.healthCheckInterval
+    ) as unknown as number
   }
 
   function stopHealthCheck(): void {

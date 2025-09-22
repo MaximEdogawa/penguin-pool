@@ -347,7 +347,7 @@
           if (isWalletConnected.value) {
             refreshBalance()
           }
-        }, AUTO_REFRESH_INTERVAL)
+        }, AUTO_REFRESH_INTERVAL) as unknown as number
       }, AUTO_REFRESH_INTERVAL)
     }
   }
@@ -372,7 +372,7 @@
   const balanceLoaded = ref(false)
   const lastBalanceRefresh = ref<Date | null>(null)
   const autoRefreshEnabled = ref(false)
-  const refreshInterval = ref<NodeJS.Timeout | null>(null)
+  const refreshInterval = ref<number | null>(null)
 
   onMounted(async () => {
     try {

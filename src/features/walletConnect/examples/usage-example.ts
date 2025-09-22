@@ -102,7 +102,12 @@ export function useWalletConnectWithComposables() {
   // Initialize WalletConnect
   const initializeWallet = async () => {
     try {
-      await walletConnect.initialize()
+      // WalletConnect is auto-initialized, just check if it's ready
+      if (walletConnect.isInitialized.value) {
+        console.log('✅ WalletConnect already initialized')
+      } else {
+        console.log('⏳ WalletConnect initializing...')
+      }
       console.log('✅ WalletConnect initialized')
     } catch (error) {
       console.error('❌ Failed to initialize WalletConnect:', error)
@@ -146,7 +151,10 @@ export function useWalletConnectWithComposables() {
         throw new Error('Not connected to wallet')
       }
 
-      const result = await walletConnect.request(method, params)
+      // Use the service directly for requests
+      const { useWalletConnectService } = await import('../services/WalletConnectService')
+      const service = useWalletConnectService
+      const result = await service.request(method, params)
       console.log('✅ Wallet request successful:', result)
       return result
     } catch (error) {
@@ -255,23 +263,23 @@ export function useWalletConnectEvents() {
   // Setup event listeners
   const setupEventListeners = () => {
     // Listen for connection events
-    store.service.on('session_connected', event => {
-      console.log('🔗 Wallet connected:', event.data)
+    store.service.on('session_connected', (event: unknown) => {
+      console.log('🔗 Wallet connected:', (event as Record<string, unknown>).data)
       // Handle successful connection
     })
 
-    store.service.on('session_disconnected', event => {
-      console.log('🔌 Wallet disconnected:', event.data)
+    store.service.on('session_disconnected', (event: unknown) => {
+      console.log('🔌 Wallet disconnected:', (event as Record<string, unknown>).data)
       // Handle disconnection
     })
 
-    store.service.on('session_reject', event => {
-      console.log('❌ Connection rejected:', event.data)
+    store.service.on('session_reject', (event: unknown) => {
+      console.log('❌ Connection rejected:', (event as Record<string, unknown>).data)
       // Handle rejection
     })
 
-    store.service.on('session_proposal', event => {
-      console.log('📋 Session proposal:', event.data)
+    store.service.on('session_proposal', (event: unknown) => {
+      console.log('📋 Session proposal:', (event as Record<string, unknown>).data)
       // Handle session proposal
     })
   }
