@@ -62,7 +62,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   // Watch for service state changes
   watch(
-    () => walletConnectService.getState(),
+    () => walletConnectService.getReactiveState(),
     () => {
       syncWithService()
     },
@@ -188,32 +188,6 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
 
   const refreshWalletInfo = async (): Promise<void> => {
     await loadWalletInfo()
-  }
-
-  const refreshBalance = async (): Promise<void> => {
-    try {
-      if (!isConnected.value) {
-        console.warn('⚠️ Not connected to wallet, cannot refresh balance')
-        return
-      }
-
-      console.log('💰 Refreshing wallet balance...')
-
-      // Import wallet queries dynamically to avoid circular dependencies
-      const { getAssetBalance } = await import('../queries/walletQueries')
-
-      // Fetch real balance data
-      const result = await getAssetBalance()
-
-      if (result.success && result.data && walletInfo.value) {
-        walletInfo.value.balance = result.data
-        console.log('✅ Wallet balance refreshed successfully:', result.data)
-      } else {
-        console.warn('⚠️ Failed to refresh wallet balance:', result.error)
-      }
-    } catch (err) {
-      console.error('❌ Failed to refresh wallet balance:', err)
-    }
   }
 
   const testConnection = async (): Promise<boolean> => {
@@ -367,7 +341,6 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     disconnect,
     loadWalletInfo,
     refreshWalletInfo,
-    refreshBalance,
     testConnection,
     getAssetBalance,
     switchNetwork,

@@ -225,23 +225,24 @@ export const pwaBuildConfig = (): Partial<UserConfig> => ({
           return undefined
         },
         assetFileNames: assetInfo => {
+          const timestamp = Date.now()
           if (!assetInfo.name) {
-            return `assets/[name]-[hash][extname]`
+            return `assets/[name]-[hash]-${timestamp}[extname]`
           }
-          // PWA-optimized asset naming
+          // PWA-optimized asset naming with timestamp for cache busting
           if (/\.(png|jpe?g|gif|svg|ico|webp)$/i.test(assetInfo.name)) {
-            return `assets/images/[name]-[hash][extname]`
+            return `assets/images/[name]-[hash]-${timestamp}[extname]`
           }
           if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
-            return `assets/fonts/[name]-[hash][extname]`
+            return `assets/fonts/[name]-[hash]-${timestamp}[extname]`
           }
           if (/\.(css)$/i.test(assetInfo.name)) {
-            return `assets/css/[name]-[hash][extname]`
+            return `assets/css/[name]-[hash]-${timestamp}[extname]`
           }
-          return `assets/[name]-[hash][extname]`
+          return `assets/[name]-[hash]-${timestamp}[extname]`
         },
-        chunkFileNames: 'assets/js/[name]-[hash].js',
-        entryFileNames: 'assets/js/[name]-[hash].js',
+        chunkFileNames: `assets/js/[name]-[hash]-${Date.now()}.js`,
+        entryFileNames: `assets/js/[name]-[hash]-${Date.now()}.js`,
       },
     },
   },
@@ -262,7 +263,10 @@ export const previewServerConfig = (): Partial<UserConfig> => ({
     host: true,
     cors: true,
     headers: {
-      'Cache-Control': 'public, max-age=31536000',
+      // Disable caching for debugging and new releases
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
       'Cross-Origin-Embedder-Policy': 'require-corp',
       'Cross-Origin-Opener-Policy': 'same-origin',
     },

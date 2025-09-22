@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useWalletConnectService } from '../services/WalletConnectService'
 
 // Define WalletConnectNetwork interface for Chia networks
@@ -24,8 +24,8 @@ interface WalletConnectNetwork {
 export function useWalletConnect() {
   const walletConnectService = useWalletConnectService
 
-  // Reactive state
-  const state = ref(walletConnectService.getState())
+  // Reactive state - use the reactive state from the service
+  const state = computed(() => walletConnectService.getReactiveState())
 
   // Computed properties
   const isConnected = computed(() => state.value.isConnected)
@@ -51,19 +51,16 @@ export function useWalletConnect() {
   // Methods
   const connect = async () => {
     const result = await walletConnectService.connect()
-    updateState()
     return result
   }
 
   const disconnect = async () => {
     const result = await walletConnectService.disconnect()
-    updateState()
     return result
   }
 
   const switchNetwork = async (chainId: string) => {
     const result = await walletConnectService.switchNetwork(chainId)
-    updateState()
     return result
   }
 
@@ -77,11 +74,6 @@ export function useWalletConnect() {
 
   const getChiaNetworks = (): WalletConnectNetwork[] => {
     return getNetworksByType('chia')
-  }
-
-  // Helper function to update state from service
-  const updateState = () => {
-    state.value = walletConnectService.getState()
   }
 
   // Event listeners

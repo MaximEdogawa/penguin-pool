@@ -173,12 +173,12 @@
         throw new Error('Invalid wallet info - no wallet data received')
       }
 
-      if (!walletInfo.address) {
+      if (!walletInfo.fingerprint) {
         throw new Error('Invalid wallet info - no address found')
       }
 
       console.log('📝 Wallet details:', {
-        address: walletInfo.address,
+        address: walletInfo.fingerprint,
         chainId: walletInfo.chainId,
         network: walletInfo.network,
         accounts: walletInfo.accounts?.length || 0,
@@ -193,7 +193,7 @@
       }
 
       // Login with wallet address
-      await userStore.login(walletInfo.address, 'wallet-user')
+      await userStore.login(walletInfo.fingerprint, 'wallet-user')
 
       console.log('✅ Wallet connection processed successfully')
       connectionStatus.value = 'Connected successfully!'

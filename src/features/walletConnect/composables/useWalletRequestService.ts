@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import * as walletQueries from '../queries/walletQueries'
 import { useWalletConnectService } from '../services/WalletConnectService'
 import type { ExtendedWalletInfo } from '../types/walletConnect.types'
@@ -26,8 +26,8 @@ interface WalletConnectNetwork {
  */
 export function useWalletRequestService() {
   const walletConnectService = useWalletConnectService
-  // Reactive state
-  const state = ref(walletConnectService.getState())
+  // Reactive state - use the reactive state from the service
+  const state = computed(() => walletConnectService.getReactiveState())
 
   // Computed properties
   const isConnected = computed(() => state.value.isConnected)
@@ -45,35 +45,13 @@ export function useWalletRequestService() {
    * Get wallet information
    */
   const getWalletInfo = (): ExtendedWalletInfo => {
-    // Update state first to ensure we have the latest data
-    updateState()
-
     const currentState = walletConnectService.getState()
-    const currentAccounts = currentState.accounts
-    const currentChainId = currentState.chainId
-    const currentSession = currentState.session
-    const currentNetwork = currentState.currentNetwork
-
-    console.log('🔍 getWalletInfo - Current state:', {
-      accounts: currentAccounts,
-      chainId: currentChainId,
-      session: currentSession?.topic,
-      network: currentNetwork?.name,
-    })
-
-    // If we have accounts but they look like fingerprints, we might need to get the actual address
-    const address = currentAccounts[0] || null
-    if (address && /^\d+$/.test(address)) {
-      console.log('⚠️ Address looks like a fingerprint, might need to get actual address')
-      // For now, keep the fingerprint as address, but log a warning
-    }
-
     return {
-      address: address,
-      chainId: currentChainId,
-      network: currentNetwork,
-      accounts: currentAccounts,
-      session: currentSession,
+      fingerprint: currentState.accounts[0] || null,
+      chainId: currentState.chainId,
+      network: currentState.currentNetwork,
+      accounts: currentState.accounts,
+      session: currentState.session,
     }
   }
 
@@ -178,7 +156,6 @@ export function useWalletRequestService() {
    */
   const connect = async () => {
     const result = await walletConnectService.connect()
-    updateState()
     return result
   }
 
@@ -187,15 +164,7 @@ export function useWalletRequestService() {
    */
   const disconnect = async () => {
     const result = await walletConnectService.disconnect()
-    updateState()
     return result
-  }
-
-  /**
-   * Helper function to update state from service
-   */
-  const updateState = () => {
-    state.value = walletConnectService.getState()
   }
 
   /**

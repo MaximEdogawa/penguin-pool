@@ -13,6 +13,7 @@ import {
 import { WalletConnectModal } from '@walletconnect/modal'
 import { SignClient } from '@walletconnect/sign-client'
 import type { SessionTypes } from '@walletconnect/types'
+import { reactive } from 'vue'
 
 // Define WalletConnect network interface
 interface WalletConnectNetwork {
@@ -103,7 +104,7 @@ export interface DisconnectResult {
 export class WalletConnectService {
   private signClient: InstanceType<typeof SignClient> | null = null
   private modal: WalletConnectModal | null = null
-  private state: WalletConnectState = {
+  private state = reactive<WalletConnectState>({
     isConnected: false,
     isConnecting: false,
     isInitialized: false,
@@ -112,7 +113,7 @@ export class WalletConnectService {
     chainId: null,
     error: null,
     currentNetwork: null,
-  }
+  })
   private eventListeners: Map<string, (data: unknown) => void> = new Map()
   private isInitializing = false
   private initializationPromise: Promise<void> | null = null
@@ -648,7 +649,14 @@ export class WalletConnectService {
    * Get current state
    */
   getState(): WalletConnectState {
-    return { ...this.state }
+    return this.state
+  }
+
+  /**
+   * Get reactive state for watching
+   */
+  getReactiveState() {
+    return this.state
   }
 
   /**

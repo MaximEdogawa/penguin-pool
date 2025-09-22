@@ -24,7 +24,6 @@ import './assets/main.css'
 
 import App from './App.vue'
 import { useUserStore } from './entities/user/store/userStore'
-import { useWalletConnectStore } from './features/walletConnect/stores/walletConnectStore'
 import router from './router'
 import { validateEnvironment } from './shared/config/environment'
 import { queryClient, setupOfflineHandling } from './shared/config/queryClient'
@@ -65,23 +64,11 @@ setupOfflineHandling()
 
 // Initialize stores before mounting
 const userStore = useUserStore()
-const walletStore = useWalletConnectStore()
 
-// Global wallet disconnection watcher
+// Mount the app
 app.mount('#app')
 
-// Watch for wallet disconnection
-watch(
-  () => walletStore.isConnected,
-  async connected => {
-    if (!connected && router.currentRoute.value.path !== '/auth') {
-      console.log('Wallet disconnected, redirecting to auth...')
-      await router.push('/auth')
-    }
-  }
-)
-
-// Watch for user authentication state changes
+// Watch for user authentication state changes (only for logout)
 watch(
   () => userStore.isAuthenticated,
   async authenticated => {

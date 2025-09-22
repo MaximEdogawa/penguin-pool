@@ -125,7 +125,7 @@ export interface WalletInfo {
 }
 
 export interface ExtendedWalletInfo {
-  address: string | null
+  fingerprint: string | null
   chainId: string | null
   network: WalletConnectNetwork | null
   accounts: string[]
