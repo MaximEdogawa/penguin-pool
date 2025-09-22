@@ -11,7 +11,7 @@
   const featureFlags = useFeatureFlagsStore()
 
   const isAuthenticated = computed(() => {
-    return userStore.isAuthenticated || localStorage.getItem('penguin-pool-user') !== null
+    return userStore.isAuthenticated
   })
 
   // Initialize feature flags on app startup

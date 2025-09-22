@@ -1,4 +1,5 @@
 import { useUserStore } from '@/entities/user/store/userStore'
+import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
 import {
   defaultFeatureFlags,
   getCurrentEnvironment,
@@ -138,7 +139,9 @@ router.beforeEach((to, from, next) => {
   document.title = `${to.meta.title} - Penguin-pool`
 
   const userStore = useUserStore()
+  const walletStore = useWalletConnectStore()
   const isAuthenticated = userStore.isAuthenticated
+  const isWalletConnected = walletStore.isConnected
 
   // Check if route requires a feature flag
   if (to.meta.featureFlag) {
@@ -159,20 +162,31 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresAuth) {
     // Check both authentication and wallet connection for protected routes
-    if (isAuthenticated) {
+    if (isAuthenticated && isWalletConnected) {
+      console.log('Router guard - user authenticated and wallet connected, allowing access')
       next()
     } else {
-      console.log('Router guard - redirecting to auth (not authenticated or wallet not connected)')
+      console.log(
+        'Router guard - redirecting to auth (not authenticated or wallet not connected)',
+        {
+          isAuthenticated,
+          isWalletConnected,
+        }
+      )
       next('/auth')
     }
   } else {
-    if (to.path === '/auth' && isAuthenticated) {
+    if (to.path === '/auth' && isAuthenticated && isWalletConnected) {
       console.log(
         'Router guard - redirecting authenticated user with wallet from auth to dashboard'
       )
       next('/dashboard')
     } else {
-      console.log('Router guard - allowing access to public route')
+      console.log('Router guard - allowing access to public route', {
+        path: to.path,
+        isAuthenticated,
+        isWalletConnected,
+      })
       next()
     }
   }

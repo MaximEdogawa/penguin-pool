@@ -108,7 +108,7 @@ export const useUserStore = defineStore('user', () => {
       await sessionManager.clearAllSessionData({
         clearUserData: true,
         clearThemeData: true,
-        clearWalletConnect: false, // Let wallet store handle this
+        clearWalletConnect: true, // Also clear wallet connection on logout
         clearPWAStorage: true,
         clearServiceWorker: true,
         clearAllCaches: false, // Don't clear all caches, just session-related ones

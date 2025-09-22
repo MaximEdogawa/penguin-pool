@@ -159,22 +159,29 @@
 
   const handleLogout = async () => {
     try {
-      // Use wallet store disconnect which handles comprehensive clearing
+      console.log('🚪 Starting logout process...')
+
+      // Always disconnect wallet and logout user
       const walletStore = useWalletConnectStore()
+      const userStore = useUserStore()
+
+      // Disconnect wallet if connected
       if (walletStore.isConnected) {
+        console.log('🔌 Disconnecting wallet...')
         await walletStore.disconnect()
-      } else {
-        // If wallet not connected, still clear user data
-        const userStore = useUserStore()
-        await userStore.logout()
       }
+
+      // Always logout user (this clears user data and localStorage)
+      console.log('👤 Logging out user...')
+      await userStore.logout()
 
       isUserMenuVisible.value = false
 
+      console.log('✅ Logout completed, redirecting to auth...')
       // Redirect to auth page after logout
-      router.push('/auth')
+      await router.push('/auth')
     } catch (error) {
-      console.error('Logout failed:', error)
+      console.error('❌ Logout failed:', error)
     }
   }
 </script>

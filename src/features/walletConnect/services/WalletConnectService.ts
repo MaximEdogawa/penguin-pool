@@ -180,6 +180,9 @@ export class WalletConnectService {
       // Set up event listeners
       this.setupEventListeners()
 
+      // Check for existing sessions and restore state
+      await this.restoreExistingSessions()
+
       // Update state
       this.state.isInitialized = true
       this.state.error = null
@@ -197,6 +200,87 @@ export class WalletConnectService {
       throw new Error('WalletConnect Project ID is not configured')
     }
     console.log('✅ WalletConnect configuration validated')
+  }
+
+  /**
+   * Restore existing sessions from WalletConnect storage
+   */
+  private async restoreExistingSessions(): Promise<void> {
+    if (!this.signClient) {
+      console.log('⚠️ SignClient not available for session restoration')
+      return
+    }
+
+    try {
+      console.log('🔄 Checking for existing sessions...')
+
+      // Get all active sessions
+      const sessions = this.signClient.session.getAll()
+      console.log('📋 Found sessions:', sessions.length)
+
+      if (sessions.length === 0) {
+        console.log('ℹ️ No existing sessions found')
+        return
+      }
+
+      // Find the most recent session (usually the last one)
+      const activeSession = sessions[sessions.length - 1]
+      console.log('🔍 Restoring session:', activeSession.topic)
+
+      // Check if the session is still valid
+      if (activeSession && activeSession.expiry > Date.now() / 1000) {
+        console.log('✅ Valid session found, restoring state...')
+
+        // Update state with restored session data
+        this.state.isConnected = true
+        this.state.session = activeSession
+
+        // Extract wallet information from session
+        const accounts =
+          activeSession.namespaces?.chia?.accounts?.map(
+            (account: string) => account.split(':')[2]
+          ) || []
+
+        let chainId = activeSession.namespaces?.chia?.chains?.[0]?.split(':')[2] || null
+
+        // If no chainId from chains array, try to get it from the account string
+        if (!chainId && accounts.length > 0) {
+          const accountString = activeSession.namespaces?.chia?.accounts?.[0]
+          if (accountString) {
+            const parts = accountString.split(':')
+            if (parts.length >= 2) {
+              chainId = parts[1] // Extract chainId from account string like "chia:testnet:address"
+            }
+          }
+        }
+
+        // If still no chainId, use a default (testnet)
+        if (!chainId) {
+          chainId = 'testnet'
+          console.log('⚠️ No chainId found in restored session, using default testnet')
+        }
+
+        this.state.accounts = accounts
+        this.state.chainId = chainId
+        this.state.currentNetwork = this.getNetworkById(chainId)
+        this.state.error = null
+
+        console.log('✅ Session restored successfully:', {
+          topic: activeSession.topic,
+          accounts,
+          chainId,
+          network: this.state.currentNetwork?.name,
+        })
+
+        // Emit restore event
+        this.emitEvent('session_restore', activeSession)
+      } else {
+        console.log('⚠️ Session expired or invalid, not restoring')
+      }
+    } catch (error) {
+      console.error('❌ Failed to restore existing sessions:', error)
+      // Don't throw error, just log it - session restoration is not critical
+    }
   }
 
   private setupEventListeners(): void {
@@ -276,6 +360,9 @@ export class WalletConnectService {
         this.emitEvent('error', event)
       }
     })
+
+    // Note: session_restore is not a real WalletConnect event
+    // We handle session restoration manually in restoreExistingSessions()
   }
 
   private getNetworkById(chainId: string | null): WalletConnectNetwork | null {

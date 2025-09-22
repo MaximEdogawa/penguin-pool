@@ -261,6 +261,12 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       console.log('⛓️ Chain changed event received')
       syncWithService()
     })
+
+    walletConnectService.on('session_restore', async () => {
+      console.log('🔄 Wallet session restored event received')
+      syncWithService()
+      await loadWalletInfo()
+    })
   }
 
   // Remove event listeners (for cleanup)
@@ -270,6 +276,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     walletConnectService.off('error')
     walletConnectService.off('accountsChanged')
     walletConnectService.off('chainChanged')
+    walletConnectService.off('session_restore')
   }
 
   // Use removeEventListeners in cleanup

@@ -23,6 +23,7 @@ import Tabs from 'primevue/tabs'
 import './assets/main.css'
 
 import App from './App.vue'
+import { useUserStore } from './entities/user/store/userStore'
 import { useWalletConnectStore } from './features/walletConnect/stores/walletConnectStore'
 import router from './router'
 import { validateEnvironment } from './shared/config/environment'
@@ -62,16 +63,30 @@ app.component('PrimeTabPanels', TabPanels)
 // Setup offline handling with TanStack Query
 setupOfflineHandling()
 
+// Initialize stores before mounting
+const userStore = useUserStore()
+const walletStore = useWalletConnectStore()
+
 // Global wallet disconnection watcher
 app.mount('#app')
 
-const walletStore = useWalletConnectStore()
-
+// Watch for wallet disconnection
 watch(
   () => walletStore.isConnected,
   async connected => {
     if (!connected && router.currentRoute.value.path !== '/auth') {
       console.log('Wallet disconnected, redirecting to auth...')
+      await router.push('/auth')
+    }
+  }
+)
+
+// Watch for user authentication state changes
+watch(
+  () => userStore.isAuthenticated,
+  async authenticated => {
+    if (!authenticated && router.currentRoute.value.path !== '/auth') {
+      console.log('User logged out, redirecting to auth...')
       await router.push('/auth')
     }
   }
