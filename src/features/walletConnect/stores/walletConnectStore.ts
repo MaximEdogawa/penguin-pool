@@ -152,8 +152,30 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
       }
 
       console.log('📊 Loading wallet info...')
-      // For now, create a basic wallet info object
-      // In the future, this could be enhanced to fetch actual wallet data
+
+      // Import wallet queries dynamically to avoid circular dependencies
+      const { getWalletInfo } = await import('../queries/walletQueries')
+
+      // Fetch real wallet data
+      const result = await getWalletInfo()
+
+      if (result.success && result.data) {
+        walletInfo.value = result.data
+        console.log('✅ Wallet info loaded successfully:', result.data)
+      } else {
+        console.warn('⚠️ Failed to load wallet info:', result.error)
+        // Fallback to basic info
+        const info: WalletInfo = {
+          fingerprint: 0,
+          address: primaryAccount.value || '',
+          balance: null,
+          isConnected: true,
+        }
+        walletInfo.value = info
+      }
+    } catch (err) {
+      console.error('❌ Failed to load wallet info:', err)
+      // Fallback to basic info on error
       const info: WalletInfo = {
         fingerprint: 0,
         address: primaryAccount.value || '',
@@ -161,15 +183,37 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
         isConnected: true,
       }
       walletInfo.value = info
-      console.log('✅ Wallet info loaded successfully')
-    } catch (err) {
-      console.error('❌ Failed to load wallet info:', err)
-      // Don't throw error, just log it
     }
   }
 
   const refreshWalletInfo = async (): Promise<void> => {
     await loadWalletInfo()
+  }
+
+  const refreshBalance = async (): Promise<void> => {
+    try {
+      if (!isConnected.value) {
+        console.warn('⚠️ Not connected to wallet, cannot refresh balance')
+        return
+      }
+
+      console.log('💰 Refreshing wallet balance...')
+
+      // Import wallet queries dynamically to avoid circular dependencies
+      const { getAssetBalance } = await import('../queries/walletQueries')
+
+      // Fetch real balance data
+      const result = await getAssetBalance()
+
+      if (result.success && result.data && walletInfo.value) {
+        walletInfo.value.balance = result.data
+        console.log('✅ Wallet balance refreshed successfully:', result.data)
+      } else {
+        console.warn('⚠️ Failed to refresh wallet balance:', result.error)
+      }
+    } catch (err) {
+      console.error('❌ Failed to refresh wallet balance:', err)
+    }
   }
 
   const testConnection = async (): Promise<boolean> => {
@@ -323,6 +367,7 @@ export const useWalletConnectStore = defineStore('walletConnect', () => {
     disconnect,
     loadWalletInfo,
     refreshWalletInfo,
+    refreshBalance,
     testConnection,
     getAssetBalance,
     switchNetwork,
