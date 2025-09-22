@@ -108,6 +108,8 @@
       @close="closeWalletModal"
       @connected="handleWalletConnected"
     />
+    <!-- iOS WalletConnect Modal -->
+    <IOSModalWrapper />
   </div>
 </template>
 
@@ -121,6 +123,8 @@
   import { useWalletRequestService } from '@/features/walletConnect/composables/useWalletRequestService'
   import { useWallet } from '@/features/walletConnect/hooks/useWalletQueries'
   import type { ExtendedWalletInfo } from '@/features/walletConnect/types/walletConnect.types'
+  import IOSModalWrapper from '@/features/walletConnect/components/IOSModalWrapper.vue'
+
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
 
