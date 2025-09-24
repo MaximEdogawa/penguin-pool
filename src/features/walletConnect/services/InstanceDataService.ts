@@ -23,6 +23,9 @@ const instanceState = ref<WalletConnectInstance>({
   error: null,
 })
 
+// Singleton flag to ensure event listeners are only added once
+let eventListenersAttached = false
+
 export function useInstanceDataService() {
   const instanceQuery = useQuery({
     queryKey: ['walletConnect', 'instance'],
@@ -30,6 +33,52 @@ export function useInstanceDataService() {
     enabled: computed(() => true),
     staleTime: Infinity,
   })
+
+  // Set up event listeners for SignClient (singleton pattern)
+  function setupSignClientEventListeners(signClient: SignClientType) {
+    // Check if event listeners are already attached
+    if (eventListenersAttached) {
+      console.log('⚠️ Event listeners already attached, skipping...')
+      return
+    }
+
+    signClient.on('session_request', async event => {
+      console.log('📨 Received session request:', event)
+    })
+
+    signClient.on('session_event', event => {
+      console.log('📨 Received session event:', event)
+    })
+
+    signClient.on('session_delete', event => {
+      console.log('🗑️ Session deleted:', event)
+      clearConnection()
+    })
+
+    signClient.on('session_update', event => {
+      console.log('🔄 Session updated:', event)
+    })
+
+    signClient.on('session_expire', event => {
+      console.log('⏰ Session expired:', event)
+      clearConnection()
+    })
+
+    // Mark event listeners as attached
+    eventListenersAttached = true
+    console.log('✅ SignClient event listeners attached successfully')
+  }
+
+  function clearConnection(): void {
+    console.log('🧹 Clearing connection state')
+    instanceState.value.error = null
+  }
+
+  // Reset event listeners flag (useful for testing or reinitialization)
+  function resetEventListenersFlag(): void {
+    eventListenersAttached = false
+    console.log('🔄 Event listeners flag reset')
+  }
 
   const initializeMutation = useMutation({
     mutationFn: async (): Promise<WalletConnectInstance> => {
@@ -40,7 +89,26 @@ export function useInstanceDataService() {
       instanceState.value.isInitializing = true
       instanceState.value.error = null
 
+      // Reset event listeners flag for fresh initialization
+      resetEventListenersFlag()
+
       try {
+        // Suppress console errors temporarily during initialization
+        const originalConsoleError = console.error
+        console.error = (...args) => {
+          // Filter out the specific "no listeners" error during initialization
+          const message = args.join(' ')
+          if (
+            message.includes('emitting session_request') &&
+            message.includes('without any listeners')
+          ) {
+            console.log('⚠️ Suppressed session_request error during initialization (expected)')
+            return
+          }
+          originalConsoleError.apply(console, args)
+        }
+
+        // Create SignClient with minimal configuration first
         const signClient = await SignClient.init({
           projectId: (import.meta.env?.VITE_WALLET_CONNECT_PROJECT_ID as string) || '',
           relayUrl: 'wss://relay.walletconnect.com',
@@ -51,6 +119,13 @@ export function useInstanceDataService() {
             icons: [`${window.location.origin}/favicon.ico`],
           },
         })
+
+        // Restore original console.error
+        console.error = originalConsoleError
+
+        // Immediately set up event listeners to catch any pending requests
+        console.log('🔧 Setting up SignClient event listeners immediately...')
+        setupSignClientEventListeners(signClient as SignClientType)
 
         // Create WalletConnect Modal
         const modal = new WalletConnectModal({
@@ -101,5 +176,6 @@ export function useInstanceDataService() {
     getSignClient,
     getModal,
     isReady,
+    resetEventListenersFlag,
   }
 }
