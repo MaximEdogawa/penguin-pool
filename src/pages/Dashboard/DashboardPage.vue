@@ -262,7 +262,6 @@
   // Get formatted balance
   const userBalance = computed(() => {
     if (!walletBalance.value || !walletBalance.value.confirmed) return '0.000000'
-
     return formatBalance(parseInt(walletBalance.value.confirmed))
   })
 

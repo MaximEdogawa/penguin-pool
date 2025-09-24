@@ -55,14 +55,14 @@ export function useInstanceDataService() {
         // Create WalletConnect Modal
         const modal = new WalletConnectModal({
           projectId: (import.meta.env?.VITE_WALLET_CONNECT_PROJECT_ID as string) || '',
-          enableExplorer: true,
-          themeMode: 'light',
+          enableExplorer: false,
+          themeMode: 'dark',
           themeVariables: {
             '--wcm-z-index': '1000',
-            '--wcm-background-color': '#ffffff',
+            '--wcm-background-color': '#1f2937',
             '--wcm-accent-color': '#3b82f6',
             '--wcm-accent-fill-color': '#ffffff',
-            '--wcm-overlay-background-color': 'rgba(0, 0, 0, 0.5)',
+            '--wcm-overlay-background-color': 'rgba(0, 0, 0, 0.8)',
           },
         })
 

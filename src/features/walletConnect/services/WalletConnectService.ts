@@ -259,13 +259,19 @@ export function useWalletConnectService() {
       return {
         ...baseOptions,
         enableExplorer: false,
+        featuredWalletIds: [],
+        includeWalletIds: ['c286e179f9fc079f'], // Sage Wallet ID
+        excludeWalletIds: [],
+        allWallets: 'HIDE',
         themeVariables: {
           ...themeVariables,
           '--wcm-z-index': '1000',
-          '--wcm-background-color': '#ffffff',
+          '--wcm-background-color': '#1f2937',
           '--wcm-accent-color': '#3b82f6',
           '--wcm-accent-fill-color': '#ffffff',
-          '--wcm-overlay-background-color': 'rgba(0, 0, 0, 0.5)',
+          '--wcm-overlay-background-color': 'rgba(0, 0, 0, 0.8)',
+          '--wcm-text-color': '#ffffff',
+          '--wcm-border-radius': '12px',
         },
       }
     },

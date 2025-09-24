@@ -68,6 +68,8 @@ export function useConnectionDataService() {
       const unsubscribe = modal.subscribeModal(state => {
         if (state.open === false && !modalClosed) {
           modalClosed = true
+          // Reset connection state when modal is closed
+          resetConnectionState()
           unsubscribe()
         }
       })
@@ -85,8 +87,12 @@ export function useConnectionDataService() {
         // Handle approval rejection or modal close
         unsubscribe()
         if (modalClosed) {
+          // Reset connection state when modal is closed without connection
+          resetConnectionState()
           throw new Error('Modal closed without connection')
         }
+        // Reset connection state on other errors
+        resetConnectionState()
         throw error
       }
     },
