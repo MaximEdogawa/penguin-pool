@@ -116,7 +116,7 @@ export function useInstanceDataService() {
             name: 'Penguin Pool',
             description: 'Chia Pool Management Platform',
             url: window.location.origin,
-            icons: [`${window.location.origin}/favicon.ico`],
+            icons: [`${window.location.origin}/penguin-pool.svg`],
           },
         })
 

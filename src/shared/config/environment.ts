@@ -87,7 +87,12 @@ export const environment = {
         name: 'Penguin Pool',
         description: 'Decentralized lending platform on Chia Network',
         url: getCurrentUrl(),
-        icons: ['https://penguin.pool/icon.png'],
+        icons: [
+          `${getCurrentUrl()}/icons/icon-192x192.png`,
+          `${getCurrentUrl()}/icons/icon-512x512.png`,
+          `${getCurrentUrl()}/favicon.svg`,
+          `${getCurrentUrl()}/penguin-pool.svg`,
+        ],
       },
       // Chia network configuration
       networks: {
