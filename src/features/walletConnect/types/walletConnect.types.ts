@@ -1,3 +1,23 @@
+// Namespace interfaces for better type safety
+export interface ChiaNamespace {
+  accounts: string[]
+  methods: string[]
+  events: string[]
+  chains: string[]
+}
+
+// Generic namespace type to match WalletConnect's actual structure
+export interface GenericNamespace {
+  accounts?: string[]
+  methods: string[]
+  events: string[]
+  chains?: string[]
+}
+
+export interface WalletConnectNamespace {
+  chia: ChiaNamespace
+}
+
 export interface WalletConnectConfig {
   projectId: string
   metadata: {
@@ -18,9 +38,9 @@ export interface WalletConnectSession {
     protocol: string
     data?: string
   }
-  namespaces: Record<string, unknown>
-  requiredNamespaces: Record<string, unknown>
-  optionalNamespaces: Record<string, unknown>
+  namespaces: Record<string, GenericNamespace>
+  requiredNamespaces: Record<string, GenericNamespace>
+  optionalNamespaces: Record<string, GenericNamespace>
   self: {
     publicKey: string
     metadata: {
@@ -155,10 +175,40 @@ export interface CommandExecutionResult<T = unknown> {
   error?: string
 }
 
+// Transaction and offer interfaces
+export interface TransactionData {
+  amount: number
+  fee: number
+  recipient: string
+  assetId?: string
+  memo?: string
+}
+
+export interface OfferData {
+  offerAssets: OfferAsset[]
+  requestAssets: OfferAsset[]
+  fee: number
+  expirationHours?: number
+  memo?: string
+}
+
+export interface OfferAsset {
+  assetId: string
+  amount: number
+  type: 'xch' | 'cat' | 'nft'
+  symbol?: string
+}
+
+export interface CoinSpend {
+  coin: CoinInfo
+  puzzle_reveal: string
+  solution: string
+}
+
 // Wallet command interface for easier usage
 export interface WalletCommand {
   command: string
-  params: Record<string, unknown>
+  params: WalletMethodParams
 }
 
 // Wallet request parameter types
@@ -183,11 +233,11 @@ export interface SignMessageParams {
 }
 
 export interface SendTransactionParams {
-  transaction: unknown
+  transaction: TransactionData
 }
 
 export interface CreateOfferParams {
-  offer: unknown
+  offer: OfferData
 }
 
 export interface TakeOfferParams {
@@ -200,7 +250,7 @@ export interface CancelOfferParams {
 
 export interface SignCoinSpendsParams {
   walletId: number
-  coinSpends: unknown[]
+  coinSpends: CoinSpend[]
 }
 
 // Method-specific parameter mapping
@@ -214,3 +264,8 @@ export type WalletMethodParams =
   | CancelOfferParams
   | SignCoinSpendsParams
   | Record<string, never> // For methods with no parameters
+
+// Use the actual SignClient instance type from WalletConnect
+export type AppSignClient = Awaited<
+  ReturnType<typeof import('@walletconnect/sign-client').SignClient.init>
+>

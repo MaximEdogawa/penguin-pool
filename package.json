@@ -22,7 +22,7 @@
     "preview:staging": "vite preview --mode staging",
     "preview:production": "vite preview --mode production",
     "build-only": "vite build",
-    "type-check": "vue-tsc --build",
+    "type-check": "vue-tsc --noEmit",
     "lint": "eslint . --ext .vue,.js,.ts,.jsx,.tsx --fix",
     "lint:check": "eslint . --ext .vue,.js,.ts,.jsx,.tsx",
     "format": "prettier --write \"**/*.{vue,js,ts,jsx,tsx,json,css,md,html,scss,sass,less}\" --ignore-path .prettierignore",

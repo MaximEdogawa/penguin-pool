@@ -42,7 +42,7 @@ export interface OfferDetails {
   id: string
   tradeId: string
   offerString: string
-  status: 'pending' | 'active' | 'completed' | 'cancelled' | 'expired'
+  status: 'pending' | 'active' | 'completed' | 'cancelled' | 'expired' | 'failed'
   createdAt: Date
   expiresAt?: Date
   assetsOffered: OfferAsset[]
@@ -69,4 +69,50 @@ export interface OfferFilters {
 export interface OfferSortOptions {
   field: 'createdAt' | 'amount' | 'status' | 'expiresAt'
   direction: 'asc' | 'desc'
+}
+
+// Wallet request interfaces for better type safety
+export interface WalletOfferAsset {
+  assetId: string
+  amount: number
+}
+
+export interface CreateOfferWalletRequest {
+  walletId: number
+  offerAssets: WalletOfferAsset[]
+  requestAssets: WalletOfferAsset[]
+  fee: number
+}
+
+export interface CreateOfferWalletResponse {
+  success: boolean
+  offerId?: string
+  data?: {
+    offerId: string
+    offerString: string
+    fee: number
+    status: string
+  }
+  error?: string | null
+}
+
+export interface TakeOfferWalletRequest {
+  offer: string
+  fee?: number
+}
+
+export interface TakeOfferWalletResponse {
+  success: boolean
+  tradeId?: string
+  error?: string | null
+}
+
+export interface CancelOfferWalletRequest {
+  offerId: string
+  fee?: number
+}
+
+export interface CancelOfferWalletResponse {
+  success: boolean
+  error?: string | null
 }

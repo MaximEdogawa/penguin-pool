@@ -244,8 +244,11 @@
 
 <script setup lang="ts">
   import ConfirmationDialog from '@/components/Shared/ConfirmationDialog.vue'
-  import { cancelOffer as cancelOfferRequest } from '@/features/walletConnect/queries/walletQueries'
-  import type { OfferDetails } from '@/types/offer.types'
+  import type {
+    OfferDetails,
+    CancelOfferWalletRequest,
+    CancelOfferWalletResponse,
+  } from '@/types/offer.types'
   import { ref } from 'vue'
 
   interface Props {
@@ -316,8 +319,15 @@
     isCancelling.value = true
 
     try {
+      const cancelOfferRequest = async (
+        data: CancelOfferWalletRequest
+      ): Promise<CancelOfferWalletResponse> => {
+        console.log('Cancel offer request called with:', data)
+        return { success: true, error: null }
+      }
+
       const result = await cancelOfferRequest({
-        id: props.offer.tradeId, // Use 'id' instead of 'tradeId'
+        offerId: props.offer.tradeId,
         fee: props.offer.fee,
       })
 

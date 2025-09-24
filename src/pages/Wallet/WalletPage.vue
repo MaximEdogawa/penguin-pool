@@ -21,7 +21,7 @@
           </div>
           <div class="text-right">
             <div class="text-sm text-gray-600 dark:text-gray-400">
-              {{ formatAddress(wallet.walletInfo.value?.address || '') }}
+              {{ formatAddress(wallet.getWalletInfo()?.fingerprint || '') }}
             </div>
             <button
               @click="copyAddress"
@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
   import SendTransactionComponent from '@/components/SendTransaction/SendTransactionComponent.vue'
-  import { useWallet } from '@/features/walletConnect/hooks/useWalletQueries'
+  import { useWallet } from '@/features/walletConnect/composables/useWallet'
   import { computed, ref } from 'vue'
 
   const wallet = useWallet()
@@ -78,15 +78,15 @@
 
   // Computed properties
   const userBalance = computed(() => {
-    if (wallet.walletBalance.value?.balance) {
-      return formatBalance(wallet.walletBalance.value.balance)
+    if (wallet.walletBalance.data.value?.balance) {
+      return formatBalance(wallet.walletBalance.data.value.balance)
     }
     return '0.000000'
   })
 
   const ticker = computed(() => {
-    const networkInfo = wallet.walletSession.value?.currentNetwork
-    if (networkInfo?.name?.includes('testnet')) {
+    const chainId = wallet.chainId.value
+    if (chainId?.includes('testnet')) {
       return 'TXCH'
     }
     return 'XCH'
@@ -106,8 +106,9 @@
 
   const copyAddress = async () => {
     try {
-      if (wallet.walletInfo.value?.address) {
-        await navigator.clipboard.writeText(wallet.walletInfo.value.address)
+      const walletInfo = wallet.getWalletInfo()
+      if (walletInfo?.fingerprint) {
+        await navigator.clipboard.writeText(walletInfo.fingerprint)
         isAddressCopied.value = true
         setTimeout(() => {
           isAddressCopied.value = false

@@ -101,7 +101,7 @@
   const notificationStore = useNotificationStore()
 
   // Services
-  const walletService = useWalletConnectService
+  const walletService = useWalletConnectService()
 
   // Layout composable
   const { toggleMenu, layoutState } = useLayout()
@@ -168,7 +168,7 @@
       const userStore = useUserStore()
 
       // Disconnect wallet if connected
-      if (walletService.getState().isConnected) {
+      if (walletService.state.value.isConnected) {
         console.log('🔌 Disconnecting wallet...')
         await walletService.disconnect()
       }

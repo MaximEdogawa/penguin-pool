@@ -44,7 +44,7 @@
           <div class="user-info-section">
             <div class="user-avatar">
               <i
-                :class="walletService.getState().isConnected ? 'pi pi-wallet' : 'pi pi-user'"
+                :class="walletService.state.value.isConnected ? 'pi pi-wallet' : 'pi pi-user'"
                 class="text-xl text-white"
               ></i>
             </div>
@@ -53,11 +53,11 @@
               <p class="user-email">{{ userEmail }}</p>
 
               <!-- Wallet Connection Info -->
-              <div v-if="walletService.getState().isConnected" class="wallet-info">
+              <div v-if="walletService.state.value.isConnected" class="wallet-info">
                 <div class="wallet-fingerprint">
                   <i class="pi pi-key text-sm"></i>
                   <span class="fingerprint-text">{{
-                    walletService.getState().accounts[0] || 'N/A'
+                    walletService.state.value.accounts[0] || 'N/A'
                   }}</span>
                 </div>
               </div>
@@ -73,7 +73,7 @@
           <!-- Wallet Connect/Disconnect Button -->
           <div class="wallet-section">
             <PrimeButton
-              v-if="walletService.getState().isConnecting"
+              v-if="walletService.state.value.isConnecting"
               :icon="'pi pi-spin pi-spinner'"
               :label="!isCollapsed && !isSmallScreen ? 'Connecting...' : ''"
               :title="isCollapsed || isSmallScreen ? 'Connecting...' : ''"
@@ -82,7 +82,7 @@
               disabled
             />
             <PrimeButton
-              v-else-if="!walletService.getState().isConnected"
+              v-else-if="!walletService.state.value.isConnected"
               @click="navigateTo('/auth')"
               :icon="'pi pi-wallet'"
               :label="!isCollapsed && !isSmallScreen ? 'Connect Wallet' : ''"
@@ -149,7 +149,7 @@
 
   // Stores
   const userStore = useUserStore()
-  const walletService = useWalletConnectService
+  const walletService = useWalletConnectService()
 
   // Props
   interface Props {
@@ -267,11 +267,11 @@
   })
 
   const connectionStatusClass = computed(() => {
-    return walletService.getState().isConnected ? 'connected' : 'disconnected'
+    return walletService.state.value.isConnected ? 'connected' : 'disconnected'
   })
 
   const connectionStatusText = computed(() => {
-    return walletService.getState().isConnected ? 'Wallet Connected' : 'Wallet Disconnected'
+    return walletService.state.value.isConnected ? 'Wallet Connected' : 'Wallet Disconnected'
   })
 
   // Methods
@@ -285,7 +285,7 @@
 
       // Always disconnect wallet and logout user
       // Disconnect wallet if connected
-      if (walletService.getState().isConnected) {
+      if (walletService.state.value.isConnected) {
         console.log('🔌 Disconnecting wallet...')
         await walletService.disconnect()
       }

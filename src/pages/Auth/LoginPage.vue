@@ -23,7 +23,7 @@
         <div class="wallet-options">
           <!-- Primary Wallet Option - Sage -->
           <button
-            @click="showWalletModal = true"
+            @click="handleWalletConnect"
             class="wallet-option-primary group"
             :disabled="isConnecting"
           >
@@ -48,7 +48,7 @@
             <!-- Other Wallets -->
             <FeatureFlag category="app" feature="otherWallets">
               <button
-                @click="showWalletModal = true"
+                @click="handleWalletConnect"
                 class="wallet-option-secondary group"
                 :disabled="isConnecting"
               >
@@ -101,13 +101,7 @@
       </div>
     </div>
 
-    <!-- Wallet Connect Modal -->
-    <AppKitWalletModal
-      v-if="showWalletModal"
-      :is-open="showWalletModal"
-      @close="closeWalletModal"
-      @connected="handleWalletConnected"
-    />
+    <!-- Native WalletConnect Modal is handled by the service -->
     <!-- iOS WalletConnect Modal -->
     <IOSModalWrapper />
   </div>
@@ -119,11 +113,8 @@
   import PWAInstallPrompt from '@/components/PWAInstallPrompt.vue'
   import PenguinLogo from '@/components/PenguinLogo.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
-  import AppKitWalletModal from '@/features/walletConnect/components/AppKitWalletModal.vue'
-  import { useWalletRequestService } from '@/features/walletConnect/composables/useWalletRequestService'
-  import { useWallet } from '@/features/walletConnect/hooks/useWalletQueries'
-  import type { ExtendedWalletInfo } from '@/features/walletConnect/types/walletConnect.types'
   import IOSModalWrapper from '@/features/walletConnect/components/IOSModalWrapper.vue'
+  import { useWallet } from '@/features/walletConnect/composables/useWallet'
 
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
@@ -131,10 +122,8 @@
   const router = useRouter()
   const userStore = useUserStore()
   const wallet = useWallet()
-  const walletRequestService = useWalletRequestService()
 
   // State
-  const showWalletModal = ref(false)
   const connectionStatus = ref('')
   const statusType = ref<'info' | 'success' | 'error'>('info')
   const statusIcon = ref('pi pi-info-circle')
@@ -162,68 +151,63 @@
     }
   }
 
-  const handleWalletConnected = async (walletInfo: ExtendedWalletInfo | null) => {
+  const handleWalletConnect = async () => {
     try {
-      console.log('🔗 Processing wallet connection:', walletInfo)
-      console.log('🔍 Wallet info type:', typeof walletInfo)
-      console.log(
-        '🔍 Wallet info keys:',
-        walletInfo && typeof walletInfo === 'object' ? Object.keys(walletInfo) : 'N/A'
-      )
+      connectionStatus.value = 'Opening wallet connection...'
+      statusType.value = 'info'
+      statusIcon.value = 'pi pi-info-circle'
 
-      if (!walletInfo || typeof walletInfo !== 'object') {
-        throw new Error('Invalid wallet info - no wallet data received')
+      // Open the native WalletConnect modal
+      const result = await wallet.openModal()
+
+      if (result.success && result.session) {
+        // Connect using the session from the modal
+        const connectResult = await wallet.connect(result.session)
+
+        if (connectResult.success) {
+          // Get wallet information
+          const walletInfo = wallet.getWalletInfo()
+
+          if (walletInfo.fingerprint) {
+            await userStore.login(walletInfo.fingerprint, 'wallet-user')
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            await router.push('/dashboard')
+          } else {
+            throw new Error('No wallet fingerprint found')
+          }
+        } else {
+          throw new Error(connectResult.error || 'Connection failed')
+        }
+      } else {
+        // Handle modal close without connection
+        if (result.error === 'Modal closed without connection') {
+          connectionStatus.value = 'Connection cancelled'
+          statusType.value = 'info'
+          statusIcon.value = 'pi pi-info-circle'
+        } else {
+          throw new Error(result.error || 'Modal opening failed')
+        }
       }
-
-      if (!walletInfo.fingerprint) {
-        throw new Error('Invalid wallet info - no address found')
-      }
-
-      console.log('📝 Wallet details:', {
-        address: walletInfo.fingerprint,
-        chainId: walletInfo.chainId,
-        network: walletInfo.network,
-        accounts: walletInfo.accounts?.length || 0,
-      })
-
-      // Store wallet session in the store
-      if (walletInfo.session) {
-        console.log('💾 Storing wallet session')
-        // The session is already stored in the WalletConnect service
-        // We just need to ensure the store is updated
-        await wallet.initialization.mutateAsync()
-      }
-
-      // Login with wallet address
-      await userStore.login(walletInfo.fingerprint, 'wallet-user')
-
-      console.log('✅ Wallet connection processed successfully')
-      connectionStatus.value = 'Connected successfully!'
-      statusType.value = 'success'
-      statusIcon.value = 'pi pi-check-circle'
-
-      // Redirect to dashboard
-      await router.push('/dashboard')
     } catch (error) {
-      console.error('❌ Failed to process wallet connection:', error)
+      console.error('Failed to connect wallet:', error)
       connectionStatus.value =
-        'Failed to process wallet connection: ' +
-        (error instanceof Error ? error.message : 'Unknown error')
+        'Failed to connect wallet: ' + (error instanceof Error ? error.message : 'Unknown error')
       statusType.value = 'error'
       statusIcon.value = 'pi pi-exclamation-triangle'
     }
-  }
-
-  const closeWalletModal = () => {
-    showWalletModal.value = false
   }
 
   onMounted(async () => {
     try {
       if (wallet.isConnected.value) {
         await new Promise(resolve => setTimeout(resolve, 500))
-        const walletInfo = walletRequestService.getWalletInfo()
-        await handleWalletConnected(walletInfo)
+        const walletInfo = wallet.getWalletInfo()
+
+        if (walletInfo.fingerprint) {
+          await userStore.login(walletInfo.fingerprint, 'wallet-user')
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          await router.push('/dashboard')
+        }
       }
     } catch (error) {
       console.error('Failed to initialize Wallet Connect:', error)

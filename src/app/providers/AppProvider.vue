@@ -8,7 +8,7 @@
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useNotificationStore } from '@/features/notifications/store/notificationStore'
   import { useThemeStore } from '@/features/theme/store/themeStore'
-  import { useWalletInitialization } from '@/features/walletConnect/hooks/useWalletQueries'
+  import { useWalletConnectService } from '@/features/walletConnect/services/WalletConnectService'
   import { onMounted } from 'vue'
 
   // Lifecycle
@@ -18,7 +18,7 @@
       const themeStore = useThemeStore()
       const notificationStore = useNotificationStore()
       const userStore = useUserStore()
-      const walletInitialization = useWalletInitialization()
+      const walletService = useWalletConnectService()
 
       // Initialize theme
       await themeStore.initializeTheme()
@@ -27,7 +27,7 @@
       await notificationStore.initialize()
 
       // Initialize wallet connect
-      await walletInitialization.mutateAsync()
+      await walletService.initialize()
 
       // Check for existing user session
       await userStore.checkSession()
