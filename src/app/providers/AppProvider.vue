@@ -29,6 +29,9 @@
       // Initialize wallet connect
       await walletService.initialize()
 
+      // Restore any existing wallet sessions
+      await walletService.restoreSessions()
+
       // Check for existing user session
       await userStore.checkSession()
     } catch (error) {
