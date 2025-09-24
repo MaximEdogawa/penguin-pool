@@ -1,3 +1,7 @@
+// Disable Lit development mode warning
+globalThis.litDisableBundleWarning = true
+globalThis.__LIT_DEV_MODE__ = false
+
 // Polyfill for global object to fix ox library circular dependency issues
 if (typeof globalThis.global === 'undefined') {
   globalThis.global = globalThis

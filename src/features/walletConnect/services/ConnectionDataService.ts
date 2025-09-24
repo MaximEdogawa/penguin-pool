@@ -47,7 +47,7 @@ export function useConnectionDataService() {
 
       // Create connection using SignClient
       const { uri, approval } = await signClient.connect({
-        requiredNamespaces: {
+        optionalNamespaces: {
           chia: {
             methods: Object.values(SageMethods),
             chains: ['chia:mainnet', 'chia:testnet'],

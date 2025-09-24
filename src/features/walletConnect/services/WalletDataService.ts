@@ -19,7 +19,6 @@ export function useWalletDataService() {
     queryKey: ['walletConnect', 'balance'],
     queryFn: async () => {
       const result = await getAssetBalance(connectionService, instanceService, null, null)
-      console.log('balanceQuery result', result)
       if (!result.success) throw new Error(result.error)
       return result.data
     },
