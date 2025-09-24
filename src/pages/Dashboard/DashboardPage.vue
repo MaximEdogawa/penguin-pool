@@ -74,7 +74,7 @@
 
             <!-- Wallet Address (only when connected) -->
             <div
-              v-if="isWalletConnected && wallet.getWalletInfo()?.fingerprint"
+              v-if="isWalletConnected && walletDataService.address.data.value?.address"
               class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
             >
               <div class="flex items-center justify-between">
@@ -84,10 +84,10 @@
                   ></i>
                   <span
                     class="text-xs text-gray-600 dark:text-gray-400 font-mono truncate cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                    :title="wallet.getWalletInfo()?.fingerprint || undefined"
+                    :title="walletDataService.address.data.value?.address || undefined"
                     @click="copyAddress"
                   >
-                    {{ formatAddress(wallet.getWalletInfo()?.fingerprint ?? '') }}
+                    {{ formatAddress(walletDataService.address.data.value?.address ?? '') }}
                   </span>
                 </div>
                 <button
@@ -237,17 +237,19 @@
 
 <script setup lang="ts">
   import { useUserStore } from '@/entities/user/store/userStore'
-  import { useWallet } from '@/features/walletConnect/composables/useWallet'
+  import { useConnectionDataService } from '@/features/walletConnect/services/ConnectionDataService'
+  import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
   import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
 
   const userStore = ref<ReturnType<typeof useUserStore> | null>(null)
-  const wallet = useWallet()
+  const connectionService = useConnectionDataService()
+  const walletDataService = useWalletDataService()
   const router = useRouter()
 
-  const isWalletConnected = computed(() => wallet.isConnected.value)
-  const walletBalance = computed(() => wallet.walletBalance.data.value || null)
-  const isBalanceLoading = computed(() => false) // Balance loading state not available in current implementation
+  const isWalletConnected = computed(() => connectionService.state.value.isConnected)
+  const walletBalance = computed(() => walletDataService.balance.data.value || null)
+  const isBalanceLoading = computed(() => walletDataService.balance.isLoading.value)
   const balanceLastUpdated = ref<Date | null>(null)
   const autoRefreshEnabled = ref(true)
 
@@ -259,19 +261,20 @@
 
   // Get formatted balance
   const userBalance = computed(() => {
-    if (!walletBalance.value?.balance) return '0.000000'
-    return formatBalance(walletBalance.value.balance)
+    if (!walletBalance.value || !walletBalance.value.confirmed) return '0.000000'
+
+    return formatBalance(parseInt(walletBalance.value.confirmed))
   })
 
-  // Get spendable balance (using balance as spendable for now)
+  // Get spendable balance
   const spendableBalance = computed(() => {
-    if (!walletBalance.value?.balance) return '0.000000'
-    return formatBalance(walletBalance.value.balance)
+    if (!walletBalance.value || !walletBalance.value.spendable) return '0.000000'
+    return formatBalance(parseInt(walletBalance.value.spendable))
   })
 
   // Get ticker symbol
   const ticker = computed(() => {
-    const chainId = wallet.chainId.value
+    const chainId = connectionService.state.value.chainId
     return chainId?.includes('testnet') ? 'TXCH' : 'XCH'
   })
 
@@ -289,8 +292,7 @@
 
     try {
       console.log('💰 Refreshing wallet balance...')
-      // For XCH balance, don't send type parameter as Sage doesn't support 'xch' type
-      await wallet.getBalance({})
+      await walletDataService.balance.refetch()
       balanceLastUpdated.value = new Date()
       console.log('✅ Wallet balance refreshed successfully')
     } catch (error) {
@@ -342,11 +344,11 @@
   }
 
   const copyAddress = async () => {
-    const walletInfo = wallet.getWalletInfo()
-    if (!walletInfo?.fingerprint) return
+    const address = walletDataService.address.data.value?.address
+    if (!address) return
 
     try {
-      await navigator.clipboard.writeText(walletInfo.fingerprint)
+      await navigator.clipboard.writeText(address)
       const copyButton = document.querySelector('[title="Copy address"]') as HTMLElement
       if (copyButton) {
         const originalIcon = copyButton.innerHTML

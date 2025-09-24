@@ -206,6 +206,8 @@ export function useWalletConnectService() {
       console.log('🔄 Restoring sessions...')
       try {
         await connectionService.restoreSessions()
+        // Refresh balance after session restoration
+        await walletService.refreshBalance()
       } catch (error) {
         console.error('❌ Session restoration failed:', error)
       }
@@ -238,6 +240,8 @@ export function useWalletConnectService() {
     refreshSession: async () => {
       try {
         await connectionService.restoreSessions()
+        // Refresh balance after session restoration
+        await walletService.refreshBalance()
       } catch (error) {
         console.error('❌ Failed to refresh session:', error)
       }

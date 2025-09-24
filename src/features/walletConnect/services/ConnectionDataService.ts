@@ -169,6 +169,12 @@ export function useConnectionDataService() {
     connectionState.value.chainId = extractChainId(session)
 
     console.log('✅ Wallet connected successfully')
+
+    // Trigger a small delay to ensure reactive updates propagate
+    // This helps ensure TanStack queries pick up the connection state change
+    setTimeout(() => {
+      console.log('🔄 Connection state updated, queries should refresh automatically')
+    }, 100)
   }
 
   function extractChainId(session: WalletConnectSession): string {

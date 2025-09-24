@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import {
   getAssetBalance,
@@ -13,11 +13,13 @@ import { useInstanceDataService } from './InstanceDataService'
 export function useWalletDataService() {
   const connectionService = useConnectionDataService()
   const instanceService = useInstanceDataService()
+  const queryClient = useQueryClient()
 
   const balanceQuery = useQuery({
     queryKey: ['walletConnect', 'balance'],
     queryFn: async () => {
       const result = await getAssetBalance(connectionService, instanceService, null, null)
+      console.log('balanceQuery result', result)
       if (!result.success) throw new Error(result.error)
       return result.data
     },
@@ -65,12 +67,18 @@ export function useWalletDataService() {
     },
   })
 
+  const refreshBalance = async () => {
+    // Invalidate and refetch the balance query
+    await queryClient.invalidateQueries({ queryKey: ['walletConnect', 'balance'] })
+  }
+
   return {
     balance: balanceQuery,
     address: addressQuery,
     signMessage: signMessageMutation.mutateAsync,
     sendTransaction: sendTransactionMutation.mutateAsync,
     getBalance: getBalanceMutation.mutateAsync,
+    refreshBalance,
     isSigning: signMessageMutation.isPending,
     isSending: sendTransactionMutation.isPending,
     isGettingBalance: getBalanceMutation.isPending,

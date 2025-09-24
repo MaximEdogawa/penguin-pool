@@ -21,7 +21,7 @@
           </div>
           <div class="text-right">
             <div class="text-sm text-gray-600 dark:text-gray-400">
-              {{ formatAddress(wallet.getWalletInfo()?.fingerprint || '') }}
+              {{ formatAddress(walletDataService.address.data.value?.address || '') }}
             </div>
             <button
               @click="copyAddress"
@@ -68,24 +68,26 @@
 
 <script setup lang="ts">
   import SendTransactionComponent from '@/components/SendTransaction/SendTransactionComponent.vue'
-  import { useWallet } from '@/features/walletConnect/composables/useWallet'
+  import { useConnectionDataService } from '@/features/walletConnect/services/ConnectionDataService'
+  import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
   import { computed, ref } from 'vue'
 
-  const wallet = useWallet()
+  const connectionService = useConnectionDataService()
+  const walletDataService = useWalletDataService()
 
   // State
   const isAddressCopied = ref(false)
 
   // Computed properties
   const userBalance = computed(() => {
-    if (wallet.walletBalance.data.value?.balance) {
-      return formatBalance(wallet.walletBalance.data.value.balance)
+    if (walletDataService.balance.data.value?.confirmed) {
+      return formatBalance(parseInt(walletDataService.balance.data.value.confirmed))
     }
     return '0.000000'
   })
 
   const ticker = computed(() => {
-    const chainId = wallet.chainId.value
+    const chainId = connectionService.state.value.chainId
     if (chainId?.includes('testnet')) {
       return 'TXCH'
     }
@@ -106,9 +108,9 @@
 
   const copyAddress = async () => {
     try {
-      const walletInfo = wallet.getWalletInfo()
-      if (walletInfo?.fingerprint) {
-        await navigator.clipboard.writeText(walletInfo.fingerprint)
+      const address = walletDataService.address.data.value?.address
+      if (address) {
+        await navigator.clipboard.writeText(address)
         isAddressCopied.value = true
         setTimeout(() => {
           isAddressCopied.value = false

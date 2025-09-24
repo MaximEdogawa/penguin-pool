@@ -114,14 +114,16 @@
   import PenguinLogo from '@/components/PenguinLogo.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
   import IOSModalWrapper from '@/features/walletConnect/components/IOSModalWrapper.vue'
-  import { useWallet } from '@/features/walletConnect/composables/useWallet'
+  import { useConnectionDataService } from '@/features/walletConnect/services/ConnectionDataService'
+  import { useWalletConnectService } from '@/features/walletConnect/services/WalletConnectService'
 
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
 
   const router = useRouter()
   const userStore = useUserStore()
-  const wallet = useWallet()
+  const connectionService = useConnectionDataService()
+  const walletService = useWalletConnectService()
 
   // State
   const connectionStatus = ref('')
@@ -130,7 +132,7 @@
   const selectedNetwork = ref('chia:testnet')
 
   // Computed
-  const isConnecting = computed(() => wallet.isConnecting.value)
+  const isConnecting = computed(() => connectionService.state.value.isConnecting)
 
   const backgroundStyle = computed(() => ({
     backgroundImage: `url('${signinGlassImage}')`,
@@ -158,18 +160,18 @@
       statusIcon.value = 'pi pi-info-circle'
 
       // Open the native WalletConnect modal
-      const result = await wallet.openModal()
+      const result = await walletService.openModal()
 
       if (result.success && result.session) {
         // Connect using the session from the modal
-        const connectResult = await wallet.connect(result.session)
+        const connectResult = await walletService.connect(result.session)
 
         if (connectResult.success) {
           // Get wallet information
-          const walletInfo = wallet.getWalletInfo()
+          const walletInfo = walletService.walletInfo
 
-          if (walletInfo.fingerprint) {
-            await userStore.login(walletInfo.fingerprint, 'wallet-user')
+          if (walletInfo.value.fingerprint) {
+            await userStore.login(walletInfo.value.fingerprint, 'wallet-user')
             await new Promise(resolve => setTimeout(resolve, 1000))
             await router.push('/dashboard')
           } else {
@@ -199,12 +201,12 @@
 
   onMounted(async () => {
     try {
-      if (wallet.isConnected.value) {
+      if (connectionService.state.value.isConnected) {
         await new Promise(resolve => setTimeout(resolve, 500))
-        const walletInfo = wallet.getWalletInfo()
+        const walletInfo = walletService.walletInfo
 
-        if (walletInfo.fingerprint) {
-          await userStore.login(walletInfo.fingerprint, 'wallet-user')
+        if (walletInfo.value.fingerprint) {
+          await userStore.login(walletInfo.value.fingerprint, 'wallet-user')
           await new Promise(resolve => setTimeout(resolve, 1000))
           await router.push('/dashboard')
         }

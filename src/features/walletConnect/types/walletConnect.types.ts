@@ -109,6 +109,13 @@ export interface WalletConnectEvent {
 }
 
 export interface AssetBalance {
+  confirmed: string
+  spendable: string
+  spendableCoinCount: number
+}
+
+// Legacy interface for backward compatibility
+export interface LegacyAssetBalance {
   balance: number
   assetId: string
 }
