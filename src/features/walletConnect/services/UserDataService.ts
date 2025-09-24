@@ -6,8 +6,8 @@ export interface UserData {
   fingerprint: string | null
   address: string | null
   publicKey: string | null
-  syncStatus: Record<string, unknown> | null
-  height: number | null
+  // syncStatus: Record<string, unknown> | null // Disabled - unsupported by Sage
+  // height: number | null // Disabled - unsupported by Sage
 }
 
 // Global user data state
@@ -15,8 +15,8 @@ const userDataState = ref<UserData>({
   fingerprint: null,
   address: null,
   publicKey: null,
-  syncStatus: null,
-  height: null,
+  // syncStatus: null, // Disabled - unsupported by Sage
+  // height: null, // Disabled - unsupported by Sage
 })
 
 export function useUserDataService() {
@@ -68,8 +68,8 @@ export function useUserDataService() {
         fingerprint: null,
         address: null,
         publicKey: null,
-        syncStatus: null,
-        height: null,
+        // syncStatus: null, // Disabled - unsupported by Sage
+        // height: null, // Disabled - unsupported by Sage
       }
     },
   })

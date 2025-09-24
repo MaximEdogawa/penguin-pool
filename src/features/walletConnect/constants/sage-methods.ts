@@ -26,8 +26,8 @@ export enum SageMethods {
   CHIA_GET_ADDRESS = 'chia_getAddress',
   CHIA_SIGN_MESSAGE_BY_ADDRESS = 'chia_signMessageByAddress',
   CHIA_BULK_MINT_NFTS = 'chia_bulkMintNfts',
-  CHIA_GET_HEIGHT = 'CHIA_GET_HEIGHT',
-  CHIA_GET_SYNC_STATUS = 'CHIA_GET_SYNC_STATUS',
+  // CHIA_GET_HEIGHT = 'CHIA_GET_HEIGHT', // Disabled - unsupported by Sage
+  // CHIA_GET_SYNC_STATUS = 'CHIA_GET_SYNC_STATUS', // Disabled - unsupported by Sage
 }
 
 /**
@@ -70,7 +70,7 @@ export function getAllSageMethods(): SageMethodName[] {
     SageMethods.CHIA_GET_ADDRESS,
     SageMethods.CHIA_SIGN_MESSAGE_BY_ADDRESS,
     SageMethods.CHIA_BULK_MINT_NFTS,
-    SageMethods.CHIA_GET_HEIGHT,
-    SageMethods.CHIA_GET_SYNC_STATUS,
+    // SageMethods.CHIA_GET_HEIGHT, // Disabled - unsupported by Sage
+    // SageMethods.CHIA_GET_SYNC_STATUS, // Disabled - unsupported by Sage
   ]
 }

@@ -125,8 +125,9 @@ export function useWallet() {
   const getFingerprint = () => walletService.fingerprint.value
   const getPublicKey = () => walletService.wallet.address.data
 
-  const getSyncStatus = () => walletService.wallet.syncStatus.data
-  const getHeight = () => walletService.wallet.height.data
+  // Disabled - unsupported by Sage wallet
+  // const getSyncStatus = () => walletService.wallet.syncStatus.data
+  // const getHeight = () => walletService.wallet.height.data
 
   // Logout method
   const logout = walletService.logout
@@ -165,8 +166,6 @@ export function useWallet() {
     getAddress,
     getFingerprint,
     getPublicKey,
-    getSyncStatus,
-    getHeight,
 
     // Logout method
     logout,
@@ -174,8 +173,8 @@ export function useWallet() {
     // Data service queries
     walletBalance: walletService.wallet.balance,
     walletAddress: walletService.wallet.address,
-    walletSyncStatus: walletService.wallet.syncStatus,
-    walletHeight: walletService.wallet.height,
+    // walletSyncStatus: walletService.wallet.syncStatus, // Disabled - unsupported by Sage
+    // walletHeight: walletService.wallet.height, // Disabled - unsupported by Sage
 
     // Expose data services
     instance: walletService.instance,

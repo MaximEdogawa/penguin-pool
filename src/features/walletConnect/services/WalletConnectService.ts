@@ -229,7 +229,8 @@ export function useWalletConnectService() {
     })),
     fetchBalance: async () => {
       try {
-        await walletService.getBalance({ type: 'xch', assetId: '0' })
+        // For XCH balance, don't send type parameter as Sage doesn't support 'xch' type
+        await walletService.getBalance({})
       } catch (error) {
         console.error('❌ Failed to fetch balance:', error)
       }

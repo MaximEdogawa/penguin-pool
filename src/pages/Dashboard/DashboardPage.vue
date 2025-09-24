@@ -289,7 +289,8 @@
 
     try {
       console.log('💰 Refreshing wallet balance...')
-      await wallet.getBalance({ type: 'xch', assetId: '0' })
+      // For XCH balance, don't send type parameter as Sage doesn't support 'xch' type
+      await wallet.getBalance({})
       balanceLastUpdated.value = new Date()
       console.log('✅ Wallet balance refreshed successfully')
     } catch (error) {
