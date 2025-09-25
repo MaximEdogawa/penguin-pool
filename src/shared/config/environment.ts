@@ -11,12 +11,22 @@ const getCurrentUrl = (): string => {
   return 'https://penguin.pool'
 }
 
+// Cache the iOS detection result to avoid repeated logging
+let _isIOSCache: boolean | null = null
+let _isIOSLogged = false
+
 /**
  * Detect if the current platform is iOS (iPhone/iPad)
  * Handles the case where iPhone user agents contain "Mac OS X"
+ * Uses caching to avoid repeated logging
  */
 export const isIOS = (): boolean => {
   if (typeof window === 'undefined') return false
+
+  // Return cached result if available
+  if (_isIOSCache !== null) {
+    return _isIOSCache
+  }
 
   const userAgent = navigator.userAgent
 
@@ -24,7 +34,11 @@ export const isIOS = (): boolean => {
   const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent)
 
   if (!isIOSDevice) {
-    console.log('🖥️ Non-iOS platform detected - user agent:', userAgent)
+    if (!_isIOSLogged) {
+      console.log('🖥️ Non-iOS platform detected - user agent:', userAgent)
+      _isIOSLogged = true
+    }
+    _isIOSCache = false
     return false
   }
 
@@ -33,19 +47,27 @@ export const isIOS = (): boolean => {
   const isMacOS = /Mac OS X/.test(userAgent) && !/iPhone|iPad|iPod/.test(userAgent)
 
   if (isMacOS) {
-    console.log('🖥️ macOS detected - not iOS')
+    if (!_isIOSLogged) {
+      console.log('🖥️ macOS detected - not iOS')
+      _isIOSLogged = true
+    }
+    _isIOSCache = false
     return false
   }
 
   // If it has iPhone/iPad/iPod in user agent, it's iOS regardless of Mac OS X
   const result = isIOSDevice && !('MSStream' in window)
 
-  if (result) {
-    console.log('🍎 iOS detected - user agent:', userAgent)
-  } else {
-    console.log('🖥️ Non-iOS platform detected - user agent:', userAgent)
+  if (!_isIOSLogged) {
+    if (result) {
+      console.log('🍎 iOS detected - user agent:', userAgent)
+    } else {
+      console.log('🖥️ Non-iOS platform detected - user agent:', userAgent)
+    }
+    _isIOSLogged = true
   }
 
+  _isIOSCache = result
   return result
 }
 

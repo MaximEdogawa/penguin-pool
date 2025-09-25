@@ -23,7 +23,7 @@
         <div class="wallet-options">
           <!-- Primary Wallet Option - Sage -->
           <button
-            @click="handleWalletConnect"
+            @click="connectWallet"
             class="wallet-option-primary group"
             :disabled="isConnecting"
           >
@@ -68,9 +68,13 @@
         </div>
 
         <!-- Connection Status -->
-        <div v-if="connectionStatus" class="connection-status" :class="statusType">
-          <i :class="statusIcon" class="status-icon"></i>
-          <span class="status-text">{{ connectionStatus }}</span>
+        <div
+          v-if="connectionStatus.message"
+          class="connection-status"
+          :class="connectionStatus.type"
+        >
+          <i :class="connectionStatus.icon" class="status-icon"></i>
+          <span class="status-text">{{ connectionStatus.message }}</span>
         </div>
       </div>
 
@@ -112,28 +116,14 @@
   import FeatureFlag from '@/components/FeatureFlag.vue'
   import PWAInstallPrompt from '@/components/PWAInstallPrompt.vue'
   import PenguinLogo from '@/components/PenguinLogo.vue'
-  import { useUserStore } from '@/entities/user/store/userStore'
   import IOSModalWrapper from '@/features/walletConnect/components/IOSModalWrapper.vue'
-  import { useConnectionDataService } from '@/features/walletConnect/services/ConnectionDataService'
-  import { useWalletConnectService } from '@/features/walletConnect/services/WalletConnectService'
-
+  import { useLoginService } from '@/features/walletConnect/composables/useLoginService'
   import { computed, onMounted, ref } from 'vue'
-  import { useRouter } from 'vue-router'
 
-  const router = useRouter()
-  const userStore = useUserStore()
-  const connectionService = useConnectionDataService()
-  const walletService = useWalletConnectService()
-
-  // State
-  const connectionStatus = ref('')
-  const statusType = ref<'info' | 'success' | 'error'>('info')
-  const statusIcon = ref('pi pi-info-circle')
+  const { connectionStatus, isConnecting, connectWallet, initializeLogin } = useLoginService()
   const selectedNetwork = ref('chia:testnet')
 
   // Computed
-  const isConnecting = computed(() => connectionService.state.value.isConnecting)
-
   const backgroundStyle = computed(() => ({
     backgroundImage: `url('${signinGlassImage}')`,
   }))
@@ -142,78 +132,23 @@
   const handleNetworkChange = async () => {
     try {
       console.log('🔄 Network changed to:', selectedNetwork.value)
-      connectionStatus.value = `Switched to ${selectedNetwork.value === 'chia:mainnet' ? 'Mainnet' : 'Testnet'}`
-      statusType.value = 'success'
-      statusIcon.value = 'pi pi-check-circle'
-    } catch (error) {
-      console.error('Failed to switch network:', error)
-      connectionStatus.value = 'Failed to switch network'
-      statusType.value = 'error'
-      statusIcon.value = 'pi pi-exclamation-triangle'
-    }
-  }
-
-  const handleWalletConnect = async () => {
-    try {
-      connectionStatus.value = 'Opening wallet connection...'
-      statusType.value = 'info'
-      statusIcon.value = 'pi pi-info-circle'
-
-      // Open the native WalletConnect modal
-      const result = await walletService.openModal()
-
-      if (result.success && result.session) {
-        // Connect using the session from the modal
-        const connectResult = await walletService.connect(result.session)
-
-        if (connectResult.success) {
-          // Get wallet information
-          const walletInfo = walletService.walletInfo
-
-          if (walletInfo.value.fingerprint) {
-            await userStore.login(walletInfo.value.fingerprint, 'wallet-user')
-            await new Promise(resolve => setTimeout(resolve, 1000))
-            await router.push('/dashboard')
-          } else {
-            throw new Error('No wallet fingerprint found')
-          }
-        } else {
-          throw new Error(connectResult.error || 'Connection failed')
-        }
-      } else {
-        // Handle modal close without connection
-        if (result.error === 'Modal closed without connection') {
-          connectionStatus.value = 'Connection cancelled'
-          statusType.value = 'info'
-          statusIcon.value = 'pi pi-info-circle'
-        } else {
-          throw new Error(result.error || 'Modal opening failed')
-        }
+      connectionStatus.value = {
+        message: `Switched to ${selectedNetwork.value === 'chia:mainnet' ? 'Mainnet' : 'Testnet'}`,
+        type: 'success',
+        icon: 'pi pi-check-circle',
       }
     } catch (error) {
-      console.error('Failed to connect wallet:', error)
-      connectionStatus.value =
-        'Failed to connect wallet: ' + (error instanceof Error ? error.message : 'Unknown error')
-      statusType.value = 'error'
-      statusIcon.value = 'pi pi-exclamation-triangle'
+      console.error('Failed to switch network:', error)
+      connectionStatus.value = {
+        message: 'Failed to switch network',
+        type: 'error',
+        icon: 'pi pi-exclamation-triangle',
+      }
     }
   }
 
   onMounted(async () => {
-    try {
-      if (connectionService.state.value.isConnected) {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        const walletInfo = walletService.walletInfo
-
-        if (walletInfo.value.fingerprint) {
-          await userStore.login(walletInfo.value.fingerprint, 'wallet-user')
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          await router.push('/dashboard')
-        }
-      }
-    } catch (error) {
-      console.error('Failed to initialize Wallet Connect:', error)
-    }
+    await initializeLogin()
   })
 </script>
 

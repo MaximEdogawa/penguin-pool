@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/vue-query'
 import { computed, nextTick, ref } from 'vue'
 import { SageMethods } from '../constants/sage-methods'
 import type { AppSignClient, WalletConnectSession } from '../types/walletConnect.types'
+import { useIOSWalletConnectService } from './IOSWalletConnectService'
 import { useInstanceDataService } from './InstanceDataService'
 
 export interface ConnectionState {
@@ -29,15 +30,25 @@ const connectionState = ref<ConnectionState>({
 export function useConnectionDataService() {
   const instanceService = useInstanceDataService()
 
+  // Use iOS-specific service for iOS devices
+  const iosService = useIOSWalletConnectService()
+  const isIOSDevice = isIOS()
+
   const connectionQuery = useQuery({
     queryKey: ['walletConnect', 'connection'],
-    queryFn: () => connectionState.value,
+    queryFn: () => (isIOSDevice ? iosService.state.value : connectionState.value),
     enabled: computed(() => instanceService.isReady.value),
     staleTime: Infinity,
   })
 
   const openModalMutation = useMutation({
     mutationFn: async (): Promise<WalletConnectSession> => {
+      // Use iOS-specific service for iOS devices
+      if (isIOSDevice) {
+        return await iosService.openModal()
+      }
+
+      // Original non-iOS implementation
       if (!instanceService.isReady.value) {
         throw new Error('WalletConnect not initialized')
       }
@@ -63,95 +74,56 @@ export function useConnectionDataService() {
         throw new Error('Failed to generate connection URI')
       }
 
-      // Check if device is iOS and use custom modal
-      if (isIOS()) {
-        console.log('🍎 iOS device detected, using custom iOS modal')
+      // Use native WalletConnect modal for non-iOS devices
+      console.log('🖥️ Non-iOS device detected, using native WalletConnect modal')
 
-        // Dispatch custom event to show iOS modal
-        const showEvent = new CustomEvent('show_ios_modal', {
-          detail: { uri },
-        })
-        window.dispatchEvent(showEvent)
+      // Open modal with the URI
+      await modal.openModal({ uri })
 
-        // Set up modal close handler for iOS modal
-        let modalClosed = false
-        const handleIOSModalClose = () => {
-          if (!modalClosed) {
-            modalClosed = true
-            resetConnectionState()
-            window.removeEventListener('hide_ios_modal', handleIOSModalClose)
-          }
-        }
-
-        window.addEventListener('hide_ios_modal', handleIOSModalClose)
-
-        try {
-          // Wait for session approval
-          const session = await approval()
-
-          // Hide iOS modal after successful connection
-          const hideEvent = new CustomEvent('hide_ios_modal')
-          window.dispatchEvent(hideEvent)
-          window.removeEventListener('hide_ios_modal', handleIOSModalClose)
-
-          return session as unknown as WalletConnectSession
-        } catch (error) {
-          // Handle approval rejection or modal close
-          window.removeEventListener('hide_ios_modal', handleIOSModalClose)
-          if (modalClosed) {
-            // Reset connection state when modal is closed without connection
-            resetConnectionState()
-            throw new Error('Modal closed without connection')
-          }
-          // Reset connection state on other errors
+      // Set up modal close handler
+      let modalClosed = false
+      const unsubscribe = modal.subscribeModal(state => {
+        if (state.open === false && !modalClosed) {
+          modalClosed = true
+          // Reset connection state when modal is closed
           resetConnectionState()
-          throw error
+          unsubscribe()
         }
-      } else {
-        // Use native WalletConnect modal for non-iOS devices
-        console.log('🖥️ Non-iOS device detected, using native WalletConnect modal')
+      })
 
-        // Open modal with the URI
-        await modal.openModal({ uri })
+      try {
+        // Wait for session approval
+        const session = await approval()
 
-        // Set up modal close handler
-        let modalClosed = false
-        const unsubscribe = modal.subscribeModal(state => {
-          if (state.open === false && !modalClosed) {
-            modalClosed = true
-            // Reset connection state when modal is closed
-            resetConnectionState()
-            unsubscribe()
-          }
-        })
+        // Close modal after successful connection
+        modal.closeModal()
+        unsubscribe()
 
-        try {
-          // Wait for session approval
-          const session = await approval()
-
-          // Close modal after successful connection
-          modal.closeModal()
-          unsubscribe()
-
-          return session as unknown as WalletConnectSession
-        } catch (error) {
-          // Handle approval rejection or modal close
-          unsubscribe()
-          if (modalClosed) {
-            // Reset connection state when modal is closed without connection
-            resetConnectionState()
-            throw new Error('Modal closed without connection')
-          }
-          // Reset connection state on other errors
+        return session as unknown as WalletConnectSession
+      } catch (error) {
+        // Handle approval rejection or modal close
+        unsubscribe()
+        if (modalClosed) {
+          // Reset connection state when modal is closed without connection
           resetConnectionState()
-          throw error
+          throw new Error('Modal closed without connection')
         }
+        // Reset connection state on other errors
+        resetConnectionState()
+        throw error
       }
     },
   })
 
   const connectMutation = useMutation({
     mutationFn: async (session: WalletConnectSession): Promise<ConnectionState> => {
+      // Use iOS-specific service for iOS devices
+      if (isIOSDevice) {
+        await iosService.connect(session)
+        return iosService.state.value
+      }
+
+      // Original non-iOS implementation
       connectionState.value.isConnecting = true
       connectionState.value.error = null
 
@@ -174,6 +146,12 @@ export function useConnectionDataService() {
 
   const disconnectMutation = useMutation({
     mutationFn: async (): Promise<void> => {
+      // Use iOS-specific service for iOS devices
+      if (isIOSDevice) {
+        return await iosService.disconnect()
+      }
+
+      // Original non-iOS implementation
       if (!connectionState.value.session) return
 
       try {
@@ -198,6 +176,12 @@ export function useConnectionDataService() {
 
   const restoreSessionsMutation = useMutation({
     mutationFn: async (): Promise<void> => {
+      // Use iOS-specific service for iOS devices
+      if (isIOSDevice) {
+        return await iosService.restoreSessions()
+      }
+
+      // Original non-iOS implementation
       if (!instanceService.isReady.value) return
 
       const signClient = instanceService.getSignClient.value
@@ -279,14 +263,17 @@ export function useConnectionDataService() {
 
   return {
     connection: connectionQuery,
-    state: computed(() => connectionState.value),
+    state: computed(() => (isIOSDevice ? iosService.state.value : connectionState.value)),
     openModal: openModalMutation.mutateAsync,
     connect: connectMutation.mutateAsync,
     disconnect: disconnectMutation.mutateAsync,
     restoreSessions: restoreSessionsMutation.mutateAsync,
-    resetConnectionState,
+    resetConnectionState: isIOSDevice ? iosService.resetConnectionState : resetConnectionState,
     isConnecting: connectMutation.isPending,
     isDisconnecting: disconnectMutation.isPending,
     isOpeningModal: openModalMutation.isPending,
+    // iOS-specific properties
+    isIOSDevice,
+    iosService: isIOSDevice ? iosService : null,
   }
 }

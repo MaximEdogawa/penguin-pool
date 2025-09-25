@@ -7,15 +7,6 @@ import { useUserDataService } from './UserDataService'
 import { useWalletDataService } from './WalletDataService'
 import { useWalletStateService } from './WalletStateService'
 
-// Simple iOS detection
-const detectIOS = (): boolean => {
-  const userAgent = navigator.userAgent.toLowerCase()
-  return (
-    /iphone|ipad|ipod/.test(userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  )
-}
-
 export function useWalletConnectService() {
   // Initialize the lightweight state service
   const stateService = useWalletStateService()
@@ -26,9 +17,6 @@ export function useWalletConnectService() {
   const userService = useUserDataService()
   const walletService = useWalletDataService()
   const logoutService = useLogoutService()
-
-  // Computed state from services
-  const isIOS = computed(() => detectIOS())
 
   // Sync state from services to the lightweight state service
   watch(
@@ -98,7 +86,6 @@ export function useWalletConnectService() {
       fingerprint: userService.state.value.fingerprint,
       address: userService.state.value.address,
       error: connectionService.state.value.error || instanceService.error.value,
-      isIOS: isIOS.value,
     })),
 
     isInitialized: computed(() => instanceService.isReady.value),
@@ -109,7 +96,6 @@ export function useWalletConnectService() {
     chainId: computed(() => connectionService.state.value.chainId),
     address: computed(() => userService.state.value.address),
     error: computed(() => connectionService.state.value.error || instanceService.error.value),
-    isIOS,
 
     // Actions using real services
     initialize: async () => {
@@ -237,72 +223,9 @@ export function useWalletConnectService() {
         console.error('❌ Failed to fetch balance:', error)
       }
     },
-    refreshSession: async () => {
-      try {
-        await connectionService.restoreSessions()
-        // Refresh balance after session restoration
-        await walletService.refreshBalance()
-      } catch (error) {
-        console.error('❌ Failed to refresh session:', error)
-      }
-    },
     initialization: {
       mutateAsync: instanceService.initialize,
       isPending: instanceService.isInitializing,
-    },
-
-    // iOS-specific methods
-    getModalOptions: (baseOptions: Record<string, unknown>) => {
-      if (!isIOS.value) return baseOptions
-
-      const themeVariables = (baseOptions.themeVariables as Record<string, unknown>) || {}
-      return {
-        ...baseOptions,
-        enableExplorer: false,
-        featuredWalletIds: [],
-        includeWalletIds: ['c286e179f9fc079f'], // Sage Wallet ID
-        excludeWalletIds: [],
-        allWallets: 'HIDE',
-        themeVariables: {
-          ...themeVariables,
-          '--wcm-z-index': '1000',
-          '--wcm-background-color': '#1f2937',
-          '--wcm-accent-color': '#3b82f6',
-          '--wcm-accent-fill-color': '#ffffff',
-          '--wcm-overlay-background-color': 'rgba(0, 0, 0, 0.8)',
-          '--wcm-text-color': '#ffffff',
-          '--wcm-border-radius': '12px',
-        },
-      }
-    },
-
-    getConnectionTimeout: (defaultTimeout: number) => {
-      return isIOS.value ? defaultTimeout * 2 : defaultTimeout
-    },
-
-    getIOSErrorMessage: (originalError: string) => {
-      if (!isIOS.value) return originalError
-
-      if (originalError.includes('timeout')) {
-        return 'Connection timed out. Please try again and make sure Sage Wallet is open.'
-      }
-      if (originalError.includes('rejected')) {
-        return 'Connection was rejected. Please try again in Sage Wallet.'
-      }
-      if (originalError.includes('network')) {
-        return 'Network error. Please check your internet connection and try again.'
-      }
-
-      return originalError
-    },
-
-    getIOSInstructions: () => {
-      return [
-        'Copy the connection string above',
-        'Open Sage Wallet app on your device',
-        'Tap "Connect" or "Scan QR" in the app',
-        'Paste the connection string and approve the connection',
-      ]
     },
   }
 }

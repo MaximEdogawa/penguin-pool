@@ -1,3 +1,4 @@
+import { isIOS } from '@/shared/config/environment'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { WalletConnectModal } from '@walletconnect/modal'
 import { SignClient } from '@walletconnect/sign-client'
@@ -42,6 +43,8 @@ export function useInstanceDataService() {
       return
     }
 
+    const isIOSDevice = isIOS()
+
     signClient.on('session_request', async event => {
       console.log('📨 Received session request:', event)
     })
@@ -63,6 +66,28 @@ export function useInstanceDataService() {
       console.log('⏰ Session expired:', event)
       clearConnection()
     })
+
+    // iOS-specific event listeners for better WebSocket monitoring
+    if (isIOSDevice) {
+      console.log('🍎 Setting up iOS-specific event listeners...')
+
+      signClient.on('relayer_connect', () => {
+        console.log('🍎 Relayer connected - WebSocket established')
+      })
+
+      signClient.on('relayer_disconnect', () => {
+        console.log('🍎 Relayer disconnected - WebSocket lost')
+      })
+
+      signClient.on('relayer_error', error => {
+        console.error('🍎 Relayer error:', error)
+      })
+
+      // Monitor proposal events for iOS
+      signClient.on('proposal_expire', event => {
+        console.log('🍎 Proposal expired:', event)
+      })
+    }
 
     // Mark event listeners as attached
     eventListenersAttached = true
@@ -108,8 +133,9 @@ export function useInstanceDataService() {
           originalConsoleError.apply(console, args)
         }
 
-        // Create SignClient with minimal configuration first
-        const signClient = await SignClient.init({
+        // Create SignClient with iOS-optimized configuration
+        const isIOSDevice = isIOS()
+        const signClientConfig = {
           projectId: (import.meta.env?.VITE_WALLET_CONNECT_PROJECT_ID as string) || '',
           relayUrl: 'wss://relay.walletconnect.com',
           metadata: {
@@ -118,7 +144,23 @@ export function useInstanceDataService() {
             url: window.location.origin,
             icons: [`${window.location.origin}/penguin-pool.svg`],
           },
-        })
+        }
+
+        // Add iOS-specific configuration
+        if (isIOSDevice) {
+          console.log('🍎 Initializing SignClient with iOS-optimized settings...')
+          // iOS-specific configuration for better WebSocket handling
+          Object.assign(signClientConfig, {
+            // Use multiple relay URLs for better iOS connectivity
+            relayUrl: 'wss://relay.walletconnect.com',
+            // Extended timeouts for iOS
+            requestTimeout: 90000, // 90 seconds
+            // Better error handling for iOS
+            logger: 'error',
+          })
+        }
+
+        const signClient = await SignClient.init(signClientConfig)
 
         // Restore original console.error
         console.error = originalConsoleError
