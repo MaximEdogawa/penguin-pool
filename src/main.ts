@@ -26,7 +26,7 @@ import App from './App.vue'
 import { useUserStore } from './entities/user/store/userStore'
 import router from './router'
 import { validateEnvironment } from './shared/config/environment'
-import { queryClient, setupOfflineHandling } from './shared/config/queryClient'
+import { queryClient, setupDebugging, setupOfflineHandling } from './shared/config/queryClient'
 
 // Validate environment configuration early
 validateEnvironment()
@@ -61,6 +61,9 @@ app.component('PrimeTabPanels', TabPanels)
 
 // Setup offline handling with TanStack Query
 setupOfflineHandling()
+
+// Setup debugging
+setupDebugging()
 
 // Initialize stores before mounting
 const userStore = useUserStore()

@@ -14,6 +14,12 @@ export function useWalletDataService() {
   const connectionService = useConnectionDataService()
   const instanceService = useInstanceDataService()
   const queryClient = useQueryClient()
+  const isReady = computed(() => {
+    const state = connectionService.state.value
+    const isReady =
+      state.isConnected && state.isFullyReady && !!state.session && state.accounts.length > 0
+    return isReady
+  })
 
   const balanceQuery = useQuery({
     queryKey: ['walletConnect', 'balance'],
@@ -22,8 +28,10 @@ export function useWalletDataService() {
       if (!result.success) throw new Error(result.error)
       return result.data
     },
-    enabled: computed(() => connectionService.state.value.isConnected),
-    staleTime: 10000,
+    enabled: isReady,
+    retry: 3,
+    retryDelay: 15000,
+    staleTime: Infinity,
   })
 
   const addressQuery = useQuery({
@@ -33,8 +41,10 @@ export function useWalletDataService() {
       if (!result.success) throw new Error(result.error)
       return result.data
     },
-    enabled: computed(() => connectionService.state.value.isConnected),
-    staleTime: 30000,
+    enabled: isReady,
+    retry: 3,
+    retryDelay: 15000,
+    staleTime: Infinity,
   })
 
   const signMessageMutation = useMutation({

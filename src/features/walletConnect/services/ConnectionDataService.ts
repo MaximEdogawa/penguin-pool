@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/vue-query'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { SageMethods } from '../constants/sage-methods'
 import type { AppSignClient, WalletConnectSession } from '../types/walletConnect.types'
 import { useInstanceDataService } from './InstanceDataService'
@@ -7,6 +7,7 @@ import { useInstanceDataService } from './InstanceDataService'
 export interface ConnectionState {
   isConnected: boolean
   isConnecting: boolean
+  isFullyReady: boolean
   session: WalletConnectSession | null
   accounts: string[]
   chainId: string | null
@@ -17,6 +18,7 @@ export interface ConnectionState {
 const connectionState = ref<ConnectionState>({
   isConnected: false,
   isConnecting: false,
+  isFullyReady: false,
   session: null,
   accounts: [],
   chainId: null,
@@ -161,6 +163,8 @@ export function useConnectionDataService() {
   })
 
   function handleSessionApprove(session: WalletConnectSession): void {
+    console.log('🔗 [CONNECTION] Starting session approval...')
+
     connectionState.value.session = session
     connectionState.value.isConnected = true
     connectionState.value.isConnecting = false
@@ -175,12 +179,27 @@ export function useConnectionDataService() {
     connectionState.value.chainId = extractChainId(session)
 
     console.log('✅ Wallet connected successfully')
+    console.log('🔗 [CONNECTION] Session details:', {
+      topic: session.topic,
+      accounts: connectionState.value.accounts,
+      chainId: connectionState.value.chainId,
+      isConnected: connectionState.value.isConnected,
+    })
 
-    // Trigger a small delay to ensure reactive updates propagate
-    // This helps ensure TanStack queries pick up the connection state change
-    setTimeout(() => {
+    // Use nextTick to ensure reactive updates propagate before queries start
+    nextTick(() => {
+      // Set isFullyReady AFTER all reactive updates have propagated
+      connectionState.value.isFullyReady = true
+
       console.log('🔄 Connection state updated, queries should refresh automatically')
-    }, 100)
+      console.log('🔗 [CONNECTION] Final state:', {
+        isConnected: connectionState.value.isConnected,
+        hasSession: !!connectionState.value.session,
+        hasAccounts: connectionState.value.accounts.length > 0,
+        chainId: connectionState.value.chainId,
+        isFullyReady: connectionState.value.isFullyReady,
+      })
+    })
   }
 
   function extractChainId(session: WalletConnectSession): string {
@@ -196,6 +215,7 @@ export function useConnectionDataService() {
   function clearConnection(): void {
     connectionState.value.isConnected = false
     connectionState.value.isConnecting = false
+    connectionState.value.isFullyReady = false
     connectionState.value.session = null
     connectionState.value.accounts = []
     connectionState.value.chainId = null

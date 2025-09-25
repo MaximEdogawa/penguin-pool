@@ -152,6 +152,14 @@ export const environment = {
     analytics: false,
   },
 
+  // Debug configuration
+  debug: {
+    enabled: import.meta.env.VITE_ENABLE_DEBUG === 'true',
+    tanstackDebug: import.meta.env.VITE_TANSTACK_DEBUG === 'true',
+    vueDevtools: import.meta.env.DEV,
+    consoleDebug: import.meta.env.VITE_ENABLE_DEBUG === 'true' || import.meta.env.DEV,
+  },
+
   // PWA configuration
   pwa: {
     name: 'Penguin Pool',

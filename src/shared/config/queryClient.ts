@@ -1,5 +1,11 @@
 import { Query, QueryClient } from '@tanstack/vue-query'
 
+// Check if debugging is enabled via environment variable
+const isDebugEnabled =
+  import.meta.env.VITE_ENABLE_DEBUG === 'true' ||
+  import.meta.env.VITE_TANSTACK_DEBUG === 'true' ||
+  import.meta.env.DEV
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -33,12 +39,32 @@ export function setupOfflineHandling() {
     queryClient.invalidateQueries()
   }
 
-  const handleOffline = () => {}
+  const handleOffline = () => {
+    console.log('📡 Network offline - queries paused')
+  }
 
   window.addEventListener('online', handleOnline)
   window.addEventListener('offline', handleOffline)
 
   if (!navigator.onLine) {
     handleOffline()
+  }
+
+  return () => {
+    window.removeEventListener('online', handleOnline)
+    window.removeEventListener('offline', handleOffline)
+  }
+}
+
+// Simple debugging setup
+export function setupDebugging() {
+  if (!isDebugEnabled) return
+
+  // Expose queryClient to window for debugging
+  if (typeof window !== 'undefined') {
+    ;(window as unknown as Record<string, unknown>).__QUERY_CLIENT__ = queryClient
+    console.log(
+      '🔍 TanStack Query debugging enabled - queryClient available at window.__QUERY_CLIENT__'
+    )
   }
 }

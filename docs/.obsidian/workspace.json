@@ -168,6 +168,8 @@
   },
   "active": "762a427def224add",
   "lastOpenFiles": [
+    "PRODUCTION_DEBUGGING.md",
+    "APP_VERSION_MANAGEMENT.md",
     "implementation/WALLET_CONNECT_METHODS.md",
     "PWA_SETUP.md",
     "dependencies/LAZY_LOADING_OPTIMIZATION.md",
@@ -196,9 +198,7 @@
     "implementation/TICKET-008/TICKET-008-NESTJS-IMPLEMENTATION.md",
     "API_DOCUMENTATION.md",
     "implementation/TICKET-008/TICKET-008-IMPLEMENTATION.md",
-    "implementation/TICKET-008/README.md",
     "implementation/TICKET-008",
-    "implementation/TICKET-003/README.md",
     "implementation/TICKET-003",
     "implementation/TICKET-004",
     "implementation/TICKET-002/WALLET_CONNECT_UI",
