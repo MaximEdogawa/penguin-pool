@@ -1,3 +1,4 @@
+import { isIOS } from '@/shared/config/environment'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { computed, nextTick, ref } from 'vue'
 import { SageMethods } from '../constants/sage-methods'
@@ -62,40 +63,89 @@ export function useConnectionDataService() {
         throw new Error('Failed to generate connection URI')
       }
 
-      // Open modal with the URI
-      await modal.openModal({ uri })
+      // Check if device is iOS and use custom modal
+      if (isIOS()) {
+        console.log('🍎 iOS device detected, using custom iOS modal')
 
-      // Set up modal close handler
-      let modalClosed = false
-      const unsubscribe = modal.subscribeModal(state => {
-        if (state.open === false && !modalClosed) {
-          modalClosed = true
-          // Reset connection state when modal is closed
+        // Dispatch custom event to show iOS modal
+        const showEvent = new CustomEvent('show_ios_modal', {
+          detail: { uri },
+        })
+        window.dispatchEvent(showEvent)
+
+        // Set up modal close handler for iOS modal
+        let modalClosed = false
+        const handleIOSModalClose = () => {
+          if (!modalClosed) {
+            modalClosed = true
+            resetConnectionState()
+            window.removeEventListener('hide_ios_modal', handleIOSModalClose)
+          }
+        }
+
+        window.addEventListener('hide_ios_modal', handleIOSModalClose)
+
+        try {
+          // Wait for session approval
+          const session = await approval()
+
+          // Hide iOS modal after successful connection
+          const hideEvent = new CustomEvent('hide_ios_modal')
+          window.dispatchEvent(hideEvent)
+          window.removeEventListener('hide_ios_modal', handleIOSModalClose)
+
+          return session as unknown as WalletConnectSession
+        } catch (error) {
+          // Handle approval rejection or modal close
+          window.removeEventListener('hide_ios_modal', handleIOSModalClose)
+          if (modalClosed) {
+            // Reset connection state when modal is closed without connection
+            resetConnectionState()
+            throw new Error('Modal closed without connection')
+          }
+          // Reset connection state on other errors
           resetConnectionState()
+          throw error
+        }
+      } else {
+        // Use native WalletConnect modal for non-iOS devices
+        console.log('🖥️ Non-iOS device detected, using native WalletConnect modal')
+
+        // Open modal with the URI
+        await modal.openModal({ uri })
+
+        // Set up modal close handler
+        let modalClosed = false
+        const unsubscribe = modal.subscribeModal(state => {
+          if (state.open === false && !modalClosed) {
+            modalClosed = true
+            // Reset connection state when modal is closed
+            resetConnectionState()
+            unsubscribe()
+          }
+        })
+
+        try {
+          // Wait for session approval
+          const session = await approval()
+
+          // Close modal after successful connection
+          modal.closeModal()
           unsubscribe()
-        }
-      })
 
-      try {
-        // Wait for session approval
-        const session = await approval()
-
-        // Close modal after successful connection
-        modal.closeModal()
-        unsubscribe()
-
-        return session as unknown as WalletConnectSession
-      } catch (error) {
-        // Handle approval rejection or modal close
-        unsubscribe()
-        if (modalClosed) {
-          // Reset connection state when modal is closed without connection
+          return session as unknown as WalletConnectSession
+        } catch (error) {
+          // Handle approval rejection or modal close
+          unsubscribe()
+          if (modalClosed) {
+            // Reset connection state when modal is closed without connection
+            resetConnectionState()
+            throw new Error('Modal closed without connection')
+          }
+          // Reset connection state on other errors
           resetConnectionState()
-          throw new Error('Modal closed without connection')
+          throw error
         }
-        // Reset connection state on other errors
-        resetConnectionState()
-        throw error
       }
     },
   })
