@@ -246,15 +246,6 @@ export function useInstanceDataService() {
     () => instanceState.value.isInitialized && instanceState.value.signClient !== null
   )
 
-  const isHealthy = computed(() => {
-    return !!(
-      instanceState.value.isInitialized &&
-      instanceState.value.signClient &&
-      instanceState.value.modal &&
-      !instanceState.value.error
-    )
-  })
-
   return {
     instance: instanceQuery,
     state: computed(() => instanceState.value),
@@ -264,7 +255,6 @@ export function useInstanceDataService() {
     getSignClient,
     getModal,
     isReady,
-    isHealthy,
     resetEventListenersFlag,
     resetInstance,
   }
