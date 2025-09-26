@@ -199,6 +199,14 @@
       return
     }
 
+    // Validate URI format
+    if (!props.uri.startsWith('wc:')) {
+      console.error('❌ Invalid WalletConnect URI format:', props.uri)
+      qrCodeError.value = true
+      qrCodeLoading.value = false
+      return
+    }
+
     if (!ensureQRCodeRef()) {
       console.warn('⚠️ QR code ref not available, retrying in 100ms')
       console.warn('⚠️ Current ref state:', {
@@ -734,7 +742,7 @@
   .uri-textarea {
     width: 100%;
     min-height: 70px;
-    padding: 12px;
+    padding: 12px 60px 12px 12px; /* Add right padding to prevent text overlap with copy button */
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 12px;
     font-family:
@@ -780,40 +788,47 @@
     background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
     color: white;
     border: none;
-    padding: 8px 12px;
-    border-radius: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     display: flex;
     align-items: center;
     gap: 6px;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+    box-shadow: 0 4px 16px rgba(0, 122, 255, 0.4);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    z-index: 10;
+    min-width: 80px;
+    justify-content: center;
   }
 
   .copy-button:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(0, 122, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 122, 255, 0.5);
+    background: linear-gradient(135deg, #0056cc 0%, #4c3db8 100%);
   }
 
   .copy-button:active:not(:disabled) {
-    transform: translateY(0);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
   }
 
   .copy-button:disabled {
     background: rgba(0, 0, 0, 0.1);
-    color: rgba(0, 0, 0, 0.3);
+    color: rgba(0, 0, 0, 0.4);
     cursor: not-allowed;
     transform: none;
-    box-shadow: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    opacity: 0.6;
   }
 
   .ios-modal.dark-mode .copy-button:disabled {
     background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
   .instructions-section h4 {

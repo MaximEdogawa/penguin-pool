@@ -4,6 +4,7 @@
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useFeatureFlagsStore } from '@/stores/featureFlags'
   import AppLayout from '@/widgets/Layout/AppLayout.vue'
+  import { VueQueryDevtools } from '@tanstack/vue-query-devtools'
   import { computed, onMounted } from 'vue'
   import { RouterView } from 'vue-router'
 
@@ -27,6 +28,8 @@
       <RouterView />
     </AppLayout>
     <RouterView v-else />
+    <!-- TanStack Query DevTools - only shown in development -->
+    <VueQueryDevtools />
   </AppProvider>
 </template>
 
