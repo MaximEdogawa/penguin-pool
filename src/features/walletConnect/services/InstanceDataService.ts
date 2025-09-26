@@ -1,19 +1,16 @@
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { WalletConnectModal } from '@walletconnect/modal'
 import SignClient from '@walletconnect/sign-client'
-import { computed, ref } from 'vue'
-
-type WalletConnectModalType = InstanceType<typeof WalletConnectModal>
-
+import { computed, ref, type Ref } from 'vue'
 export interface WalletConnectInstance {
   signClient: SignClient | null
-  modal: WalletConnectModalType | null
+  modal: WalletConnectModal | null
   isInitialized: boolean
   isInitializing: boolean
   error: string | null
 }
 
-const instanceState = ref<WalletConnectInstance>({
+const instanceState: Ref<WalletConnectInstance> = ref({
   signClient: null,
   modal: null,
   isInitialized: false,
@@ -21,18 +18,18 @@ const instanceState = ref<WalletConnectInstance>({
   error: null,
 })
 
-let eventListenersAttached = false
+const eventListenersAttached = ref(false)
 
 export function useInstanceDataService() {
   const instanceQuery = useQuery({
     queryKey: ['walletConnect', 'instance'],
     queryFn: () => instanceState.value,
-    enabled: computed(() => true),
+    enabled: true,
     staleTime: Infinity,
   })
 
   function setupSignClientEventListeners(signClient: SignClient) {
-    if (eventListenersAttached) {
+    if (eventListenersAttached.value) {
       console.log('⚠️ Event listeners already attached, skipping...')
       return
     }
@@ -58,22 +55,21 @@ export function useInstanceDataService() {
       console.log('⏰ Session expired:', event)
       clearConnection()
     })
-    eventListenersAttached = true
+    eventListenersAttached.value = true
   }
 
   function clearConnection(): void {
-    console.log('🧹 Clearing connection state')
     instanceState.value.error = null
   }
 
   function resetEventListenersFlag(): void {
-    eventListenersAttached = false
+    eventListenersAttached.value = false
   }
 
   const initializeMutation = useMutation({
     mutationFn: async (): Promise<WalletConnectInstance> => {
       if (instanceState.value.isInitialized || instanceState.value.isInitializing) {
-        return instanceState.value as WalletConnectInstance
+        return instanceState.value
       }
 
       instanceState.value.isInitializing = true
@@ -109,11 +105,11 @@ export function useInstanceDataService() {
         })
 
         instanceState.value.signClient = signClient
-        instanceState.value.modal = modal as WalletConnectModalType
+        instanceState.value.modal = modal
         instanceState.value.isInitialized = true
         instanceState.value.isInitializing = false
 
-        return instanceState.value as WalletConnectInstance
+        return instanceState.value
       } catch (error) {
         instanceState.value.error = error instanceof Error ? error.message : 'Initialization failed'
         instanceState.value.isInitializing = false

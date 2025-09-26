@@ -27,14 +27,12 @@ export interface WalletConnectResult {
 }
 
 export function useWalletConnectService() {
-  // Initialize all the real services
   const instanceService = useInstanceDataService()
   const connectionService = useConnectionDataService()
   const userService = useUserDataService()
   const walletService = useWalletDataService()
   const logoutService = useLogoutService()
 
-  // Single source of truth for state
   const state = computed<WalletConnectState>(() => ({
     isInitialized: instanceService.isReady.value,
     isConnected: connectionService.state.value.isConnected,
@@ -51,12 +49,9 @@ export function useWalletConnectService() {
         : instanceService.error.value),
   }))
 
-  // Core wallet operations
   const initialize = async (): Promise<void> => {
-    console.log('🔧 Initializing WalletConnect...')
     try {
       await instanceService.initialize()
-      console.log('✅ WalletConnect initialized successfully')
     } catch (error) {
       console.error('❌ WalletConnect initialization failed:', error)
       throw error
@@ -65,12 +60,8 @@ export function useWalletConnectService() {
 
   const openModal = async (): Promise<WalletConnectResult> => {
     try {
-      if (!instanceService.isReady.value) {
-        await instanceService.initialize()
-      }
-
+      if (!instanceService.isReady.value) await instanceService.initialize()
       connectionService.resetConnectionState()
-
       const session = await connectionService.openModal()
       return {
         success: true,
@@ -91,10 +82,7 @@ export function useWalletConnectService() {
 
   const generateURI = async (): Promise<string> => {
     try {
-      if (!instanceService.isReady.value) {
-        await instanceService.initialize()
-      }
-
+      if (!instanceService.isReady.value) await instanceService.initialize()
       return await connectionService.generateURI()
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'URI generation failed'
@@ -144,7 +132,6 @@ export function useWalletConnectService() {
   }
 
   const disconnect = async (): Promise<{ success: boolean; error: string | null }> => {
-    console.log('🔌 Disconnecting WalletConnect...')
     try {
       await connectionService.disconnect()
       return { success: true, error: null }
@@ -155,7 +142,6 @@ export function useWalletConnectService() {
   }
 
   const logout = async (): Promise<void> => {
-    console.log('🚪 Logging out...')
     try {
       await logoutService.logout()
     } catch (error) {
@@ -164,17 +150,14 @@ export function useWalletConnectService() {
   }
 
   const restoreSessions = async (): Promise<void> => {
-    console.log('🔄 Restoring sessions...')
     try {
       await connectionService.restoreSessions()
-      // Refresh balance after session restoration
       await walletService.refreshBalance()
     } catch (error) {
       console.error('❌ Session restoration failed:', error)
     }
   }
 
-  // Wallet info for external consumption
   const walletInfo = computed(
     (): WalletInfo => ({
       fingerprint: userService.state.value.fingerprint,
@@ -187,26 +170,19 @@ export function useWalletConnectService() {
     })
   )
 
-  // Balance operations
   const balance = computed(() => walletService.balance.data.value)
-
   const fetchBalance = async (): Promise<void> => {
     try {
-      // For XCH balance, don't send type parameter as Sage doesn't support 'xch' type
       await walletService.getBalance({})
     } catch (error) {
       console.error('❌ Failed to fetch balance:', error)
     }
   }
 
-  // Return only what's needed - clean, focused API
   return {
-    // State
     state,
     walletInfo,
     balance,
-
-    // Actions
     initialize,
     openModal,
     generateURI,

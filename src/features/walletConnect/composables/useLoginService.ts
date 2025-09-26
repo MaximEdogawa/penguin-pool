@@ -253,7 +253,6 @@ export function useLoginService() {
       }
 
       const isConnected = walletService.state?.value?.isConnected
-
       if (isConnected === undefined) {
         console.error('Unable to determine connection status')
         return

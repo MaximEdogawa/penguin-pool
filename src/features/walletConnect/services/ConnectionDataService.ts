@@ -183,8 +183,6 @@ export function useConnectionDataService() {
     connectionState.value.isConnected = true
     connectionState.value.isConnecting = false
     connectionState.value.error = null
-
-    // Extract accounts and chainId
     const chiaNamespace = session.namespaces.chia
     const accounts = chiaNamespace?.accounts || []
     connectionState.value.accounts = accounts.map((account: string) => account.split(':')[2])
