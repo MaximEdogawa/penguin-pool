@@ -6,26 +6,6 @@
     @click="handleOverlayClick"
   >
     <div class="ios-modal" :class="{ 'dark-mode': isDarkMode }" @click.stop>
-      <!-- Header -->
-      <div class="ios-modal-header">
-        <div class="header-content">
-          <div class="app-icon">
-            <img src="/icons/icon-192x192.png" alt="Penguin Pool" class="icon" />
-          </div>
-          <div class="header-text">
-            <h3>Connect to Sage Wallet</h3>
-            <p>Scan QR code or copy connection string</p>
-          </div>
-        </div>
-        <button @click="closeModal" class="close-button" aria-label="Close">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
-            />
-          </svg>
-        </button>
-      </div>
-
       <!-- Content -->
       <div class="ios-modal-content">
         <!-- QR Code Section -->
@@ -101,49 +81,23 @@
             </button>
           </div>
         </div>
-
-        <!-- Instructions -->
-        <div class="instructions-section">
-          <h4>How to connect:</h4>
-          <div class="steps">
-            <div class="step">
-              <div class="step-number">1</div>
-              <div class="step-content">
-                <p>Copy the connection string above</p>
-              </div>
-            </div>
-            <div class="step">
-              <div class="step-number">2</div>
-              <div class="step-content">
-                <p>Open Sage Wallet app on your device</p>
-              </div>
-            </div>
-            <div class="step">
-              <div class="step-number">3</div>
-              <div class="step-content">
-                <p>Tap "Connect" or "Scan QR" in the app</p>
-              </div>
-            </div>
-            <div class="step">
-              <div class="step-number">4</div>
-              <div class="step-content">
-                <p>Paste the connection string and approve</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- Footer -->
       <div class="ios-modal-footer">
-        <button @click="closeModal" class="cancel-button">Cancel</button>
+        <div class="footer-buttons">
+          <button @click="closeModal" class="cancel-button">Cancel</button>
+          <button @click="handleContinue" class="continue-button" :disabled="!isWalletConnected">
+            Continue
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, ref, watch } from 'vue'
+  import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
   interface Props {
     isVisible: boolean
@@ -152,6 +106,7 @@
 
   interface Emits {
     (e: 'close'): void
+    (e: 'continue'): void
   }
 
   const props = defineProps<Props>()
@@ -165,11 +120,26 @@
   const qrCodeLoading = ref(false)
   const qrCodeError = ref(false)
   const copyStatus = ref<'idle' | 'copied' | 'error'>('idle')
+  const isWalletConnected = ref(false)
 
   // Dark mode detection
   const isDarkMode = computed(() => {
     if (typeof window === 'undefined') return false
     return window.matchMedia('(prefers-color-scheme: dark)').matches
+  })
+
+  // Listen for wallet connection events
+  const handleWalletConnected = (event: CustomEvent) => {
+    event.stopPropagation()
+    isWalletConnected.value = true
+  }
+
+  onMounted(() => {
+    window.addEventListener('ios_wallet_connected', handleWalletConnected as EventListener)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('ios_wallet_connected', handleWalletConnected as EventListener)
   })
 
   // Watch for URI changes
@@ -366,6 +336,10 @@
     if (uriTextarea.value) {
       uriTextarea.value.select()
     }
+  }
+
+  const handleContinue = (): void => {
+    emit('continue')
   }
 
   const closeModal = (): void => {
@@ -904,8 +878,13 @@
     background: linear-gradient(135deg, rgba(28, 28, 30, 0.8) 0%, rgba(28, 28, 30, 0.4) 100%);
   }
 
+  .footer-buttons {
+    display: flex;
+    gap: 12px;
+  }
+
   .cancel-button {
-    width: 100%;
+    flex: 1;
     background: rgba(0, 0, 0, 0.05);
     color: #1d1d1f;
     border: none;
@@ -935,6 +914,44 @@
 
   .cancel-button:active {
     transform: translateY(0);
+  }
+
+  .continue-button {
+    flex: 1;
+    background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .continue-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 122, 255, 0.4);
+  }
+
+  .continue-button:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .continue-button:disabled {
+    background: rgba(0, 0, 0, 0.1);
+    color: rgba(0, 0, 0, 0.3);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .ios-modal.dark-mode .continue-button:disabled {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.3);
   }
 
   /* Mobile optimizations */

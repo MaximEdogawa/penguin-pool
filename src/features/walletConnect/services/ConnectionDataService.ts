@@ -33,6 +33,33 @@ export function useConnectionDataService() {
     staleTime: Infinity,
   })
 
+  const generateURIMutation = useMutation({
+    mutationFn: async (): Promise<string> => {
+      if (!instanceService.isReady.value) {
+        throw new Error('WalletConnect not initialized')
+      }
+
+      const signClient = instanceService.getSignClient.value
+      if (!signClient) throw new Error('SignClient not available')
+
+      const { uri } = await signClient.connect({
+        optionalNamespaces: {
+          chia: {
+            methods: Object.values(SageMethods),
+            chains: ['chia:mainnet', 'chia:testnet'],
+            events: [],
+          },
+        },
+      })
+
+      if (!uri) {
+        throw new Error('Failed to generate connection URI')
+      }
+
+      return uri
+    },
+  })
+
   const openModalMutation = useMutation({
     mutationFn: async (): Promise<WalletConnectSession> => {
       if (!instanceService.isReady.value) {
@@ -45,7 +72,6 @@ export function useConnectionDataService() {
       if (!signClient) throw new Error('SignClient not available')
       if (!modal) throw new Error('WalletConnect modal not available')
 
-      // Create connection using SignClient
       const { uri, approval } = await signClient.connect({
         optionalNamespaces: {
           chia: {
@@ -198,6 +224,7 @@ export function useConnectionDataService() {
   return {
     connection: connectionQuery,
     state: computed(() => connectionState.value),
+    generateURI: generateURIMutation.mutateAsync,
     openModal: openModalMutation.mutateAsync,
     connect: connectMutation.mutateAsync,
     disconnect: disconnectMutation.mutateAsync,

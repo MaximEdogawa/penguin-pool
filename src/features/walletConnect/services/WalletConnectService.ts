@@ -1,3 +1,4 @@
+import { isIOS } from '@/shared/config/environment'
 import { computed } from 'vue'
 import type { WalletConnectSession } from '../types/walletConnect.types'
 import type { WalletInfo } from '../types/walletInfo.types'
@@ -63,19 +64,14 @@ export function useWalletConnectService() {
   }
 
   const openModal = async (): Promise<WalletConnectResult> => {
-    console.log('🔗 Opening WalletConnect modal...')
     try {
-      // Ensure instance is initialized first
       if (!instanceService.isReady.value) {
         await instanceService.initialize()
       }
 
-      // Reset connection state before opening modal
       connectionService.resetConnectionState()
 
-      // Open the native WalletConnect modal
       const session = await connectionService.openModal()
-
       return {
         success: true,
         session,
@@ -83,11 +79,8 @@ export function useWalletConnectService() {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Modal opening failed'
-      console.error('❌ WalletConnect modal opening failed:', errorMessage)
-
-      // Reset connection state on error
+      console.error('WalletConnect modal opening failed:', errorMessage)
       connectionService.resetConnectionState()
-
       return {
         success: false,
         session: null,
@@ -96,23 +89,52 @@ export function useWalletConnectService() {
     }
   }
 
-  const connect = async (session: WalletConnectSession): Promise<WalletConnectResult> => {
-    console.log('🔗 Completing WalletConnect connection...')
+  const generateURI = async (): Promise<string> => {
     try {
-      // Complete the connection using the session from the modal
-      await connectionService.connect(session)
+      if (!instanceService.isReady.value) {
+        await instanceService.initialize()
+      }
 
-      // Fetch user data after connection
-      await userService.fetchUserData()
+      return await connectionService.generateURI()
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'URI generation failed'
+      console.error('WalletConnect URI generation failed:', errorMessage)
+      throw error
+    }
+  }
 
-      return {
-        success: true,
-        session: connectionService.state.value.session,
-        error: null,
+  const connect = async (session: WalletConnectSession | null): Promise<WalletConnectResult> => {
+    try {
+      if (isIOS() && !session) {
+        const signClient = instanceService.getSignClient.value
+        if (!signClient) throw new Error('SignClient not available')
+
+        const sessions = signClient.session.getAll()
+        if (sessions.length > 0) {
+          const latestSession = sessions[sessions.length - 1]
+          await connectionService.connect(latestSession as unknown as WalletConnectSession)
+          await userService.fetchUserData()
+          return {
+            success: true,
+            session: latestSession as unknown as WalletConnectSession,
+            error: null,
+          }
+        } else {
+          throw new Error('No session available for iOS connection')
+        }
+      } else {
+        if (!session) throw new Error('No session provided for connection')
+        await connectionService.connect(session)
+        await userService.fetchUserData()
+        return {
+          success: true,
+          session: connectionService.state.value.session,
+          error: null,
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Connection failed'
-      console.error('❌ WalletConnect connection failed:', errorMessage)
+      console.error('WalletConnect connection failed:', errorMessage)
       return {
         success: false,
         session: null,
@@ -187,6 +209,7 @@ export function useWalletConnectService() {
     // Actions
     initialize,
     openModal,
+    generateURI,
     connect,
     disconnect,
     logout,

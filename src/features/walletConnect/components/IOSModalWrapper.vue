@@ -4,6 +4,7 @@
     :is-visible="isModalVisible"
     :uri="modalUri"
     @close="closeModal"
+    @continue="handleContinue"
   />
 </template>
 
@@ -12,4 +13,8 @@
   import IOSWalletModal from './IOSWalletModal.vue'
 
   const { isModalVisible, modalUri, closeModal, isIOS } = useIOSModal()
+
+  const handleContinue = () => {
+    window.dispatchEvent(new CustomEvent('ios_modal_continue'))
+  }
 </script>

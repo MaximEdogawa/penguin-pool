@@ -3,7 +3,7 @@ import { useConnectionDataService } from '@/features/walletConnect/services/Conn
 import { useWalletConnectService } from '@/features/walletConnect/services/WalletConnectService'
 import type { WalletInfo } from '@/features/walletConnect/types/walletInfo.types'
 import { isIOS } from '@/shared/config/environment'
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 export interface LoginStatus {
@@ -81,10 +81,43 @@ export function useLoginService() {
     }
   }
 
-  const openIOSModalAndConnect = async () => {
+  const connectWalletWithiOSFlow = async () => {
     try {
       updateConnectionStatus('Opening iOS wallet connection...', 'info')
-      await connectWalletWithStandardFlow()
+
+      if (!walletService.generateURI) {
+        throw new Error('Wallet service generateURI method not available')
+      }
+
+      const uri = await walletService.generateURI()
+
+      if (!uri) {
+        throw new Error('Failed to generate URI for iOS modal')
+      }
+
+      window.dispatchEvent(new CustomEvent('show_ios_modal', { detail: { uri } }))
+      updateConnectionStatus('iOS modal opened - scan QR code and approve in wallet', 'info')
+
+      const checkConnection = setInterval(async () => {
+        const isConnected = walletService.state?.value?.isConnected
+        if (isConnected) {
+          clearInterval(checkConnection)
+          updateConnectionStatus('Wallet connected! Click Continue to proceed', 'success')
+
+          window.dispatchEvent(
+            new CustomEvent('ios_wallet_connected', {
+              detail: {
+                walletInfo: walletService.walletInfo.value,
+                connectionState: walletService.state.value,
+              },
+            })
+          )
+        }
+      }, 1000)
+
+      setTimeout(() => {
+        clearInterval(checkConnection)
+      }, 300000)
     } catch (error) {
       console.error('iOS wallet connection error:', error)
       updateConnectionStatus(
@@ -154,6 +187,42 @@ export function useLoginService() {
     }
   }
 
+  const handleIOSContinue = async () => {
+    try {
+      const walletInfo = walletService.walletInfo
+      const connectionState = walletService.state.value
+
+      const finalWalletInfo: WalletInfo = {
+        ...walletInfo.value,
+        fingerprint: walletInfo.value.fingerprint || connectionState.accounts[0] || null,
+      }
+
+      if (!finalWalletInfo.fingerprint) {
+        throw new Error('No wallet fingerprint found')
+      }
+
+      await loginWithWalletInfo(finalWalletInfo)
+    } catch (error) {
+      console.error('iOS continue error:', error)
+      updateConnectionStatus(
+        'Failed to proceed: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        'error'
+      )
+    }
+  }
+
+  const handleIOSModalContinue = () => {
+    handleIOSContinue()
+  }
+
+  onMounted(() => {
+    window.addEventListener('ios_modal_continue', handleIOSModalContinue as EventListener)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('ios_modal_continue', handleIOSModalContinue as EventListener)
+  })
+
   const connectWallet = async () => {
     try {
       if (!walletService) {
@@ -161,7 +230,7 @@ export function useLoginService() {
       }
 
       if (isIOSDevice.value) {
-        await openIOSModalAndConnect()
+        await connectWalletWithiOSFlow()
       } else {
         await connectWalletWithStandardFlow()
       }
@@ -221,6 +290,7 @@ export function useLoginService() {
     isConnecting,
     isIOSDevice,
     connectWallet,
+    handleIOSContinue,
     initializeWalletConnection,
     updateConnectionStatus,
     walletService,

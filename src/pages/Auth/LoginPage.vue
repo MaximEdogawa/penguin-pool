@@ -42,29 +42,6 @@
             </div>
             <div class="wallet-hover-overlay"></div>
           </button>
-
-          <!-- Secondary Wallet Options -->
-          <div class="secondary-wallet-options">
-            <!-- Other Wallets -->
-            <FeatureFlag category="app" feature="otherWallets">
-              <button
-                @click="handleWalletConnect"
-                class="wallet-option-secondary group"
-                :disabled="isConnecting"
-              >
-                <div class="secondary-wallet-content">
-                  <div class="secondary-wallet-icon">
-                    <i class="secondary-wallet-icon-symbol pi pi-wallet"></i>
-                  </div>
-                  <div class="secondary-wallet-text">
-                    <h4 class="secondary-wallet-title">Other Wallets</h4>
-                    <p class="secondary-wallet-subtitle">WalletConnect compatible</p>
-                  </div>
-                  <i class="secondary-wallet-arrow pi pi-arrow-right"></i>
-                </div>
-              </button>
-            </FeatureFlag>
-          </div>
         </div>
 
         <!-- Connection Status -->
@@ -113,7 +90,6 @@
 
 <script setup lang="ts">
   import signinGlassImage from '@/assets/signin-glass.jpg'
-  import FeatureFlag from '@/components/FeatureFlag.vue'
   import PWAInstallPrompt from '@/components/PWAInstallPrompt.vue'
   import PenguinLogo from '@/components/PenguinLogo.vue'
   import IOSModalWrapper from '@/features/walletConnect/components/IOSModalWrapper.vue'
