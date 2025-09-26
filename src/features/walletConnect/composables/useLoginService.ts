@@ -1,7 +1,7 @@
 import { useUserStore } from '@/entities/user/store/userStore'
 import { useConnectionDataService } from '@/features/walletConnect/services/ConnectionDataService'
-import { useIOSWalletConnectService } from '@/features/walletConnect/services/IOSWalletConnectService'
 import { useWalletConnectService } from '@/features/walletConnect/services/WalletConnectService'
+import type { WalletInfo } from '@/features/walletConnect/types/walletInfo.types'
 import { isIOS } from '@/shared/config/environment'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -16,44 +16,31 @@ export function useLoginService() {
   const router = useRouter()
   const userStore = useUserStore()
   const connectionService = useConnectionDataService()
-
-  // Decision point: Choose service based on platform
   const isIOSDevice = computed(() => isIOS())
-  const standardWalletService = useWalletConnectService()
-  const iosWalletService = useIOSWalletConnectService()
-
-  // State
+  const walletService = useWalletConnectService()
   const connectionStatus = ref<LoginStatus>({
     message: '',
     type: 'info',
     icon: 'pi pi-info-circle',
   })
 
-  // Computed
   const isConnecting = computed(() => {
     try {
-      if (isIOSDevice.value) {
-        return iosWalletService?.state?.value?.isConnecting || false
-      } else {
-        return connectionService?.state?.value?.isConnecting || false
-      }
+      return walletService?.state?.value?.isConnecting || false
     } catch (error) {
       console.error('Error getting connection status:', error)
       return false
     }
   })
 
-  // Global error handler to prevent page refreshes
   const setupGlobalErrorHandlers = () => {
     try {
-      // Prevent unhandled errors from causing page refreshes
       window.addEventListener('error', event => {
         console.error('Global error caught:', event.error)
         event.preventDefault()
         return false
       })
 
-      // Prevent unhandled promise rejections from causing page refreshes
       window.addEventListener('unhandledrejection', event => {
         console.error('Unhandled promise rejection caught:', event.reason)
         event.preventDefault()
@@ -63,7 +50,6 @@ export function useLoginService() {
     }
   }
 
-  // Update connection status
   const updateConnectionStatus = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
     connectionStatus.value = {
       message,
@@ -77,8 +63,7 @@ export function useLoginService() {
     }
   }
 
-  // Handle successful wallet connection and login
-  const handleSuccessfulConnection = async (walletInfo: { fingerprint: string | null }) => {
+  const loginWithWalletInfo = async (walletInfo: WalletInfo) => {
     try {
       if (walletInfo.fingerprint) {
         await userStore.login(walletInfo.fingerprint, 'wallet-user')
@@ -96,69 +81,10 @@ export function useLoginService() {
     }
   }
 
-  // iOS connection handler
-  const handleIOSConnection = async () => {
+  const openIOSModalAndConnect = async () => {
     try {
-      console.log('🍎 Using iOS-specific wallet connection flow')
       updateConnectionStatus('Opening iOS wallet connection...', 'info')
-
-      // Safety check for iOS service methods
-      if (!iosWalletService.openModal) {
-        throw new Error('iOS wallet service openModal method not available')
-      }
-
-      // iOS flow: Open modal and handle connection internally
-      await iosWalletService.openModal()
-
-      // iOS service handles connection internally and dispatches events
-      // Listen for iOS connection events
-      const handleIOSConnected: EventListener = (event: Event) => {
-        try {
-          const customEvent = event as CustomEvent
-          console.log('🍎 iOS wallet connected event received:', customEvent.detail)
-
-          // Safety check for event detail
-          if (!event || !customEvent.detail) {
-            console.error('🍎 Invalid iOS connection event:', event)
-            return
-          }
-
-          const session = customEvent.detail.session
-          if (session) {
-            // Get wallet information from iOS service
-            const walletInfo = iosWalletService.walletInfo?.value
-
-            // Safety check for wallet info
-            if (!walletInfo) {
-              console.error('🍎 No wallet info available from iOS service')
-              return
-            }
-
-            if (walletInfo.fingerprint) {
-              handleSuccessfulConnection(walletInfo)
-            } else {
-              console.error('🍎 No wallet fingerprint found in wallet info:', walletInfo)
-              updateConnectionStatus('No wallet fingerprint found', 'error')
-            }
-          } else {
-            console.error('🍎 No session in iOS connection event:', customEvent.detail)
-          }
-        } catch (error) {
-          console.error('🍎 Error in iOS connection handler:', error)
-          updateConnectionStatus(
-            'Connection handler error: ' +
-              (error instanceof Error ? error.message : 'Unknown error'),
-            'error'
-          )
-        }
-      }
-
-      window.addEventListener('ios_wallet_connected', handleIOSConnected)
-
-      // Clean up listener after 30 seconds
-      setTimeout(() => {
-        window.removeEventListener('ios_wallet_connected', handleIOSConnected)
-      }, 30000)
+      await connectWalletWithStandardFlow()
     } catch (error) {
       console.error('iOS wallet connection error:', error)
       updateConnectionStatus(
@@ -169,81 +95,55 @@ export function useLoginService() {
     }
   }
 
-  // Standard connection handler
-  const handleStandardConnection = async () => {
+  const connectWalletWithStandardFlow = async () => {
     try {
-      console.log('🖥️ Using standard wallet connection flow')
       updateConnectionStatus('Opening wallet connection...', 'info')
 
-      // Safety check for standard service methods
-      if (!standardWalletService.openModal) {
-        throw new Error('Standard wallet service openModal method not available')
+      if (!walletService.openModal) {
+        throw new Error('Wallet service openModal method not available')
       }
 
-      // Standard flow: Open modal and handle connection
-      const result = await standardWalletService.openModal()
+      const result = await walletService.openModal()
 
-      // Safety check for result
       if (!result) {
         throw new Error('No result from wallet service')
       }
 
       if (result.success && result.session) {
-        // Safety check for connect method
-        if (!standardWalletService.connect) {
-          throw new Error('Standard wallet service connect method not available')
+        if (!walletService.connect) {
+          throw new Error('Wallet service connect method not available')
         }
 
-        // Connect using the session from the modal
-        const connectResult = await standardWalletService.connect(result.session)
+        const connectResult = await walletService.connect(result.session)
 
-        // Safety check for connect result
         if (!connectResult) {
           throw new Error('No connection result from wallet service')
         }
 
         if (connectResult.success) {
-          // Get wallet information
-          const walletInfo = standardWalletService.walletInfo
+          await new Promise(resolve => setTimeout(resolve, 500))
+          const walletInfo = walletService.walletInfo
+          const connectionState = walletService.state.value
 
-          // Safety check for wallet info
-          if (!walletInfo || !walletInfo.value) {
+          const finalWalletInfo: WalletInfo = {
+            ...walletInfo.value,
+            fingerprint: walletInfo.value.fingerprint || connectionState.accounts[0] || null,
+          }
+
+          if (!finalWalletInfo) {
             throw new Error('No wallet info available')
           }
 
-          await handleSuccessfulConnection(walletInfo.value)
+          await loginWithWalletInfo(finalWalletInfo)
         } else {
           throw new Error(connectResult.error || 'Connection failed')
         }
       } else {
-        // Handle modal close without connection
         if (result.error === 'Modal closed without connection') {
           updateConnectionStatus('Connection cancelled', 'info')
         } else {
           throw new Error(result.error || 'Modal opening failed')
         }
-      }
-    } catch (error) {
-      console.error('Standard wallet connection error:', error)
-      updateConnectionStatus(
-        'Failed to connect wallet: ' + (error instanceof Error ? error.message : 'Unknown error'),
-        'error'
-      )
-    }
-  }
-
-  // Main wallet connection handler
-  const connectWallet = async () => {
-    try {
-      // Safety check for services
-      if (!iosWalletService || !standardWalletService) {
-        throw new Error('Wallet services not properly initialized')
-      }
-
-      if (isIOSDevice.value) {
-        await handleIOSConnection()
-      } else {
-        await handleStandardConnection()
       }
     } catch (error) {
       console.error('Wallet connection error:', error)
@@ -254,24 +154,37 @@ export function useLoginService() {
     }
   }
 
-  // Initialize login service
-  const initializeLogin = async () => {
+  const connectWallet = async () => {
     try {
-      // Setup global error handlers
+      if (!walletService) {
+        throw new Error('Wallet service not properly initialized')
+      }
+
+      if (isIOSDevice.value) {
+        await openIOSModalAndConnect()
+      } else {
+        await connectWalletWithStandardFlow()
+      }
+    } catch (error) {
+      console.error('Wallet connection error:', error)
+      updateConnectionStatus(
+        'Failed to connect wallet: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        'error'
+      )
+    }
+  }
+
+  const initializeWalletConnection = async () => {
+    try {
       setupGlobalErrorHandlers()
 
-      // Safety check for services
-      if (!iosWalletService || !standardWalletService || !connectionService) {
+      if (!walletService || !connectionService) {
         console.error('Wallet services not properly initialized')
         return
       }
 
-      // Check connection status using appropriate service
-      const isConnected = isIOSDevice.value
-        ? iosWalletService.state?.value?.isConnected
-        : connectionService.state?.value?.isConnected
+      const isConnected = walletService.state?.value?.isConnected
 
-      // Safety check for connection status
       if (isConnected === undefined) {
         console.error('Unable to determine connection status')
         return
@@ -279,42 +192,38 @@ export function useLoginService() {
 
       if (isConnected) {
         await new Promise(resolve => setTimeout(resolve, 500))
-        const walletInfo = isIOSDevice.value
-          ? iosWalletService.walletInfo
-          : standardWalletService.walletInfo
 
-        // Safety check for wallet info
-        if (!walletInfo || !walletInfo.value) {
+        const walletInfo = walletService.walletInfo
+        const connectionState = walletService.state.value
+
+        if (!walletInfo) {
           console.error('No wallet info available during initialization')
           return
         }
 
-        if (walletInfo.value.fingerprint) {
-          await handleSuccessfulConnection(walletInfo.value)
+        const finalWalletInfo: WalletInfo = {
+          ...walletInfo.value,
+          fingerprint: walletInfo.value.fingerprint || connectionState.accounts[0] || null,
+        }
+        if (finalWalletInfo.fingerprint) {
+          await loginWithWalletInfo(finalWalletInfo)
         } else {
           console.error('No wallet fingerprint found during initialization')
         }
       }
     } catch (error) {
       console.error('Failed to initialize Wallet Connect:', error)
-      // Don't throw the error to prevent page refresh
     }
   }
 
   return {
-    // State
     connectionStatus,
     isConnecting,
     isIOSDevice,
-
-    // Methods
     connectWallet,
-    initializeLogin,
+    initializeWalletConnection,
     updateConnectionStatus,
-
-    // Services (for advanced usage)
-    standardWalletService,
-    iosWalletService,
+    walletService,
     connectionService,
   }
 }

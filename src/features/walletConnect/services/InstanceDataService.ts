@@ -1,21 +1,18 @@
-import { isIOS } from '@/shared/config/environment'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { WalletConnectModal } from '@walletconnect/modal'
-import { SignClient } from '@walletconnect/sign-client'
+import SignClient from '@walletconnect/sign-client'
 import { computed, ref } from 'vue'
 
-type SignClientType = Awaited<ReturnType<typeof SignClient.init>>
 type WalletConnectModalType = InstanceType<typeof WalletConnectModal>
 
 export interface WalletConnectInstance {
-  signClient: SignClientType | null
+  signClient: SignClient | null
   modal: WalletConnectModalType | null
   isInitialized: boolean
   isInitializing: boolean
   error: string | null
 }
 
-// Global instance state
 const instanceState = ref<WalletConnectInstance>({
   signClient: null,
   modal: null,
@@ -24,7 +21,6 @@ const instanceState = ref<WalletConnectInstance>({
   error: null,
 })
 
-// Singleton flag to ensure event listeners are only added once
 let eventListenersAttached = false
 
 export function useInstanceDataService() {
@@ -35,15 +31,11 @@ export function useInstanceDataService() {
     staleTime: Infinity,
   })
 
-  // Set up event listeners for SignClient (singleton pattern)
-  function setupSignClientEventListeners(signClient: SignClientType) {
-    // Check if event listeners are already attached
+  function setupSignClientEventListeners(signClient: SignClient) {
     if (eventListenersAttached) {
       console.log('⚠️ Event listeners already attached, skipping...')
       return
     }
-
-    const isIOSDevice = isIOS()
 
     signClient.on('session_request', async event => {
       console.log('📨 Received session request:', event)
@@ -66,32 +58,7 @@ export function useInstanceDataService() {
       console.log('⏰ Session expired:', event)
       clearConnection()
     })
-
-    // iOS-specific event listeners for better WebSocket monitoring
-    if (isIOSDevice) {
-      console.log('🍎 Setting up iOS-specific event listeners...')
-
-      signClient.on('relayer_connect', () => {
-        console.log('🍎 Relayer connected - WebSocket established')
-      })
-
-      signClient.on('relayer_disconnect', () => {
-        console.log('🍎 Relayer disconnected - WebSocket lost')
-      })
-
-      signClient.on('relayer_error', error => {
-        console.error('🍎 Relayer error:', error)
-      })
-
-      // Monitor proposal events for iOS
-      signClient.on('proposal_expire', event => {
-        console.log('🍎 Proposal expired:', event)
-      })
-    }
-
-    // Mark event listeners as attached
     eventListenersAttached = true
-    console.log('✅ SignClient event listeners attached successfully')
   }
 
   function clearConnection(): void {
@@ -99,10 +66,8 @@ export function useInstanceDataService() {
     instanceState.value.error = null
   }
 
-  // Reset event listeners flag (useful for testing or reinitialization)
   function resetEventListenersFlag(): void {
     eventListenersAttached = false
-    console.log('🔄 Event listeners flag reset')
   }
 
   const initializeMutation = useMutation({
@@ -113,28 +78,9 @@ export function useInstanceDataService() {
 
       instanceState.value.isInitializing = true
       instanceState.value.error = null
-
-      // Reset event listeners flag for fresh initialization
       resetEventListenersFlag()
 
       try {
-        // Suppress console errors temporarily during initialization
-        const originalConsoleError = console.error
-        console.error = (...args) => {
-          // Filter out the specific "no listeners" error during initialization
-          const message = args.join(' ')
-          if (
-            message.includes('emitting session_request') &&
-            message.includes('without any listeners')
-          ) {
-            console.log('⚠️ Suppressed session_request error during initialization (expected)')
-            return
-          }
-          originalConsoleError.apply(console, args)
-        }
-
-        // Create SignClient with iOS-optimized configuration
-        const isIOSDevice = isIOS()
         const signClientConfig = {
           projectId: (import.meta.env?.VITE_WALLET_CONNECT_PROJECT_ID as string) || '',
           relayUrl: 'wss://relay.walletconnect.com',
@@ -146,30 +92,9 @@ export function useInstanceDataService() {
           },
         }
 
-        // Add iOS-specific configuration
-        if (isIOSDevice) {
-          console.log('🍎 Initializing SignClient with iOS-optimized settings...')
-          // iOS-specific configuration for better WebSocket handling
-          Object.assign(signClientConfig, {
-            // Use multiple relay URLs for better iOS connectivity
-            relayUrl: 'wss://relay.walletconnect.com',
-            // Extended timeouts for iOS
-            requestTimeout: 90000, // 90 seconds
-            // Better error handling for iOS
-            logger: 'error',
-          })
-        }
-
         const signClient = await SignClient.init(signClientConfig)
+        setupSignClientEventListeners(signClient)
 
-        // Restore original console.error
-        console.error = originalConsoleError
-
-        // Immediately set up event listeners to catch any pending requests
-        console.log('🔧 Setting up SignClient event listeners immediately...')
-        setupSignClientEventListeners(signClient as SignClientType)
-
-        // Create WalletConnect Modal
         const modal = new WalletConnectModal({
           projectId: (import.meta.env?.VITE_WALLET_CONNECT_PROJECT_ID as string) || '',
           enableExplorer: false,
@@ -183,7 +108,7 @@ export function useInstanceDataService() {
           },
         })
 
-        instanceState.value.signClient = signClient as SignClientType
+        instanceState.value.signClient = signClient
         instanceState.value.modal = modal as WalletConnectModalType
         instanceState.value.isInitialized = true
         instanceState.value.isInitializing = false

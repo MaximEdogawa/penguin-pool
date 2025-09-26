@@ -120,7 +120,8 @@
   import { useLoginService } from '@/features/walletConnect/composables/useLoginService'
   import { computed, onMounted, ref } from 'vue'
 
-  const { connectionStatus, isConnecting, connectWallet, initializeLogin } = useLoginService()
+  const { connectionStatus, isConnecting, connectWallet, initializeWalletConnection } =
+    useLoginService()
   const selectedNetwork = ref('chia:testnet')
 
   // Computed
@@ -148,7 +149,7 @@
   }
 
   onMounted(async () => {
-    await initializeLogin()
+    await initializeWalletConnection()
   })
 </script>
 
