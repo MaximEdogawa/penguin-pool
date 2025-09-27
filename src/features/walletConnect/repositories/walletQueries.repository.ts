@@ -1,4 +1,5 @@
-import type { ComputedRef } from 'vue'
+import type { SignClient } from '@walletconnect/sign-client/dist/types/client'
+import type { SessionTypes } from '@walletconnect/types'
 import { SageMethods } from '../constants/sage-methods'
 import type {
   AssetType,
@@ -14,12 +15,7 @@ import type {
   TransactionRequest,
   TransactionResponse,
 } from '../types/command.types'
-import type {
-  AppSignClient,
-  AssetBalance,
-  AssetCoins,
-  WalletConnectState,
-} from '../types/walletConnect.types'
+import type { AssetBalance, AssetCoins } from '../types/walletConnect.types'
 
 // Simple request queue to prevent concurrent wallet requests
 class WalletRequestQueue {
@@ -59,37 +55,33 @@ const walletRequestQueue = new WalletRequestQueue()
 export async function makeWalletRequest<T>(
   method: string,
   data: Record<string, unknown>,
-  walletState: ComputedRef<WalletConnectState>
+  signClient: SignClient | null,
+  session: SessionTypes.Struct | undefined
 ): Promise<{ success: boolean; data?: T; error?: string }> {
   return walletRequestQueue.add(async () => {
-    return makeWalletRequestInternal<T>(method, data, walletState)
+    return makeWalletRequestInternal<T>(method, data, signClient, session)
   })
 }
 
 async function makeWalletRequestInternal<T>(
   method: string,
   data: Record<string, unknown>,
-  walletState: ComputedRef<WalletConnectState>
+  signClient: SignClient | null,
+  session: SessionTypes.Struct | undefined
 ): Promise<{ success: boolean; data?: T; error?: string }> {
   const timeoutMs = import.meta.env.PROD ? 15000 : 10000
 
   try {
-    if (!walletState.value.isConnected || !walletState.value.session) {
-      throw new Error('WalletConnect not connected')
-    }
-    const signClient = walletState.value.signClient
     if (!signClient) throw new Error('SignClient not available')
+    if (!session) throw new Error('Session topic not available')
 
-    const sessionTopic = walletState.value.session.topic as string
-    if (!sessionTopic) throw new Error('Session topic not available')
-
-    const requestPromise = (signClient as AppSignClient).request({
-      topic: sessionTopic,
-      chainId: `chia:${walletState.value.chainId}`,
+    const requestPromise = signClient.request({
+      topic: session.topic,
+      chainId: `chia:${session?.namespaces?.chia?.chains?.[0]}`,
       request: {
         method,
         params: {
-          fingerprint: parseInt(walletState.value.accounts[0] || '0'),
+          fingerprint: parseInt(session?.namespaces?.chia?.accounts?.[0] || '0'),
           ...data,
         },
       },
@@ -109,43 +101,40 @@ async function makeWalletRequestInternal<T>(
 
     return { success: true, data: result as T }
   } catch (error) {
+    console.error('Wallet request error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return { success: false, error: errorMessage }
   }
 }
 
-export async function getWalletAddress(walletState: ComputedRef<WalletConnectState>): Promise<{
+export async function getWalletAddress(
+  signClient: SignClient | null,
+  session: SessionTypes.Struct | undefined
+): Promise<{
   success: boolean
   data?: { address: string }
   error?: string
 }> {
-  return await makeWalletRequest<{ address: string }>(SageMethods.CHIA_GET_ADDRESS, {}, walletState)
+  return await makeWalletRequest<{ address: string }>(
+    SageMethods.CHIA_GET_ADDRESS,
+    {},
+    signClient,
+    session
+  )
 }
 
 export async function getAssetBalance(
-  walletState: ComputedRef<WalletConnectState>,
   type: AssetType | null = null,
-  assetId: string | null = null
+  assetId: string | null = null,
+  signClient: SignClient | null,
+  session: SessionTypes.Struct | undefined
 ): Promise<{ success: boolean; data?: AssetBalance | null; error?: string }> {
   const result = await makeWalletRequest<AssetBalance>(
     SageMethods.CHIP0002_GET_ASSET_BALANCE,
     { type, assetId },
-    walletState
+    signClient,
+    session
   )
-
-  if (result.success) {
-    return result
-  }
-
-  const fallbackResult = await makeWalletRequest<AssetBalance>(
-    SageMethods.CHIP0002_GET_ASSET_BALANCE,
-    {},
-    walletState
-  )
-
-  if (fallbackResult.success) {
-    return fallbackResult
-  }
 
   return {
     success: false,
@@ -155,9 +144,10 @@ export async function getAssetBalance(
 }
 
 export async function getAssetCoins(
-  walletState: ComputedRef<WalletConnectState>,
   type: AssetType | null = null,
-  assetId: string | null = null
+  assetId: string | null = null,
+  signClient: SignClient | null,
+  session: SessionTypes.Struct | undefined
 ): Promise<{ success: boolean; data?: AssetCoins | null; error?: string }> {
   return await makeWalletRequest<AssetCoins>(
     SageMethods.CHIP0002_GET_ASSET_COINS,
@@ -165,24 +155,29 @@ export async function getAssetCoins(
       type,
       assetId,
     },
-    walletState
+    signClient,
+    session
   )
 }
 
-export async function testRpcConnection(walletState: ComputedRef<WalletConnectState>): Promise<{
+export async function testRpcConnection(
+  signClient: SignClient | null,
+  session: SessionTypes.Struct | undefined
+): Promise<{
   success: boolean
   data?: boolean
   error?: string
 }> {
-  return await makeWalletRequest<boolean>(SageMethods.CHIP0002_CONNECT, {}, walletState)
+  return await makeWalletRequest<boolean>(SageMethods.CHIP0002_CONNECT, {}, signClient, session)
 }
 
 export async function signCoinSpends(
-  walletState: ComputedRef<WalletConnectState>,
   params: {
     walletId: number
     coinSpends: CoinSpend[]
-  }
+  },
+  signClient: SignClient | null,
+  session: SessionTypes.Struct | undefined
 ): Promise<{
   success: boolean
   data?: CoinSpend[]
@@ -191,13 +186,15 @@ export async function signCoinSpends(
   return await makeWalletRequest<CoinSpend[]>(
     SageMethods.CHIP0002_SIGN_COIN_SPENDS,
     params,
-    walletState
+    signClient,
+    session
   )
 }
 
 export async function signMessage(
-  walletState: ComputedRef<WalletConnectState>,
-  params: SignMessageRequest
+  params: SignMessageRequest,
+  signClient: SignClient | null,
+  session: SessionTypes.Struct | undefined
 ): Promise<{
   success: boolean
   data?: SignMessageResponse
@@ -206,35 +203,49 @@ export async function signMessage(
   return await makeWalletRequest<SignMessageResponse>(
     SageMethods.CHIP0002_SIGN_MESSAGE,
     params,
-    walletState
+    signClient,
+    session
   )
 }
 
 export async function sendTransaction(
-  walletState: ComputedRef<WalletConnectState>,
-  params: TransactionRequest
+  params: TransactionRequest,
+  signClient: SignClient | null,
+  session: SessionTypes.Struct | undefined
 ): Promise<{
   success: boolean
   data?: TransactionResponse
   error?: string
 }> {
-  return await makeWalletRequest<TransactionResponse>(SageMethods.CHIA_SEND, params, walletState)
+  return await makeWalletRequest<TransactionResponse>(
+    SageMethods.CHIA_SEND,
+    params,
+    signClient,
+    session
+  )
 }
 
 export async function createOffer(
-  walletState: ComputedRef<WalletConnectState>,
-  params: OfferRequest
+  params: OfferRequest,
+  signClient: SignClient | null,
+  session: SessionTypes.Struct | undefined
 ): Promise<{
   success: boolean
   data?: OfferResponse
   error?: string
 }> {
-  return await makeWalletRequest<OfferResponse>(SageMethods.CHIA_CREATE_OFFER, params, walletState)
+  return await makeWalletRequest<OfferResponse>(
+    SageMethods.CHIA_CREATE_OFFER,
+    params,
+    signClient,
+    session
+  )
 }
 
 export async function takeOffer(
-  walletState: ComputedRef<WalletConnectState>,
-  params: TakeOfferRequest
+  params: TakeOfferRequest,
+  signClient: SignClient | null,
+  session: SessionTypes.Struct | undefined
 ): Promise<{
   success: boolean
   data?: TakeOfferResponse
@@ -243,13 +254,15 @@ export async function takeOffer(
   return await makeWalletRequest<TakeOfferResponse>(
     SageMethods.CHIA_TAKE_OFFER,
     params,
-    walletState
+    signClient,
+    session
   )
 }
 
 export async function cancelOffer(
-  walletState: ComputedRef<WalletConnectState>,
-  params: CancelOfferRequest
+  params: CancelOfferRequest,
+  signClient: SignClient | null,
+  session: SessionTypes.Struct | undefined
 ): Promise<{
   success: boolean
   data?: CancelOfferResponse
@@ -258,6 +271,7 @@ export async function cancelOffer(
   return await makeWalletRequest<CancelOfferResponse>(
     SageMethods.CHIA_CANCEL_OFFER,
     params,
-    walletState
+    signClient,
+    session
   )
 }

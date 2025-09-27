@@ -1,13 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, watch } from 'vue'
 import { SageMethods } from '../constants/sage-methods'
-import { useIOSModal } from '../hooks/useIOSModal'
 import { useInstanceDataService } from './InstanceDataService'
+
+// iOS detection utility
+const isIOS = (): boolean => {
+  const userAgent = navigator.userAgent.toLowerCase()
+  return (
+    /iphone|ipad|ipod/.test(userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  )
+}
 
 export function useConnectDataService() {
   const { signClient, modal } = useInstanceDataService()
   const queryClient = useQueryClient()
-  const iOSModal = useIOSModal()
 
   const connectMutation = useMutation({
     mutationFn: async () => {
@@ -25,7 +32,7 @@ export function useConnectDataService() {
         },
       })
 
-      if (iOSModal.isIOS) {
+      if (isIOS()) {
         window.dispatchEvent(new CustomEvent('show_ios_modal', { detail: { uri } }))
       } else {
         await modal.value.openModal({ uri })
@@ -93,6 +100,6 @@ export function useSessionDataService() {
   return {
     session: sessionQuery.data,
     isConnecting: computed(() => sessionQuery.isFetching.value),
-    isConnected: computed(() => sessionQuery.data.value != null),
+    isConnected: computed(() => sessionQuery.data.value !== null),
   }
 }

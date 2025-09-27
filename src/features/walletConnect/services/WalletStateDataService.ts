@@ -1,5 +1,6 @@
+import type { SessionTypes } from '@walletconnect/types'
 import { computed } from 'vue'
-import type { WalletConnectSession, WalletConnectState } from '../types/walletConnect.types'
+import type { WalletConnectState } from '../types/walletConnect.types'
 import { useSessionDataService } from './ConnectionDataService'
 import { useInstanceDataService } from './InstanceDataService'
 
@@ -11,8 +12,8 @@ export function useWalletStateService() {
     (): WalletConnectState => ({
       signClient: instanceState.value.signClient,
       isInitialized: instanceState.value.isInitialized,
-      isConnected: sessionService.isConnected.value,
-      isConnecting: sessionService.isConnecting.value,
+      isConnected: sessionService != null,
+      isConnecting: sessionService == null,
       session: sessionService.session.value ?? null,
       accounts: sessionService.session.value?.namespaces?.chia?.accounts ?? [],
       chainId: sessionService.session.value ? extractChainId(sessionService.session.value) : null,
@@ -54,7 +55,7 @@ export function useWalletStateService() {
   }
 }
 
-function extractChainId(session: WalletConnectSession): string {
+function extractChainId(session: SessionTypes.Struct): string {
   const chiaNamespace = session.namespaces.chia
   const accounts = chiaNamespace?.accounts || []
   if (accounts.length > 0) {

@@ -1,4 +1,5 @@
 import type { SignClient } from '@walletconnect/sign-client/dist/types/client'
+import type { SessionTypes } from '@walletconnect/types'
 
 // Namespace interfaces for better type safety
 export interface ChiaNamespace {
@@ -33,45 +34,12 @@ export interface WalletConnectConfig {
   events?: string[]
 }
 
-export interface WalletConnectSession {
-  topic: string
-  pairingTopic: string
-  relay: {
-    protocol: string
-    data?: string
-  }
-  namespaces: Record<string, GenericNamespace>
-  requiredNamespaces: Record<string, GenericNamespace>
-  optionalNamespaces: Record<string, GenericNamespace>
-  self: {
-    publicKey: string
-    metadata: {
-      name: string
-      description: string
-      url: string
-      icons: string[]
-    }
-  }
-  peer: {
-    publicKey: string
-    metadata: {
-      name: string
-      description: string
-      url: string
-      icons: string[]
-    }
-  }
-  acknowledged: boolean
-  controller: string
-  expiry: number
-}
-
 export interface WalletConnectState {
   signClient: SignClient | null
   isInitialized: boolean
   isConnected: boolean
   isConnecting: boolean
-  session: WalletConnectSession | null
+  session: SessionTypes.Struct | null
   address: string | null
   fingerprint: string | null
   accounts: string[]
@@ -81,7 +49,7 @@ export interface WalletConnectState {
 
 export interface ConnectionResult {
   success: boolean
-  session?: WalletConnectSession
+  session?: SessionTypes.Struct
   accounts?: string[]
   error?: string
 }
@@ -161,7 +129,7 @@ export interface ExtendedWalletInfo {
   chainId: string | null
   network: WalletConnectNetwork | null
   accounts: string[]
-  session: WalletConnectSession | null
+  session: SessionTypes.Struct | null
 }
 
 // Define WalletConnectNetwork interface for Chia networks

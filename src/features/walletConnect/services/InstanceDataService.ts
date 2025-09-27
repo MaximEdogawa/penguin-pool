@@ -250,7 +250,7 @@ export function useInstanceDataService() {
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000),
   })
 
-  const isReady = computed(
+  const isInitialized = computed(
     () => instanceState.value.isInitialized && instanceState.value.signClient !== null
   )
 
@@ -272,7 +272,7 @@ export function useInstanceDataService() {
     error: initializeMutation.error,
     modal: computed(() => instanceState.value.modal),
     signClient: computed(() => instanceState.value.signClient),
-    isReady,
+    isInitialized,
     resetEventListenersFlag,
     resetInstance,
     resetConnectionData,
