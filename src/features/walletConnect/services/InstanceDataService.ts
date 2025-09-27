@@ -97,8 +97,11 @@ export function useInstanceDataService() {
   const instanceQuery = useQuery({
     queryKey: ['walletConnect', 'instance'],
     queryFn: () => instanceState.value,
-    enabled: true,
+    enabled: computed(() => instanceState.value.signClient === null),
     staleTime: Infinity,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
   })
 
   function setupSignClientEventListeners(signClient: SignClient) {
@@ -117,7 +120,6 @@ export function useInstanceDataService() {
     signClient.on('session_delete', event => {
       console.log('🗑️ Received session delete:', event)
       clearConnection()
-      resetConnectionData()
     })
 
     signClient.on('session_update', event => {
@@ -127,7 +129,6 @@ export function useInstanceDataService() {
     signClient.on('session_expire', event => {
       console.log('⏰ Received session expire:', event)
       clearConnection()
-      resetConnectionData()
     })
 
     signClient.on('session_proposal', event => {
@@ -142,14 +143,15 @@ export function useInstanceDataService() {
   }
 
   function clearConnection(): void {
-    instanceState.value.error = null
+    resetInstance()
+    resetConnectionData()
   }
 
   function resetConnectionData(): void {
-    queryClient.removeQueries({ queryKey: ['walletConnect', 'uriAndApproval'] })
-    queryClient.removeQueries({ queryKey: ['walletConnect', 'session'] })
-    queryClient.removeQueries({ queryKey: ['walletConnect', 'walletState'] })
-    queryClient.removeQueries({ queryKey: ['walletConnect', 'walletData'] })
+    queryClient.invalidateQueries({ queryKey: ['walletConnect', 'uriAndApproval'] })
+    queryClient.invalidateQueries({ queryKey: ['walletConnect', 'session'] })
+    queryClient.invalidateQueries({ queryKey: ['walletConnect', 'walletState'] })
+    queryClient.invalidateQueries({ queryKey: ['walletConnect', 'walletData'] })
   }
 
   function invalidateWalletState(): void {

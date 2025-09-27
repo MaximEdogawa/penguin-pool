@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import type { WalletConnectSession, WalletConnectState } from '../types/walletConnect.types'
 import { useSessionDataService } from './ConnectionDataService'
@@ -6,13 +5,12 @@ import { useInstanceDataService } from './InstanceDataService'
 
 export function useWalletStateService() {
   const sessionService = useSessionDataService()
-  const { instance } = useInstanceDataService()
+  const { state: instanceState } = useInstanceDataService()
 
-  const walletStateQuery = useQuery({
-    queryKey: ['walletConnect', 'walletState'],
-    queryFn: (): WalletConnectState => ({
-      signClient: instance.data.value?.signClient ?? null,
-      isInitialized: instance.data.value?.isInitialized ?? false,
+  const walletState = computed(
+    (): WalletConnectState => ({
+      signClient: instanceState.value.signClient,
+      isInitialized: instanceState.value.isInitialized,
       isConnected: sessionService.isConnected.value,
       isConnecting: sessionService.isConnecting.value,
       session: sessionService.session.value ?? null,
@@ -20,27 +18,9 @@ export function useWalletStateService() {
       chainId: sessionService.session.value ? extractChainId(sessionService.session.value) : null,
       fingerprint: sessionService.session.value?.namespaces?.chia?.accounts![0] || null,
       address: sessionService.session.value?.namespaces?.chia?.accounts![0] || null,
-      error:
-        instance.error.value instanceof Error ? instance.error.value.message : instance.error.value,
-    }),
-    enabled: true,
-    staleTime: Infinity,
-  })
-
-  const defaultState: WalletConnectState = {
-    signClient: null,
-    isInitialized: false,
-    isConnected: false,
-    isConnecting: false,
-    session: null,
-    accounts: [],
-    chainId: null,
-    fingerprint: null,
-    address: null,
-    error: null,
-  }
-
-  const walletState = computed(() => walletStateQuery.data.value ?? defaultState)
+      error: instanceState.value.error,
+    })
+  )
   const signClient = computed(() => walletState.value.signClient)
   const isInitialized = computed(() => walletState.value.isInitialized)
   const isConnected = computed(() => walletState.value.isConnected)
@@ -71,9 +51,6 @@ export function useWalletStateService() {
     hasWallet,
     walletAddress,
     isReady,
-    isLoading: walletStateQuery.isLoading,
-    isError: walletStateQuery.isError,
-    queryError: walletStateQuery.error,
   }
 }
 

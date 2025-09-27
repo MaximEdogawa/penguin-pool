@@ -284,10 +284,8 @@
     }
 
     try {
-      console.log('💰 Refreshing wallet balance...')
       await walletDataService.balance.refetch()
       balanceLastUpdated.value = new Date()
-      console.log('✅ Wallet balance refreshed successfully')
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.error('❌ Failed to refresh wallet balance:', errorMessage)
@@ -358,9 +356,7 @@
   }
 
   const handleRefreshBalance = async (force = false) => {
-    console.log('💰 Dashboard: Refreshing wallet balance...')
     await refreshBalance(force)
-    console.log('✅ Dashboard: Wallet balance refreshed successfully')
   }
 
   const connectWallet = () => {

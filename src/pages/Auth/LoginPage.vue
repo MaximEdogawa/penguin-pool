@@ -103,7 +103,7 @@
   const { initialize, isInitializing } = useInstanceDataService()
   const { connect: connectWallet, isConnecting: isConnectingWallet } = useConnectDataService()
   const { isConnected } = useWalletStateService()
-  useWalletDataService()
+  const { getBalance } = useWalletDataService()
 
   const selectedNetwork = ref('chia:testnet')
   const backgroundStyle = computed(() => ({
@@ -127,13 +127,14 @@
 
   watch(isConnected, value => {
     if (value) {
-      router.push({ name: 'dashboard' })
+      getBalance({})
+      router.push('/dashboard')
     }
   })
 
-  const handleConnect = async () => {
+  const handleConnect = () => {
     try {
-      await connectWallet()
+      connectWallet()
     } catch (error) {
       console.error('Connection failed:', error)
       connectionStatus.value = {

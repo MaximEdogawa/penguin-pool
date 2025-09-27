@@ -57,8 +57,10 @@ export function useWalletDataService() {
   })
 
   const getBalanceMutation = useMutation({
-    mutationFn: async (data: { type?: string; assetId?: string }) => {
-      const result = await getAssetBalance(walletState, data.type as AssetType | null, data.assetId)
+    mutationFn: async (data?: { type?: string | null; assetId?: string | null }) => {
+      const type = data?.type ?? null
+      const assetId = data?.assetId ?? null
+      const result = await getAssetBalance(walletState, type as AssetType | null, assetId)
       if (!result.success) throw new Error(result.error)
       return result.data
     },

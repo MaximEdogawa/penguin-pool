@@ -23,7 +23,7 @@ export function useConnectDataService() {
         },
       })
       await modal.value.openModal({ uri })
-      return { uri, approval }
+      return { uri, approval, modal }
     },
     onSuccess: data => {
       queryClient.setQueryData(['walletConnect', 'uriAndApproval'], data)
@@ -40,6 +40,7 @@ export function useConnectDataService() {
   return {
     uri: computed(() => query.data.value?.uri),
     approval: computed(() => query.data.value?.approval),
+    modal: query.data.value?.modal,
     connect: () => connectMutation.mutate(),
     isConnecting: connectMutation.isPending,
     error: connectMutation.error,
@@ -47,7 +48,7 @@ export function useConnectDataService() {
 }
 
 export function useSessionDataService() {
-  const { uri, approval } = useConnectDataService()
+  const { uri, approval, modal } = useConnectDataService()
   const queryClient = useQueryClient()
 
   const sessionQuery = useQuery({
@@ -68,6 +69,7 @@ export function useSessionDataService() {
       if (session) {
         console.log('🔄 Session established, invalidating wallet state')
         queryClient.invalidateQueries({ queryKey: ['walletConnect', 'walletState'] })
+        modal?.value?.closeModal()
       }
     }
   )
