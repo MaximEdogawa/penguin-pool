@@ -24,7 +24,7 @@ export function useWalletDataService() {
     enabled: isReady,
     retry: 3,
     retryDelay: 15000,
-    staleTime: Infinity,
+    staleTime: 15 * 1000, // 15 seconds
   })
 
   const addressQuery = useQuery({
@@ -37,7 +37,7 @@ export function useWalletDataService() {
     enabled: isReady,
     retry: 3,
     retryDelay: 15000,
-    staleTime: Infinity,
+    staleTime: 15 * 1000, // 15 seconds
   })
 
   const signMessageMutation = useMutation({

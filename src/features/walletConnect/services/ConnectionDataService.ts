@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, watch } from 'vue'
 import { SageMethods } from '../constants/sage-methods'
+import { useIOSModal } from '../hooks/useIOSModal'
 import { useInstanceDataService } from './InstanceDataService'
 
 export function useConnectDataService() {
   const { signClient, modal } = useInstanceDataService()
   const queryClient = useQueryClient()
+  const iOSModal = useIOSModal()
 
   const connectMutation = useMutation({
     mutationFn: async () => {
@@ -22,7 +24,13 @@ export function useConnectDataService() {
           },
         },
       })
-      await modal.value.openModal({ uri })
+
+      if (iOSModal.isIOS) {
+        window.dispatchEvent(new CustomEvent('show_ios_modal', { detail: { uri } }))
+      } else {
+        await modal.value.openModal({ uri })
+      }
+
       return { uri, approval, modal }
     },
     onSuccess: data => {
@@ -54,10 +62,18 @@ export function useSessionDataService() {
   const sessionQuery = useQuery({
     queryKey: ['walletConnect', 'session'],
     queryFn: async () => {
-      if (!approval.value) {
-        throw new Error('Approval function is not available')
+      try {
+        if (!approval.value) {
+          throw new Error('Approval function is not available')
+        }
+        const result = await approval.value()
+        if (!result) {
+          throw new Error('Session approval was rejected or failed')
+        }
+        return result
+      } catch (error) {
+        console.error('Approval failed:', error)
       }
-      return await approval.value()
     },
     enabled: computed(() => uri.value != null && approval.value != null),
     staleTime: Infinity,

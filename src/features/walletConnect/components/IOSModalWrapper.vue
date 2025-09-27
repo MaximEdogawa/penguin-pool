@@ -15,6 +15,6 @@
   const { isModalVisible, modalUri, closeModal, isIOS } = useIOSModal()
 
   const handleContinue = () => {
-    window.dispatchEvent(new CustomEvent('ios_modal_continue'))
+    closeModal()
   }
 </script>
