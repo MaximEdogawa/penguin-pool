@@ -23,7 +23,7 @@
         <div class="wallet-options">
           <!-- Primary Wallet Option - Sage -->
           <button
-            @click="connectWallet"
+            @click="handleConnect"
             class="wallet-option-primary group"
             :disabled="isConnecting"
           >
@@ -93,19 +93,57 @@
   import PWAInstallPrompt from '@/components/PWAInstallPrompt.vue'
   import PenguinLogo from '@/components/PenguinLogo.vue'
   import IOSModalWrapper from '@/features/walletConnect/components/IOSModalWrapper.vue'
-  import { useLoginService } from '@/features/walletConnect/composables/useLoginService'
-  import { computed, onMounted, ref } from 'vue'
+  import { useConnectDataService } from '@/features/walletConnect/services/ConnectionDataService'
+  import { useInstanceDataService } from '@/features/walletConnect/services/InstanceDataService'
+  import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
+  import { useWalletStateService } from '@/features/walletConnect/services/WalletStateDataService'
+  import router from '@/router'
+  import { computed, onMounted, ref, watch } from 'vue'
 
-  const { connectionStatus, isConnecting, connectWallet, initializeWalletConnection } =
-    useLoginService()
+  const { initialize, isInitializing } = useInstanceDataService()
+  const { connect: connectWallet, isConnecting: isConnectingWallet } = useConnectDataService()
+  const { isConnected } = useWalletStateService()
+  useWalletDataService()
+
   const selectedNetwork = ref('chia:testnet')
-
-  // Computed
   const backgroundStyle = computed(() => ({
     backgroundImage: `url('${signinGlassImage}')`,
   }))
 
-  // Methods
+  const isConnecting = computed(() => isInitializing.value || isConnectingWallet.value)
+  const connectionStatus = ref<{
+    message: string
+    type: 'info' | 'success' | 'error'
+    icon: string
+  }>({
+    message: '',
+    type: 'info',
+    icon: 'pi pi-info-circle',
+  })
+
+  onMounted(() => {
+    initialize()
+  })
+
+  watch(isConnected, value => {
+    if (value) {
+      router.push({ name: 'dashboard' })
+    }
+  })
+
+  const handleConnect = async () => {
+    try {
+      await connectWallet()
+    } catch (error) {
+      console.error('Connection failed:', error)
+      connectionStatus.value = {
+        message: `Connection failed: ${error}`,
+        type: 'error',
+        icon: 'pi pi-exclamation-triangle',
+      }
+    }
+  }
+
   const handleNetworkChange = async () => {
     try {
       console.log('🔄 Network changed to:', selectedNetwork.value)
@@ -123,10 +161,6 @@
       }
     }
   }
-
-  onMounted(async () => {
-    await initializeWalletConnection()
-  })
 </script>
 
 <style scoped>

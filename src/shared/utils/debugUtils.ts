@@ -156,14 +156,14 @@ if (typeof window !== 'undefined') {
       const { getAssetBalance } = await import(
         '@/features/walletConnect/repositories/walletQueries.repository'
       )
-      const { useConnectionDataService } = await import(
-        '@/features/walletConnect/services/ConnectionDataService'
+      const { useWalletStateService } = await import(
+        '@/features/walletConnect/services/WalletStateDataService'
       )
       const { useInstanceDataService } = await import(
         '@/features/walletConnect/services/InstanceDataService'
       )
 
-      const connectionService = useConnectionDataService()
+      const walletStateService = useWalletStateService()
       const instanceService = useInstanceDataService()
 
       console.log('🧪 Environment info:', {
@@ -172,10 +172,15 @@ if (typeof window !== 'undefined') {
         userAgent: navigator.userAgent,
         timestamp: new Date().toISOString(),
       })
-      console.log('🧪 Connection state:', connectionService.state.value)
+      console.log('🧪 Wallet state:', walletStateService.walletState.value)
       console.log('🧪 Instance ready:', instanceService.isReady.value)
 
-      const result = await getAssetBalance(connectionService, instanceService, null, null)
+      const result = await getAssetBalance(
+        walletStateService.walletState,
+        instanceService,
+        null,
+        null
+      )
       console.log(
         `🧪 Balance request result in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}:`,
         result

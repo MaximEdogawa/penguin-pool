@@ -1,29 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
-import { useConnectionDataService } from './ConnectionDataService'
-import { useUserDataService } from './UserDataService'
 
 export function useLogoutService() {
   const queryClient = useQueryClient()
-  const connectionService = useConnectionDataService()
-  const userService = useUserDataService()
-
   const logoutMutation = useMutation({
     mutationFn: async (): Promise<void> => {
       try {
-        console.log('🚪 Starting logout process...')
-
-        // Disconnect wallet if connected
-        if (connectionService.state.value.isConnected) {
-          console.log('🔌 Disconnecting wallet...')
-          await connectionService.disconnect()
-        }
-
-        // Clear user data
-        userService.clearUserData()
-
-        // Clear IndexedDB instances
         await clearIndexedDB()
-
         console.log('✅ Logout completed successfully')
       } catch (error) {
         console.error('❌ Logout failed:', error)
@@ -31,7 +13,6 @@ export function useLogoutService() {
       }
     },
     onSuccess: () => {
-      // Clear all TanStack Query cache
       queryClient.clear()
       console.log('✅ All queries cleared')
     },
@@ -42,7 +23,6 @@ export function useLogoutService() {
 
   async function clearIndexedDB(): Promise<void> {
     try {
-      // Clear WalletConnect IndexedDB
       const databases = ['walletconnect-v2', 'walletconnect']
 
       for (const dbName of databases) {

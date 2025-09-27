@@ -46,15 +46,6 @@ npm run dev
 
 ## 🔧 Implementation Details
 
-### New Chia-Specific Service
-
-The implementation now includes a dedicated `ChiaWalletConnectService` that:
-
-- Uses proper Chia namespace configuration (`chia:testnet`)
-- Implements all Chia-specific RPC methods
-- Handles Chia wallet fingerprint extraction
-- Provides Chia-specific wallet information
-
 ### Supported Chia Methods
 
 The integration supports all major Chia wallet methods:

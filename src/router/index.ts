@@ -1,14 +1,4 @@
 import { useUserStore } from '@/entities/user/store/userStore'
-import { useWalletStateService } from '@/features/walletConnect/services/WalletStateService'
-import {
-  defaultFeatureFlags,
-  getCurrentEnvironment,
-  isFeatureEnabled,
-} from '@/shared/config/featureFlags'
-import '@/types/router'
-import { createRouter, createWebHistory } from 'vue-router'
-
-// Static imports to avoid dynamic import issues
 import LoginPage from '@/pages/Auth/LoginPage.vue'
 import DashboardPage from '@/pages/Dashboard/DashboardPage.vue'
 import LoansPage from '@/pages/Loans/LoansPage.vue'
@@ -18,6 +8,13 @@ import PiggyBankPage from '@/pages/PiggyBank/PiggyBankPage.vue'
 import ProfilePage from '@/pages/Profile/ProfilePage.vue'
 import ServiceHealthPage from '@/pages/ServiceHealth/ServiceHealthPage.vue'
 import WalletPage from '@/pages/Wallet/WalletPage.vue'
+import {
+  defaultFeatureFlags,
+  getCurrentEnvironment,
+  isFeatureEnabled,
+} from '@/shared/config/featureFlags'
+import '@/types/router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   {
@@ -129,15 +126,10 @@ router.beforeEach((to, from, next) => {
   document.title = `${to.meta.title} - Penguin-pool`
 
   const userStore = useUserStore()
-  const walletState = useWalletStateService()
   const isAuthenticated = userStore.isAuthenticated
-  const isWalletConnected = walletState.isConnected.value
 
-  // Check if route requires a feature flag
   if (to.meta.featureFlag) {
     const currentEnv = getCurrentEnvironment()
-
-    // Get the feature flag for the specific feature
     const featureKey = to.meta.featureFlag as keyof typeof defaultFeatureFlags.app
     const feature = defaultFeatureFlags.app[featureKey]
 
@@ -151,20 +143,16 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.meta.requiresAuth) {
-    // For protected routes, only check authentication
-    // Wallet connection is handled by the wallet service and UI components
     if (isAuthenticated) {
       console.log('Router guard - user authenticated, allowing access to protected route')
       next()
     } else {
       console.log('Router guard - redirecting to auth (not authenticated)', {
         isAuthenticated,
-        isWalletConnected,
       })
       next('/auth')
     }
   } else {
-    // For public routes (like /auth), check if user should be redirected to dashboard
     if (to.path === '/auth' && isAuthenticated) {
       console.log('Router guard - redirecting authenticated user from auth to dashboard')
       next('/dashboard')
@@ -172,7 +160,6 @@ router.beforeEach((to, from, next) => {
       console.log('Router guard - allowing access to public route', {
         path: to.path,
         isAuthenticated,
-        isWalletConnected,
       })
       next()
     }

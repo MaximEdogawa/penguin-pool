@@ -7,24 +7,17 @@ import {
   signMessage,
 } from '../repositories/walletQueries.repository'
 import type { AssetType, TransactionRequest } from '../types/command.types'
-import { useConnectionDataService } from './ConnectionDataService'
-import { useInstanceDataService } from './InstanceDataService'
+import { useWalletStateService } from './WalletStateDataService'
 
 export function useWalletDataService() {
-  const connectionService = useConnectionDataService()
-  const instanceService = useInstanceDataService()
+  const { walletState } = useWalletStateService()
   const queryClient = useQueryClient()
-  const isReady = computed(() => {
-    const state = connectionService.state.value
-    const isReady =
-      state.isConnected && state.isFullyReady && !!state.session && state.accounts.length > 0
-    return isReady
-  })
+  const isReady = computed(() => walletState.value.isConnected)
 
   const balanceQuery = useQuery({
     queryKey: ['walletConnect', 'balance'],
     queryFn: async () => {
-      const result = await getAssetBalance(connectionService, instanceService, null, null)
+      const result = await getAssetBalance(walletState, null, null)
       if (!result.success) throw new Error(result.error)
       return result.data
     },
@@ -37,7 +30,7 @@ export function useWalletDataService() {
   const addressQuery = useQuery({
     queryKey: ['walletConnect', 'address'],
     queryFn: async () => {
-      const result = await getWalletAddress(connectionService, instanceService)
+      const result = await getWalletAddress(walletState)
       if (!result.success) throw new Error(result.error)
       return result.data
     },
@@ -49,7 +42,7 @@ export function useWalletDataService() {
 
   const signMessageMutation = useMutation({
     mutationFn: async (data: { message: string }) => {
-      const result = await signMessage(connectionService, instanceService, data)
+      const result = await signMessage(walletState, data)
       if (!result.success) throw new Error(result.error)
       return result.data
     },
@@ -57,7 +50,7 @@ export function useWalletDataService() {
 
   const sendTransactionMutation = useMutation({
     mutationFn: async (data: TransactionRequest) => {
-      const result = await sendTransaction(connectionService, instanceService, data)
+      const result = await sendTransaction(walletState, data)
       if (!result.success) throw new Error(result.error)
       return result.data
     },
@@ -65,19 +58,13 @@ export function useWalletDataService() {
 
   const getBalanceMutation = useMutation({
     mutationFn: async (data: { type?: string; assetId?: string }) => {
-      const result = await getAssetBalance(
-        connectionService,
-        instanceService,
-        data.type as AssetType | null,
-        data.assetId
-      )
+      const result = await getAssetBalance(walletState, data.type as AssetType | null, data.assetId)
       if (!result.success) throw new Error(result.error)
       return result.data
     },
   })
 
   const refreshBalance = async () => {
-    // Invalidate and refetch the balance query
     await queryClient.invalidateQueries({ queryKey: ['walletConnect', 'balance'] })
   }
 

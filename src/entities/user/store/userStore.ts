@@ -1,7 +1,8 @@
 import type { UserPreferences } from '@/app/types/common'
+import { useWalletStateService } from '@/features/walletConnect/services/WalletStateDataService'
 import { sessionManager } from '@/shared/services/sessionManager'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 export interface User {
   id: string
@@ -14,11 +15,34 @@ export interface User {
 }
 
 export const useUserStore = defineStore('user', () => {
+  // Wallet state integration
+  const { isConnected, walletAddress, session } = useWalletStateService()
+
   // State
   const currentUser = ref<User | null>(null)
   const isAuthenticated = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+
+  // Watch wallet connection status and update authentication
+  watch(
+    isConnected,
+    connected => {
+      if (connected && session.value) {
+        // Auto-login when wallet connects
+        if (!isAuthenticated.value) {
+          const address = walletAddress.value || 'unknown'
+          login(address)
+        }
+      } else if (!connected) {
+        // Auto-logout when wallet disconnects
+        if (isAuthenticated.value) {
+          logout()
+        }
+      }
+    },
+    { immediate: true }
+  )
 
   // Getters
   const hasWallet = computed(() => currentUser.value?.walletAddress !== undefined)
@@ -26,6 +50,10 @@ export const useUserStore = defineStore('user', () => {
   const userBalance = computed(() => currentUser.value?.balance || 0)
 
   const userPreferences = computed(() => currentUser.value?.preferences)
+
+  const isWalletConnected = computed(() => isConnected.value)
+
+  const userWalletAddress = computed(() => walletAddress.value)
 
   // Initialize store from localStorage
   const initializeStore = () => {
@@ -47,6 +75,11 @@ export const useUserStore = defineStore('user', () => {
 
   // Actions
   const login = async (walletIdentifier: string | number, username?: string) => {
+    // Prevent login if already authenticated with the same wallet
+    if (isAuthenticated.value && currentUser.value?.walletAddress === walletIdentifier.toString()) {
+      return currentUser.value
+    }
+
     isLoading.value = true
     error.value = null
 
@@ -88,6 +121,7 @@ export const useUserStore = defineStore('user', () => {
       // Save to localStorage
       localStorage.setItem('penguin-pool-user', JSON.stringify(user))
 
+      console.log('✅ User logged in with wallet:', walletAddress)
       return user
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed'
@@ -194,6 +228,8 @@ export const useUserStore = defineStore('user', () => {
     hasWallet,
     userBalance,
     userPreferences,
+    isWalletConnected,
+    walletAddress: userWalletAddress,
 
     // Actions
     login,

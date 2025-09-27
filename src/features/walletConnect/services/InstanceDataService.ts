@@ -1,7 +1,7 @@
-import { useMutation, useQuery } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { WalletConnectModal } from '@walletconnect/modal'
 import SignClient from '@walletconnect/sign-client'
-import { computed, ref, type Ref } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 
 export interface WalletConnectInstance {
   signClient: SignClient | null
@@ -20,17 +20,6 @@ const instanceState: Ref<WalletConnectInstance> = ref({
 })
 
 const eventListenersAttached = ref(false)
-
-const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> => {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => {
-        reject(new Error(`${operation} timeout after ${timeoutMs}ms`))
-      }, timeoutMs)
-    ),
-  ])
-}
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
@@ -54,6 +43,8 @@ const cleanupResources = (
       signClient.removeAllListeners('session_delete')
       signClient.removeAllListeners('session_update')
       signClient.removeAllListeners('session_expire')
+      signClient.removeAllListeners('session_proposal')
+      signClient.removeAllListeners('session_connect')
     }
   } catch (error) {
     console.error('Error cleaning up signClient:', error)
@@ -101,6 +92,8 @@ const createModalConfig = (projectId: string) => {
 }
 
 export function useInstanceDataService() {
+  const queryClient = useQueryClient()
+
   const instanceQuery = useQuery({
     queryKey: ['walletConnect', 'instance'],
     queryFn: () => instanceState.value,
@@ -123,6 +116,8 @@ export function useInstanceDataService() {
 
     signClient.on('session_delete', event => {
       console.log('🗑️ Received session delete:', event)
+      clearConnection()
+      resetConnectionData()
     })
 
     signClient.on('session_update', event => {
@@ -132,6 +127,15 @@ export function useInstanceDataService() {
     signClient.on('session_expire', event => {
       console.log('⏰ Received session expire:', event)
       clearConnection()
+      resetConnectionData()
+    })
+
+    signClient.on('session_proposal', event => {
+      console.log('📋 Session proposal:', event)
+    })
+
+    signClient.on('session_connect', event => {
+      console.log('🔗 Session connected:', event)
     })
 
     eventListenersAttached.value = true
@@ -139,6 +143,17 @@ export function useInstanceDataService() {
 
   function clearConnection(): void {
     instanceState.value.error = null
+  }
+
+  function resetConnectionData(): void {
+    queryClient.removeQueries({ queryKey: ['walletConnect', 'uriAndApproval'] })
+    queryClient.removeQueries({ queryKey: ['walletConnect', 'session'] })
+    queryClient.removeQueries({ queryKey: ['walletConnect', 'walletState'] })
+    queryClient.removeQueries({ queryKey: ['walletConnect', 'walletData'] })
+  }
+
+  function invalidateWalletState(): void {
+    queryClient.invalidateQueries({ queryKey: ['walletConnect', 'walletState'] })
   }
 
   function resetEventListenersFlag(): void {
@@ -194,20 +209,9 @@ export function useInstanceDataService() {
       try {
         const signClientConfig = createSignClientConfig(projectId)
         const modalConfig = createModalConfig(projectId)
-
-        const signClient = await withTimeout(
-          SignClient.init(signClientConfig),
-          30000,
-          'SignClient initialization'
-        )
-
+        const signClient = await SignClient.init(signClientConfig)
         setupSignClientEventListeners(signClient)
-
-        const modal = await withTimeout(
-          Promise.resolve(new WalletConnectModal(modalConfig)),
-          10000,
-          'Modal creation'
-        )
+        const modal = new WalletConnectModal(modalConfig)
 
         instanceState.value = {
           ...instanceState.value,
@@ -218,12 +222,14 @@ export function useInstanceDataService() {
           error: null,
         }
 
+        // Invalidate wallet state when instance is initialized
+        invalidateWalletState()
+
         return instanceState.value
       } catch (error) {
         const errorMessage = getErrorMessage(error)
 
         cleanupResources(instanceState.value.signClient!, instanceState.value.modal!)
-
         instanceState.value = {
           ...instanceState.value,
           signClient: null,
@@ -233,6 +239,8 @@ export function useInstanceDataService() {
           error: errorMessage,
         }
 
+        resetConnectionData()
+
         throw error
       }
     },
@@ -240,22 +248,32 @@ export function useInstanceDataService() {
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000),
   })
 
-  const getSignClient = computed(() => instanceState.value.signClient)
-  const getModal = computed(() => instanceState.value.modal)
   const isReady = computed(
     () => instanceState.value.isInitialized && instanceState.value.signClient !== null
+  )
+
+  watch(
+    () => instanceState.value.error,
+    error => {
+      if (error) {
+        console.log('🔄 Instance error detected, resetting connection data:', error)
+        resetConnectionData()
+      }
+    }
   )
 
   return {
     instance: instanceQuery,
     state: computed(() => instanceState.value),
-    initialize: initializeMutation.mutateAsync,
+    initialize: () => initializeMutation.mutate(),
     isInitializing: initializeMutation.isPending,
     error: initializeMutation.error,
-    getSignClient,
-    getModal,
+    modal: computed(() => instanceState.value.modal),
+    signClient: computed(() => instanceState.value.signClient),
     isReady,
     resetEventListenersFlag,
     resetInstance,
+    resetConnectionData,
+    invalidateWalletState,
   }
 }

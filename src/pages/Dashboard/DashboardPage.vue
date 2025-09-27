@@ -10,7 +10,7 @@
                 <i
                   :class="[
                     'pi text-xl sm:text-2xl',
-                    isWalletConnected ? 'pi-wallet text-primary-600' : 'pi-wallet text-gray-400',
+                    isConnected ? 'pi-wallet text-primary-600' : 'pi-wallet text-gray-400',
                   ]"
                 ></i>
               </div>
@@ -18,7 +18,7 @@
                 Wallet Balance
               </h3>
             </div>
-            <div v-if="isWalletConnected" class="flex items-center space-x-1">
+            <div v-if="isConnected" class="flex items-center space-x-1">
               <button
                 @click="handleRefreshBalance(true)"
                 :disabled="isBalanceLoading"
@@ -58,7 +58,7 @@
             </div>
 
             <!-- Additional balance info when connected -->
-            <div v-if="isWalletConnected && walletBalance" class="space-y-1">
+            <div v-if="isConnected && walletBalance" class="space-y-1">
               <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>Spendable:</span>
                 <span>{{ spendableBalance }} {{ ticker }}</span>
@@ -74,7 +74,7 @@
 
             <!-- Wallet Address (only when connected) -->
             <div
-              v-if="isWalletConnected && walletDataService.address.data.value?.address"
+              v-if="isConnected && walletDataService.address.data.value?.address"
               class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
             >
               <div class="flex items-center justify-between">
@@ -101,11 +101,11 @@
             </div>
 
             <!-- Connection status -->
-            <div v-if="!isWalletConnected" class="text-xs text-orange-600 dark:text-orange-400">
+            <div v-if="!isConnected" class="text-xs text-orange-600 dark:text-orange-400">
               <i class="pi pi-exclamation-triangle mr-1"></i>
               Wallet not connected
             </div>
-            <div v-else-if="isWalletConnected" class="text-xs text-green-600 dark:text-green-400">
+            <div v-else-if="isConnected" class="text-xs text-green-600 dark:text-green-400">
               <i class="pi pi-check-circle mr-1"></i>
               Wallet connected
             </div>
@@ -159,7 +159,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <!-- Wallet Connect Action (only show if not connected) -->
           <button
-            v-if="!isWalletConnected"
+            v-if="!isConnected"
             @click="connectWallet"
             :disabled="isBalanceLoading"
             class="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border-2 border-dashed border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20 hover:border-orange-500 dark:hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors duration-200"
@@ -237,22 +237,21 @@
 
 <script setup lang="ts">
   import { useUserStore } from '@/entities/user/store/userStore'
-  import { useConnectionDataService } from '@/features/walletConnect/services/ConnectionDataService'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
+  import { useWalletStateService } from '@/features/walletConnect/services/WalletStateDataService'
   import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
 
   const userStore = ref<ReturnType<typeof useUserStore> | null>(null)
-  const connectionService = useConnectionDataService()
   const walletDataService = useWalletDataService()
+  const { walletState } = useWalletStateService()
   const router = useRouter()
 
-  const isWalletConnected = computed(() => connectionService.state.value.isConnected)
   const walletBalance = computed(() => walletDataService.balance.data.value || null)
   const isBalanceLoading = computed(() => walletDataService.balance.isLoading.value)
   const balanceLastUpdated = ref<Date | null>(null)
   const autoRefreshEnabled = ref(true)
-
+  const isConnected = computed(() => walletState.value.isConnected)
   // Format balance for display
   const formatBalance = (mojos: number): string => {
     if (mojos === 0) return '0.000000'
@@ -273,17 +272,12 @@
 
   // Get ticker symbol
   const ticker = computed(() => {
-    const chainId = connectionService.state.value.chainId
+    const chainId = walletState.value.chainId || ''
     return chainId?.includes('testnet') ? 'TXCH' : 'XCH'
   })
 
   // Actions
   const refreshBalance = async (force = false) => {
-    if (!isWalletConnected.value) {
-      console.warn('⚠️ Not connected to wallet, cannot refresh balance')
-      return
-    }
-
     if (isBalanceLoading.value && !force) {
       console.log('⏰ Balance refresh already in progress, skipping')
       return
@@ -306,7 +300,7 @@
       // Auto-refresh every 5 minutes
       setInterval(
         () => {
-          if (isWalletConnected.value) {
+          if (isConnected.value) {
             refreshBalance()
           }
         },

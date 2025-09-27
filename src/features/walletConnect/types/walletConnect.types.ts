@@ -1,3 +1,5 @@
+import type { SignClient } from '@walletconnect/sign-client/dist/types/client'
+
 // Namespace interfaces for better type safety
 export interface ChiaNamespace {
   accounts: string[]
@@ -65,9 +67,13 @@ export interface WalletConnectSession {
 }
 
 export interface WalletConnectState {
+  signClient: SignClient | null
+  isInitialized: boolean
   isConnected: boolean
   isConnecting: boolean
   session: WalletConnectSession | null
+  address: string | null
+  fingerprint: string | null
   accounts: string[]
   chainId: string | null
   error: string | null

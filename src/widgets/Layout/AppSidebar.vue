@@ -44,7 +44,7 @@
           <div class="user-info-section">
             <div class="user-avatar">
               <i
-                :class="walletService.state.value.isConnected ? 'pi pi-wallet' : 'pi pi-user'"
+                :class="isConnected ? 'pi pi-wallet' : 'pi pi-user'"
                 class="text-xl text-white"
               ></i>
             </div>
@@ -53,12 +53,10 @@
               <p class="user-email">{{ userEmail }}</p>
 
               <!-- Wallet Connection Info -->
-              <div v-if="walletService.state.value.isConnected" class="wallet-info">
+              <div v-if="isConnected" class="wallet-info">
                 <div class="wallet-fingerprint">
                   <i class="pi pi-key text-sm"></i>
-                  <span class="fingerprint-text">{{
-                    walletService.state.value.accounts[0] || 'N/A'
-                  }}</span>
+                  <span class="fingerprint-text">{{ accounts[0] || 'N/A' }}</span>
                 </div>
               </div>
 
@@ -73,7 +71,7 @@
           <!-- Wallet Connect/Disconnect Button -->
           <div class="wallet-section">
             <PrimeButton
-              v-if="walletService.state.value.isConnecting"
+              v-if="isConnecting"
               :icon="'pi pi-spin pi-spinner'"
               :label="!isCollapsed && !isSmallScreen ? 'Connecting...' : ''"
               :title="isCollapsed || isSmallScreen ? 'Connecting...' : ''"
@@ -82,7 +80,7 @@
               disabled
             />
             <PrimeButton
-              v-else-if="!walletService.state.value.isConnected"
+              v-else-if="!isConnected"
               @click="navigateTo('/auth')"
               :icon="'pi pi-wallet'"
               :label="!isCollapsed && !isSmallScreen ? 'Connect Wallet' : ''"
@@ -134,7 +132,7 @@
 
 <script setup lang="ts">
   import { useUserStore } from '@/entities/user/store/userStore'
-  import { useWalletConnectService } from '@/features/walletConnect/services/WalletConnectService'
+  import { useWalletStateService } from '@/features/walletConnect/services/WalletStateDataService'
   import {
     defaultFeatureFlags,
     getCurrentEnvironment,
@@ -143,35 +141,27 @@
   import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
 
-  // Router
   const router = useRouter()
   const route = useRoute()
-
-  // Stores
   const userStore = useUserStore()
-  const walletService = useWalletConnectService()
+  const { isConnected, isConnecting, accounts } = useWalletStateService()
 
-  // Props
   interface Props {
     isOpen: boolean
     isCollapsed: boolean
   }
 
   const props = defineProps<Props>()
-
-  // Emits
   defineEmits<{
     'toggle-collapse': []
     close: []
   }>()
 
-  // Small screen detection
   const windowWidth = ref(window.innerWidth)
   const isSmallScreen = computed(() => {
     return windowWidth.value <= 1023
   })
 
-  // Update window width on resize
   const updateWindowWidth = () => {
     windowWidth.value = window.innerWidth
   }
@@ -184,7 +174,6 @@
     window.removeEventListener('resize', updateWindowWidth)
   })
 
-  // Navigation items for PrimeVue Menu
   const navigationItems = computed(() => {
     const currentEnv = getCurrentEnvironment()
 
@@ -239,9 +228,8 @@
       },
     ]
 
-    // Filter items based on feature flags
     const filteredItems = allItems.filter(item => {
-      if (!item.featureFlag) return true // Always show items without feature flags
+      if (!item.featureFlag) return true
 
       const feature =
         defaultFeatureFlags.app[item.featureFlag as keyof typeof defaultFeatureFlags.app]
@@ -253,7 +241,6 @@
     return filteredItems
   })
 
-  // Computed
   const collapseIcon = computed(() => {
     return props.isCollapsed || isSmallScreen.value ? 'pi pi-angle-right' : 'pi pi-angle-left'
   })
@@ -267,35 +254,22 @@
   })
 
   const connectionStatusClass = computed(() => {
-    return walletService.state.value.isConnected ? 'connected' : 'disconnected'
+    return isConnected.value ? 'connected' : 'disconnected'
   })
 
   const connectionStatusText = computed(() => {
-    return walletService.state.value.isConnected ? 'Wallet Connected' : 'Wallet Disconnected'
+    return isConnected.value ? 'Connected' : 'Disconnected'
   })
 
-  // Methods
   const navigateTo = (path: string) => {
     router.push(path)
   }
 
   const handleLogout = async () => {
     try {
-      console.log('🚪 Starting logout process from sidebar...')
-
-      // Always disconnect wallet and logout user
-      // Disconnect wallet if connected
-      if (walletService.state.value.isConnected) {
-        console.log('🔌 Disconnecting wallet...')
-        await walletService.disconnect()
-      }
-
-      // Always logout user (this clears user data and localStorage)
       console.log('👤 Logging out user...')
       await userStore.logout()
-
       console.log('✅ Logout completed, redirecting to auth...')
-      // Redirect to auth page after logout
       await router.push('/auth')
     } catch (error) {
       console.error('❌ Logout failed:', error)

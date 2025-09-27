@@ -87,26 +87,15 @@
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useNotificationStore } from '@/features/notifications/store/notificationStore'
   import { useThemeStore } from '@/features/theme/store/themeStore'
-  import { useWalletConnectService } from '@/features/walletConnect/services/WalletConnectService'
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import AppConfigurator from './AppConfigurator.vue'
   import { useLayout } from './composables/layout'
-
-  // Router
   const router = useRouter()
-
-  // Stores
   const themeStore = useThemeStore()
   const notificationStore = useNotificationStore()
-
-  // Services
-  const walletService = useWalletConnectService()
-
-  // Layout composable
   const { toggleMenu, layoutState } = useLayout()
 
-  // Initialize theme store when component mounts
   onMounted(async () => {
     try {
       await themeStore.initializeTheme()
@@ -115,13 +104,11 @@
     }
   })
 
-  // State
   const searchQuery = ref('')
   const isUserMenuVisible = ref(false)
   const isConfigPanelVisible = ref(false)
   const isThemeToggle = ref(false)
 
-  // Computed
   const themeIcon = computed(() => {
     if (themeStore.isWindows95) {
       return 'pi pi-desktop'
@@ -132,15 +119,6 @@
   const notificationCount = computed(() => {
     return notificationStore.unreadCount
   })
-
-  // Methods
-  const toggleNotifications = () => {
-    // TODO: Implement notifications panel
-  }
-
-  const handleSearch = () => {
-    // TODO: Implement search functionality
-  }
 
   const handleThemeToggle = () => {
     isThemeToggle.value = !isThemeToggle.value
@@ -162,25 +140,11 @@
 
   const handleLogout = async () => {
     try {
-      console.log('🚪 Starting logout process...')
-
-      // Always disconnect wallet and logout user
       const userStore = useUserStore()
-
-      // Disconnect wallet if connected
-      if (walletService.state.value.isConnected) {
-        console.log('🔌 Disconnecting wallet...')
-        await walletService.disconnect()
-      }
-
-      // Always logout user (this clears user data and localStorage)
       console.log('👤 Logging out user...')
       await userStore.logout()
-
       isUserMenuVisible.value = false
-
       console.log('✅ Logout completed, redirecting to auth...')
-      // Redirect to auth page after logout
       await router.push('/auth')
     } catch (error) {
       console.error('❌ Logout failed:', error)

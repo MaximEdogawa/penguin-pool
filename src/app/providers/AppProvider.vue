@@ -8,31 +8,16 @@
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useNotificationStore } from '@/features/notifications/store/notificationStore'
   import { useThemeStore } from '@/features/theme/store/themeStore'
-  import { useWalletConnectService } from '@/features/walletConnect/services/WalletConnectService'
   import { onMounted } from 'vue'
 
   // Lifecycle
   onMounted(async () => {
     try {
-      // Initialize stores only after component is mounted
       const themeStore = useThemeStore()
       const notificationStore = useNotificationStore()
       const userStore = useUserStore()
-      const walletService = useWalletConnectService()
-
-      // Initialize theme
       await themeStore.initializeTheme()
-
-      // Initialize notifications
       await notificationStore.initialize()
-
-      // Initialize wallet connect
-      await walletService.initialize()
-
-      // Restore any existing wallet sessions
-      await walletService.restoreSessions()
-
-      // Check for existing user session
       await userStore.checkSession()
     } catch (error) {
       console.error('Failed to initialize app:', error)

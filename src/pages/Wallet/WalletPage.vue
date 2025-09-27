@@ -68,17 +68,14 @@
 
 <script setup lang="ts">
   import SendTransactionComponent from '@/components/SendTransaction/SendTransactionComponent.vue'
-  import { useConnectionDataService } from '@/features/walletConnect/services/ConnectionDataService'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
+  import { useWalletStateService } from '@/features/walletConnect/services/WalletStateDataService'
   import { computed, ref } from 'vue'
 
-  const connectionService = useConnectionDataService()
   const walletDataService = useWalletDataService()
+  const { walletState } = useWalletStateService()
 
-  // State
   const isAddressCopied = ref(false)
-
-  // Computed properties
   const userBalance = computed(() => {
     if (walletDataService.balance.data.value?.confirmed) {
       return formatBalance(parseInt(walletDataService.balance.data.value.confirmed))
@@ -87,7 +84,7 @@
   })
 
   const ticker = computed(() => {
-    const chainId = connectionService.state.value.chainId
+    const chainId = walletState.value.chainId
     if (chainId?.includes('testnet')) {
       return 'TXCH'
     }
