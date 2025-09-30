@@ -17,7 +17,6 @@ import type {
 } from '../types/command.types'
 import type { AssetBalance, AssetCoins, WalletConnectSession } from '../types/walletConnect.types'
 
-// Simple request queue to prevent concurrent wallet requests
 class WalletRequestQueue {
   private queue: Array<() => Promise<unknown>> = []
   private isProcessing = false
@@ -69,39 +68,27 @@ async function makeWalletRequestInternal<T>(
   signClient: ComputedRef<SignClient | undefined>,
   session: WalletConnectSession
 ): Promise<{ success: boolean; data?: T; error?: string }> {
-  const timeoutMs = import.meta.env.PROD ? 15000 : 10000
-
   try {
-    if (!signClient.value) throw new Error('SignClient not available')
+    if (!signClient.value) throw new Error('SignClient is not initialized')
 
-    const requestPromise = signClient.value.request({
+    const result = (await signClient.value.request({
       topic: session.topic.value,
       chainId: session.chainId.value,
       request: {
         method,
-        params: {
-          fingerprint: session.fingerprint.value,
-          ...data,
-        },
+        params: { fingerprint: session.fingerprint.value, ...data },
       },
-    })
-
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs)
-    })
-
-    const result = (await Promise.race([requestPromise, timeoutPromise])) as
-      | T
-      | { error: Record<string, unknown> }
+    })) as T | { error: Record<string, unknown> }
 
     if (result && typeof result === 'object' && 'error' in result) {
       return { success: false, error: 'Wallet returned an error' }
     }
 
+    console.log('Wallet request for :', { method, result })
     return { success: true, data: result as T }
   } catch (error) {
-    console.error('Wallet request error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('WalletConnect request failed:', { method, error: errorMessage })
     return { success: false, error: errorMessage }
   }
 }
@@ -123,30 +110,24 @@ export async function getWalletAddress(
 }
 
 export async function getAssetBalance(
-  type: AssetType | null = null,
-  assetId: string | null = null,
   signClient: ComputedRef<SignClient | undefined>,
-  session: WalletConnectSession
+  session: WalletConnectSession,
+  type: AssetType | null = null,
+  assetId: string | null = null
 ): Promise<{ success: boolean; data?: AssetBalance | null; error?: string }> {
-  const result = await makeWalletRequest<AssetBalance>(
+  return await makeWalletRequest<AssetBalance>(
     SageMethods.CHIP0002_GET_ASSET_BALANCE,
     { type, assetId },
     signClient,
     session
   )
-
-  return {
-    success: false,
-    error: result.error || 'Balance request failed',
-    data: null,
-  }
 }
 
 export async function getAssetCoins(
-  type: AssetType | null = null,
-  assetId: string | null = null,
   signClient: ComputedRef<SignClient | undefined>,
-  session: WalletConnectSession
+  session: WalletConnectSession,
+  type: AssetType | null = null,
+  assetId: string | null = null
 ): Promise<{ success: boolean; data?: AssetCoins | null; error?: string }> {
   return await makeWalletRequest<AssetCoins>(
     SageMethods.CHIP0002_GET_ASSET_COINS,

@@ -22,7 +22,7 @@ export function useWalletDataService() {
   const balanceQuery = useQuery({
     queryKey: [WALLET_CONNECT_KEY, BALLANCE_KEY],
     queryFn: async () => {
-      const result = await getAssetBalance(null, null, signClient, session)
+      const result = await getAssetBalance(signClient, session)
       if (!result.success) throw new Error(result.error)
       return result.data
     },
@@ -59,10 +59,10 @@ export function useWalletDataService() {
   })
 
   const getBalanceMutation = useMutation({
-    mutationFn: async (data?: { type?: string | null; assetId?: string | null }) => {
+    mutationFn: async (data?: { type?: AssetType | null; assetId?: string | null }) => {
       const type = data?.type ?? null
       const assetId = data?.assetId ?? null
-      const result = await getAssetBalance(type as AssetType | null, assetId, signClient, session)
+      const result = await getAssetBalance(signClient, session, type, assetId)
       if (!result.success) throw new Error(result.error)
       return result.data
     },

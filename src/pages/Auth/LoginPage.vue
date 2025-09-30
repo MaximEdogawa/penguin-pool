@@ -84,14 +84,12 @@
   import { useConnectDataService } from '@/features/walletConnect/services/ConnectionDataService'
   import { useInstanceDataService } from '@/features/walletConnect/services/InstanceDataService'
   import { useSessionDataService } from '@/features/walletConnect/services/SessionDataService'
-  import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
   import router from '@/router'
   import { computed, onMounted, ref, watch } from 'vue'
 
   const instance = useInstanceDataService()
   const connection = useConnectDataService()
   const session = useSessionDataService()
-  const wallet = useWalletDataService()
 
   const selectedNetwork = ref('chia:testnet')
   const backgroundStyle = computed(() => ({
@@ -118,10 +116,8 @@
     if (connection.isConnected.value && !session.isConnected.value) session.waitForApproval()
   })
 
-  watch(session.isConnected, value => {
-    console.log('Wallet connection status changed:', value)
+  watch(session.isConnected, async value => {
     if (value) {
-      wallet.getBalance({})
       router.push('/dashboard')
     }
   })
