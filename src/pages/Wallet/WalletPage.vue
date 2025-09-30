@@ -47,8 +47,6 @@
           :wallet-id="1"
           :available-balance="parseFloat(userBalance)"
           :ticker="ticker"
-          @transaction-sent="handleTransactionSent"
-          @transaction-error="handleTransactionError"
         />
       </div>
 
@@ -68,13 +66,12 @@
 
 <script setup lang="ts">
   import SendTransactionComponent from '@/components/SendTransaction/SendTransactionComponent.vue'
+  import { useSessionDataService } from '@/features/walletConnect/services/SessionDataService'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
-  import { useWalletStateService } from '@/features/walletConnect/services/WalletStateDataService'
   import { computed, ref } from 'vue'
 
   const walletDataService = useWalletDataService()
-  const { walletState } = useWalletStateService()
-
+  const session = useSessionDataService()
   const isAddressCopied = ref(false)
   const userBalance = computed(() => {
     if (walletDataService.balance.data.value?.confirmed) {
@@ -84,14 +81,12 @@
   })
 
   const ticker = computed(() => {
-    const chainId = walletState.value.chainId
-    if (chainId?.includes('testnet')) {
+    if (session.chainId.value?.includes('testnet')) {
       return 'TXCH'
     }
     return 'XCH'
   })
 
-  // Helper functions
   const formatBalance = (mojos: number): string => {
     if (mojos === 0) return '0.000000'
     return (mojos / 1000000000000).toFixed(6)
@@ -116,19 +111,6 @@
     } catch (error) {
       console.error('Failed to copy address:', error)
     }
-  }
-
-  // Event handlers
-  const handleTransactionSent = (transactionId: string) => {
-    console.log('Transaction sent successfully:', transactionId)
-    // You could add a toast notification here
-    // Refresh wallet balance
-    // Add to transaction history
-  }
-
-  const handleTransactionError = (error: string) => {
-    console.error('Transaction failed:', error)
-    // You could add a toast notification here
   }
 </script>
 

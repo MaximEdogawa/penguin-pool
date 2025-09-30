@@ -1,9 +1,7 @@
 <template>
-  <!-- Login Screen with Loading State -->
   <PWAInstallPrompt />
   <div class="login-page" :style="backgroundStyle">
     <div class="login-container">
-      <!-- Logo and Title -->
       <div class="logo-section">
         <div class="logo-container">
           <PenguinLogo class="logo-icon" />
@@ -18,10 +16,8 @@
         </div>
       </div>
 
-      <!-- Wallet Connection Section -->
       <div class="wallet-section">
         <div class="wallet-options">
-          <!-- Primary Wallet Option - Sage -->
           <button
             @click="handleConnect"
             class="wallet-option-primary group"
@@ -43,8 +39,6 @@
             <div class="wallet-hover-overlay"></div>
           </button>
         </div>
-
-        <!-- Connection Status -->
         <div
           v-if="connectionStatus.message"
           class="connection-status"
@@ -54,8 +48,6 @@
           <span class="status-text">{{ connectionStatus.message }}</span>
         </div>
       </div>
-
-      <!-- Network Selection -->
       <div class="network-section">
         <div class="network-selector">
           <label for="network-select" class="network-label">Network:</label>
@@ -70,8 +62,6 @@
           </select>
         </div>
       </div>
-
-      <!-- Footer -->
       <div class="footer">
         <p class="footer-text">
           By connecting your wallet, you agree to our
@@ -82,8 +72,6 @@
       </div>
     </div>
 
-    <!-- Native WalletConnect Modal is handled by the service -->
-    <!-- iOS WalletConnect Modal -->
     <IOSModalWrapper />
   </div>
 </template>
@@ -95,22 +83,25 @@
   import IOSModalWrapper from '@/features/walletConnect/components/IOSModalWrapper.vue'
   import { useConnectDataService } from '@/features/walletConnect/services/ConnectionDataService'
   import { useInstanceDataService } from '@/features/walletConnect/services/InstanceDataService'
+  import { useSessionDataService } from '@/features/walletConnect/services/SessionDataService'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
-  import { useWalletStateService } from '@/features/walletConnect/services/WalletStateDataService'
   import router from '@/router'
   import { computed, onMounted, ref, watch } from 'vue'
 
-  const { initialize, isInitializing } = useInstanceDataService()
-  const { connect: connectWallet, isConnecting: isConnectingWallet } = useConnectDataService()
-  const { isConnected } = useWalletStateService()
-  const { getBalance } = useWalletDataService()
+  const instance = useInstanceDataService()
+  const connection = useConnectDataService()
+  const session = useSessionDataService()
+  const wallet = useWalletDataService()
 
   const selectedNetwork = ref('chia:testnet')
   const backgroundStyle = computed(() => ({
     backgroundImage: `url('${signinGlassImage}')`,
   }))
 
-  const isConnecting = computed(() => isInitializing.value || isConnectingWallet.value)
+  const isConnecting = computed(
+    () => instance.isInitializing.value || connection.isConnecting.value
+  )
+
   const connectionStatus = ref<{
     message: string
     type: 'info' | 'success' | 'error'
@@ -122,19 +113,29 @@
   })
 
   onMounted(() => {
-    initialize()
+    if (session.isConnected.value) router.push('/dashboard')
+    if (!instance.isInitialized.value) instance.initialize()
+    if (connection.isConnected.value && !session.isConnected.value) session.waitForApproval()
   })
 
-  watch(isConnected, value => {
+  watch(session.isConnected, value => {
+    console.log('Wallet connection status changed:', value)
     if (value) {
-      getBalance({})
+      wallet.getBalance({})
       router.push('/dashboard')
+    }
+  })
+
+  watch(connection.isConnected, value => {
+    if (value) {
+      console.log('Wallet Connected waiting for approval:', value)
+      session.waitForApproval()
     }
   })
 
   const handleConnect = () => {
     try {
-      connectWallet()
+      connection.connect()
     } catch (error) {
       console.error('Connection failed:', error)
       connectionStatus.value = {

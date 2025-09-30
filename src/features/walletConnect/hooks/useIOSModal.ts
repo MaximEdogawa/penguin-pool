@@ -1,20 +1,19 @@
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-const detectIOS = (): boolean => {
+export const isIOS = computed(() => {
   const userAgent = navigator.userAgent.toLowerCase()
   return (
     /iphone|ipad|ipod/.test(userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
   )
-}
+})
 
 export function useIOSModal() {
-  const isIOS = detectIOS()
   const isModalVisible = ref(false)
   const modalUri = ref('')
 
   const handleShowIOSModal = (event: CustomEvent) => {
-    if (isIOS) {
+    if (isIOS.value) {
       modalUri.value = event.detail.uri
       isModalVisible.value = true
     }
@@ -31,7 +30,7 @@ export function useIOSModal() {
   }
 
   onMounted(() => {
-    if (isIOS) {
+    if (isIOS.value) {
       window.addEventListener('show_ios_modal', handleShowIOSModal as EventListener)
       window.addEventListener('hide_ios_modal', handleHideIOSModal as EventListener)
     }

@@ -46,3 +46,31 @@ export const REQUIRED_NAMESPACES = {
     events: ['chainChanged', 'accountsChanged'],
   },
 }
+
+export const SIGN_CLIENT_CONFIG = {
+  projectId: import.meta.env?.VITE_WALLET_CONNECT_PROJECT_ID,
+  relayUrl: import.meta.env?.VITE_WALLET_CONNECT_RELAY_URL || 'wss://relay.walletconnect.com',
+  metadata: {
+    name: import.meta.env?.VITE_APP_NAME || 'Penguin Pool',
+    description: 'Chia Pool Management Platform',
+    url: window.location.origin,
+    icons: [
+      `${window.location.origin}/penguin-pool.svg`,
+      `${window.location.origin}/icons/icon-192x192.png`,
+      `${window.location.origin}/icons/icon-512x512.png`,
+    ],
+  },
+}
+
+export const MODAL_CONFIG = {
+  projectId: import.meta.env?.VITE_WALLET_CONNECT_PROJECT_ID,
+  enableExplorer: false,
+  themeMode: 'dark' as const,
+  themeVariables: {
+    '--wcm-z-index': '1000',
+    '--wcm-background-color': '#1f2937',
+    '--wcm-accent-color': '#3b82f6',
+    '--wcm-accent-fill-color': '#ffffff',
+    '--wcm-overlay-background-color': 'rgba(0, 0, 0, 0.8)',
+  },
+}

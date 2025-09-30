@@ -1,15 +1,19 @@
+import type { WalletConnectModal } from '@walletconnect/modal'
 import type { SignClient } from '@walletconnect/sign-client/dist/types/client'
 import type { SessionTypes } from '@walletconnect/types'
+import type { ComputedRef, Ref } from 'vue'
 
-// Namespace interfaces for better type safety
+export interface WalletConnectInstance {
+  signClient: SignClient
+  modal: WalletConnectModal
+}
+
 export interface ChiaNamespace {
   accounts: string[]
   methods: string[]
   events: string[]
   chains: string[]
 }
-
-// Generic namespace type to match WalletConnect's actual structure
 export interface GenericNamespace {
   accounts?: string[]
   methods: string[]
@@ -39,12 +43,12 @@ export interface WalletConnectState {
   isInitialized: boolean
   isConnected: boolean
   isConnecting: boolean
-  session: SessionTypes.Struct | null
-  address: string | null
-  fingerprint: string | null
+  session: SessionTypes.Struct | undefined
+  address: string | undefined
+  fingerprint: string | undefined
   accounts: string[]
-  chainId: string | null
-  error: string | null
+  chainId: string | undefined
+  error: string | undefined
 }
 
 export interface ConnectionResult {
@@ -75,7 +79,7 @@ export type WalletConnectEventType =
   | 'session_response_sent'
   | 'session_request_expire'
   | 'session_response_expire'
-  | string // Allow any string for custom events
+  | string
 
 export interface WalletConnectEvent {
   type: WalletConnectEventType
@@ -88,7 +92,6 @@ export interface AssetBalance {
   spendableCoinCount: number
 }
 
-// Legacy interface for backward compatibility
 export interface LegacyAssetBalance {
   balance: number
   assetId: string
@@ -132,7 +135,6 @@ export interface ExtendedWalletInfo {
   session: SessionTypes.Struct | null
 }
 
-// Define WalletConnectNetwork interface for Chia networks
 export interface WalletConnectNetwork {
   id: string
   name: string
@@ -148,15 +150,12 @@ export interface WalletConnectNetwork {
     decimals: number
   }
 }
-
-// Command execution result type
 export interface CommandExecutionResult<T = unknown> {
   success: boolean
   data?: T
   error?: string
 }
 
-// Transaction and offer interfaces
 export interface TransactionData {
   amount: number
   fee: number
@@ -186,18 +185,15 @@ export interface CoinSpend {
   solution: string
 }
 
-// Wallet command interface for easier usage
 export interface WalletCommand {
   command: string
   params: WalletMethodParams
 }
 
-// Wallet request parameter types
 export interface WalletRequestParams {
   [key: string]: unknown
 }
 
-// Specific parameter interfaces for different wallet methods
 export interface GetAssetBalanceParams {
   type?: string | null
   assetId?: string | null
@@ -234,7 +230,6 @@ export interface SignCoinSpendsParams {
   coinSpends: CoinSpend[]
 }
 
-// Method-specific parameter mapping
 export type WalletMethodParams =
   | GetAssetBalanceParams
   | GetAssetCoinsParams
@@ -244,9 +239,18 @@ export type WalletMethodParams =
   | TakeOfferParams
   | CancelOfferParams
   | SignCoinSpendsParams
-  | Record<string, never> // For methods with no parameters
+  | Record<string, never>
 
-// Use the actual SignClient instance type from WalletConnect
 export type AppSignClient = Awaited<
   ReturnType<typeof import('@walletconnect/sign-client').SignClient.init>
 >
+
+export interface WalletConnectSession {
+  data: Ref<SessionTypes.Struct | undefined>
+  chainId: ComputedRef<string>
+  fingerprint: ComputedRef<number>
+  topic: ComputedRef<string>
+  isConnecting: Ref<boolean>
+  isConnected: Ref<boolean>
+  waitForApproval: () => void
+}

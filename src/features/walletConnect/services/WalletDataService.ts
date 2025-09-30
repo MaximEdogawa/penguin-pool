@@ -7,43 +7,44 @@ import {
   signMessage,
 } from '../repositories/walletQueries.repository'
 import type { AssetType, TransactionRequest } from '../types/command.types'
-import { useSessionDataService } from './ConnectionDataService'
 import { useInstanceDataService } from './InstanceDataService'
+import { useSessionDataService } from './SessionDataService'
+
+const WALLET_CONNECT_KEY = 'walletConnect'
+const BALLANCE_KEY = 'balance'
+const ADDRESS_KEY = 'address'
 
 export function useWalletDataService() {
   const { signClient } = useInstanceDataService()
-  const { session } = useSessionDataService()
+  const session = useSessionDataService()
   const queryClient = useQueryClient()
 
   const balanceQuery = useQuery({
-    queryKey: ['walletConnect', 'balance'],
+    queryKey: [WALLET_CONNECT_KEY, BALLANCE_KEY],
     queryFn: async () => {
-      const result = await getAssetBalance(null, null, signClient.value, session.value)
+      const result = await getAssetBalance(null, null, signClient, session)
       if (!result.success) throw new Error(result.error)
       return result.data
     },
-    enabled: computed(() => signClient.value != null && session.value != null),
-    retry: 3,
-    retryDelay: 15000,
-    staleTime: 15 * 1000, // 15 seconds
+    enabled: computed(() => signClient.value != null && session.isConnected.value),
+    staleTime: Infinity,
   })
 
   const addressQuery = useQuery({
-    queryKey: ['walletConnect', 'address'],
+    queryKey: [WALLET_CONNECT_KEY, ADDRESS_KEY],
     queryFn: async () => {
-      const result = await getWalletAddress(signClient.value, session.value)
+      const result = await getWalletAddress(signClient, session)
       if (!result.success) throw new Error(result.error)
       return result.data
     },
-    enabled: computed(() => signClient.value != null && session.value != null),
+    enabled: computed(() => signClient.value != null && session.isConnected.value),
     retry: 3,
-    retryDelay: 15000,
-    staleTime: 15 * 1000, // 15 seconds
+    staleTime: Infinity,
   })
 
   const signMessageMutation = useMutation({
     mutationFn: async (data: { message: string }) => {
-      const result = await signMessage(data, signClient.value, session.value)
+      const result = await signMessage(data, signClient, session)
       if (!result.success) throw new Error(result.error)
       return result.data
     },
@@ -51,7 +52,7 @@ export function useWalletDataService() {
 
   const sendTransactionMutation = useMutation({
     mutationFn: async (data: TransactionRequest) => {
-      const result = await sendTransaction(data, signClient.value, session.value)
+      const result = await sendTransaction(data, signClient, session)
       if (!result.success) throw new Error(result.error)
       return result.data
     },
@@ -61,19 +62,14 @@ export function useWalletDataService() {
     mutationFn: async (data?: { type?: string | null; assetId?: string | null }) => {
       const type = data?.type ?? null
       const assetId = data?.assetId ?? null
-      const result = await getAssetBalance(
-        type as AssetType | null,
-        assetId,
-        signClient.value,
-        session.value
-      )
+      const result = await getAssetBalance(type as AssetType | null, assetId, signClient, session)
       if (!result.success) throw new Error(result.error)
       return result.data
     },
   })
 
   const refreshBalance = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['walletConnect', 'balance'] })
+    await queryClient.invalidateQueries({ queryKey: [WALLET_CONNECT_KEY, BALLANCE_KEY] })
   }
 
   return {

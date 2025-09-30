@@ -36,7 +36,7 @@ export const queryClient = new QueryClient({
 
 export function setupOfflineHandling() {
   const handleOnline = () => {
-    queryClient.invalidateQueries()
+    console.log('📡 Network online - queries started')
   }
 
   const handleOffline = () => {

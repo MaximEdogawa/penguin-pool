@@ -44,7 +44,7 @@
           <div class="user-info-section">
             <div class="user-avatar">
               <i
-                :class="isConnected ? 'pi pi-wallet' : 'pi pi-user'"
+                :class="session.isConnected.value ? 'pi pi-wallet' : 'pi pi-user'"
                 class="text-xl text-white"
               ></i>
             </div>
@@ -53,10 +53,10 @@
               <p class="user-email">{{ userEmail }}</p>
 
               <!-- Wallet Connection Info -->
-              <div v-if="isConnected" class="wallet-info">
+              <div v-if="session.isConnected.value" class="wallet-info">
                 <div class="wallet-fingerprint">
                   <i class="pi pi-key text-sm"></i>
-                  <span class="fingerprint-text">{{ accounts[0] || 'N/A' }}</span>
+                  <span class="fingerprint-text">{{ session.fingerprint.value || 'N/A' }}</span>
                 </div>
               </div>
 
@@ -71,7 +71,7 @@
           <!-- Wallet Connect/Disconnect Button -->
           <div class="wallet-section">
             <PrimeButton
-              v-if="isConnecting"
+              v-if="session.isConnecting"
               :icon="'pi pi-spin pi-spinner'"
               :label="!isCollapsed && !isSmallScreen ? 'Connecting...' : ''"
               :title="isCollapsed || isSmallScreen ? 'Connecting...' : ''"
@@ -80,7 +80,7 @@
               disabled
             />
             <PrimeButton
-              v-else-if="!isConnected"
+              v-else-if="!session.isConnected"
               @click="navigateTo('/auth')"
               :icon="'pi pi-wallet'"
               :label="!isCollapsed && !isSmallScreen ? 'Connect Wallet' : ''"
@@ -132,7 +132,7 @@
 
 <script setup lang="ts">
   import { useUserStore } from '@/entities/user/store/userStore'
-  import { useWalletStateService } from '@/features/walletConnect/services/WalletStateDataService'
+  import { useSessionDataService } from '@/features/walletConnect/services/SessionDataService'
   import {
     defaultFeatureFlags,
     getCurrentEnvironment,
@@ -144,7 +144,7 @@
   const router = useRouter()
   const route = useRoute()
   const userStore = useUserStore()
-  const { isConnected, isConnecting, accounts } = useWalletStateService()
+  const session = useSessionDataService()
 
   interface Props {
     isOpen: boolean
@@ -254,11 +254,11 @@
   })
 
   const connectionStatusClass = computed(() => {
-    return isConnected.value ? 'connected' : 'disconnected'
+    return session.isConnected.value ? 'connected' : 'disconnected'
   })
 
   const connectionStatusText = computed(() => {
-    return isConnected.value ? 'Connected' : 'Disconnected'
+    return session.isConnected.value ? 'Connected' : 'Disconnected'
   })
 
   const navigateTo = (path: string) => {

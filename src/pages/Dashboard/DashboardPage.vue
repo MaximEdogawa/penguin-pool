@@ -237,21 +237,21 @@
 
 <script setup lang="ts">
   import { useUserStore } from '@/entities/user/store/userStore'
+  import { useSessionDataService } from '@/features/walletConnect/services/SessionDataService'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
-  import { useWalletStateService } from '@/features/walletConnect/services/WalletStateDataService'
-  import { computed, onMounted, onUnmounted, ref } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
 
   const userStore = ref<ReturnType<typeof useUserStore> | null>(null)
   const walletDataService = useWalletDataService()
-  const { walletState } = useWalletStateService()
+  const session = useSessionDataService()
   const router = useRouter()
 
   const walletBalance = computed(() => walletDataService.balance.data.value || null)
   const isBalanceLoading = computed(() => walletDataService.balance.isLoading.value)
   const balanceLastUpdated = ref<Date | null>(null)
   const autoRefreshEnabled = ref(true)
-  const isConnected = computed(() => walletState.value.isConnected)
+  const isConnected = computed(() => session.isConnected.value)
   // Format balance for display
   const formatBalance = (mojos: number): string => {
     if (mojos === 0) return '0.000000'
@@ -272,7 +272,7 @@
 
   // Get ticker symbol
   const ticker = computed(() => {
-    const chainId = walletState.value.chainId || ''
+    const chainId = session.chainId.value || ''
     return chainId?.includes('testnet') ? 'TXCH' : 'XCH'
   })
 
@@ -369,10 +369,6 @@
     } catch (error) {
       console.error('Failed to initialize dashboard:', error)
     }
-  })
-
-  onUnmounted(() => {
-    // Cleanup is handled by useBalance composable
   })
 </script>
 
