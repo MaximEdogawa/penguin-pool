@@ -8,22 +8,15 @@ import { walletConnectPersistenceService } from './WalletConnectPersistenceServi
 export function useSessionDataService() {
   const { approval } = useConnectDataService()
   const sessionData: Ref<SessionTypes.Struct | undefined> = ref(undefined)
-  const initializeFromPersistence = () => {
-    const persistedSession = walletConnectPersistenceService.currentSessionData
-    if (persistedSession) {
-      sessionData.value = persistedSession
-      console.log('🔄 SessionDataService initialized with persisted session')
-    }
-  }
 
   const sessionMutation = useMutation({
     mutationFn: async () => {
       try {
         if (!approval.value) throw new Error('Approval function is not available')
         const result = await approval.value()
+        if (!result) throw new Error('Approval result is not available')
         sessionData.value = result
         walletConnectPersistenceService.saveSession(result)
-
         return result
       } catch (error) {
         console.error('Approval failed:', error)
@@ -47,6 +40,12 @@ export function useSessionDataService() {
     refetchOnReconnect: false,
   })
 
+  const initializeFromPersistence = () => {
+    const persistedSession = walletConnectPersistenceService.currentSessionData
+    if (persistedSession) {
+      sessionData.value = persistedSession
+    }
+  }
   initializeFromPersistence()
 
   const chainId = computed(() => {

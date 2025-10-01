@@ -1,7 +1,6 @@
 import SignClient from '@walletconnect/sign-client'
 import { walletConnectPersistenceService } from '../services/WalletConnectPersistenceService'
 
-// Global flag to track if event listeners have been added to the singleton SignClient
 let globalEventListenersAdded = false
 let globalSignClientInstance: SignClient | null = null
 
@@ -25,7 +24,6 @@ export function useWalletConnectEventListeners() {
     })
 
     signClient.on('session_request', event => {
-      console.log('📨 WalletConnect session request received:', event)
       try {
         signClient.respond({
           topic: event.topic,
@@ -35,7 +33,6 @@ export function useWalletConnectEventListeners() {
             result: { acknowledged: true },
           },
         })
-        console.log('✅ Session request acknowledged')
       } catch (error) {
         console.warn('⚠️ Failed to respond to session request:', error)
       }

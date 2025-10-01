@@ -17,14 +17,12 @@ class WalletConnectPersistenceService {
       const data: PersistedWalletConnectData = {
         session,
         lastConnectedAt: Date.now(),
-        projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || 'demo',
+        projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || 'unknown',
       }
 
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data))
       this.currentSession.value = session
       this.lastConnectedAt.value = data.lastConnectedAt
-
-      console.log('💾 WalletConnect session saved to localStorage')
     } catch (error) {
       console.error('Failed to save WalletConnect session:', error)
     }
@@ -40,7 +38,6 @@ class WalletConnectPersistenceService {
       if (data.session && this.isSessionValid(data.session)) {
         this.currentSession.value = data.session
         this.lastConnectedAt.value = data.lastConnectedAt
-        console.log('📱 WalletConnect session restored from localStorage')
         return data
       } else {
         this.clearSession()
@@ -58,8 +55,6 @@ class WalletConnectPersistenceService {
       localStorage.removeItem(this.STORAGE_KEY)
       this.currentSession.value = null
       this.lastConnectedAt.value = null
-
-      console.log('🗑️ WalletConnect session cleared')
     } catch (error) {
       console.error('Failed to clear WalletConnect session:', error)
     }
