@@ -189,10 +189,8 @@
 </template>
 
 <script setup lang="ts">
-  import type {
-    SendTransactionWalletRequest,
-    SendTransactionWalletResponse,
-  } from '@/types/transaction.types'
+  import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
+  import type { TransactionRequest } from '@/features/walletConnect/types/command.types'
   import { computed, reactive, ref } from 'vue'
 
   interface Props {
@@ -205,6 +203,8 @@
     (e: 'transaction-sent', transactionId: string): void
     (e: 'transaction-error', error: string): void
   }
+
+  const { sendTransaction } = useWalletDataService()
 
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
@@ -316,40 +316,17 @@
     }
 
     isSubmitting.value = true
-
     try {
-      const sendTransaction = async (
-        data: SendTransactionWalletRequest
-      ): Promise<SendTransactionWalletResponse> => {
-        console.log('Send transaction called with:', data)
-        return {
-          success: true,
-          transactionId: 'test-tx-id',
-          data: {
-            transactionId: 'test-tx-id',
-            status: 'pending',
-            fee: data.transaction.fee,
-          },
-          error: null,
-        }
+      const params: TransactionRequest = {
+        walletId: props.walletId,
+        address: form.recipientAddress.trim(),
+        amount: Math.round(parseFloat(form.amount) * 1_000_000),
+        fee: Math.round(parseFloat(form.fee) * 1_000_000),
+        memo: form.memo.trim() || undefined,
       }
 
-      const result = await sendTransaction({
-        transaction: {
-          amount: Math.floor(parseFloat(form.amount) * 1000000000000), // Convert to mojos
-          fee: Math.floor(parseFloat(form.fee) * 1000000000000), // Convert to mojos
-          recipient: form.recipientAddress.trim(),
-          memo: form.memo || undefined,
-        },
-      })
-
-      if (result.success && result.data) {
-        successMessage.value = `Transaction sent successfully! Transaction ID: ${result.data.transactionId}`
-        emit('transaction-sent', result.data.transactionId)
-        resetForm()
-      } else {
-        throw new Error(result.error || 'Transaction failed')
-      }
+      await sendTransaction(params)
+      resetForm()
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
       errorMessage.value = `Transaction failed: ${errorMsg}`
