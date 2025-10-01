@@ -112,7 +112,6 @@
 
   onMounted(() => {
     if (session.isConnected.value) router.push('/dashboard')
-    if (!instance.isInitialized.value) instance.initialize()
     if (connection.isConnected.value && !session.isConnected.value) session.waitForApproval()
   })
 
