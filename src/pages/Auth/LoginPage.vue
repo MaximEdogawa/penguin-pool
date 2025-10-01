@@ -72,7 +72,12 @@
       </div>
     </div>
 
-    <IOSModalWrapper />
+    <IOSWalletModal
+      v-if="isIOS && isModalVisible"
+      :uri="connection.uri.value"
+      @close="closeModal"
+      @continue="handleContinue"
+    ></IOSWalletModal>
   </div>
 </template>
 
@@ -80,7 +85,8 @@
   import signinGlassImage from '@/assets/signin-glass.jpg'
   import PWAInstallPrompt from '@/components/PWAInstallPrompt.vue'
   import PenguinLogo from '@/components/PenguinLogo.vue'
-  import IOSModalWrapper from '@/features/walletConnect/components/IOSModalWrapper.vue'
+  import IOSWalletModal from '@/features/walletConnect/components/IOSWalletModal.vue'
+  import { isIOS } from '@/features/walletConnect/hooks/useIOSModal'
   import { useConnectDataService } from '@/features/walletConnect/services/ConnectionDataService'
   import { useInstanceDataService } from '@/features/walletConnect/services/InstanceDataService'
   import { useSessionDataService } from '@/features/walletConnect/services/SessionDataService'
@@ -92,6 +98,7 @@
   const session = useSessionDataService()
 
   const selectedNetwork = ref('chia:testnet')
+  const isModalVisible = ref(false)
   const backgroundStyle = computed(() => ({
     backgroundImage: `url('${signinGlassImage}')`,
   }))
@@ -111,16 +118,19 @@
   })
 
   onMounted(() => {
+    isModalVisible.value = false
     if (session.isConnected.value) router.push('/dashboard')
     if (connection.isConnected.value && !session.isConnected.value) session.waitForApproval()
   })
 
   watch(connection.uri, uri => {
-    if (uri) {
-      if (instance.modal.value) {
+    if (uri && instance.modal.value) {
+      if (isIOS.value) {
+        isModalVisible.value = true
+      } else {
         instance.modal.value.openModal({ uri })
-        stop()
       }
+      stop()
     }
   })
 

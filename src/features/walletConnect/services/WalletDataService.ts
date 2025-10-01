@@ -27,6 +27,7 @@ export function useWalletDataService() {
       return result.data
     },
     enabled: computed(() => signClient.value != null && session.isConnected.value),
+    retry: 3,
     staleTime: Infinity,
   })
 

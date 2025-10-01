@@ -17,7 +17,7 @@ import type {
 } from '../types/command.types'
 import type { AssetBalance, AssetCoins, WalletConnectSession } from '../types/walletConnect.types'
 
-const REQUEST_TIMEOUT = 15000
+const REQUEST_TIMEOUT = 30000
 export async function makeWalletRequest<T>(
   method: string,
   data: Record<string, unknown>,

@@ -1,10 +1,5 @@
 <template>
-  <div
-    v-if="isVisible"
-    class="ios-modal-overlay"
-    :class="{ 'dark-mode': isDarkMode }"
-    @click="handleOverlayClick"
-  >
+  <div class="ios-modal-overlay" :class="{ 'dark-mode': isDarkMode }" @click="handleOverlayClick">
     <div class="ios-modal" :class="{ 'dark-mode': isDarkMode }" @click.stop>
       <!-- Content -->
       <div class="ios-modal-content">
@@ -97,10 +92,9 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
 
   interface Props {
-    isVisible: boolean
     uri: string
   }
 
@@ -112,69 +106,25 @@
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
 
-  // Refs
   const qrCodeRef = ref<HTMLElement>()
   const uriTextarea = ref<HTMLTextAreaElement>()
 
-  // State
   const qrCodeLoading = ref(false)
   const qrCodeError = ref(false)
   const copyStatus = ref<'idle' | 'copied' | 'error'>('idle')
   const isWalletConnected = ref(false)
 
-  // Dark mode detection
   const isDarkMode = computed(() => {
     if (typeof window === 'undefined') return false
     return window.matchMedia('(prefers-color-scheme: dark)').matches
   })
 
-  // Listen for wallet connection events
-  const handleWalletConnected = (event: CustomEvent) => {
-    event.stopPropagation()
-    isWalletConnected.value = true
-  }
-
   onMounted(() => {
-    window.addEventListener('ios_wallet_connected', handleWalletConnected as EventListener)
+    generateQRCode()
   })
 
-  onUnmounted(() => {
-    window.removeEventListener('ios_wallet_connected', handleWalletConnected as EventListener)
-  })
-
-  // Watch for URI changes
-  watch(
-    () => props.uri,
-    (newUri, oldUri) => {
-      console.log('🔍 URI changed:', { newUri, oldUri, isVisible: props.isVisible })
-      if (newUri && props.isVisible) {
-        console.log('🔍 URI changed and modal visible, generating QR code...')
-        nextTick(() => {
-          generateQRCode()
-        })
-      }
-    },
-    { immediate: true }
-  )
-
-  // Watch for visibility changes
-  watch(
-    () => props.isVisible,
-    (visible, oldVisible) => {
-      console.log('🔍 Visibility changed:', { visible, oldVisible, uri: props.uri })
-      if (visible && props.uri) {
-        console.log('🔍 Modal became visible with URI, generating QR code...')
-        nextTick(() => {
-          generateQRCode()
-        })
-      }
-    }
-  )
-
-  // Methods
   const ensureQRCodeRef = (): boolean => {
     if (!qrCodeRef.value) {
-      // Try to get the element by ID as fallback
       const fallbackElement = document.getElementById('ios-qr-code')
       if (fallbackElement) {
         console.log('🔍 Using fallback element for QR code')
@@ -188,12 +138,6 @@
   }
 
   const generateQRCode = async (): Promise<void> => {
-    console.log('🔍 generateQRCode called with:', {
-      uri: props.uri,
-      qrCodeRef: qrCodeRef.value,
-      isVisible: props.isVisible,
-    })
-
     if (!props.uri) {
       console.warn('⚠️ No URI provided for QR code generation')
       return
@@ -208,11 +152,6 @@
     }
 
     if (!ensureQRCodeRef()) {
-      console.warn('⚠️ QR code ref not available, retrying in 100ms')
-      console.warn('⚠️ Current ref state:', {
-        qrCodeRef: qrCodeRef.value,
-        isVisible: props.isVisible,
-      })
       setTimeout(() => generateQRCode(), 100)
       return
     }
@@ -221,16 +160,8 @@
     qrCodeError.value = false
 
     try {
-      console.log('🔍 Starting QR code generation for URI:', props.uri)
-
-      // Import QRCode library dynamically
-      console.log('🔍 Importing QRCode library...')
       const QRCodeModule = await import('qrcode')
       const QRCode = QRCodeModule.default
-      console.log('✅ QRCode library imported successfully')
-
-      // Generate QR code as data URL with dark mode support
-      console.log('🔍 Generating QR code data URL...')
       const qrCodeDataUrl = await QRCode.toDataURL(props.uri, {
         width: 180,
         margin: 2,
@@ -240,9 +171,7 @@
         },
         errorCorrectionLevel: 'M',
       })
-      console.log('✅ QR code data URL generated:', qrCodeDataUrl.substring(0, 50) + '...')
 
-      // Create QR code image
       const qrCodeImg = document.createElement('img')
       qrCodeImg.src = qrCodeDataUrl
       qrCodeImg.alt = 'WalletConnect QR Code'
@@ -257,7 +186,6 @@
         ? '0 8px 24px rgba(0, 0, 0, 0.3)'
         : '0 8px 24px rgba(0, 0, 0, 0.1)'
 
-      // Add error handling for image load
       qrCodeImg.onerror = () => {
         console.error('❌ QR code image failed to load')
         qrCodeError.value = true
@@ -268,7 +196,6 @@
         console.log('✅ QR code image loaded successfully')
       }
 
-      // Clear previous content and add QR code
       if (!ensureQRCodeRef()) {
         console.error('❌ QR code ref became null during generation')
         qrCodeError.value = true
@@ -276,13 +203,11 @@
         return
       }
 
-      // TypeScript assertion since we've already checked above
       const qrElement = qrCodeRef.value!
       qrElement.innerHTML = ''
       qrElement.appendChild(qrCodeImg)
 
       qrCodeLoading.value = false
-      console.log('✅ QR code generated and added to DOM successfully')
     } catch (error) {
       console.error('❌ Failed to generate QR code:', error)
       console.error('❌ Error details:', {
@@ -301,7 +226,6 @@
     copyStatus.value = 'idle'
 
     try {
-      // Method 1: Modern clipboard API
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(props.uri)
         copyStatus.value = 'copied'
@@ -309,7 +233,6 @@
         return
       }
 
-      // Method 2: Fallback for older browsers/iOS
       const textarea = document.createElement('textarea')
       textarea.value = props.uri
       textarea.style.position = 'fixed'
@@ -334,7 +257,6 @@
       copyStatus.value = 'error'
     }
 
-    // Reset status after 3 seconds
     setTimeout(() => {
       copyStatus.value = 'idle'
     }, 3000)
@@ -359,16 +281,6 @@
       closeModal()
     }
   }
-
-  // Reset copy status when modal opens
-  watch(
-    () => props.isVisible,
-    visible => {
-      if (visible) {
-        copyStatus.value = 'idle'
-      }
-    }
-  )
 </script>
 
 <style scoped>
