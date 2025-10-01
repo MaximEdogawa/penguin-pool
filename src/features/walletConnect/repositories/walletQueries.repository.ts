@@ -17,6 +17,7 @@ import type {
 } from '../types/command.types'
 import type { AssetBalance, AssetCoins, WalletConnectSession } from '../types/walletConnect.types'
 
+const REQUEST_TIMEOUT = 15000
 export async function makeWalletRequest<T>(
   method: string,
   data: Record<string, unknown>,
@@ -26,14 +27,25 @@ export async function makeWalletRequest<T>(
   try {
     if (!signClient.value) throw new Error('SignClient is not initialized')
 
-    const result = (await signClient.value.request({
+    console.log('Start Wallet request for :', { method, data })
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Request timeout after 15 seconds'))
+      }, REQUEST_TIMEOUT)
+    })
+
+    const walletRequestPromise = signClient.value.request({
       topic: session.topic.value,
       chainId: session.chainId.value,
       request: {
         method,
         params: { fingerprint: session.fingerprint.value, ...data },
       },
-    })) as T | { error: Record<string, unknown> }
+    })
+
+    const result = (await Promise.race([walletRequestPromise, timeoutPromise])) as
+      | T
+      | { error: Record<string, unknown> }
 
     if (result && typeof result === 'object' && 'error' in result) {
       return { success: false, error: 'Wallet returned an error' }
