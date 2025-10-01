@@ -1,11 +1,15 @@
 import { useMutation, useQuery } from '@tanstack/vue-query'
-import { computed } from 'vue'
+import type { SessionTypes } from '@walletconnect/types'
+import { computed, ref, type Ref } from 'vue'
 import { SageMethods } from '../constants/sage-methods'
 import { isIOS } from '../hooks/useIOSModal'
 import { useInstanceDataService } from './InstanceDataService'
 
 export function useConnectDataService() {
   const { signClient, modal } = useInstanceDataService()
+  const connectionData: Ref<
+    { uri: string | undefined; approval: () => Promise<SessionTypes.Struct> } | undefined
+  > = ref(undefined)
 
   const connectMutation = useMutation({
     mutationFn: async () => {
@@ -28,15 +32,20 @@ export function useConnectDataService() {
         await modal.value.openModal({ uri })
       }
 
-      return { uri, approval }
+      const result = { uri, approval }
+      connectionData.value = result
+      return result
     },
   })
 
   const connectQuery = useQuery({
-    queryKey: ['walletConnect', 'uriAndApproval'],
-    queryFn: () => connectMutation.data.value,
+    queryKey: ['walletConnect', 'connection'],
+    queryFn: async () => connectionData.value,
     enabled: computed(() => connectMutation.isSuccess.value),
     staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   return {

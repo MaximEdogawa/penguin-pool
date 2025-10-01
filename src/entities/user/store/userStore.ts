@@ -21,46 +21,19 @@ export const useUserStore = defineStore('user', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  watch(
-    session.isConnected,
-    connected => {
-      if (connected && session.isConnected.value) {
-        if (!isAuthenticated.value) {
-          login(session.fingerprint.value)
-        }
-      } else if (!connected) {
-        if (isAuthenticated.value) {
-          logout()
-        }
-      }
-    },
-    { immediate: true }
-  )
-
-  const hasWallet = computed(() => currentUser.value?.walletAddress !== undefined)
-  const userBalance = computed(() => currentUser.value?.balance || 0)
-  const userPreferences = computed(() => currentUser.value?.preferences)
-  const isWalletConnected = computed(() => session.isConnected.value)
-  const userWalletAddress = computed(() => session.fingerprint.value)
-
-  const initializeStore = () => {
-    try {
-      const storedUser = localStorage.getItem('penguin-pool-user')
-      if (storedUser) {
-        const user = JSON.parse(storedUser)
-        currentUser.value = user
-        isAuthenticated.value = true
-      }
-    } catch (err) {
-      console.error('Failed to restore user session:', err)
-      localStorage.removeItem('penguin-pool-user')
-    }
+  const generateId = () => {
+    return Math.random().toString(36).substr(2, 9)
   }
 
-  initializeStore()
-
   const login = async (walletIdentifier: string | number, username?: string) => {
+    console.log('🔐 Login function called with:', {
+      walletIdentifier,
+      username,
+      isAuthenticated: isAuthenticated.value,
+    })
+
     if (isAuthenticated.value && currentUser.value?.walletAddress === walletIdentifier.toString()) {
+      console.log('✅ User already authenticated with same wallet')
       return currentUser.value
     }
 
@@ -96,9 +69,15 @@ export const useUserStore = defineStore('user', () => {
 
       currentUser.value = user
       isAuthenticated.value = true
+
+      // Save user to localStorage
+      localStorage.setItem('penguin-pool-user', JSON.stringify(user))
+
+      console.log('✅ User login successful:', { user, isAuthenticated: isAuthenticated.value })
       return user
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed'
+      console.error('❌ Login failed:', err)
       throw err
     } finally {
       isLoading.value = false
@@ -128,6 +107,50 @@ export const useUserStore = defineStore('user', () => {
       error.value = err instanceof Error ? err.message : 'Logout failed'
     }
   }
+
+  watch(
+    session.isConnected,
+    connected => {
+      console.log('🔄 User store watcher triggered:', {
+        connected,
+        isAuthenticated: isAuthenticated.value,
+      })
+      if (connected) {
+        if (!isAuthenticated.value) {
+          console.log('🔐 Logging in user with fingerprint:', session.fingerprint.value)
+          login(session.fingerprint.value)
+        }
+      } else {
+        if (isAuthenticated.value) {
+          console.log('🚪 Logging out user')
+          logout()
+        }
+      }
+    },
+    { immediate: true }
+  )
+
+  const hasWallet = computed(() => currentUser.value?.walletAddress !== undefined)
+  const userBalance = computed(() => currentUser.value?.balance || 0)
+  const userPreferences = computed(() => currentUser.value?.preferences)
+  const isWalletConnected = computed(() => session.isConnected.value)
+  const userWalletAddress = computed(() => session.fingerprint.value)
+
+  const initializeStore = () => {
+    try {
+      const storedUser = localStorage.getItem('penguin-pool-user')
+      if (storedUser) {
+        const user = JSON.parse(storedUser)
+        currentUser.value = user
+        isAuthenticated.value = true
+      }
+    } catch (err) {
+      console.error('Failed to restore user session:', err)
+      localStorage.removeItem('penguin-pool-user')
+    }
+  }
+
+  initializeStore()
 
   const updateProfile = (updates: Partial<User>) => {
     if (currentUser.value) {
@@ -172,10 +195,6 @@ export const useUserStore = defineStore('user', () => {
         localStorage.removeItem('penguin-pool-user')
       }
     }
-  }
-
-  const generateId = () => {
-    return Math.random().toString(36).substr(2, 9)
   }
 
   return {

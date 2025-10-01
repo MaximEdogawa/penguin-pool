@@ -1,4 +1,3 @@
-// Import polyfills first to fix circular dependency issues
 import './polyfills/global.js'
 
 import Aura from '@primeuix/themes/aura'
@@ -6,7 +5,6 @@ import { VueQueryPlugin } from '@tanstack/vue-query'
 import { createPinia } from 'pinia'
 import { createApp, watch } from 'vue'
 
-// PrimeVue imports
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 
@@ -24,13 +22,12 @@ import './assets/main.css'
 
 import App from './App.vue'
 import { useUserStore } from './entities/user/store/userStore'
+import { walletConnectPersistenceService } from './features/walletConnect/services/WalletConnectPersistenceService'
 import router from './router'
 import { validateEnvironment } from './shared/config/environment'
 import { queryClient, setupDebugging, setupOfflineHandling } from './shared/config/queryClient'
 
-// Validate environment configuration early
 validateEnvironment()
-
 const app = createApp(App)
 
 // Install plugins
@@ -59,19 +56,14 @@ app.component('PrimeTab', Tab)
 app.component('PrimeTabPanel', TabPanel)
 app.component('PrimeTabPanels', TabPanels)
 
-// Setup offline handling with TanStack Query
 setupOfflineHandling()
-
-// Setup debugging
 setupDebugging()
 
-// Initialize stores before mounting
-const userStore = useUserStore()
+walletConnectPersistenceService.initialize()
 
-// Mount the app
+const userStore = useUserStore()
 app.mount('#app')
 
-// Watch for user authentication state changes (only for logout)
 watch(
   () => userStore.isAuthenticated,
   async authenticated => {

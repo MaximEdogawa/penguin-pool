@@ -5,10 +5,8 @@ import {
 } from '@/shared/config/environment'
 import { SageMethods } from './sage-methods'
 
-// Use chain ID from environment configuration
+export const WALLET_CONNECT_STORAGE_KEY = 'walletconnect'
 export const CHIA_CHAIN_ID = environment.wallet.walletConnect.networks.chia.current
-
-// Export chain ID constants for use in other parts of the app
 export { CHIA_MAINNET_CHAIN_ID, CHIA_TESTNET_CHAIN_ID }
 
 export const CHIA_METADATA = {
@@ -18,7 +16,6 @@ export const CHIA_METADATA = {
   icons: [...environment.wallet.walletConnect.metadata.icons],
 }
 
-// Namespaces for Sage wallet connect commands (used as optional namespaces in WalletConnect v2)
 export const REQUIRED_NAMESPACES = {
   chia: {
     methods: [
