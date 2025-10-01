@@ -60,16 +60,20 @@ export function useWalletConnectEventListeners() {
       return
     }
 
-    console.log('🧹 Removing WalletConnect event listeners...')
-    signClient.removeAllListeners('session_delete')
-    signClient.removeAllListeners('session_expire')
-    signClient.removeAllListeners('session_request')
-    signClient.removeAllListeners('session_proposal')
-    signClient.removeAllListeners('session_update')
-    signClient.removeAllListeners('session_ping')
+    try {
+      console.log('🧹 Removing WalletConnect event listeners...')
+      signClient.removeAllListeners('session_delete')
+      signClient.removeAllListeners('session_expire')
+      signClient.removeAllListeners('session_request')
+      signClient.removeAllListeners('session_proposal')
+      signClient.removeAllListeners('session_update')
+      signClient.removeAllListeners('session_ping')
 
-    globalEventListenersAdded = false
-    console.log('✅ WalletConnect event listeners removed')
+      globalEventListenersAdded = false
+      console.log('✅ WalletConnect event listeners removed')
+    } catch (error) {
+      console.warn('⚠️ Error removing event listeners:', error)
+    }
   }
 
   const resetListenersFlag = () => {

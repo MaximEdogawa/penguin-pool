@@ -10,7 +10,7 @@ import { walletConnectPersistenceService } from './WalletConnectPersistenceServi
 export function useInstanceDataService() {
   const eventListeners = useWalletConnectEventListeners()
 
-  const initializeFn = async (): Promise<WalletConnectInstance> => {
+  const initializeFn = async (): Promise<WalletConnectInstance | undefined> => {
     try {
       const signClient = await SignClient.init(SIGN_CLIENT_CONFIG)
       const modal = new WalletConnectModal(MODAL_CONFIG)

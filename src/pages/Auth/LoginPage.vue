@@ -115,6 +115,15 @@
     if (connection.isConnected.value && !session.isConnected.value) session.waitForApproval()
   })
 
+  watch(connection.uri, uri => {
+    if (uri) {
+      if (instance.modal.value) {
+        instance.modal.value.openModal({ uri })
+        stop()
+      }
+    }
+  })
+
   watch(session.isConnected, async value => {
     if (value) {
       router.push('/dashboard')

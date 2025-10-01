@@ -17,52 +17,7 @@ import type {
 } from '../types/command.types'
 import type { AssetBalance, AssetCoins, WalletConnectSession } from '../types/walletConnect.types'
 
-class WalletRequestQueue {
-  private queue: Array<() => Promise<unknown>> = []
-  private isProcessing = false
-
-  async add<T>(requestFn: () => Promise<T>): Promise<T> {
-    return new Promise((resolve, reject) => {
-      this.queue.push(async () => {
-        try {
-          const result = await requestFn()
-          resolve(result)
-          return result
-        } catch (error) {
-          reject(error)
-          throw error
-        }
-      })
-      this.processQueue()
-    })
-  }
-
-  private async processQueue(): Promise<void> {
-    if (this.isProcessing || this.queue.length === 0) return
-
-    this.isProcessing = true
-    while (this.queue.length > 0) {
-      const request = this.queue.shift()
-      if (request) await request()
-    }
-    this.isProcessing = false
-  }
-}
-
-const walletRequestQueue = new WalletRequestQueue()
-
 export async function makeWalletRequest<T>(
-  method: string,
-  data: Record<string, unknown>,
-  signClient: ComputedRef<SignClient | undefined>,
-  session: WalletConnectSession
-): Promise<{ success: boolean; data?: T; error?: string }> {
-  return walletRequestQueue.add(async () => {
-    return makeWalletRequestInternal<T>(method, data, signClient, session)
-  })
-}
-
-async function makeWalletRequestInternal<T>(
   method: string,
   data: Record<string, unknown>,
   signClient: ComputedRef<SignClient | undefined>,
@@ -83,8 +38,8 @@ async function makeWalletRequestInternal<T>(
     if (result && typeof result === 'object' && 'error' in result) {
       return { success: false, error: 'Wallet returned an error' }
     }
-
     console.log('Wallet request for :', { method, result })
+
     return { success: true, data: result as T }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
