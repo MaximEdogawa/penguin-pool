@@ -26,6 +26,7 @@ import { walletConnectPersistenceService } from './features/walletConnect/servic
 import router from './router'
 import { validateEnvironment } from './shared/config/environment'
 import { queryClient, setupDebugging, setupOfflineHandling } from './shared/config/queryClient'
+import { initializeDatabase } from './shared/database/indexedDB'
 
 validateEnvironment()
 const app = createApp(App)
@@ -58,6 +59,11 @@ app.component('PrimeTabPanels', TabPanels)
 
 setupOfflineHandling()
 setupDebugging()
+
+// Initialize IndexedDB
+initializeDatabase().catch(error => {
+  console.error('Failed to initialize IndexedDB:', error)
+})
 
 walletConnectPersistenceService.initialize()
 

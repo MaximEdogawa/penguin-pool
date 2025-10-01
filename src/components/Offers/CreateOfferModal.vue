@@ -273,12 +273,9 @@
 </template>
 
 <script setup lang="ts">
-  import type {
-    CreateOfferForm,
-    CreateOfferWalletRequest,
-    CreateOfferWalletResponse,
-    OfferDetails,
-  } from '@/types/offer.types'
+  import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
+  import { useOfferStorage } from '@/shared/composables/useOfferStorage'
+  import type { CreateOfferForm, OfferDetails } from '@/types/offer.types'
   import { computed, reactive, ref } from 'vue'
 
   interface Emits {
@@ -287,6 +284,10 @@
   }
 
   const emit = defineEmits<Emits>()
+
+  // Services
+  const walletDataService = useWalletDataService()
+  const offerStorage = useOfferStorage()
 
   // Form state
   const form = reactive<CreateOfferForm>({
@@ -356,76 +357,76 @@
     isSubmitting.value = true
 
     try {
+      // Helper function to convert amounts to the smallest unit based on asset type
+      // Different assets have different decimal places:
+      // - XCH: 12 decimal places (1 XCH = 1,000,000,000,000 mojos)
+      // - CAT: No conversion needed (CAT tokens are whole units, no mojos)
+      // - NFT: No conversion needed (NFTs are whole numbers)
+      const convertToSmallestUnit = (amount: number, assetType: string): number => {
+        switch (assetType) {
+          case 'xch':
+            return Math.floor(amount * 1000000000000) // XCH to mojos (1 trillion)
+          case 'cat':
+            return Math.floor(amount) // CAT tokens are whole units, no conversion needed
+          case 'nft':
+            return Math.floor(amount) // NFTs are whole numbers
+          default:
+            return Math.floor(amount) // Default to whole numbers for unknown tokens
+        }
+      }
+
       // Convert form assets to the format expected by the wallet
       const offerAssets = form.assetsOffered.map(asset => ({
         assetId: asset.type === 'xch' ? '' : asset.assetId,
-        amount: Math.floor(asset.amount * 1000000000000), // Convert to mojos
+        amount: convertToSmallestUnit(asset.amount, asset.type),
       }))
 
       const requestAssets = form.assetsRequested.map(asset => ({
         assetId: asset.type === 'xch' ? '' : asset.assetId,
-        amount: Math.floor(asset.amount * 1000000000000), // Convert to mojos
+        amount: convertToSmallestUnit(asset.amount, asset.type),
       }))
 
-      const createOffer = async (
-        data: CreateOfferWalletRequest
-      ): Promise<CreateOfferWalletResponse> => {
-        console.log('Create offer called with:', data)
-        return {
-          success: true,
-          offerId: 'test-offer-id',
-          data: {
-            offerId: 'test-offer-id',
-            offerString: 'test-offer-string',
-            fee: data.fee,
-            status: 'pending',
-          },
-          error: null,
-        }
-      }
-
-      const result = await createOffer({
+      const result = await walletDataService.createOffer({
         walletId: 1,
         offerAssets,
         requestAssets,
-        fee: Math.floor(form.fee * 1000000000000), // Convert to mojos
+        fee: convertToSmallestUnit(form.fee, 'xch'), // Fee is always in XCH
       })
 
-      if (result.success && result.data) {
-        const newOffer: OfferDetails = {
-          id: result.data.offerId || Date.now().toString(),
-          tradeId: result.data.offerId || 'unknown', // Use the offerId from wallet response as tradeId
-          offerString: result.data.offerString || '',
-          status: 'active',
-          createdAt: new Date(),
-          assetsOffered: form.assetsOffered.map(asset => ({
-            assetId: asset.assetId || '',
-            amount: asset.amount,
-            type: asset.type,
-            symbol: asset.symbol || asset.type.toUpperCase(),
-          })),
-          assetsRequested: form.assetsRequested.map(asset => ({
-            assetId: asset.assetId || '',
-            amount: asset.amount,
-            type: asset.type,
-            symbol: asset.symbol || asset.type.toUpperCase(),
-          })),
-          fee: form.fee,
-          creatorAddress: 'xch1current_user_address', // This would come from wallet
-        }
-
-        successMessage.value = 'Offer created successfully!'
-        emit('offer-created', newOffer)
-
-        // Reset form
-        form.assetsOffered = []
-        form.assetsRequested = []
-        form.fee = 0.000001
-        form.memo = ''
-        form.expirationHours = 24
-      } else {
-        throw new Error(result.error || 'Failed to create offer')
+      const newOffer: OfferDetails = {
+        id: result?.id || Date.now().toString(),
+        tradeId: result?.tradeId || 'unknown',
+        offerString: result?.offer || '',
+        status: 'active',
+        createdAt: new Date(),
+        assetsOffered: form.assetsOffered.map(asset => ({
+          assetId: asset.assetId || '',
+          amount: asset.amount,
+          type: asset.type,
+          symbol: asset.symbol || asset.type.toUpperCase(),
+        })),
+        assetsRequested: form.assetsRequested.map(asset => ({
+          assetId: asset.assetId || '',
+          amount: asset.amount,
+          type: asset.type,
+          symbol: asset.symbol || asset.type.toUpperCase(),
+        })),
+        fee: form.fee,
+        creatorAddress: 'xch1current_user_address', // This would come from wallet
       }
+
+      // Save offer to IndexedDB
+      await offerStorage.saveOffer(newOffer, true) // true = isLocal
+
+      successMessage.value = 'Offer created successfully!'
+      emit('offer-created', newOffer)
+
+      // Reset form
+      form.assetsOffered = []
+      form.assetsRequested = []
+      form.fee = 0.000001
+      form.memo = ''
+      form.expirationHours = 24
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
       errorMessage.value = `Failed to create offer: ${errorMsg}`

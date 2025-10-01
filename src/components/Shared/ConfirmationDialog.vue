@@ -23,6 +23,18 @@
               {{ details }}
             </p>
           </div>
+          <!-- Error Message -->
+          <div
+            v-if="errorMessage"
+            class="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+          >
+            <div class="flex items-start">
+              <i class="pi pi-exclamation-triangle text-red-500 mr-2 mt-0.5"></i>
+              <p class="text-sm text-red-700 dark:text-red-300">
+                {{ errorMessage }}
+              </p>
+            </div>
+          </div>
         </div>
 
         <!-- Actions -->
@@ -53,6 +65,7 @@
     title: string
     message: string
     details?: string
+    errorMessage?: string
     confirmText?: string
     cancelText?: string
     isLoading?: boolean

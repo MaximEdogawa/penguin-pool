@@ -1,12 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import {
+  cancelOffer,
+  createOffer,
   getAssetBalance,
   getWalletAddress,
   sendTransaction,
   signMessage,
 } from '../repositories/walletQueries.repository'
-import type { AssetType, TransactionRequest } from '../types/command.types'
+import type {
+  AssetType,
+  CancelOfferRequest,
+  OfferRequest,
+  TransactionRequest,
+} from '../types/command.types'
 import { useInstanceDataService } from './InstanceDataService'
 import { useSessionDataService } from './SessionDataService'
 
@@ -69,6 +76,22 @@ export function useWalletDataService() {
     },
   })
 
+  const createOfferMutation = useMutation({
+    mutationFn: async (data: OfferRequest) => {
+      const result = await createOffer(data, signClient, session)
+      if (!result.success) throw new Error(result.error)
+      return result.data
+    },
+  })
+
+  const cancelOfferMutation = useMutation({
+    mutationFn: async (data: CancelOfferRequest) => {
+      const result = await cancelOffer(data, signClient, session)
+      if (!result.success) throw new Error(result.error)
+      return result.data
+    },
+  })
+
   const refreshBalance = async () => {
     await queryClient.invalidateQueries({ queryKey: [WALLET_CONNECT_KEY, BALLANCE_KEY] })
   }
@@ -79,9 +102,13 @@ export function useWalletDataService() {
     signMessage: signMessageMutation.mutateAsync,
     sendTransaction: sendTransactionMutation.mutateAsync,
     getBalance: getBalanceMutation.mutateAsync,
+    createOffer: createOfferMutation.mutateAsync,
+    cancelOffer: cancelOfferMutation.mutateAsync,
     refreshBalance,
     isSigning: signMessageMutation.isPending,
     isSending: sendTransactionMutation.isPending,
     isGettingBalance: getBalanceMutation.isPending,
+    isCreatingOffer: createOfferMutation.isPending,
+    isCancellingOffer: cancelOfferMutation.isPending,
   }
 }
