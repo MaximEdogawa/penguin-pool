@@ -91,18 +91,11 @@
   import { useRouter } from 'vue-router'
   import AppConfigurator from './AppConfigurator.vue'
   import { useLayout } from './composables/layout'
-
-  // Router
   const router = useRouter()
-
-  // Stores
   const themeStore = useThemeStore()
   const notificationStore = useNotificationStore()
-
-  // Layout composable
   const { toggleMenu, layoutState } = useLayout()
 
-  // Initialize theme store when component mounts
   onMounted(async () => {
     try {
       await themeStore.initializeTheme()
@@ -111,13 +104,11 @@
     }
   })
 
-  // State
   const searchQuery = ref('')
   const isUserMenuVisible = ref(false)
   const isConfigPanelVisible = ref(false)
   const isThemeToggle = ref(false)
 
-  // Computed
   const themeIcon = computed(() => {
     if (themeStore.isWindows95) {
       return 'pi pi-desktop'
@@ -128,15 +119,6 @@
   const notificationCount = computed(() => {
     return notificationStore.unreadCount
   })
-
-  // Methods
-  const toggleNotifications = () => {
-    // TODO: Implement notifications panel
-  }
-
-  const handleSearch = () => {
-    // TODO: Implement search functionality
-  }
 
   const handleThemeToggle = () => {
     isThemeToggle.value = !isThemeToggle.value
@@ -158,16 +140,14 @@
 
   const handleLogout = async () => {
     try {
-      // Use centralized logout through user store
       const userStore = useUserStore()
+      console.log('👤 Logging out user...')
       await userStore.logout()
-
       isUserMenuVisible.value = false
-
-      // Redirect to auth page after logout
-      router.push('/auth')
+      console.log('✅ Logout completed, redirecting to auth...')
+      await router.push('/auth')
     } catch (error) {
-      console.error('Logout failed:', error)
+      console.error('❌ Logout failed:', error)
     }
   }
 </script>

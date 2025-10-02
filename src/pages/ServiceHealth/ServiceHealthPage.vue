@@ -608,7 +608,7 @@
     wsConnectionStatus.value = 'Connecting...'
 
     try {
-      ws.value = io('http://localhost:3001/ws/health', {
+      ws.value = io('http://localhost:3000/ws/health', {
         transports: ['websocket'],
       })
 
@@ -695,7 +695,7 @@
     const startTime = Date.now()
 
     try {
-      const response = await fetch('http://localhost:3001/health')
+      const response = await fetch('http://localhost:3000/health')
       const endTime = Date.now()
       const responseTime = endTime - startTime
 

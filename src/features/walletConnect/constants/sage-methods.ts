@@ -32,11 +32,9 @@ export enum SageMethods {
  * Asset ID constants for different Chia token types
  */
 export enum AssetIds {
-  XCH = 0, // Native Chia token
+  XCH = 0,
 }
-/**
- * Type for Sage method names
- */
+
 export type SageMethodName = `${SageMethods}`
 
 /**

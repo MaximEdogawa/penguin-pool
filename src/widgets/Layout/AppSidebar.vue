@@ -44,7 +44,7 @@
           <div class="user-info-section">
             <div class="user-avatar">
               <i
-                :class="walletStore.isConnected ? 'pi pi-wallet' : 'pi pi-user'"
+                :class="session.isConnected.value ? 'pi pi-wallet' : 'pi pi-user'"
                 class="text-xl text-white"
               ></i>
             </div>
@@ -53,12 +53,10 @@
               <p class="user-email">{{ userEmail }}</p>
 
               <!-- Wallet Connection Info -->
-              <div v-if="walletStore.isConnected" class="wallet-info">
+              <div v-if="session.isConnected.value" class="wallet-info">
                 <div class="wallet-fingerprint">
                   <i class="pi pi-key text-sm"></i>
-                  <span class="fingerprint-text">{{
-                    walletStore.walletInfo?.fingerprint || 'N/A'
-                  }}</span>
+                  <span class="fingerprint-text">{{ session.fingerprint.value || 'N/A' }}</span>
                 </div>
               </div>
 
@@ -73,7 +71,7 @@
           <!-- Wallet Connect/Disconnect Button -->
           <div class="wallet-section">
             <PrimeButton
-              v-if="walletStore.isConnecting"
+              v-if="session.isConnecting"
               :icon="'pi pi-spin pi-spinner'"
               :label="!isCollapsed && !isSmallScreen ? 'Connecting...' : ''"
               :title="isCollapsed || isSmallScreen ? 'Connecting...' : ''"
@@ -82,7 +80,7 @@
               disabled
             />
             <PrimeButton
-              v-else-if="!walletStore.isConnected"
+              v-else-if="!session.isConnected"
               @click="navigateTo('/auth')"
               :icon="'pi pi-wallet'"
               :label="!isCollapsed && !isSmallScreen ? 'Connect Wallet' : ''"
@@ -134,7 +132,7 @@
 
 <script setup lang="ts">
   import { useUserStore } from '@/entities/user/store/userStore'
-  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import { useSessionDataService } from '@/features/walletConnect/services/SessionDataService'
   import {
     defaultFeatureFlags,
     getCurrentEnvironment,
@@ -143,35 +141,27 @@
   import { computed, onMounted, onUnmounted, ref } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
 
-  // Router
   const router = useRouter()
   const route = useRoute()
-
-  // Stores
   const userStore = useUserStore()
-  const walletStore = useWalletConnectStore()
+  const session = useSessionDataService()
 
-  // Props
   interface Props {
     isOpen: boolean
     isCollapsed: boolean
   }
 
   const props = defineProps<Props>()
-
-  // Emits
   defineEmits<{
     'toggle-collapse': []
     close: []
   }>()
 
-  // Small screen detection
   const windowWidth = ref(window.innerWidth)
   const isSmallScreen = computed(() => {
     return windowWidth.value <= 1023
   })
 
-  // Update window width on resize
   const updateWindowWidth = () => {
     windowWidth.value = window.innerWidth
   }
@@ -184,7 +174,6 @@
     window.removeEventListener('resize', updateWindowWidth)
   })
 
-  // Navigation items for PrimeVue Menu
   const navigationItems = computed(() => {
     const currentEnv = getCurrentEnvironment()
 
@@ -239,9 +228,8 @@
       },
     ]
 
-    // Filter items based on feature flags
     const filteredItems = allItems.filter(item => {
-      if (!item.featureFlag) return true // Always show items without feature flags
+      if (!item.featureFlag) return true
 
       const feature =
         defaultFeatureFlags.app[item.featureFlag as keyof typeof defaultFeatureFlags.app]
@@ -253,7 +241,6 @@
     return filteredItems
   })
 
-  // Computed
   const collapseIcon = computed(() => {
     return props.isCollapsed || isSmallScreen.value ? 'pi pi-angle-right' : 'pi pi-angle-left'
   })
@@ -267,32 +254,25 @@
   })
 
   const connectionStatusClass = computed(() => {
-    return walletStore.isConnected ? 'connected' : 'disconnected'
+    return session.isConnected.value ? 'connected' : 'disconnected'
   })
 
   const connectionStatusText = computed(() => {
-    return walletStore.isConnected ? 'Wallet Connected' : 'Wallet Disconnected'
+    return session.isConnected.value ? 'Connected' : 'Disconnected'
   })
 
-  // Methods
   const navigateTo = (path: string) => {
     router.push(path)
   }
 
   const handleLogout = async () => {
     try {
-      // Use wallet store disconnect which handles comprehensive clearing
-      if (walletStore.isConnected) {
-        await walletStore.disconnect()
-      } else {
-        // If wallet not connected, still clear user data
-        await userStore.logout()
-      }
-
-      // Redirect to auth page after logout
-      window.location.href = '/auth'
+      console.log('👤 Logging out user...')
+      await userStore.logout()
+      console.log('✅ Logout completed, redirecting to auth...')
+      await router.push('/auth')
     } catch (error) {
-      console.error('Logout failed:', error)
+      console.error('❌ Logout failed:', error)
     }
   }
 </script>

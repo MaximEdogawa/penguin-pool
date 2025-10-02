@@ -1,11 +1,82 @@
 import type { KurrentDBHTTPConfig } from '../clients/KurrentDBHTTPClient'
 import { KurrentDBHTTPClient } from '../clients/KurrentDBHTTPClient'
 
-export interface Stream {
+// Specific data types for different stream purposes
+export interface UserProfileData {
+  username: string
+  email: string
+  walletAddress: string
+  preferences: {
+    theme: 'light' | 'dark'
+    notifications: boolean
+    language: string
+  }
+  createdAt: string
+  lastLogin: string
+}
+
+export interface OfferStreamData {
+  offerId: string
+  offerString: string
+  status: 'active' | 'completed' | 'cancelled' | 'expired'
+  assetsOffered: Array<{
+    assetId: string
+    amount: number
+    type: string
+    symbol?: string
+  }>
+  assetsRequested: Array<{
+    assetId: string
+    amount: number
+    type: string
+    symbol?: string
+  }>
+  fee: number
+  creatorAddress: string
+  createdAt: string
+  expiresAt?: string
+}
+
+export interface TransactionStreamData {
+  transactionId: string
+  status: 'pending' | 'confirmed' | 'failed'
+  fromAddress: string
+  toAddress: string
+  amount: number
+  fee: number
+  assetType: string
+  assetId?: string
+  memo?: string
+  blockHeight?: number
+  createdAt: string
+  confirmedAt?: string
+}
+
+export interface PoolData {
+  poolId: string
+  name: string
+  description: string
+  totalLiquidity: number
+  activeParticipants: number
+  apy: number
+  riskLevel: 'low' | 'medium' | 'high'
+  createdAt: string
+  lastUpdated: string
+}
+
+// Union type for all possible stream data types
+export type StreamData =
+  | UserProfileData
+  | OfferStreamData
+  | TransactionStreamData
+  | PoolData
+  | Record<string, unknown>
+
+export interface Stream<T extends StreamData = StreamData> {
   id: string
   name: string
   description?: string
-  data: Record<string, unknown>
+  data: T
   metadata: {
     createdAt: Date
     updatedAt: Date
@@ -21,10 +92,10 @@ export interface Stream {
   }
 }
 
-export interface StreamCreateRequest {
+export interface StreamCreateRequest<T extends StreamData = StreamData> {
   name: string
   description?: string
-  data: Record<string, unknown>
+  data: T
   tags?: string[]
   owner: string
   permissions?: {

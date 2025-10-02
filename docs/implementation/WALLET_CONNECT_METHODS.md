@@ -191,7 +191,6 @@ npm test -- tests/unit/features/walletConnect/walletConnectMethods.test.ts
 
 The new methods integrate seamlessly with the existing wallet connect infrastructure:
 
-- Uses existing `WalletConnectService`
 - Follows established patterns for wallet requests
 - Maintains compatibility with current wallet connect flow
 - Supports both demo and production modes

@@ -2,6 +2,75 @@
 export const CHIA_MAINNET_CHAIN_ID = 'chia:mainnet'
 export const CHIA_TESTNET_CHAIN_ID = 'chia:testnet'
 
+// Helper function to get the current URL dynamically
+const getCurrentUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin
+  }
+  // This should not happen in the browser, but just in case
+  return 'https://penguin.pool'
+}
+
+// Cache the iOS detection result to avoid repeated logging
+let _isIOSCache: boolean | null = null
+let _isIOSLogged = false
+
+/**
+ * Detect if the current platform is iOS (iPhone/iPad)
+ * Handles the case where iPhone user agents contain "Mac OS X"
+ * Uses caching to avoid repeated logging
+ */
+export const isIOS = (): boolean => {
+  if (typeof window === 'undefined') return false
+
+  // Return cached result if available
+  if (_isIOSCache !== null) {
+    return _isIOSCache
+  }
+
+  const userAgent = navigator.userAgent
+
+  // Check for actual iOS devices first (iPhone/iPad/iPod)
+  const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent)
+
+  if (!isIOSDevice) {
+    if (!_isIOSLogged) {
+      console.log('🖥️ Non-iOS platform detected - user agent:', userAgent)
+      _isIOSLogged = true
+    }
+    _isIOSCache = false
+    return false
+  }
+
+  // Check if it's actually macOS (not iOS)
+  // Modern iPhones report as "Mac OS X" in user agent but are still iOS
+  const isMacOS = /Mac OS X/.test(userAgent) && !/iPhone|iPad|iPod/.test(userAgent)
+
+  if (isMacOS) {
+    if (!_isIOSLogged) {
+      console.log('🖥️ macOS detected - not iOS')
+      _isIOSLogged = true
+    }
+    _isIOSCache = false
+    return false
+  }
+
+  // If it has iPhone/iPad/iPod in user agent, it's iOS regardless of Mac OS X
+  const result = isIOSDevice && !('MSStream' in window)
+
+  if (!_isIOSLogged) {
+    if (result) {
+      console.log('🍎 iOS detected - user agent:', userAgent)
+    } else {
+      console.log('🖥️ Non-iOS platform detected - user agent:', userAgent)
+    }
+    _isIOSLogged = true
+  }
+
+  _isIOSCache = result
+  return result
+}
+
 export const environment = {
   // App configuration
   appName: 'Penguin-pool',
@@ -39,33 +108,45 @@ export const environment = {
       metadata: {
         name: 'Penguin Pool',
         description: 'Decentralized lending platform on Chia Network',
-        url: 'https://penguin.pool',
-        icons: ['https://penguin.pool/icon.png'],
-      },
-      chainId: (() => {
-        const network = import.meta.env.VITE_CHIA_NETWORK || 'testnet'
-        return network === 'mainnet' ? CHIA_MAINNET_CHAIN_ID : CHIA_TESTNET_CHAIN_ID
-      })(),
-      relayUrl: 'wss://relay.walletconnect.com',
-      // iOS-specific configuration
-      ios: {
-        // Alternative relay URLs for iOS (in order of preference)
-        relayUrls: [
-          'wss://relay.walletconnect.org', // More reliable for iOS
-          'wss://relay.walletconnect.com', // Primary relay
-          'wss://relay.walletconnect.io', // Alternative relay
+        url: getCurrentUrl(),
+        icons: [
+          `${getCurrentUrl()}/icons/icon-192x192.png`,
+          `${getCurrentUrl()}/icons/icon-512x512.png`,
+          `${getCurrentUrl()}/favicon.svg`,
+          `${getCurrentUrl()}/penguin-pool.svg`,
         ],
-        // Connection settings optimized for iOS
-        connectionTimeout: 60000, // Increased timeout for iOS app switching
-        maxReconnectionAttempts: 8, // More attempts for iOS
-        reconnectionDelay: 1500, // Faster reconnection
-        // Health check settings for iOS
-        healthCheckInterval: 20000, // Check every 20 seconds on iOS
-        maxConsecutiveFailures: 3, // More tolerant of failures
-        // App switching specific settings
-        appSwitchTimeout: 30000, // Timeout for app switching scenarios
-        backgroundGracePeriod: 60000, // Grace period before pausing monitoring
-        foregroundReconnectDelay: 1000, // Delay before reconnecting on foreground
+      },
+      // Chia network configuration
+      networks: {
+        chia: {
+          mainnet: CHIA_MAINNET_CHAIN_ID,
+          testnet: CHIA_TESTNET_CHAIN_ID,
+          current: (() => {
+            const network = import.meta.env.VITE_CHIA_NETWORK || 'testnet'
+            return network === 'mainnet' ? CHIA_MAINNET_CHAIN_ID : CHIA_TESTNET_CHAIN_ID
+          })(),
+        },
+      },
+      // Connection settings optimized for mobile and desktop
+      connectionTimeout: (() => {
+        return isIOS() ? 90000 : 60000 // Longer timeout for iOS HTTP connections
+      })(),
+      maxReconnectionAttempts: 8, // More attempts for better reliability
+      reconnectionDelay: (() => {
+        return isIOS() ? 2000 : 1500 // Slightly longer delay for iOS
+      })(),
+      // Health check settings
+      healthCheckInterval: 20000, // Check every 20 seconds
+      maxConsecutiveFailures: 3, // More tolerant of failures
+      // App switching specific settings
+      appSwitchTimeout: 30000, // Timeout for app switching scenarios
+      backgroundGracePeriod: 60000, // Grace period before pausing monitoring
+      foregroundReconnectDelay: 1000, // Delay before reconnecting on foreground
+      // iOS-specific settings
+      ios: {
+        extendedTimeout: true, // Use extended timeouts for iOS
+        requiresHttps: true, // iOS requires HTTPS for relay to work properly
+        retryRelays: true, // Try multiple relay URLs
       },
     },
   },
@@ -91,6 +172,14 @@ export const environment = {
     offlineMode: true,
     pushNotifications: true,
     analytics: false,
+  },
+
+  // Debug configuration
+  debug: {
+    enabled: import.meta.env.VITE_ENABLE_DEBUG === 'true',
+    tanstackDebug: import.meta.env.VITE_TANSTACK_DEBUG === 'true',
+    vueDevtools: import.meta.env.DEV,
+    consoleDebug: import.meta.env.VITE_ENABLE_DEBUG === 'true' || import.meta.env.DEV,
   },
 
   // PWA configuration

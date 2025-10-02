@@ -15,15 +15,6 @@ Successfully implemented Wallet Connect v2 integration for seamless wallet conne
   - `@walletconnect/utils` - Utility functions
   - `qrcode` - QR code generation for wallet connection
 
-### 2. Core Service Implementation
-
-- **WalletConnectService** (`src/features/walletConnect/services/WalletConnectService.ts`):
-  - Complete Wallet Connect v2 client integration
-  - Session management with localStorage persistence
-  - Event handling for connection lifecycle
-  - Chia network specific configuration
-  - Error handling and recovery
-
 ### 3. State Management
 
 - **WalletConnectStore** (`src/features/walletConnect/stores/walletConnectStore.ts`):
@@ -101,8 +92,6 @@ Successfully implemented Wallet Connect v2 integration for seamless wallet conne
 src/features/walletConnect/
 ├── components/
 │   └── WalletConnectModal.vue          # Wallet selection modal
-├── services/
-│   └── WalletConnectService.ts         # Core Wallet Connect service
 ├── stores/
 │   └── walletConnectStore.ts           # Pinia store for state management
 └── types/

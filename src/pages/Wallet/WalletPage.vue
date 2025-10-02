@@ -21,7 +21,7 @@
           </div>
           <div class="text-right">
             <div class="text-sm text-gray-600 dark:text-gray-400">
-              {{ formatAddress(walletStore.walletInfo?.address || '') }}
+              {{ formatAddress(walletDataService.address.data.value?.address || '') }}
             </div>
             <button
               @click="copyAddress"
@@ -47,8 +47,6 @@
           :wallet-id="1"
           :available-balance="parseFloat(userBalance)"
           :ticker="ticker"
-          @transaction-sent="handleTransactionSent"
-          @transaction-error="handleTransactionError"
         />
       </div>
 
@@ -68,31 +66,27 @@
 
 <script setup lang="ts">
   import SendTransactionComponent from '@/components/SendTransaction/SendTransactionComponent.vue'
-  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
+  import { useSessionDataService } from '@/features/walletConnect/services/SessionDataService'
+  import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
   import { computed, ref } from 'vue'
 
-  const walletStore = useWalletConnectStore()
-
-  // State
+  const walletDataService = useWalletDataService()
+  const session = useSessionDataService()
   const isAddressCopied = ref(false)
-
-  // Computed properties
   const userBalance = computed(() => {
-    if (walletStore.walletInfo?.balance) {
-      return formatBalance(parseInt(walletStore.walletInfo.balance.confirmed))
+    if (walletDataService.balance.data.value?.confirmed) {
+      return formatBalance(parseInt(walletDataService.balance.data.value.confirmed))
     }
     return '0.000000'
   })
 
   const ticker = computed(() => {
-    const networkInfo = walletStore.getNetworkInfo()
-    if (networkInfo?.isTestnet) {
+    if (session.chainId.value?.includes('testnet')) {
       return 'TXCH'
     }
     return 'XCH'
   })
 
-  // Helper functions
   const formatBalance = (mojos: number): string => {
     if (mojos === 0) return '0.000000'
     return (mojos / 1000000000000).toFixed(6)
@@ -106,8 +100,9 @@
 
   const copyAddress = async () => {
     try {
-      if (walletStore.walletInfo?.address) {
-        await navigator.clipboard.writeText(walletStore.walletInfo.address)
+      const address = walletDataService.address.data.value?.address
+      if (address) {
+        await navigator.clipboard.writeText(address)
         isAddressCopied.value = true
         setTimeout(() => {
           isAddressCopied.value = false
@@ -116,19 +111,6 @@
     } catch (error) {
       console.error('Failed to copy address:', error)
     }
-  }
-
-  // Event handlers
-  const handleTransactionSent = (transactionId: string) => {
-    console.log('Transaction sent successfully:', transactionId)
-    // You could add a toast notification here
-    // Refresh wallet balance
-    // Add to transaction history
-  }
-
-  const handleTransactionError = (error: string) => {
-    console.error('Transaction failed:', error)
-    // You could add a toast notification here
   }
 </script>
 

@@ -1,4 +1,13 @@
 import { useUserStore } from '@/entities/user/store/userStore'
+import LoginPage from '@/pages/Auth/LoginPage.vue'
+import DashboardPage from '@/pages/Dashboard/DashboardPage.vue'
+import LoansPage from '@/pages/Loans/LoansPage.vue'
+import OffersPage from '@/pages/Offers/OffersPage.vue'
+import OptionContractsPage from '@/pages/OptionContracts/OptionContractsPage.vue'
+import PiggyBankPage from '@/pages/PiggyBank/PiggyBankPage.vue'
+import ProfilePage from '@/pages/Profile/ProfilePage.vue'
+import ServiceHealthPage from '@/pages/ServiceHealth/ServiceHealthPage.vue'
+import WalletPage from '@/pages/Wallet/WalletPage.vue'
 import {
   defaultFeatureFlags,
   getCurrentEnvironment,
@@ -6,16 +15,6 @@ import {
 } from '@/shared/config/featureFlags'
 import '@/types/router'
 import { createRouter, createWebHistory } from 'vue-router'
-
-import LoginPage from '@/pages/Auth/LoginPage.vue'
-import DashboardPage from '@/pages/Dashboard/DashboardPage.vue'
-import OffersPage from '@/pages/Offers/OffersPage.vue'
-import LoansPage from '@/pages/Loans/LoansPage.vue'
-import OptionContractsPage from '@/pages/OptionContracts/OptionContractsPage.vue'
-import PiggyBankPage from '@/pages/PiggyBank/PiggyBankPage.vue'
-import WalletPage from '@/pages/Wallet/WalletPage.vue'
-import ProfilePage from '@/pages/Profile/ProfilePage.vue'
-import ServiceHealthPage from '@/pages/ServiceHealth/ServiceHealthPage.vue'
 
 const routes = [
   {
@@ -129,11 +128,8 @@ router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   const isAuthenticated = userStore.isAuthenticated
 
-  // Check if route requires a feature flag
   if (to.meta.featureFlag) {
     const currentEnv = getCurrentEnvironment()
-
-    // Get the feature flag for the specific feature
     const featureKey = to.meta.featureFlag as keyof typeof defaultFeatureFlags.app
     const feature = defaultFeatureFlags.app[featureKey]
 
@@ -147,21 +143,24 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.meta.requiresAuth) {
-    // Check both authentication and wallet connection for protected routes
     if (isAuthenticated) {
+      console.log('Router guard - user authenticated, allowing access to protected route')
       next()
     } else {
-      console.log('Router guard - redirecting to auth (not authenticated or wallet not connected)')
+      console.log('Router guard - redirecting to auth (not authenticated)', {
+        isAuthenticated,
+      })
       next('/auth')
     }
   } else {
     if (to.path === '/auth' && isAuthenticated) {
-      console.log(
-        'Router guard - redirecting authenticated user with wallet from auth to dashboard'
-      )
+      console.log('Router guard - redirecting authenticated user from auth to dashboard')
       next('/dashboard')
     } else {
-      console.log('Router guard - allowing access to public route')
+      console.log('Router guard - allowing access to public route', {
+        path: to.path,
+        isAuthenticated,
+      })
       next()
     }
   }

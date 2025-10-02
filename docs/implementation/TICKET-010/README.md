@@ -2,8 +2,8 @@
 
 ## User Story
 
-**As a** user  
-**I want** to have a seamless connection with wallet connect  
+**As a** user
+**I want** to have a seamless connection with wallet connect
 **So that** I can connect to different wallets on the chia network
 
 ## Requirements
@@ -64,7 +64,6 @@
 
 ### New Files
 
-- `src/features/walletConnect/services/WalletConnectService.ts`
 - `src/features/walletConnect/components/WalletConnectModal.vue`
 - `src/features/walletConnect/stores/walletConnectStore.ts`
 - `src/features/walletConnect/types/walletConnect.types.ts`

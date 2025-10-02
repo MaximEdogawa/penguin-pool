@@ -3,23 +3,19 @@ import {
   CHIA_TESTNET_CHAIN_ID,
   environment,
 } from '@/shared/config/environment'
-import type { CoreTypes } from '@walletconnect/types'
 import { SageMethods } from './sage-methods'
 
-// Use chain ID from environment configuration
-export const CHIA_CHAIN_ID = environment.wallet.walletConnect.chainId
-
-// Export chain ID constants for use in other parts of the app
+export const WALLET_CONNECT_STORAGE_KEY = 'walletconnect'
+export const CHIA_CHAIN_ID = environment.wallet.walletConnect.networks.chia.current
 export { CHIA_MAINNET_CHAIN_ID, CHIA_TESTNET_CHAIN_ID }
 
-export const CHIA_METADATA: CoreTypes.Metadata = {
-  name: 'Penguin Pool',
-  description: 'Decentralized lending platform on Chia Network',
-  url: typeof window !== 'undefined' ? window.location.origin : 'https://penguin.pool',
-  icons: ['https://penguin.pool/icon.png'],
+export const CHIA_METADATA = {
+  name: environment.wallet.walletConnect.metadata.name,
+  description: environment.wallet.walletConnect.metadata.description,
+  url: environment.wallet.walletConnect.metadata.url,
+  icons: [...environment.wallet.walletConnect.metadata.icons],
 }
 
-// Required namespaces for Sage wallet connect commands
 export const REQUIRED_NAMESPACES = {
   chia: {
     methods: [
@@ -45,5 +41,33 @@ export const REQUIRED_NAMESPACES = {
     ],
     chains: [CHIA_CHAIN_ID],
     events: ['chainChanged', 'accountsChanged'],
+  },
+}
+
+export const SIGN_CLIENT_CONFIG = {
+  projectId: import.meta.env?.VITE_WALLET_CONNECT_PROJECT_ID,
+  relayUrl: import.meta.env?.VITE_WALLET_CONNECT_RELAY_URL || 'wss://relay.walletconnect.com',
+  metadata: {
+    name: import.meta.env?.VITE_APP_NAME || 'Penguin Pool',
+    description: 'Chia Pool Management Platform',
+    url: window.location.origin,
+    icons: [
+      `${window.location.origin}/penguin-pool.svg`,
+      `${window.location.origin}/icons/icon-192x192.png`,
+      `${window.location.origin}/icons/icon-512x512.png`,
+    ],
+  },
+}
+
+export const MODAL_CONFIG = {
+  projectId: import.meta.env?.VITE_WALLET_CONNECT_PROJECT_ID,
+  enableExplorer: false,
+  themeMode: 'dark' as const,
+  themeVariables: {
+    '--wcm-z-index': '1000',
+    '--wcm-background-color': '#1f2937',
+    '--wcm-accent-color': '#3b82f6',
+    '--wcm-accent-fill-color': '#ffffff',
+    '--wcm-overlay-background-color': 'rgba(0, 0, 0, 0.8)',
   },
 }

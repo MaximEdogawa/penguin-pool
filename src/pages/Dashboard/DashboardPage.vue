@@ -10,7 +10,7 @@
                 <i
                   :class="[
                     'pi text-xl sm:text-2xl',
-                    isWalletConnected ? 'pi-wallet text-primary-600' : 'pi-wallet text-gray-400',
+                    isConnected ? 'pi-wallet text-primary-600' : 'pi-wallet text-gray-400',
                   ]"
                 ></i>
               </div>
@@ -18,15 +18,16 @@
                 Wallet Balance
               </h3>
             </div>
-            <div v-if="isWalletConnected" class="flex items-center space-x-1">
+            <div v-if="isConnected" class="flex items-center space-x-1">
               <button
-                @click="refreshBalance(true)"
-                :disabled="isRefreshingBalance"
+                @click="handleRefreshBalance(true)"
+                :disabled="isBalanceLoading"
                 class="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Refresh balance"
               >
-                <i :class="['pi', isRefreshingBalance ? 'pi-spin pi-spinner' : 'pi-refresh']"></i>
+                <i :class="['pi', isBalanceLoading ? 'pi-spin pi-spinner' : 'pi-refresh']"></i>
               </button>
+
               <button
                 @click="toggleAutoRefresh"
                 :class="[
@@ -57,13 +58,10 @@
             </div>
 
             <!-- Additional balance info when connected -->
-            <div v-if="isWalletConnected && walletStore.walletInfo?.balance" class="space-y-1">
+            <div v-if="isConnected && walletBalance" class="space-y-1">
               <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>Spendable:</span>
-                <span
-                  >{{ formatBalance(parseInt(walletStore.walletInfo.balance.spendable)) }}
-                  {{ ticker }}</span
-                >
+                <span>{{ spendableBalance }} {{ ticker }}</span>
               </div>
               <div
                 v-if="false"
@@ -76,7 +74,7 @@
 
             <!-- Wallet Address (only when connected) -->
             <div
-              v-if="isWalletConnected && walletStore.walletInfo?.address"
+              v-if="isConnected && walletDataService.address.data.value?.address"
               class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
             >
               <div class="flex items-center justify-between">
@@ -86,10 +84,10 @@
                   ></i>
                   <span
                     class="text-xs text-gray-600 dark:text-gray-400 font-mono truncate cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                    :title="walletStore.walletInfo.address"
+                    :title="walletDataService.address.data.value?.address || undefined"
                     @click="copyAddress"
                   >
-                    {{ formatAddress(walletStore.walletInfo.address) }}
+                    {{ formatAddress(walletDataService.address.data.value?.address ?? '') }}
                   </span>
                 </div>
                 <button
@@ -103,11 +101,11 @@
             </div>
 
             <!-- Connection status -->
-            <div v-if="!isWalletConnected" class="text-xs text-orange-600 dark:text-orange-400">
+            <div v-if="!isConnected" class="text-xs text-orange-600 dark:text-orange-400">
               <i class="pi pi-exclamation-triangle mr-1"></i>
               Wallet not connected
             </div>
-            <div v-else-if="isWalletConnected" class="text-xs text-green-600 dark:text-green-400">
+            <div v-else-if="isConnected" class="text-xs text-green-600 dark:text-green-400">
               <i class="pi pi-check-circle mr-1"></i>
               Wallet connected
             </div>
@@ -161,7 +159,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <!-- Wallet Connect Action (only show if not connected) -->
           <button
-            v-if="!isWalletConnected"
+            v-if="!isConnected"
             @click="connectWallet"
             :disabled="isBalanceLoading"
             class="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border-2 border-dashed border-orange-500 dark:border-orange-400 bg-orange-50 dark:bg-orange-900/20 hover:border-orange-500 dark:hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors duration-200"
@@ -239,41 +237,92 @@
 
 <script setup lang="ts">
   import { useUserStore } from '@/entities/user/store/userStore'
-  import { getAssetBalance } from '@/features/walletConnect/queries/walletQueries'
-  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
-  import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+  import { useSessionDataService } from '@/features/walletConnect/services/SessionDataService'
+  import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
 
   const userStore = ref<ReturnType<typeof useUserStore> | null>(null)
-  const walletStore = useWalletConnectStore()
+  const walletDataService = useWalletDataService()
+  const session = useSessionDataService()
   const router = useRouter()
 
-  // Constants
-  const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes in milliseconds
-
-  // Computed properties for wallet balance
-  const userBalance = computed(() => {
-    if (walletStore.walletInfo?.balance) {
-      return formatBalance(parseInt(walletStore.walletInfo.balance.confirmed))
-    }
-    return '0.00'
-  })
-
-  const isWalletConnected = computed(() => walletStore.isConnected)
-  const isBalanceLoading = computed(() => walletStore.isConnecting)
-
-  const networkInfo = computed(() => walletStore.getNetworkInfo())
-  const ticker = computed(() => {
-    if (networkInfo.value?.isTestnet) {
-      return 'TXCH'
-    }
-    return 'XCH'
-  })
-
+  const walletBalance = computed(() => walletDataService.balance.data.value || null)
+  const isBalanceLoading = computed(() => walletDataService.balance.isLoading.value)
+  const balanceLastUpdated = ref<Date | null>(null)
+  const autoRefreshEnabled = ref(true)
+  const isConnected = computed(() => session.isConnected.value)
+  // Format balance for display
   const formatBalance = (mojos: number): string => {
     if (mojos === 0) return '0.000000'
     return (mojos / 1000000000000).toFixed(6)
   }
+
+  // Get formatted balance
+  const userBalance = computed(() => {
+    if (!walletBalance.value || !walletBalance.value.confirmed) return '0.000000'
+    return formatBalance(parseInt(walletBalance.value.confirmed))
+  })
+
+  // Get spendable balance
+  const spendableBalance = computed(() => {
+    if (!walletBalance.value || !walletBalance.value.spendable) return '0.000000'
+    return formatBalance(parseInt(walletBalance.value.spendable))
+  })
+
+  // Get ticker symbol
+  const ticker = computed(() => {
+    const chainId = session.chainId.value || ''
+    return chainId?.includes('testnet') ? 'TXCH' : 'XCH'
+  })
+
+  // Actions
+  const refreshBalance = async (force = false) => {
+    if (isBalanceLoading.value && !force) {
+      console.log('⏰ Balance refresh already in progress, skipping')
+      return
+    }
+
+    try {
+      await walletDataService.balance.refetch()
+      balanceLastUpdated.value = new Date()
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error('❌ Failed to refresh wallet balance:', errorMessage)
+    }
+  }
+
+  const startAutoRefresh = () => {
+    if (autoRefreshEnabled.value) {
+      console.log('🔄 Starting auto-refresh')
+      // Auto-refresh every 5 minutes
+      setInterval(
+        () => {
+          if (isConnected.value) {
+            refreshBalance()
+          }
+        },
+        5 * 60 * 1000
+      )
+    }
+  }
+
+  const stopAutoRefresh = () => {
+    console.log('⏹️ Stopping auto-refresh')
+    autoRefreshEnabled.value = false
+  }
+
+  const toggleAutoRefresh = () => {
+    if (autoRefreshEnabled.value) {
+      stopAutoRefresh()
+    } else {
+      autoRefreshEnabled.value = true
+      startAutoRefresh()
+    }
+  }
+
+  // Constants
+  const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes in milliseconds
 
   const formatAddress = (address: string): string => {
     if (!address) return ''
@@ -286,10 +335,11 @@
   }
 
   const copyAddress = async () => {
-    if (!walletStore.walletInfo?.address) return
+    const address = walletDataService.address.data.value?.address
+    if (!address) return
 
     try {
-      await navigator.clipboard.writeText(walletStore.walletInfo.address)
+      await navigator.clipboard.writeText(address)
       const copyButton = document.querySelector('[title="Copy address"]') as HTMLElement
       if (copyButton) {
         const originalIcon = copyButton.innerHTML
@@ -305,103 +355,20 @@
     }
   }
 
-  const isRefreshingBalance = ref(false)
-  const refreshBalance = async (force = false) => {
-    if (isWalletConnected.value && !isRefreshingBalance.value) {
-      if (!force && lastBalanceRefresh.value) {
-        const timeSinceLastRefresh = Date.now() - lastBalanceRefresh.value.getTime()
-
-        if (timeSinceLastRefresh < AUTO_REFRESH_INTERVAL) {
-          console.log('Skipping balance refresh - recently updated')
-          return
-        }
-      }
-
-      isRefreshingBalance.value = true
-      try {
-        const result = await getAssetBalance()
-        if (result.success && result.data && walletStore.walletInfo) {
-          walletStore.walletInfo.balance = result.data
-          lastBalanceRefresh.value = new Date()
-        }
-      } catch (error) {
-        console.error('Failed to refresh wallet balance:', error)
-      } finally {
-        isRefreshingBalance.value = false
-      }
-    }
+  const handleRefreshBalance = async (force = false) => {
+    await refreshBalance(force)
   }
 
   const connectWallet = () => {
     window.location.href = '/wallet-connect'
   }
 
-  const startAutoRefresh = () => {
-    if (refreshInterval.value) {
-      clearInterval(refreshInterval.value)
-    }
-
-    if (isWalletConnected.value && autoRefreshEnabled.value) {
-      setTimeout(() => {
-        refreshInterval.value = setInterval(() => {
-          if (isWalletConnected.value) {
-            refreshBalance()
-          }
-        }, AUTO_REFRESH_INTERVAL)
-      }, AUTO_REFRESH_INTERVAL)
-    }
-  }
-
-  const stopAutoRefresh = () => {
-    if (refreshInterval.value) {
-      clearInterval(refreshInterval.value)
-      refreshInterval.value = null
-    }
-  }
-
-  const toggleAutoRefresh = () => {
-    autoRefreshEnabled.value = !autoRefreshEnabled.value
-
-    if (autoRefreshEnabled.value) {
-      startAutoRefresh()
-    } else {
-      stopAutoRefresh()
-    }
-  }
-
-  const balanceLoaded = ref(false)
-  const lastBalanceRefresh = ref<Date | null>(null)
-  const autoRefreshEnabled = ref(false)
-  const refreshInterval = ref<NodeJS.Timeout | null>(null)
-
   onMounted(async () => {
     try {
       userStore.value = useUserStore()
-
-      if (isWalletConnected.value) {
-        balanceLoaded.value = true
-        lastBalanceRefresh.value = new Date()
-        startAutoRefresh()
-      }
     } catch (error) {
       console.error('Failed to initialize dashboard:', error)
     }
-  })
-
-  watch(isWalletConnected, async connected => {
-    if (connected && !balanceLoaded.value) {
-      startAutoRefresh()
-      balanceLoaded.value = true
-      lastBalanceRefresh.value = new Date()
-    } else if (!connected) {
-      balanceLoaded.value = false
-      lastBalanceRefresh.value = null
-      stopAutoRefresh()
-    }
-  })
-
-  onUnmounted(() => {
-    stopAutoRefresh()
   })
 </script>
 

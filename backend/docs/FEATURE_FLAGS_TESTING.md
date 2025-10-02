@@ -191,7 +191,7 @@ If you see "Backend is not running or not accessible":
 
 If requests are timing out:
 
-1. Check if the backend is responding: `curl http://localhost:3001/health`
+1. Check if the backend is responding: `curl http://localhost:3000/health`
 2. Increase the timeout value in the test scripts
 3. Check for firewall or network issues
 

@@ -1,9 +1,7 @@
 <template>
-  <!-- Login Screen with Loading State -->
   <PWAInstallPrompt />
   <div class="login-page" :style="backgroundStyle">
     <div class="login-container">
-      <!-- Logo and Title -->
       <div class="logo-section">
         <div class="logo-container">
           <PenguinLogo class="logo-icon" />
@@ -18,12 +16,10 @@
         </div>
       </div>
 
-      <!-- Wallet Connection Section -->
       <div class="wallet-section">
         <div class="wallet-options">
-          <!-- Primary Wallet Option - Sage -->
           <button
-            @click="showWalletModal = true"
+            @click="handleConnect"
             class="wallet-option-primary group"
             :disabled="isConnecting"
           >
@@ -42,39 +38,30 @@
             </div>
             <div class="wallet-hover-overlay"></div>
           </button>
-
-          <!-- Secondary Wallet Options -->
-          <div class="secondary-wallet-options">
-            <!-- Other Wallets -->
-            <FeatureFlag category="app" feature="otherWallets">
-              <button
-                @click="showWalletModal = true"
-                class="wallet-option-secondary group"
-                :disabled="isConnecting"
-              >
-                <div class="secondary-wallet-content">
-                  <div class="secondary-wallet-icon">
-                    <i class="secondary-wallet-icon-symbol pi pi-wallet"></i>
-                  </div>
-                  <div class="secondary-wallet-text">
-                    <h4 class="secondary-wallet-title">Other Wallets</h4>
-                    <p class="secondary-wallet-subtitle">WalletConnect compatible</p>
-                  </div>
-                  <i class="secondary-wallet-arrow pi pi-arrow-right"></i>
-                </div>
-              </button>
-            </FeatureFlag>
-          </div>
         </div>
-
-        <!-- Connection Status -->
-        <div v-if="connectionStatus" class="connection-status" :class="statusType">
-          <i :class="statusIcon" class="status-icon"></i>
-          <span class="status-text">{{ connectionStatus }}</span>
+        <div
+          v-if="connectionStatus.message"
+          class="connection-status"
+          :class="connectionStatus.type"
+        >
+          <i :class="connectionStatus.icon" class="status-icon"></i>
+          <span class="status-text">{{ connectionStatus.message }}</span>
         </div>
       </div>
-
-      <!-- Footer -->
+      <div class="network-section">
+        <div class="network-selector">
+          <label for="network-select" class="network-label">Network:</label>
+          <select
+            id="network-select"
+            v-model="selectedNetwork"
+            class="network-dropdown"
+            @change="handleNetworkChange"
+          >
+            <option value="chia:testnet">Testnet</option>
+            <option value="chia:mainnet">Mainnet</option>
+          </select>
+        </div>
+      </div>
       <div class="footer">
         <p class="footer-text">
           By connecting your wallet, you agree to our
@@ -85,86 +72,111 @@
       </div>
     </div>
 
-    <!-- Wallet Connect Modal -->
-    <WalletConnectModal
-      v-if="showWalletModal"
-      :is-open="showWalletModal"
-      @close="closeWalletModal"
-      @connected="handleWalletConnected"
-    />
+    <IOSWalletModal
+      v-if="isIOS && isModalVisible"
+      :uri="connection.uri.value"
+      @close="closeModal"
+      @continue="handleContinue"
+    ></IOSWalletModal>
   </div>
 </template>
 
 <script setup lang="ts">
-  import FeatureFlag from '@/components/FeatureFlag.vue'
-  import PenguinLogo from '@/components/PenguinLogo.vue'
+  import signinGlassImage from '@/assets/signin-glass.jpg'
   import PWAInstallPrompt from '@/components/PWAInstallPrompt.vue'
-  import { useUserStore } from '@/entities/user/store/userStore'
-  import WalletConnectModal from '@/features/walletConnect/components/WalletConnectModal.vue'
-  import { useWalletConnectStore } from '@/features/walletConnect/stores/walletConnectStore'
-  import { computed, onMounted, ref } from 'vue'
-  import { useRouter } from 'vue-router'
+  import PenguinLogo from '@/components/PenguinLogo.vue'
+  import IOSWalletModal from '@/features/walletConnect/components/IOSWalletModal.vue'
+  import { isIOS } from '@/features/walletConnect/hooks/useIOSModal'
+  import { useConnectDataService } from '@/features/walletConnect/services/ConnectionDataService'
+  import { useInstanceDataService } from '@/features/walletConnect/services/InstanceDataService'
+  import { useSessionDataService } from '@/features/walletConnect/services/SessionDataService'
+  import router from '@/router'
+  import { computed, onMounted, ref, watch } from 'vue'
 
-  const router = useRouter()
-  const userStore = useUserStore()
-  const walletConnectStore = useWalletConnectStore()
+  const instance = useInstanceDataService()
+  const connection = useConnectDataService()
+  const session = useSessionDataService()
 
-  // State
-  const showWalletModal = ref(false)
-  const connectionStatus = ref('')
-  const statusType = ref<'info' | 'success' | 'error'>('info')
-  const statusIcon = ref('pi pi-info-circle')
-
-  // Computed
-  const isConnecting = computed(() => walletConnectStore.isConnecting)
-
+  const selectedNetwork = ref('chia:testnet')
+  const isModalVisible = ref(false)
   const backgroundStyle = computed(() => ({
-    backgroundImage: "url('/src/assets/signin-glass.jpg')",
+    backgroundImage: `url('${signinGlassImage}')`,
   }))
 
-  const handleWalletConnected = async (walletInfo: unknown) => {
-    try {
-      if (!walletInfo || typeof walletInfo !== 'object') {
-        throw new Error('Invalid wallet info - no wallet data received')
-      }
+  const isConnecting = computed(
+    () => instance.isInitializing.value || connection.isConnecting.value
+  )
 
-      const wallet = walletInfo as { address: string; fingerprint?: number }
-      if (!wallet.address) {
-        throw new Error('Invalid wallet info - no address found')
-      }
+  const connectionStatus = ref<{
+    message: string
+    type: 'info' | 'success' | 'error'
+    icon: string
+  }>({
+    message: '',
+    type: 'info',
+    icon: 'pi pi-info-circle',
+  })
 
-      if (wallet.fingerprint) {
-        await userStore.login(wallet.fingerprint, 'wallet-user')
+  onMounted(() => {
+    isModalVisible.value = false
+    if (session.isConnected.value) router.push('/dashboard')
+    if (connection.isConnected.value && !session.isConnected.value) session.waitForApproval()
+  })
+
+  watch(connection.uri, uri => {
+    if (uri && instance.modal.value) {
+      if (isIOS.value) {
+        isModalVisible.value = true
       } else {
-        await userStore.login(wallet.address, 'wallet-user')
+        instance.modal.value.openModal({ uri })
       }
-
-      await router.push('/dashboard')
-    } catch (error) {
-      console.error('Failed to process wallet connection:', error)
-      connectionStatus.value =
-        'Failed to process wallet connection: ' +
-        (error instanceof Error ? error.message : 'Unknown error')
-      statusType.value = 'error'
-      statusIcon.value = 'pi pi-exclamation-triangle'
-    }
-  }
-
-  const closeWalletModal = () => {
-    showWalletModal.value = false
-  }
-
-  onMounted(async () => {
-    try {
-      if (walletConnectStore.isConnected) {
-        await new Promise(resolve => setTimeout(resolve, 500))
-        const walletInfo = walletConnectStore.walletInfo
-        await handleWalletConnected(walletInfo)
-      }
-    } catch (error) {
-      console.error('Failed to initialize Wallet Connect:', error)
+      stop()
     }
   })
+
+  watch(session.isConnected, async value => {
+    if (value) {
+      router.push('/dashboard')
+    }
+  })
+
+  watch(connection.isConnected, value => {
+    if (value) {
+      console.log('Wallet Connected waiting for approval:', value)
+      session.waitForApproval()
+    }
+  })
+
+  const handleConnect = () => {
+    try {
+      connection.connect()
+    } catch (error) {
+      console.error('Connection failed:', error)
+      connectionStatus.value = {
+        message: `Connection failed: ${error}`,
+        type: 'error',
+        icon: 'pi pi-exclamation-triangle',
+      }
+    }
+  }
+
+  const handleNetworkChange = async () => {
+    try {
+      console.log('🔄 Network changed to:', selectedNetwork.value)
+      connectionStatus.value = {
+        message: `Switched to ${selectedNetwork.value === 'chia:mainnet' ? 'Mainnet' : 'Testnet'}`,
+        type: 'success',
+        icon: 'pi pi-check-circle',
+      }
+    } catch (error) {
+      console.error('Failed to switch network:', error)
+      connectionStatus.value = {
+        message: 'Failed to switch network',
+        type: 'error',
+        icon: 'pi pi-exclamation-triangle',
+      }
+    }
+  }
 </script>
 
 <style scoped>
@@ -199,6 +211,26 @@
 
   .subtitle-text {
     @apply text-white/80 dark:text-gray-300/80;
+  }
+
+  .network-section {
+    @apply w-full max-w-md mx-auto mt-2 mb-2;
+  }
+
+  .network-selector {
+    @apply flex flex-row items-center justify-center gap-1;
+  }
+
+  .network-label {
+    @apply text-xs font-normal text-white/50 dark:text-gray-500;
+  }
+
+  .network-dropdown {
+    @apply px-1.5 py-0.5 text-xs rounded-md bg-white/5 dark:bg-gray-800/5 backdrop-blur-sm border border-white/10 dark:border-gray-700/20 text-white/70 dark:text-gray-400 focus:outline-none focus:ring-0 focus:border-white/20 transition-all duration-200;
+  }
+
+  .network-dropdown option {
+    @apply bg-gray-800 text-white text-xs;
   }
 
   .wallet-section {

@@ -327,6 +327,7 @@
       title="Cancel Offer"
       message="Are you sure you want to cancel this offer? This action cannot be undone."
       :details="`Offer ID: ${offerToCancel.tradeId}`"
+      :error-message="cancelError"
       confirm-text="Cancel Offer"
       cancel-text="Keep Offer"
       :is-loading="isCancelling"
@@ -341,8 +342,14 @@
   import OfferDetailsModal from '@/components/Offers/OfferDetailsModal.vue'
   import TakeOfferModal from '@/components/Offers/TakeOfferModal.vue'
   import ConfirmationDialog from '@/components/Shared/ConfirmationDialog.vue'
+  import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
+  import { useOfferStorage } from '@/shared/composables/useOfferStorage'
   import type { OfferDetails, OfferFilters } from '@/types/offer.types'
   import { computed, onMounted, ref } from 'vue'
+
+  // Services
+  const walletDataService = useWalletDataService()
+  const offerStorage = useOfferStorage()
 
   // State
   const offers = ref<OfferDetails[]>([])
@@ -354,6 +361,7 @@
   const showCancelConfirmation = ref(false)
   const offerToCancel = ref<OfferDetails | null>(null)
   const isCancelling = ref(false)
+  const cancelError = ref('')
   const filters = ref<OfferFilters>({
     status: '',
   })
@@ -373,25 +381,19 @@
   const refreshOffers = async () => {
     isLoading.value = true
     try {
-      // TODO: Implement actual offer fetching from wallet connect
-      // For now, we'll use mock data
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      // Mock data - replace with actual API call
-      offers.value = [
-        {
-          id: '1',
-          tradeId: '7901e9ec9d5042a12f2d2ca7c42847e20ede7891b32f3a1ae23dc268c85cbc6d',
-          offerString:
-            'offer1qqr83wcuu2rykcmqvpsxytznpzctkxlzrxulrh5k5cgr…h5mmvakfcazrhfkyww0ln2d4shh20r9lvsrqpgfz5c394a0gg',
-          status: 'active',
-          createdAt: new Date(),
-          assetsOffered: [{ assetId: '', amount: 1.5, type: 'xch', symbol: 'XCH' }],
-          assetsRequested: [{ assetId: 'cat123', amount: 100, type: 'cat', symbol: 'TOKEN' }],
-          fee: 0.000001,
-          creatorAddress: 'xch1test123',
-        },
-      ]
+      // Load offers from IndexedDB
+      await offerStorage.loadOffers()
+      offers.value = offerStorage.offers.value.map(storedOffer => ({
+        id: storedOffer.id,
+        tradeId: storedOffer.tradeId,
+        offerString: storedOffer.offerString,
+        status: storedOffer.status,
+        createdAt: storedOffer.createdAt,
+        assetsOffered: storedOffer.assetsOffered,
+        assetsRequested: storedOffer.assetsRequested,
+        fee: storedOffer.fee,
+        creatorAddress: storedOffer.creatorAddress,
+      }))
     } catch (error) {
       console.error('Failed to refresh offers:', error)
     } finally {
@@ -405,6 +407,7 @@
 
   const cancelOffer = (offer: OfferDetails) => {
     offerToCancel.value = offer
+    cancelError.value = '' // Clear any previous errors
     showCancelConfirmation.value = true
   }
 
@@ -412,15 +415,26 @@
     if (!offerToCancel.value) return
 
     isCancelling.value = true
+    cancelError.value = '' // Clear any previous errors
 
     try {
-      // TODO: Implement actual offer cancellation with wallet connect
-      console.log('Cancelling offer:', offerToCancel.value.tradeId)
+      await walletDataService.cancelOffer({
+        id: offerToCancel.value.tradeId,
+        fee: offerToCancel.value.fee,
+      })
+
+      // Update the offer status locally
       offerToCancel.value.status = 'cancelled'
+
+      // Update in IndexedDB
+      await offerStorage.updateOffer(offerToCancel.value.id, { status: 'cancelled' })
+
       showCancelConfirmation.value = false
       offerToCancel.value = null
     } catch (error) {
       console.error('Failed to cancel offer:', error)
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
+      cancelError.value = `Failed to cancel offer: ${errorMsg}`
     } finally {
       isCancelling.value = false
     }
@@ -429,6 +443,7 @@
   const handleCancelDialogClose = () => {
     showCancelConfirmation.value = false
     offerToCancel.value = null
+    cancelError.value = '' // Clear error when closing dialog
   }
 
   const handleOfferCreated = (offer: OfferDetails) => {

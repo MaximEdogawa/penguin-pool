@@ -1,7 +1,79 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { mount, VueWrapper } from '@vue/test-utils'
 import { vi } from 'vitest'
 import type { ComponentMountingOptions } from '@vue/test-utils'
+
+// Type definitions for test utilities
+interface MockFetchResponse {
+  ok: boolean
+  status: number
+  statusText: string
+  json: () => Promise<unknown>
+  text: () => Promise<string>
+  headers: Headers
+}
+
+interface EventOptions {
+  bubbles?: boolean
+  cancelable?: boolean
+  composed?: boolean
+}
+
+interface KeyboardEventOptions extends EventOptions {
+  key: string
+  code?: string
+  keyCode?: number
+  which?: number
+  shiftKey?: boolean
+  ctrlKey?: boolean
+  altKey?: boolean
+  metaKey?: boolean
+}
+
+interface MouseEventOptions extends EventOptions {
+  clientX?: number
+  clientY?: number
+  button?: number
+  buttons?: number
+  shiftKey?: boolean
+  ctrlKey?: boolean
+  altKey?: boolean
+  metaKey?: boolean
+}
+
+interface TestUser {
+  id: string
+  username: string
+  email: string
+  walletAddress: string
+  isAuthenticated: boolean
+  createdAt: Date
+}
+
+interface TestLoan {
+  id: string
+  amount: number
+  currency: string
+  interestRate: number
+  term: number
+  status: string
+  borrowerId: string
+  lenderId: string
+  createdAt: Date
+  dueDate: Date
+}
+
+interface TestOptionContract {
+  id: string
+  type: string
+  strikePrice: number
+  underlying: string
+  expiryDate: Date
+  premium: number
+  status: string
+  buyerId: string
+  sellerId: string
+  createdAt: Date
+}
 
 // Test utilities for Vue components
 export class TestUtils {
@@ -81,8 +153,8 @@ export class TestUtils {
   /**
    * Mock fetch with specific response
    */
-  static mockFetchResponse(url: string | RegExp, response: any, status: number = 200) {
-    const mockResponse = {
+  static mockFetchResponse(url: string | RegExp, response: unknown, status: number = 200) {
+    const mockResponse: MockFetchResponse = {
       ok: status >= 200 && status < 300,
       status,
       statusText: status === 200 ? 'OK' : 'Error',
@@ -120,14 +192,18 @@ export class TestUtils {
   /**
    * Create mock event
    */
-  static createMockEvent(type: string, options: any = {}) {
+  static createMockEvent(type: string, options: EventOptions = {}) {
     return new Event(type, options)
   }
 
   /**
    * Create mock keyboard event
    */
-  static createMockKeyboardEvent(type: string, key: string, options: any = {}) {
+  static createMockKeyboardEvent(
+    type: string,
+    key: string,
+    options: Partial<KeyboardEventOptions> = {}
+  ) {
     return new KeyboardEvent(type, {
       key,
       bubbles: true,
@@ -139,7 +215,7 @@ export class TestUtils {
   /**
    * Create mock mouse event
    */
-  static createMockMouseEvent(type: string, options: any = {}) {
+  static createMockMouseEvent(type: string, options: Partial<MouseEventOptions> = {}) {
     return new MouseEvent(type, {
       bubbles: true,
       cancelable: true,
@@ -250,7 +326,7 @@ export const {
 } = TestUtils
 
 // Common test data factories
-export const createTestUser = (overrides: Partial<any> = {}) => ({
+export const createTestUser = (overrides: Partial<TestUser> = {}): TestUser => ({
   id: 'user-123',
   username: 'testuser',
   email: 'test@example.com',
@@ -260,7 +336,7 @@ export const createTestUser = (overrides: Partial<any> = {}) => ({
   ...overrides,
 })
 
-export const createTestLoan = (overrides: Partial<any> = {}) => ({
+export const createTestLoan = (overrides: Partial<TestLoan> = {}): TestLoan => ({
   id: 'loan-123',
   amount: 1000,
   currency: 'XCH',
@@ -274,7 +350,9 @@ export const createTestLoan = (overrides: Partial<any> = {}) => ({
   ...overrides,
 })
 
-export const createTestOptionContract = (overrides: Partial<any> = {}) => ({
+export const createTestOptionContract = (
+  overrides: Partial<TestOptionContract> = {}
+): TestOptionContract => ({
   id: 'option-123',
   type: 'call',
   strikePrice: 100,
@@ -289,14 +367,14 @@ export const createTestOptionContract = (overrides: Partial<any> = {}) => ({
 })
 
 // Common test assertions
-export const expectElementToBeVisible = (wrapper: VueWrapper<any>, selector: string) => {
+export const expectElementToBeVisible = <T>(wrapper: VueWrapper<T>, selector: string) => {
   const element = wrapper.find(selector)
   expect(element.exists()).toBe(true)
   expect(element.isVisible()).toBe(true)
 }
 
-export const expectElementToHaveText = (
-  wrapper: VueWrapper<any>,
+export const expectElementToHaveText = <T>(
+  wrapper: VueWrapper<T>,
   selector: string,
   text: string
 ) => {
@@ -305,8 +383,8 @@ export const expectElementToHaveText = (
   expect(element.text()).toContain(text)
 }
 
-export const expectElementToHaveClass = (
-  wrapper: VueWrapper<any>,
+export const expectElementToHaveClass = <T>(
+  wrapper: VueWrapper<T>,
   selector: string,
   className: string
 ) => {
@@ -315,13 +393,13 @@ export const expectElementToHaveClass = (
   expect(element.classes()).toContain(className)
 }
 
-export const expectElementToBeDisabled = (wrapper: VueWrapper<any>, selector: string) => {
+export const expectElementToBeDisabled = <T>(wrapper: VueWrapper<T>, selector: string) => {
   const element = wrapper.find(selector)
   expect(element.exists()).toBe(true)
   expect(element.attributes('disabled')).toBeDefined()
 }
 
-export const expectElementToBeEnabled = (wrapper: VueWrapper<any>, selector: string) => {
+export const expectElementToBeEnabled = <T>(wrapper: VueWrapper<T>, selector: string) => {
   const element = wrapper.find(selector)
   expect(element.exists()).toBe(true)
   expect(element.attributes('disabled')).toBeUndefined()

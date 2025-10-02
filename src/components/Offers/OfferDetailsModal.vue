@@ -244,7 +244,7 @@
 
 <script setup lang="ts">
   import ConfirmationDialog from '@/components/Shared/ConfirmationDialog.vue'
-  import { cancelOffer as cancelOfferRequest } from '@/features/walletConnect/queries/walletQueries'
+  import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
   import type { OfferDetails } from '@/types/offer.types'
   import { ref } from 'vue'
 
@@ -260,6 +260,9 @@
 
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
+
+  // Services
+  const walletDataService = useWalletDataService()
 
   // State
   const isCancelling = ref(false)
@@ -316,18 +319,14 @@
     isCancelling.value = true
 
     try {
-      const result = await cancelOfferRequest({
-        id: props.offer.tradeId, // Use 'id' instead of 'tradeId'
+      await walletDataService.cancelOffer({
+        id: props.offer.tradeId,
         fee: props.offer.fee,
       })
 
-      if (result.success) {
-        const updatedOffer = { ...props.offer, status: 'cancelled' as const }
-        emit('offer-cancelled', updatedOffer)
-        showCancelConfirmation.value = false
-      } else {
-        throw new Error(result.error || 'Failed to cancel offer')
-      }
+      const updatedOffer = { ...props.offer, status: 'cancelled' as const }
+      emit('offer-cancelled', updatedOffer)
+      showCancelConfirmation.value = false
     } catch (error) {
       console.error('Failed to cancel offer:', error)
       alert('Failed to cancel offer. Please try again.')
