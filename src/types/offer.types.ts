@@ -45,7 +45,7 @@ export interface OfferDetails {
   assetsOffered: OfferAsset[]
   assetsRequested: OfferAsset[]
   fee: AssetAmount
-  creatorAddress: string
+  creatorAddress?: string
 }
 
 export interface CreateOfferForm {

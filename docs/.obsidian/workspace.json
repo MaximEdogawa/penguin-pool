@@ -168,6 +168,7 @@
   },
   "active": "762a427def224add",
   "lastOpenFiles": [
+    "DEXIE_API_SETUP.md",
     "CODE_STYLE_GUIDE.md",
     "PRODUCTION_DEBUGGING.md",
     "APP_VERSION_MANAGEMENT.md",
@@ -197,7 +198,6 @@
     "WALLET_CONNECT_SETUP.md",
     "technical-info/index.html",
     "implementation/TICKET-008/TICKET-008-NESTJS-IMPLEMENTATION.md",
-    "API_DOCUMENTATION.md",
     "implementation/TICKET-008",
     "implementation/TICKET-003",
     "implementation/TICKET-004",
