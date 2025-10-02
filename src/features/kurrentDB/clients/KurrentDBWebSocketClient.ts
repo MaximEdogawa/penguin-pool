@@ -39,10 +39,10 @@ export class KurrentDBWebSocketClient {
   private ws: WebSocket | null = null
   private reconnectAttempts = 0
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  private subscriptions = new Map<string, Set<(event: KurrentDBEvent) => void>>()
+  private readonly subscriptions = new Map<string, Set<(event: KurrentDBEvent) => void>>()
   private connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'reconnecting' =
     'disconnected'
-  private config: KurrentDBWebSocketConfig
+  private readonly config: KurrentDBWebSocketConfig
   private messageQueue: Array<{ action: string; data: unknown }> = []
   private isReconnecting = false
 
@@ -71,11 +71,11 @@ export class KurrentDBWebSocketClient {
         const authToken = `${this.config.credentials.apiKey}:${this.config.credentials.secretKey}`
         const wsUrl = `${this.config.wsUrl}?auth=${encodeURIComponent(authToken)}`
 
-        console.log('Attempting to connect to WebSocket:', wsUrl)
+        // Connecting to WebSocket
         this.ws = new WebSocket(wsUrl)
 
         this.ws.onopen = () => {
-          console.log('WebSocket connected to KurrentDB')
+          // WebSocket connected
           this.connectionStatus = 'connected'
           this.reconnectAttempts = 0
           this.isReconnecting = false
@@ -90,13 +90,13 @@ export class KurrentDBWebSocketClient {
           try {
             const message = JSON.parse(event.data)
             this.handleMessage(message)
-          } catch (error) {
-            console.error('Failed to parse WebSocket message:', error)
+          } catch {
+            // Failed to parse WebSocket message
           }
         }
 
-        this.ws.onclose = event => {
-          console.log('WebSocket disconnected:', event.code, event.reason)
+        this.ws.onclose = () => {
+          // WebSocket disconnected
           this.connectionStatus = 'disconnected'
 
           if (!this.isReconnecting) {
@@ -105,7 +105,7 @@ export class KurrentDBWebSocketClient {
         }
 
         this.ws.onerror = error => {
-          console.error('WebSocket error:', error)
+          // WebSocket error
           this.connectionStatus = 'disconnected'
           reject(error)
         }
@@ -149,27 +149,29 @@ export class KurrentDBWebSocketClient {
           break
 
         case 'error':
-          console.error('KurrentDB error:', data)
+          // KurrentDB error
           break
 
         default:
-          console.log('Unknown message type:', type, message)
+        // Unknown message type
       }
     }
   }
 
-  private handleStreamUpdate(streamName: string, data: unknown) {
+  private handleStreamUpdate(_streamName: string, _data: unknown) {
     // Handle stream metadata updates
-    console.log('Stream update:', streamName, data)
+    // Stream update
   }
 
   private processMessageQueue() {
-    while (this.messageQueue.length > 0) {
-      const message = this.messageQueue.shift()
+    const messagesToProcess = [...this.messageQueue]
+    this.messageQueue.length = 0
+
+    messagesToProcess.forEach(message => {
       if (message && this.ws?.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify(message))
       }
-    }
+    })
   }
 
   private queueMessage(action: string, data: unknown) {
@@ -296,7 +298,7 @@ export class KurrentDBWebSocketClient {
 
   private handleReconnect() {
     if (this.reconnectAttempts >= this.config.reconnectOptions!.maxAttempts!) {
-      console.error('Max reconnection attempts reached')
+      // Max reconnection attempts reached
       return
     }
 
@@ -309,15 +311,13 @@ export class KurrentDBWebSocketClient {
       this.config.reconnectOptions!.maxDelay!
     )
 
-    console.log(
-      `Attempting to reconnect in ${delay}ms... (${this.reconnectAttempts}/${this.config.reconnectOptions!.maxAttempts})`
-    )
+    // Attempting to reconnect
 
     this.reconnectTimer = setTimeout(async () => {
       try {
         await this.connect()
-      } catch (error) {
-        console.error('Reconnection failed:', error)
+      } catch {
+        // Reconnection failed
         this.handleReconnect()
       }
     }, delay)

@@ -284,7 +284,7 @@
   }
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString()
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`
   }
 
   const copyOfferString = async () => {
@@ -294,8 +294,8 @@
       setTimeout(() => {
         isCopied.value = false
       }, 2000)
-    } catch (error) {
-      console.error('Failed to copy offer string:', error)
+    } catch {
+      // Failed to copy offer string
     }
   }
 
@@ -306,8 +306,8 @@
       setTimeout(() => {
         isCopied.value = false
       }, 2000)
-    } catch (error) {
-      console.error('Failed to copy offer ID:', error)
+    } catch {
+      // Failed to copy offer ID
     }
   }
 
@@ -327,8 +327,8 @@
       const updatedOffer = { ...props.offer, status: 'cancelled' as const }
       emit('offer-cancelled', updatedOffer)
       showCancelConfirmation.value = false
-    } catch (error) {
-      console.error('Failed to cancel offer:', error)
+    } catch {
+      // Failed to cancel offer
       alert('Failed to cancel offer. Please try again.')
     } finally {
       isCancelling.value = false
@@ -347,8 +347,8 @@
       // In a real app, you might want to call an API to delete from backend
       emit('offer-deleted', props.offer)
       showDeleteConfirmation.value = false
-    } catch (error) {
-      console.error('Failed to delete offer:', error)
+    } catch {
+      // Failed to delete offer
       alert('Failed to delete offer. Please try again.')
     } finally {
       isDeleting.value = false

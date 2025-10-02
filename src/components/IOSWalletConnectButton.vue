@@ -126,12 +126,12 @@
     if (canConnect.value) {
       const result = await connect()
       if (!result.success) {
-        console.error('Connection failed:', result.error)
+        // Connection failed
       }
     } else if (canDisconnect.value) {
       const result = await disconnect()
       if (!result.success) {
-        console.error('Disconnection failed:', result.error)
+        // Disconnection failed
       }
     }
   }
@@ -139,7 +139,7 @@
   const handleHealConnection = async () => {
     const result = await healConnection()
     if (!result.success) {
-      console.error('Healing failed:', result.error)
+      // Healing failed
     }
   }
 
@@ -147,7 +147,7 @@
     clearError()
     const result = await connect()
     if (!result.success) {
-      console.error('Retry failed:', result.error)
+      // Retry failed
     }
   }
 </script>

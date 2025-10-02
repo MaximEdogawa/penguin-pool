@@ -80,7 +80,7 @@ export function useUptime() {
       lastUpdated.value = new Date()
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch uptime data'
-      console.error('Error fetching uptime data:', err)
+      // Error fetching uptime data
     } finally {
       loading.value = false
     }
@@ -127,7 +127,7 @@ export function useUptime() {
         wsConnected.value = true
         wsConnecting.value = false
         wsError.value = ''
-        console.log('Connected to health/uptime WebSocket')
+        // Connected to health/uptime WebSocket
       })
 
       ws.value.on('service_status_change', data => {
@@ -139,29 +139,29 @@ export function useUptime() {
           fetchUptimeData()
         }
 
-        console.log(`Real-time status update: ${data.serviceName} is now ${data.status}`)
+        // Real-time status update
       })
 
-      ws.value.on('health_status', data => {
-        console.log('Received health status:', data)
+      ws.value.on('health_status', _data => {
+        // Received health status
       })
 
       ws.value.on('disconnect', reason => {
         wsConnected.value = false
         wsConnecting.value = false
         wsError.value = `WebSocket disconnected: ${reason}`
-        console.log('Health/uptime WebSocket disconnected')
+        // Health/uptime WebSocket disconnected
       })
 
-      ws.value.on('connect_error', error => {
+      ws.value.on('connect_error', _error => {
         wsConnecting.value = false
         wsError.value = 'WebSocket connection error'
-        console.error('Health/uptime WebSocket error:', error)
+        // Health/uptime WebSocket error
       })
-    } catch (err) {
+    } catch {
       wsConnecting.value = false
       wsError.value = 'Failed to create WebSocket connection'
-      console.error('Failed to connect to health/uptime WebSocket:', err)
+      // Failed to connect to health/uptime WebSocket
     }
   }
 
@@ -271,7 +271,7 @@ export function useServiceTimeline(serviceName: string) {
       timeline.value = response.timeline
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch timeline'
-      console.error('Error fetching timeline:', err)
+      // Error fetching timeline
     } finally {
       loading.value = false
     }

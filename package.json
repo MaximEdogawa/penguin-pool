@@ -23,8 +23,10 @@
     "preview:production": "vite preview --mode production",
     "build-only": "vite build",
     "type-check": "vue-tsc --noEmit",
-    "lint": "eslint . --ext .vue,.js,.ts,.jsx,.tsx --fix",
-    "lint:check": "eslint . --ext .vue,.js,.ts,.jsx,.tsx",
+    "lint": "eslint . --ext .vue,.js,.ts,.jsx,.tsx --fix --cache --cache-location .eslintcache",
+    "lint:check": "eslint . --ext .vue,.js,.ts,.jsx,.tsx --cache --cache-location .eslintcache",
+    "lint:fast": "eslint src --ext .vue,.js,.ts,.jsx,.tsx --fix --cache --cache-location .eslintcache",
+    "lint:backend": "eslint backend/src --ext .ts,.js --fix --cache --cache-location .eslintcache",
     "format": "prettier --write \"**/*.{vue,js,ts,jsx,tsx,json,css,md,html,scss,sass,less}\" --ignore-path .prettierignore",
     "format:check": "prettier --check \"**/*.{vue,js,ts,jsx,tsx,json,css,md,html,scss,sass,less}\" --ignore-path .prettierignore",
     "test": "vitest",
@@ -87,7 +89,8 @@
     "tailwindcss": "^3.4.17",
     "tailwindcss-primeui": "^0.6.1",
     "vue": "^3.5.18",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "winston": "^3.18.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

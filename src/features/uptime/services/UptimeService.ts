@@ -57,7 +57,7 @@ export interface CurrentStatusResponse {
 }
 
 export class UptimeService {
-  private baseUrl: string
+  private readonly baseUrl: string
 
   constructor(baseUrl: string = 'http://localhost:3001') {
     this.baseUrl = baseUrl

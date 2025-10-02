@@ -1,7 +1,4 @@
-/**
- * Centralized Session Management Service
- * Handles comprehensive session clearing for both local and PWA environments
- */
+import { logger } from './logger'
 
 export interface SessionClearOptions {
   clearWalletConnect?: boolean
@@ -22,9 +19,6 @@ export class SessionManager {
     return SessionManager.instance
   }
 
-  /**
-   * Clear all session data comprehensively
-   */
   async clearAllSessionData(options: SessionClearOptions = {}): Promise<void> {
     const {
       clearWalletConnect = true,
@@ -35,47 +29,31 @@ export class SessionManager {
       clearAllCaches = true,
     } = options
 
-    console.log('Starting comprehensive session clearing...')
-
     try {
-      // Clear localStorage data
       if (clearUserData || clearThemeData || clearWalletConnect) {
         await this.clearLocalStorage(clearUserData, clearThemeData, clearWalletConnect)
       }
 
-      // Clear sessionStorage data
       if (clearWalletConnect) {
         await this.clearSessionStorage()
       }
 
-      // Clear PWA storage mechanisms
       if (clearPWAStorage) {
         await this.clearPWAStorage()
       }
 
-      // Clear service worker data
       if (clearServiceWorker) {
-        await this.clearServiceWorkerData()
+        await this.clearServiceWorker()
       }
 
-      // Clear all caches
       if (clearAllCaches) {
         await this.clearAllCaches()
       }
-
-      // Clear global window references
-      this.clearGlobalReferences()
-
-      console.log('Session clearing completed successfully')
     } catch (error) {
-      console.error('Error during session clearing:', error)
-      throw error
+      logger.error('Failed to clear session data', error as Error)
     }
   }
 
-  /**
-   * Clear localStorage data based on options
-   */
   private async clearLocalStorage(
     clearUserData: boolean,
     clearThemeData: boolean,
@@ -83,15 +61,9 @@ export class SessionManager {
   ): Promise<void> {
     if (typeof window === 'undefined' || !window.localStorage) return
 
-    const keysToRemove: string[] = []
-
-    // Get all localStorage keys
     const allKeys = Object.keys(window.localStorage)
 
-    for (const key of allKeys) {
-      let shouldRemove = false
-
-      // User data patterns
+    const keysToRemove = allKeys.filter(key => {
       if (
         clearUserData &&
         (key.startsWith('penguin-pool-user') ||
@@ -99,10 +71,9 @@ export class SessionManager {
           key.includes('auth') ||
           key.includes('session'))
       ) {
-        shouldRemove = true
+        return true
       }
 
-      // Theme data patterns
       if (
         clearThemeData &&
         (key.startsWith('penguin-pool-theme') ||
@@ -110,10 +81,9 @@ export class SessionManager {
           key.includes('dark-mode') ||
           key.includes('light-mode'))
       ) {
-        shouldRemove = true
+        return true
       }
 
-      // WalletConnect data patterns
       if (
         clearWalletConnect &&
         (key.startsWith('walletconnect') ||
@@ -126,64 +96,48 @@ export class SessionManager {
           key.includes('accounts') ||
           key.includes('chainId'))
       ) {
-        shouldRemove = true
+        return true
       }
 
-      if (shouldRemove) {
-        keysToRemove.push(key)
-      }
-    }
+      return false
+    })
 
-    // Remove identified keys
-    for (const key of keysToRemove) {
+    keysToRemove.forEach(key => {
       try {
         window.localStorage.removeItem(key)
-        console.log(`Cleared localStorage key: ${key}`)
       } catch (error) {
-        console.warn(`Failed to clear localStorage key ${key}:`, error)
+        logger.error('Failed to clear session data', error as Error)
       }
-    }
+    })
   }
 
-  /**
-   * Clear sessionStorage data
-   */
   private async clearSessionStorage(): Promise<void> {
     if (typeof window === 'undefined' || !window.sessionStorage) return
 
-    const keysToRemove: string[] = []
     const allKeys = Object.keys(window.sessionStorage)
 
-    for (const key of allKeys) {
-      if (
+    const keysToRemove = allKeys.filter(
+      key =>
         key.startsWith('walletconnect') ||
         key.startsWith('walletConnect') ||
         key.startsWith('wc@') ||
         key.includes('wallet') ||
         key.includes('session') ||
         key.includes('auth')
-      ) {
-        keysToRemove.push(key)
-      }
-    }
+    )
 
-    for (const key of keysToRemove) {
+    keysToRemove.forEach(key => {
       try {
         window.sessionStorage.removeItem(key)
-        console.log(`Cleared sessionStorage key: ${key}`)
       } catch (error) {
-        console.warn(`Failed to clear sessionStorage key ${key}:`, error)
+        logger.error('Failed to clear session data', error as Error)
       }
-    }
+    })
   }
 
-  /**
-   * Clear PWA storage mechanisms (IndexedDB, WebSQL, etc.)
-   */
   private async clearPWAStorage(): Promise<void> {
     if (typeof window === 'undefined') return
 
-    // Clear IndexedDB
     if ('indexedDB' in window) {
       try {
         const databases = await indexedDB.databases()
@@ -204,32 +158,25 @@ export class SessionManager {
           })
 
         await Promise.allSettled(clearPromises)
-        console.log('Cleared IndexedDB databases')
       } catch (error) {
-        console.warn('Failed to clear IndexedDB:', error)
+        logger.error('Failed to clear session data', error as Error)
       }
     }
 
-    // Clear navigator.storage
     if ('navigator' in window && 'storage' in navigator) {
       try {
         if ('clear' in navigator.storage) {
           await (navigator.storage as { clear: () => Promise<void> }).clear()
-          console.log('Cleared navigator.storage')
         }
       } catch (error) {
-        console.warn('Failed to clear navigator.storage:', error)
+        logger.error('Failed to clear session data', error as Error)
       }
     }
   }
 
-  /**
-   * Clear service worker data and caches
-   */
-  private async clearServiceWorkerData(): Promise<void> {
+  private async clearServiceWorker(): Promise<void> {
     if (typeof window === 'undefined') return
 
-    // Clear service worker caches
     if ('caches' in window) {
       try {
         const cacheNames = await caches.keys()
@@ -244,29 +191,23 @@ export class SessionManager {
           .map(cacheName => caches.delete(cacheName))
 
         await Promise.allSettled(clearPromises)
-        console.log('Cleared service worker caches')
       } catch (error) {
-        console.warn('Failed to clear service worker caches:', error)
+        logger.error('Failed to clear session data', error as Error)
       }
     }
 
-    // Notify service worker to clear its data
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       try {
         navigator.serviceWorker.controller.postMessage({
           type: 'CLEAR_SESSION_DATA',
           timestamp: Date.now(),
         })
-        console.log('Notified service worker to clear session data')
       } catch (error) {
-        console.warn('Failed to notify service worker:', error)
+        logger.error('Failed to clear session data', error as Error)
       }
     }
   }
 
-  /**
-   * Clear all browser caches
-   */
   private async clearAllCaches(): Promise<void> {
     if (typeof window === 'undefined' || !('caches' in window)) return
 
@@ -274,64 +215,41 @@ export class SessionManager {
       const cacheNames = await caches.keys()
       const clearPromises = cacheNames.map(cacheName => caches.delete(cacheName))
       await Promise.allSettled(clearPromises)
-      console.log('Cleared all browser caches')
     } catch (error) {
-      console.warn('Failed to clear all caches:', error)
+      logger.error('Failed to clear session data', error as Error)
     }
   }
 
-  /**
-   * Clear global window references
-   */
   private clearGlobalReferences(): void {
     if (typeof window === 'undefined') return
 
-    // Clear WalletConnect global references
     delete (window as unknown as Record<string, unknown>).__WALLETCONNECT_SIGN_CLIENT__
     delete (window as unknown as Record<string, unknown>).__WALLETCONNECT_MODAL__
     delete (window as unknown as Record<string, unknown>).__WALLETCONNECT_UI__
-
-    // Clear any other global references
     delete (window as unknown as Record<string, unknown>).__PENGUIN_POOL_USER__
     delete (window as unknown as Record<string, unknown>).__PENGUIN_POOL_SESSION__
-
-    console.log('Cleared global window references')
   }
 
-  /**
-   * Clear specific session data by pattern
-   */
   async clearSessionByPattern(pattern: string | RegExp): Promise<void> {
     if (typeof window === 'undefined') return
 
     const regex = typeof pattern === 'string' ? new RegExp(pattern) : pattern
 
-    // Clear localStorage
     if (window.localStorage) {
       const localStorageKeys = Object.keys(window.localStorage)
-      for (const key of localStorageKeys) {
-        if (regex.test(key)) {
-          window.localStorage.removeItem(key)
-          console.log(`Cleared localStorage key by pattern: ${key}`)
-        }
-      }
+      localStorageKeys
+        .filter(key => regex.test(key))
+        .forEach(key => window.localStorage.removeItem(key))
     }
 
-    // Clear sessionStorage
     if (window.sessionStorage) {
       const sessionStorageKeys = Object.keys(window.sessionStorage)
-      for (const key of sessionStorageKeys) {
-        if (regex.test(key)) {
-          window.sessionStorage.removeItem(key)
-          console.log(`Cleared sessionStorage key by pattern: ${key}`)
-        }
-      }
+      sessionStorageKeys
+        .filter(key => regex.test(key))
+        .forEach(key => window.sessionStorage.removeItem(key))
     }
   }
 
-  /**
-   * Get current session data summary (for debugging)
-   */
   getSessionDataSummary(): {
     localStorage: string[]
     sessionStorage: string[]
@@ -350,16 +268,14 @@ export class SessionManager {
     return {
       localStorage: Object.keys(window.localStorage || {}),
       sessionStorage: Object.keys(window.sessionStorage || {}),
-      indexedDB: [], // Would need async call to get actual DB names
-      caches: [], // Would need async call to get actual cache names
+      indexedDB: [],
+      caches: [],
     }
   }
 }
 
-// Export singleton instance
 export const sessionManager = SessionManager.getInstance()
 
-// Export convenience functions
 export const clearAllSessionData = (options?: SessionClearOptions) =>
   sessionManager.clearAllSessionData(options)
 

@@ -1,16 +1,15 @@
-import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
+import { NestFactory } from '@nestjs/core'
 import { IoAdapter } from '@nestjs/platform-socket.io'
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { AppModule } from './app.module'
+import { logger } from './shared/services/logger'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
 
-  // Enable graceful shutdown
   app.enableShutdownHooks()
 
-  // Enable CORS
   app.enableCors({
     origin: process.env.ALLOWED_ORIGINS?.split(',') || [
       'http://localhost:5173',
@@ -20,10 +19,8 @@ async function bootstrap() {
     credentials: true,
   })
 
-  // Configure WebSocket adapter
   app.useWebSocketAdapter(new IoAdapter(app))
 
-  // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -32,7 +29,6 @@ async function bootstrap() {
     })
   )
 
-  // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('KurrentDB Backend API')
     .setDescription('Backend service for KurrentDB integration with Penguin Pool')
@@ -57,42 +53,30 @@ async function bootstrap() {
   const port = parseInt(process.env.HTTP_PORT || '3001', 10)
   await app.listen(port)
 
-  console.log(`🚀 Application is running on: http://localhost:${port}`)
-  console.log(`📚 Swagger documentation: http://localhost:${port}/api/docs`)
+  logger.info(`Application is running on port ${port}`)
 
-  // Graceful shutdown handling
-  const gracefulShutdown = async (signal: string) => {
-    console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`)
-
+  const gracefulShutdown = async (_signal: string) => {
     try {
       await app.close()
-      console.log('✅ Application closed successfully')
       process.exit(0)
-    } catch (error) {
-      console.error('❌ Error during shutdown:', error)
+    } catch {
       process.exit(1)
     }
   }
 
-  // Handle different termination signals
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
   process.on('SIGINT', () => gracefulShutdown('SIGINT'))
   process.on('SIGHUP', () => gracefulShutdown('SIGHUP'))
 
-  // Handle uncaught exceptions
-  process.on('uncaughtException', error => {
-    console.error('💥 Uncaught Exception:', error)
+  process.on('uncaughtException', _error => {
     gracefulShutdown('uncaughtException')
   })
 
-  // Handle unhandled promise rejections
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason)
+  process.on('unhandledRejection', (_reason, _promise) => {
     gracefulShutdown('unhandledRejection')
   })
 }
 
-bootstrap().catch(error => {
-  console.error('💥 Failed to start application:', error)
+bootstrap().catch(_error => {
   process.exit(1)
 })

@@ -27,7 +27,7 @@ export async function makeWalletRequest<T>(
   try {
     if (!signClient.value) throw new Error('SignClient is not initialized')
 
-    console.log('Start Wallet request for :', { method, data })
+    // Start Wallet request
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
         reject(new Error('Request timeout after 15 seconds'))
@@ -50,12 +50,12 @@ export async function makeWalletRequest<T>(
     if (result && typeof result === 'object' && 'error' in result) {
       return { success: false, error: 'Wallet returned an error' }
     }
-    console.log('Wallet request for :', { method, result })
+    // Wallet request completed
 
     return { success: true, data: result as T }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('WalletConnect request failed:', { method, error: errorMessage })
+    // WalletConnect request failed
     return { success: false, error: errorMessage }
   }
 }

@@ -127,11 +127,11 @@
     if (!qrCodeRef.value) {
       const fallbackElement = document.getElementById('ios-qr-code')
       if (fallbackElement) {
-        console.log('🔍 Using fallback element for QR code')
+        // Using fallback element for QR code
         qrCodeRef.value = fallbackElement as HTMLElement
         return true
       }
-      console.warn('⚠️ QR code ref not available and no fallback found')
+      // QR code ref not available and no fallback found
       return false
     }
     return true
@@ -139,13 +139,13 @@
 
   const generateQRCode = async (): Promise<void> => {
     if (!props.uri) {
-      console.warn('⚠️ No URI provided for QR code generation')
+      // No URI provided for QR code generation
       return
     }
 
     // Validate URI format
     if (!props.uri.startsWith('wc:')) {
-      console.error('❌ Invalid WalletConnect URI format:', props.uri)
+      // Invalid WalletConnect URI format
       qrCodeError.value = true
       qrCodeLoading.value = false
       return
@@ -187,17 +187,17 @@
         : '0 8px 24px rgba(0, 0, 0, 0.1)'
 
       qrCodeImg.onerror = () => {
-        console.error('❌ QR code image failed to load')
+        // QR code image failed to load
         qrCodeError.value = true
         qrCodeLoading.value = false
       }
 
       qrCodeImg.onload = () => {
-        console.log('✅ QR code image loaded successfully')
+        // QR code image loaded successfully
       }
 
       if (!ensureQRCodeRef()) {
-        console.error('❌ QR code ref became null during generation')
+        // QR code ref became null during generation
         qrCodeError.value = true
         qrCodeLoading.value = false
         return
@@ -208,13 +208,9 @@
       qrElement.appendChild(qrCodeImg)
 
       qrCodeLoading.value = false
-    } catch (error) {
-      console.error('❌ Failed to generate QR code:', error)
-      console.error('❌ Error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        uri: props.uri,
-      })
+    } catch {
+      // Failed to generate QR code
+      // Error details
       qrCodeLoading.value = false
       qrCodeError.value = true
     }
@@ -229,7 +225,7 @@
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(props.uri)
         copyStatus.value = 'copied'
-        console.log('✅ Text copied to clipboard (modern API)')
+        // Text copied to clipboard (modern API)
         return
       }
 
@@ -248,12 +244,12 @@
 
       if (successful) {
         copyStatus.value = 'copied'
-        console.log('✅ Text copied to clipboard (fallback method)')
+        // Text copied to clipboard (fallback method)
       } else {
         throw new Error('execCommand failed')
       }
-    } catch (error) {
-      console.error('❌ Copy failed:', error)
+    } catch {
+      // Copy failed
       copyStatus.value = 'error'
     }
 

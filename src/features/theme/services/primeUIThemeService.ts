@@ -34,7 +34,7 @@ export class PrimeUIThemeService {
       this.currentTheme = theme
       this.currentVariant = variant
     } catch (error) {
-      console.error(`Failed to apply PrimeUI theme ${theme}:`, error)
+      // Failed to apply PrimeUI theme
       throw error
     }
   }
@@ -141,7 +141,7 @@ export class PrimeUIThemeService {
       root.style.setProperty('--primeui-primary-color', primaryColor)
       root.style.setProperty('--primeui-surface-color', surfaceColor)
     } catch (error) {
-      console.error('Failed to update PrimeUI colors:', error)
+      // Failed to update PrimeUI colors
       throw error
     }
   }

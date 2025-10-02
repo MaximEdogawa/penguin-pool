@@ -18,7 +18,7 @@ export function useInstanceDataService() {
       eventListeners.handlePendingSessionRequests()
       return { signClient, modal }
     } catch (error) {
-      console.error('❌ Failed to initialize WalletConnect:', error)
+      // Failed to initialize WalletConnect
       throw error
     }
   }

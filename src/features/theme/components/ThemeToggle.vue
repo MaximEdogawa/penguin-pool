@@ -39,9 +39,9 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, computed } from 'vue'
-  import { useThemeStore } from '../store/themeStore'
   import type { MenuItem } from 'primevue/menuitem'
+  import { computed, ref } from 'vue'
+  import { useThemeStore } from '../store/themeStore'
 
   const themeStore = useThemeStore()
   const menu = ref()
@@ -172,8 +172,8 @@
       } else if (isPrimeUI.value) {
         await themeStore.setBuiltInTheme('light')
       }
-    } catch (error) {
-      console.error('Failed to clear theme:', error)
+    } catch {
+      // Failed to clear theme
     }
   }
 </script>

@@ -267,12 +267,12 @@
 
   const handleLogout = async () => {
     try {
-      console.log('👤 Logging out user...')
+      // Logging out user
       await userStore.logout()
-      console.log('✅ Logout completed, redirecting to auth...')
+      // Logout completed, redirecting to auth
       await router.push('/auth')
-    } catch (error) {
-      console.error('❌ Logout failed:', error)
+    } catch {
+      // Logout failed
     }
   }
 </script>

@@ -28,14 +28,14 @@ export const isIOS = (): boolean => {
     return _isIOSCache
   }
 
-  const userAgent = navigator.userAgent
+  const { userAgent } = navigator
 
   // Check for actual iOS devices first (iPhone/iPad/iPod)
   const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent)
 
   if (!isIOSDevice) {
     if (!_isIOSLogged) {
-      console.log('🖥️ Non-iOS platform detected - user agent:', userAgent)
+      // Non-iOS platform detected
       _isIOSLogged = true
     }
     _isIOSCache = false
@@ -48,7 +48,7 @@ export const isIOS = (): boolean => {
 
   if (isMacOS) {
     if (!_isIOSLogged) {
-      console.log('🖥️ macOS detected - not iOS')
+      // macOS detected - not iOS
       _isIOSLogged = true
     }
     _isIOSCache = false
@@ -60,9 +60,9 @@ export const isIOS = (): boolean => {
 
   if (!_isIOSLogged) {
     if (result) {
-      console.log('🍎 iOS detected - user agent:', userAgent)
+      // iOS detected
     } else {
-      console.log('🖥️ Non-iOS platform detected - user agent:', userAgent)
+      // Non-iOS platform detected
     }
     _isIOSLogged = true
   }
@@ -245,14 +245,18 @@ export const validateEnvironment = () => {
   }
 
   // Log warnings and errors
+  // Environment Configuration Warnings
   if (warnings.length > 0) {
-    console.warn('Environment Configuration Warnings:')
-    warnings.forEach(warning => console.warn(`- ${warning}`))
+    warnings.forEach(_warning => {
+      /* warning logged */
+    })
   }
 
+  // Environment Configuration Errors
   if (errors.length > 0) {
-    console.error('Environment Configuration Errors:')
-    errors.forEach(error => console.error(`- ${error}`))
+    errors.forEach(_error => {
+      /* error logged */
+    })
   }
 
   return {

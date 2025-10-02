@@ -126,7 +126,7 @@ router.beforeEach((to, from, next) => {
   document.title = `${to.meta.title} - Penguin-pool`
 
   const userStore = useUserStore()
-  const isAuthenticated = userStore.isAuthenticated
+  const { isAuthenticated } = userStore
 
   if (to.meta.featureFlag) {
     const currentEnv = getCurrentEnvironment()
@@ -134,9 +134,7 @@ router.beforeEach((to, from, next) => {
     const feature = defaultFeatureFlags.app[featureKey]
 
     if (feature && !isFeatureEnabled(feature, currentEnv, to.meta.featureFlag as string)) {
-      console.log(
-        `Router guard - feature ${to.meta.featureFlag} is disabled, redirecting to dashboard`
-      )
+      // Feature disabled, redirecting to dashboard
       next('/dashboard')
       return
     }
@@ -144,23 +142,18 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresAuth) {
     if (isAuthenticated) {
-      console.log('Router guard - user authenticated, allowing access to protected route')
+      // User authenticated, allowing access to protected route
       next()
     } else {
-      console.log('Router guard - redirecting to auth (not authenticated)', {
-        isAuthenticated,
-      })
+      // Redirecting to auth (not authenticated)
       next('/auth')
     }
   } else {
     if (to.path === '/auth' && isAuthenticated) {
-      console.log('Router guard - redirecting authenticated user from auth to dashboard')
+      // Redirecting authenticated user from auth to dashboard
       next('/dashboard')
     } else {
-      console.log('Router guard - allowing access to public route', {
-        path: to.path,
-        isAuthenticated,
-      })
+      // Allowing access to public route
       next()
     }
   }

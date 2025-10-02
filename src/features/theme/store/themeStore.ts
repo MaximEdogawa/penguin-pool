@@ -2,6 +2,7 @@ import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { themeManager } from '../services/themeManager'
+import { logger } from '@/shared/services/logger'
 import type { BuiltInTheme, CustomTheme, PrimeUITheme, ThemeMode } from '../types/theme'
 
 export const useThemeStore = defineStore('theme', () => {
@@ -77,7 +78,7 @@ export const useThemeStore = defineStore('theme', () => {
       currentTheme.value = theme
       await themeManager.switchTheme(theme)
     } catch (error) {
-      console.error('Failed to set built-in theme:', error)
+      logger.error('Failed to set built-in theme:', error)
       throw error
     }
   }
@@ -97,7 +98,7 @@ export const useThemeStore = defineStore('theme', () => {
 
       await themeManager.switchTheme(currentTheme.value)
     } catch (error) {
-      console.error('Failed to set PrimeUI theme:', error)
+      logger.error('Failed to set PrimeUI theme:', error)
       throw error
     }
   }
@@ -117,7 +118,7 @@ export const useThemeStore = defineStore('theme', () => {
         await setBuiltInTheme(variant === 'dark' ? 'dark' : 'light')
       }
     } catch (error) {
-      console.error('Failed to switch theme variant:', error)
+      logger.error('Failed to switch theme variant:', error)
       throw error
     }
   }
@@ -128,7 +129,7 @@ export const useThemeStore = defineStore('theme', () => {
       currentSurfaceColor.value = surfaceColor
       await themeManager.updatePrimeUIColors(primaryColor, surfaceColor)
     } catch (error) {
-      console.error('Failed to update PrimeUI colors:', error)
+      logger.error('Failed to update PrimeUI colors:', error)
       throw error
     }
   }
@@ -154,7 +155,7 @@ export const useThemeStore = defineStore('theme', () => {
         throw new Error(`Custom theme ${themeId} not found`)
       }
     } catch (error) {
-      console.error('Failed to set custom theme:', error)
+      logger.error('Failed to set custom theme:', error)
       throw error
     }
   }
@@ -164,7 +165,7 @@ export const useThemeStore = defineStore('theme', () => {
       currentCustomTheme.value = null
       await themeManager.switchTheme(currentTheme.value)
     } catch (error) {
-      console.error('Failed to clear custom theme:', error)
+      logger.error('Failed to clear custom theme:', error)
     }
   }
 
@@ -202,7 +203,7 @@ export const useThemeStore = defineStore('theme', () => {
             currentCustomTheme.value = customTheme
           }
         } catch (error) {
-          console.error('Failed to load saved custom theme:', error)
+          logger.error('Failed to load saved custom theme:', error)
         }
       }
 
@@ -256,7 +257,7 @@ export const useThemeStore = defineStore('theme', () => {
         }
       }) as EventListener)
     } catch (error) {
-      console.error('Failed to initialize theme:', error)
+      logger.error('Failed to initialize theme:', error)
     }
   }
 
@@ -267,7 +268,7 @@ export const useThemeStore = defineStore('theme', () => {
         : currentTheme.value
       await themeManager.switchTheme(themeToApply)
     } catch (error) {
-      console.error('Failed to apply theme:', error)
+      logger.error('Failed to apply theme:', error)
     }
   }
 
@@ -287,7 +288,7 @@ export const useThemeStore = defineStore('theme', () => {
         customThemes.value = []
       }
     } catch (error) {
-      console.error('Failed to load available themes:', error)
+      logger.error('Failed to load available themes:', error)
     }
   }
 
@@ -304,7 +305,7 @@ export const useThemeStore = defineStore('theme', () => {
       themeManager.addCustomTheme(theme)
       await loadAvailableThemes()
     } catch (error) {
-      console.error('Failed to add custom theme:', error)
+      logger.error('Failed to add custom theme:', error)
       throw error
     }
   }
@@ -322,7 +323,7 @@ export const useThemeStore = defineStore('theme', () => {
       themeManager.removeCustomTheme(themeId)
       await loadAvailableThemes()
     } catch (error) {
-      console.error('Failed to remove custom theme:', error)
+      logger.error('Failed to remove custom theme:', error)
     }
   }
 
@@ -344,7 +345,7 @@ export const useThemeStore = defineStore('theme', () => {
       await loadAvailableThemes()
       return theme
     } catch (error) {
-      console.error('Failed to import theme:', error)
+      logger.error('Failed to import theme:', error)
       throw error
     }
   }
@@ -365,7 +366,7 @@ export const useThemeStore = defineStore('theme', () => {
         await setCustomTheme(theme)
       }
     } catch (error) {
-      console.error('Failed to set theme:', error)
+      logger.error('Failed to set theme:', error)
       throw error
     }
   }

@@ -23,7 +23,7 @@ export function useConnectDataService() {
 
         return result
       } catch (error) {
-        console.error('Connection failed:', error)
+        // Connection failed
         throw error
       }
     },

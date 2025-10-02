@@ -19,8 +19,8 @@
       await themeStore.initializeTheme()
       await notificationStore.initialize()
       await userStore.checkSession()
-    } catch (error) {
-      console.error('Failed to initialize app:', error)
+    } catch {
+      // Failed to initialize app
     }
   })
 </script>

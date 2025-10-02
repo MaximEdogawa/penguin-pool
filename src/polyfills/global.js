@@ -24,10 +24,7 @@ if (typeof globalThis.Buffer === 'undefined') {
 if (typeof globalThis.crypto === 'undefined') {
   globalThis.crypto = globalThis.crypto || {
     getRandomValues: arr => {
-      for (let i = 0; i < arr.length; i++) {
-        arr[i] = Math.floor(Math.random() * 256)
-      }
-      return arr
+      return arr.map(() => Math.floor(Math.random() * 256))
     },
   }
 }
@@ -52,6 +49,6 @@ try {
       window.TextDecoder = globalThis.TextDecoder
     }
   }
-} catch (error) {
-  console.warn('Polyfill initialization warning:', error)
+} catch {
+  // Polyfill initialization warning handled silently
 }

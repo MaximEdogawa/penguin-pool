@@ -22,13 +22,13 @@
 </template>
 
 <script setup lang="ts">
-  import CurrentThemeDisplay from './CurrentThemeDisplay.vue'
-  import ThemeVariantControls from './ThemeVariantControls.vue'
   import BuiltInThemeSelector from './BuiltInThemeSelector.vue'
-  import PrimeUIThemeSelector from './PrimeUIThemeSelector.vue'
-  import CustomThemeSelector from './CustomThemeSelector.vue'
   import ColorCustomization from './ColorCustomization.vue'
+  import CurrentThemeDisplay from './CurrentThemeDisplay.vue'
+  import CustomThemeSelector from './CustomThemeSelector.vue'
+  import PrimeUIThemeSelector from './PrimeUIThemeSelector.vue'
   import ThemeImportExport from './ThemeImportExport.vue'
+  import ThemeVariantControls from './ThemeVariantControls.vue'
 </script>
 
 <style scoped>

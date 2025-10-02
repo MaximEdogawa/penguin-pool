@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { kurrentDBService } from '../services/KurrentDBService'
+import { computed, ref } from 'vue'
 import type {
-  Stream,
   DatabaseConnection,
   DatabaseHealth,
   DatabaseMetrics,
+  Stream,
 } from '../services/KurrentDBService'
+import { kurrentDBService } from '../services/KurrentDBService'
 
 export const useKurrentDBStore = defineStore('kurrentDB', () => {
   // State
@@ -44,7 +44,7 @@ export const useKurrentDBStore = defineStore('kurrentDB', () => {
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to initialize KurrentDB'
-      console.error('Failed to initialize KurrentDB store:', err)
+      // Failed to initialize KurrentDB store
     } finally {
       isLoading.value = false
     }
@@ -65,7 +65,7 @@ export const useKurrentDBStore = defineStore('kurrentDB', () => {
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to connect to KurrentDB'
-      console.error('Failed to connect to KurrentDB:', err)
+      // Failed to connect to KurrentDB
     } finally {
       isLoading.value = false
     }
@@ -86,7 +86,7 @@ export const useKurrentDBStore = defineStore('kurrentDB', () => {
       health.value = null
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to disconnect from KurrentDB'
-      console.error('Failed to disconnect from KurrentDB:', err)
+      // Failed to disconnect from KurrentDB
     } finally {
       isLoading.value = false
     }
@@ -97,7 +97,7 @@ export const useKurrentDBStore = defineStore('kurrentDB', () => {
       health.value = await kurrentDBService.checkHealth()
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to check health'
-      console.error('Failed to check health:', err)
+      // Failed to check health
     }
   }
 
@@ -106,8 +106,8 @@ export const useKurrentDBStore = defineStore('kurrentDB', () => {
       // For now, we'll use mock data since we're not implementing full stream storage
       streams.value = []
       userStreams.value = []
-    } catch (err) {
-      console.error('Failed to load streams:', err)
+    } catch {
+      // Failed to load streams
     }
   }
 

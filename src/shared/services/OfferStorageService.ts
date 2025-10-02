@@ -1,5 +1,6 @@
 import { db, type StoredOffer } from '@/shared/database/indexedDB'
 import type { OfferDetails } from '@/types/offer.types'
+import { logger } from './logger'
 
 export interface OfferStorageOptions {
   walletAddress?: string
@@ -26,11 +27,11 @@ export class OfferStorageService {
       }
 
       const id = await db.offers.add(storedOffer)
-      console.log('✅ Offer saved to IndexedDB:', { id, tradeId: offer.tradeId })
+      logger.info('✅ Offer saved to IndexedDB:', { id, tradeId: offer.tradeId })
 
       return { ...storedOffer, id: id.toString() }
     } catch (error) {
-      console.error('❌ Failed to save offer to IndexedDB:', error)
+      logger.error('❌ Failed to save offer to IndexedDB:', error)
       throw error
     }
   }
@@ -46,9 +47,9 @@ export class OfferStorageService {
       }
 
       await db.offers.update(parseInt(offerId), updateData)
-      console.log('✅ Offer updated in IndexedDB:', { offerId, updates })
+      logger.info('✅ Offer updated in IndexedDB:', { offerId, updates })
     } catch (error) {
-      console.error('❌ Failed to update offer in IndexedDB:', error)
+      logger.error('❌ Failed to update offer in IndexedDB:', error)
       throw error
     }
   }
@@ -74,11 +75,11 @@ export class OfferStorageService {
       }
 
       const offers = await query.toArray()
-      console.log('✅ Retrieved offers from IndexedDB:', { count: offers.length })
+      logger.info('✅ Retrieved offers from IndexedDB:', { count: offers.length })
 
       return offers
     } catch (error) {
-      console.error('❌ Failed to get offers from IndexedDB:', error)
+      logger.error('❌ Failed to get offers from IndexedDB:', error)
       throw error
     }
   }
@@ -95,11 +96,11 @@ export class OfferStorageService {
       }
 
       const offers = await query.reverse().sortBy('lastModified')
-      console.log('✅ Retrieved offers by status from IndexedDB:', { status, count: offers.length })
+      logger.info('✅ Retrieved offers by status from IndexedDB:', { status, count: offers.length })
 
       return offers
     } catch (error) {
-      console.error('❌ Failed to get offers by status from IndexedDB:', error)
+      logger.error('❌ Failed to get offers by status from IndexedDB:', error)
       throw error
     }
   }
@@ -110,11 +111,11 @@ export class OfferStorageService {
   async getOfferByTradeId(tradeId: string): Promise<StoredOffer | undefined> {
     try {
       const offer = await db.offers.where('tradeId').equals(tradeId).first()
-      console.log('✅ Retrieved offer by trade ID from IndexedDB:', { tradeId, found: !!offer })
+      logger.info('✅ Retrieved offer by trade ID from IndexedDB:', { tradeId, found: !!offer })
 
       return offer
     } catch (error) {
-      console.error('❌ Failed to get offer by trade ID from IndexedDB:', error)
+      logger.error('❌ Failed to get offer by trade ID from IndexedDB:', error)
       throw error
     }
   }
@@ -125,9 +126,9 @@ export class OfferStorageService {
   async deleteOffer(offerId: string): Promise<void> {
     try {
       await db.offers.delete(parseInt(offerId))
-      console.log('✅ Offer deleted from IndexedDB:', { offerId })
+      logger.info('✅ Offer deleted from IndexedDB:', { offerId })
     } catch (error) {
-      console.error('❌ Failed to delete offer from IndexedDB:', error)
+      logger.error('❌ Failed to delete offer from IndexedDB:', error)
       throw error
     }
   }
@@ -147,9 +148,9 @@ export class OfferStorageService {
       }))
 
       await db.offers.bulkUpdate(updates)
-      console.log('✅ Offers marked as synced in IndexedDB:', { count: offerIds.length })
+      logger.info('✅ Offers marked as synced in IndexedDB:', { count: offerIds.length })
     } catch (error) {
-      console.error('❌ Failed to mark offers as synced in IndexedDB:', error)
+      logger.error('❌ Failed to mark offers as synced in IndexedDB:', error)
       throw error
     }
   }
@@ -160,11 +161,11 @@ export class OfferStorageService {
   async getUnsyncedOffers(): Promise<StoredOffer[]> {
     try {
       const offers = await db.offers.where('isLocal').equals(true).toArray()
-      console.log('✅ Retrieved unsynced offers from IndexedDB:', { count: offers.length })
+      logger.info('✅ Retrieved unsynced offers from IndexedDB:', { count: offers.length })
 
       return offers
     } catch (error) {
-      console.error('❌ Failed to get unsynced offers from IndexedDB:', error)
+      logger.error('❌ Failed to get unsynced offers from IndexedDB:', error)
       throw error
     }
   }
@@ -175,9 +176,9 @@ export class OfferStorageService {
   async clearAllOffers(): Promise<void> {
     try {
       await db.offers.clear()
-      console.log('✅ All offers cleared from IndexedDB')
+      logger.info('✅ All offers cleared from IndexedDB')
     } catch (error) {
-      console.error('❌ Failed to clear offers from IndexedDB:', error)
+      logger.error('❌ Failed to clear offers from IndexedDB:', error)
       throw error
     }
   }
@@ -207,10 +208,10 @@ export class OfferStorageService {
         ),
       }
 
-      console.log('✅ Retrieved database stats:', stats)
+      logger.info('✅ Retrieved database stats:', stats)
       return stats
     } catch (error) {
-      console.error('❌ Failed to get database stats:', error)
+      logger.error('❌ Failed to get database stats:', error)
       throw error
     }
   }
