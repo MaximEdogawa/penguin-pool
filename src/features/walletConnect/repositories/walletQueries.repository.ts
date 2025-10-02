@@ -28,7 +28,14 @@ export async function makeWalletRequest<T>(
   try {
     if (!signClient.value) throw new Error('SignClient is not initialized')
 
-    // Start Wallet request
+    const activeSessions = signClient.value.session.getAll()
+    const sessionExists = activeSessions.some(s => s.topic === session.topic.value)
+
+    if (!sessionExists) {
+      logger.warn(`❌ Session ${session.topic.value} no longer exists in SignClient`)
+      return { success: false, error: 'Session no longer exists' }
+    }
+
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
         reject(new Error('Request timeout after 15 seconds'))
@@ -55,6 +62,15 @@ export async function makeWalletRequest<T>(
     return { success: true, data: result as T }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+    if (errorMessage.includes('Missing or invalid') || errorMessage.includes('recently deleted')) {
+      logger.warn('🗑️ Session was deleted, clearing persistence')
+      const { walletConnectPersistenceService } = await import(
+        '../services/WalletConnectPersistenceService'
+      )
+      walletConnectPersistenceService.clearSession()
+    }
+
     return { success: false, error: errorMessage }
   }
 }

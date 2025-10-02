@@ -9,7 +9,7 @@ interface LogLevel {
 
 interface Logger {
   error(message: string, error?: Error): void
-  warn(message: string, error?: Error): void
+  warn(message: string, error?: unknown): void
   info(message: string, data?: unknown): void
   debug(message: string, data?: unknown): void
 }
@@ -32,30 +32,55 @@ class LoggerService implements Logger {
               : typeof record['message'] === 'string'
                 ? record['message']
                 : 'No message'
+
           const data = { ...record }
           delete data['level']
           delete data['msg']
           delete data['message']
           delete data['time']
 
-          const timestamp = `[${new Date().toISOString()}]`
+          const now = new Date()
+          const timestamp = `${now.toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          })}.${now.getMilliseconds().toString().padStart(3, '0')}`
+
+          // Determine log level and emoji
+          let levelText: string
+          let emoji: string
 
           if (level >= 50) {
-            // error
-            // eslint-disable-next-line no-console
-            console.error(`${timestamp} ERROR: ${message}`, data)
+            levelText = 'ERROR'
+            emoji = '❌'
           } else if (level >= 40) {
-            // warn
-            // eslint-disable-next-line no-console
-            console.warn(`${timestamp} WARN: ${message}`, data)
+            levelText = 'WARN'
+            emoji = '⚠️'
           } else if (level >= 30) {
-            // info
-            // eslint-disable-next-line no-console
-            console.info(`${timestamp} INFO: ${message}`, data)
+            levelText = 'INFO'
+            emoji = 'ℹ️'
           } else {
-            // debug
+            levelText = 'DEBUG'
+            emoji = '🐛'
+          }
+
+          // Create formatted log entry
+          const logEntry = `${emoji} [${timestamp}] ${levelText}: ${message}`
+
+          // Log with appropriate console method
+          if (level >= 50) {
             // eslint-disable-next-line no-console
-            console.debug(`${timestamp} DEBUG: ${message}`, data)
+            console.error(logEntry, Object.keys(data).length > 0 ? data : '')
+          } else if (level >= 40) {
+            // eslint-disable-next-line no-console
+            console.warn(logEntry, Object.keys(data).length > 0 ? data : '')
+          } else if (level >= 30) {
+            // eslint-disable-next-line no-console
+            console.info(logEntry, Object.keys(data).length > 0 ? data : '')
+          } else {
+            // eslint-disable-next-line no-console
+            console.debug(logEntry, Object.keys(data).length > 0 ? data : '')
           }
         },
       },
