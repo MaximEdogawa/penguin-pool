@@ -3,7 +3,6 @@
     <!-- Header -->
     <div class="mb-6">
       <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Send Transaction</h2>
-      <p class="text-sm text-gray-600 dark:text-gray-400">Send {{ ticker }} to another address</p>
     </div>
 
     <!-- Form -->

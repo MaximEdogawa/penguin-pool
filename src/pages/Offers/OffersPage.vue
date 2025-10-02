@@ -1,8 +1,7 @@
 <template>
   <div class="content-page">
-    <div class="content-body">
-      <!-- Action Buttons -->
-      <div class="flex flex-col sm:flex-row gap-4 mb-6">
+    <div class="content-header">
+      <div class="flex flex-col sm:flex-row gap-4">
         <button
           @click="showCreateOffer = true"
           class="flex items-center justify-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200"
@@ -26,7 +25,9 @@
           Refresh
         </button>
       </div>
+    </div>
 
+    <div class="content-body">
       <!-- Offers List -->
       <div class="card p-4 sm:p-6">
         <div class="flex items-center justify-between mb-4">
@@ -129,7 +130,9 @@
                         :key="`offered-${asset.assetId}-${asset.amount}`"
                         class="text-xs flex items-center justify-between"
                       >
-                        <span class="font-medium">{{ asset.amount }}</span>
+                        <span class="font-medium">{{
+                          formatAssetAmount(asset.amount, asset.type)
+                        }}</span>
                         <span class="text-gray-500 dark:text-gray-400 ml-2">
                           {{ asset.symbol || asset.type.toUpperCase() }}
                         </span>
@@ -156,7 +159,9 @@
                           :key="`tooltip-offered-${asset.assetId}-${asset.amount}`"
                           class="flex items-center justify-between py-1"
                         >
-                          <span class="font-medium">{{ asset.amount }}</span>
+                          <span class="font-medium">{{
+                            formatAssetAmount(asset.amount, asset.type)
+                          }}</span>
                           <span class="text-gray-500 dark:text-gray-400 ml-2">
                             {{ asset.symbol || asset.type.toUpperCase() }}
                           </span>
@@ -241,7 +246,7 @@
                   :key="`mobile-offered-${asset.assetId}-${asset.amount}`"
                   class="flex items-center justify-between text-xs py-1"
                 >
-                  <span class="font-medium">{{ asset.amount }}</span>
+                  <span class="font-medium">{{ formatAssetAmount(asset.amount, asset.type) }}</span>
                   <span class="text-gray-500 dark:text-gray-400">
                     {{ asset.symbol || asset.type.toUpperCase() }}
                   </span>
@@ -344,6 +349,7 @@
   import ConfirmationDialog from '@/components/Shared/ConfirmationDialog.vue'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
   import { useOfferStorage } from '@/shared/composables/useOfferStorage'
+  import { formatAssetAmount } from '@/shared/utils/chia-units'
   import type { OfferDetails, OfferFilters } from '@/types/offer.types'
   import { computed, onMounted, ref } from 'vue'
 
@@ -513,11 +519,15 @@
 
 <style scoped>
   .content-page {
-    @apply h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8 overflow-y-auto;
+    @apply min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8;
+  }
+
+  .content-header {
+    @apply mb-1;
   }
 
   .content-body {
-    @apply space-y-6;
+    @apply space-y-1;
   }
 
   .card {

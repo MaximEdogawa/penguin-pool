@@ -70,7 +70,7 @@
                   <div class="flex-1">
                     <div class="flex items-center space-x-2">
                       <span class="font-medium text-gray-900 dark:text-white text-lg">
-                        {{ asset.amount }}
+                        {{ formatAssetAmount(asset.amount, asset.type) }}
                       </span>
                       <span class="text-sm font-medium text-gray-600 dark:text-gray-300">
                         {{ asset.symbol || asset.type.toUpperCase() }}
@@ -107,7 +107,7 @@
                   <div class="flex-1">
                     <div class="flex items-center space-x-2">
                       <span class="font-medium text-gray-900 dark:text-white text-lg">
-                        {{ asset.amount }}
+                        {{ formatAssetAmount(asset.amount, asset.type) }}
                       </span>
                       <span class="text-sm font-medium text-gray-600 dark:text-gray-300">
                         {{ asset.symbol || asset.type.toUpperCase() }}
@@ -221,10 +221,11 @@
       title="Cancel Offer"
       message="Are you sure you want to cancel this offer? This action cannot be undone."
       :details="`Offer ID: ${offer.tradeId}`"
+      :error-message="cancelError"
       confirm-text="Cancel Offer"
       cancel-text="Keep Offer"
       :is-loading="isCancelling"
-      @close="showCancelConfirmation = false"
+      @close="handleCancelDialogClose"
       @confirm="confirmCancelOffer"
     />
 
@@ -233,10 +234,11 @@
       title="Delete Offer"
       message="Are you sure you want to permanently delete this offer? This action cannot be undone and the offer will be removed from your list."
       :details="`Offer ID: ${offer.tradeId}`"
+      :error-message="deleteError"
       confirm-text="Delete Offer"
       cancel-text="Keep Offer"
       :is-loading="isDeleting"
-      @close="showDeleteConfirmation = false"
+      @close="handleDeleteDialogClose"
       @confirm="confirmDeleteOffer"
     />
   </div>
@@ -245,6 +247,8 @@
 <script setup lang="ts">
   import ConfirmationDialog from '@/components/Shared/ConfirmationDialog.vue'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
+  import { useOfferStorage } from '@/shared/composables/useOfferStorage'
+  import { formatAssetAmount } from '@/shared/utils/chia-units'
   import type { OfferDetails } from '@/types/offer.types'
   import { ref } from 'vue'
 
@@ -263,6 +267,7 @@
 
   // Services
   const walletDataService = useWalletDataService()
+  const offerStorage = useOfferStorage()
 
   // State
   const isCancelling = ref(false)
@@ -270,6 +275,8 @@
   const isCopied = ref(false)
   const showCancelConfirmation = ref(false)
   const showDeleteConfirmation = ref(false)
+  const cancelError = ref('')
+  const deleteError = ref('')
 
   // Methods
   const getStatusClass = (status: string) => {
@@ -317,6 +324,7 @@
 
   const confirmCancelOffer = async () => {
     isCancelling.value = true
+    cancelError.value = '' // Clear any previous errors
 
     try {
       await walletDataService.cancelOffer({
@@ -324,12 +332,16 @@
         fee: props.offer.fee,
       })
 
+      // Update the offer status in IndexedDB
+      await offerStorage.updateOffer(props.offer.id, { status: 'cancelled' })
+
       const updatedOffer = { ...props.offer, status: 'cancelled' as const }
       emit('offer-cancelled', updatedOffer)
       showCancelConfirmation.value = false
-    } catch {
+    } catch (error) {
       // Failed to cancel offer
-      alert('Failed to cancel offer. Please try again.')
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
+      cancelError.value = `Failed to cancel offer: ${errorMsg}`
     } finally {
       isCancelling.value = false
     }
@@ -339,17 +351,31 @@
     showDeleteConfirmation.value = true
   }
 
+  const handleCancelDialogClose = () => {
+    showCancelConfirmation.value = false
+    cancelError.value = '' // Clear error when closing dialog
+  }
+
+  const handleDeleteDialogClose = () => {
+    showDeleteConfirmation.value = false
+    deleteError.value = '' // Clear error when closing dialog
+  }
+
   const confirmDeleteOffer = async () => {
     isDeleting.value = true
+    deleteError.value = '' // Clear any previous errors
 
     try {
-      // For now, we'll just emit the delete event
-      // In a real app, you might want to call an API to delete from backend
+      // Delete from IndexedDB storage
+      await offerStorage.deleteOffer(props.offer.id)
+
+      // Emit the delete event to update the parent component
       emit('offer-deleted', props.offer)
       showDeleteConfirmation.value = false
-    } catch {
+    } catch (error) {
       // Failed to delete offer
-      alert('Failed to delete offer. Please try again.')
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
+      deleteError.value = `Failed to delete offer: ${errorMsg}`
     } finally {
       isDeleting.value = false
     }

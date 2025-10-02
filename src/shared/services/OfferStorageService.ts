@@ -27,9 +27,10 @@ export class OfferStorageService {
       }
 
       const id = await db.offers.add(storedOffer)
-      logger.info('✅ Offer saved to IndexedDB:', { id, tradeId: offer.tradeId })
+      logger.info('✅ Offer saved to IndexedDB:', { id, offerId: offer.id, tradeId: offer.tradeId })
 
-      return { ...storedOffer, id: id.toString() }
+      // Return the stored offer with the original offer ID (not the IndexedDB auto-generated ID)
+      return { ...storedOffer, id: offer.id }
     } catch (error) {
       logger.error('❌ Failed to save offer to IndexedDB:', error)
       throw error
@@ -46,8 +47,14 @@ export class OfferStorageService {
         lastModified: new Date(),
       }
 
-      await db.offers.update(parseInt(offerId), updateData)
-      logger.info('✅ Offer updated in IndexedDB:', { offerId, updates })
+      // Update by the offerId field (not the auto-generated primary key)
+      const updatedCount = await db.offers.where('id').equals(offerId).modify(updateData)
+
+      if (updatedCount === 0) {
+        throw new Error(`No offer found with ID: ${offerId}`)
+      }
+
+      logger.info('✅ Offer updated in IndexedDB:', { offerId, updates, updatedCount })
     } catch (error) {
       logger.error('❌ Failed to update offer in IndexedDB:', error)
       throw error
@@ -125,8 +132,13 @@ export class OfferStorageService {
    */
   async deleteOffer(offerId: string): Promise<void> {
     try {
-      await db.offers.delete(parseInt(offerId))
-      logger.info('✅ Offer deleted from IndexedDB:', { offerId })
+      const deletedCount = await db.offers.where('id').equals(offerId).delete()
+
+      if (deletedCount === 0) {
+        throw new Error(`No offer found with ID: ${offerId}`)
+      }
+
+      logger.info('✅ Offer deleted from IndexedDB:', { offerId, deletedCount })
     } catch (error) {
       logger.error('❌ Failed to delete offer from IndexedDB:', error)
       throw error
@@ -160,7 +172,7 @@ export class OfferStorageService {
    */
   async getUnsyncedOffers(): Promise<StoredOffer[]> {
     try {
-      const offers = await db.offers.where('isLocal').equals(true).toArray()
+      const offers = await db.offers.filter(offer => offer.isLocal).toArray()
       logger.info('✅ Retrieved unsynced offers from IndexedDB:', { count: offers.length })
 
       return offers

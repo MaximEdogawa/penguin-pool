@@ -1,17 +1,14 @@
 // Offer types for the Penguin Pool application
 
-export interface OfferAsset {
-  assetId: string
-  amount: number
-  type: 'xch' | 'cat' | 'nft'
-  name?: string
-  symbol?: string
-}
+// Import shared asset types
+import type { AssetAmount, AssetType, BaseAsset } from './asset.types'
+
+export type OfferAsset = BaseAsset
 
 export interface OfferRequest {
   walletId: number
   offer: string
-  fee?: number
+  fee?: AssetAmount
 }
 
 export interface OfferResponse {
@@ -47,23 +44,23 @@ export interface OfferDetails {
   expiresAt?: Date
   assetsOffered: OfferAsset[]
   assetsRequested: OfferAsset[]
-  fee: number
+  fee: AssetAmount
   creatorAddress: string
 }
 
 export interface CreateOfferForm {
   assetsOffered: OfferAsset[]
   assetsRequested: OfferAsset[]
-  fee: number
+  fee: AssetAmount
   memo?: string
   expirationHours?: number
 }
 
 export interface OfferFilters {
   status?: string
-  assetType?: string
-  minAmount?: number
-  maxAmount?: number
+  assetType?: AssetType
+  minAmount?: AssetAmount
+  maxAmount?: AssetAmount
 }
 
 export interface OfferSortOptions {
@@ -74,7 +71,7 @@ export interface OfferSortOptions {
 // Wallet request interfaces for better type safety
 export interface WalletOfferAsset {
   assetId: string
-  amount: number
+  amount: AssetAmount // Explicitly use float numbers
 }
 
 export interface CreateOfferWalletRequest {

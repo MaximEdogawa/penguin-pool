@@ -41,12 +41,13 @@
               v-model.number="form.fee"
               type="number"
               step="0.000001"
-              min="0.000001"
+              min="0"
               placeholder="0.000001"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              required
             />
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Minimum fee: 0.000001 XCH</p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Fee can be 0 for free transactions
+            </p>
           </div>
 
           <!-- Offer Preview (if valid) -->
@@ -58,7 +59,10 @@
                 <span class="text-gray-900 dark:text-white">
                   {{
                     offerPreview.assetsOffered
-                      ?.map(a => `${a.amount} ${a.symbol || a.type.toUpperCase()}`)
+                      ?.map(
+                        a =>
+                          `${formatAssetAmount(a.amount, a.type)} ${a.symbol || a.type.toUpperCase()}`
+                      )
                       .join(', ') || 'Unknown'
                   }}
                 </span>
@@ -68,7 +72,10 @@
                 <span class="text-gray-900 dark:text-white">
                   {{
                     offerPreview.assetsRequested
-                      ?.map(a => `${a.amount} ${a.symbol || a.type.toUpperCase()}`)
+                      ?.map(
+                        a =>
+                          `${formatAssetAmount(a.amount, a.type)} ${a.symbol || a.type.toUpperCase()}`
+                      )
                       .join(', ') || 'Unknown'
                   }}
                 </span>
@@ -127,6 +134,7 @@
 </template>
 
 <script setup lang="ts">
+  import { formatAssetAmount } from '@/shared/utils/chia-units'
   import type {
     OfferAsset,
     OfferDetails,
