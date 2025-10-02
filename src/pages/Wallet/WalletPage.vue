@@ -89,7 +89,7 @@
 
   const formatBalance = (mojos: number): string => {
     if (mojos === 0) return '0.000000'
-    return (mojos / 1000000000000).toFixed(6)
+    return (mojos / 1000000000000).toString()
   }
 
   const formatAddress = (address: string): string => {

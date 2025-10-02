@@ -275,6 +275,7 @@
 <script setup lang="ts">
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
   import { useOfferStorage } from '@/shared/composables/useOfferStorage'
+  import { xchToMojos } from '@/shared/utils/chia-units'
   import type { CreateOfferForm, OfferDetails } from '@/types/offer.types'
   import { computed, reactive, ref } from 'vue'
 
@@ -365,7 +366,7 @@
       const convertToSmallestUnit = (amount: number, assetType: string): number => {
         switch (assetType) {
           case 'xch':
-            return Math.floor(amount * 1000000000000) // XCH to mojos (1 trillion)
+            return xchToMojos(amount) // XCH to mojos using shared utility
           case 'cat':
             return Math.floor(amount) // CAT tokens are whole units, no conversion needed
           case 'nft':
