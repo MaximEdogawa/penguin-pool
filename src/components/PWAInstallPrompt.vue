@@ -98,9 +98,9 @@
     const { outcome } = await deferredPrompt.value.userChoice
 
     if (outcome === 'accepted') {
-      console.log('User accepted the install prompt')
+      // User accepted the install prompt
     } else {
-      console.log('User dismissed the install prompt')
+      // User dismissed the install prompt
     }
 
     deferredPrompt.value = null

@@ -28,7 +28,7 @@ export function useOfferStorage() {
       offers.value = await offerStorageService.getOffers(options)
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to load offers'
-      console.error('Failed to load offers:', err)
+      // Failed to load offers
     } finally {
       isLoading.value = false
     }
@@ -51,7 +51,7 @@ export function useOfferStorage() {
       return savedOffer
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to save offer'
-      console.error('Failed to save offer:', err)
+      // Failed to save offer
       throw err
     } finally {
       isLoading.value = false
@@ -75,7 +75,7 @@ export function useOfferStorage() {
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update offer'
-      console.error('Failed to update offer:', err)
+      // Failed to update offer
       throw err
     } finally {
       isLoading.value = false
@@ -99,7 +99,7 @@ export function useOfferStorage() {
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete offer'
-      console.error('Failed to delete offer:', err)
+      // Failed to delete offer
       throw err
     } finally {
       isLoading.value = false
@@ -118,7 +118,7 @@ export function useOfferStorage() {
       return statusOffers
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to get offers by status'
-      console.error('Failed to get offers by status:', err)
+      // Failed to get offers by status
       throw err
     } finally {
       isLoading.value = false
@@ -137,7 +137,7 @@ export function useOfferStorage() {
       return unsyncedOffers
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to get unsynced offers'
-      console.error('Failed to get unsynced offers:', err)
+      // Failed to get unsynced offers
       throw err
     } finally {
       isLoading.value = false
@@ -165,7 +165,7 @@ export function useOfferStorage() {
       })
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to mark offers as synced'
-      console.error('Failed to mark offers as synced:', err)
+      // Failed to mark offers as synced
       throw err
     } finally {
       isLoading.value = false
@@ -184,7 +184,7 @@ export function useOfferStorage() {
       offers.value = []
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to clear offers'
-      console.error('Failed to clear offers:', err)
+      // Failed to clear offers
       throw err
     } finally {
       isLoading.value = false
@@ -198,7 +198,7 @@ export function useOfferStorage() {
     try {
       return await offerStorageService.getStats()
     } catch (err) {
-      console.error('Failed to get stats:', err)
+      // Failed to get stats
       throw err
     }
   }

@@ -33,6 +33,7 @@ Penguin-pool is a modern, privacy-focused decentralized lending platform that co
 - **[Implementation Roadmap](docs/IMPLEMENTATION_ROADMAP.md)** - 14-week development plan with tickets
 - **[White Paper](docs/WHITE_PAPER.md)** - Complete project overview and business case
 - **[API Documentation](docs/API_DOCUMENTATION.md)** - Complete REST API reference with Swagger/OpenAPI
+- **[Code Style Guide](CODE_STYLE_GUIDE.md)** - Comprehensive coding standards emphasizing functional programming
 
 ### 🎯 Quick Start Guide
 

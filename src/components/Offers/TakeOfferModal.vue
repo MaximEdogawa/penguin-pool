@@ -176,8 +176,8 @@
         }
       }
       return null
-    } catch (error) {
-      console.error('Failed to parse offer string:', error)
+    } catch {
+      // Failed to parse offer string
       return null
     }
   }
@@ -194,8 +194,8 @@
     isSubmitting.value = true
 
     try {
-      const takeOffer = async (data: TakeOfferWalletRequest): Promise<TakeOfferWalletResponse> => {
-        console.log('Take offer called with:', data)
+      const takeOffer = async (_data: TakeOfferWalletRequest): Promise<TakeOfferWalletResponse> => {
+        // Take offer called
         return {
           success: true,
           tradeId: 'test-trade-id',

@@ -108,8 +108,8 @@
           isAddressCopied.value = false
         }, 2000)
       }
-    } catch (error) {
-      console.error('Failed to copy address:', error)
+    } catch {
+      // Failed to copy address
     }
   }
 </script>

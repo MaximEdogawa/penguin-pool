@@ -31,7 +31,6 @@ import { initializeDatabase } from './shared/database/indexedDB'
 validateEnvironment()
 const app = createApp(App)
 
-// Install plugins
 app.use(createPinia())
 app.use(router)
 app.use(VueQueryPlugin, {
@@ -60,10 +59,7 @@ app.component('PrimeTabPanels', TabPanels)
 setupOfflineHandling()
 setupDebugging()
 
-// Initialize IndexedDB
-initializeDatabase().catch(error => {
-  console.error('Failed to initialize IndexedDB:', error)
-})
+initializeDatabase().catch(() => {})
 
 walletConnectPersistenceService.initialize()
 
@@ -74,7 +70,6 @@ watch(
   () => userStore.isAuthenticated,
   async authenticated => {
     if (!authenticated && router.currentRoute.value.path !== '/auth') {
-      console.log('User logged out, redirecting to auth...')
       await router.push('/auth')
     }
   }

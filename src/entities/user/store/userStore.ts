@@ -1,5 +1,6 @@
 import type { UserPreferences } from '@/app/types/common'
 import { useSessionDataService } from '@/features/walletConnect/services/SessionDataService'
+import { logger } from '@/shared/services/logger'
 import { sessionManager } from '@/shared/services/sessionManager'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
@@ -26,14 +27,14 @@ export const useUserStore = defineStore('user', () => {
   }
 
   const login = async (walletIdentifier: string | number, username?: string) => {
-    console.log('🔐 Login function called with:', {
+    logger.info('🔐 Login function called with:', {
       walletIdentifier,
       username,
       isAuthenticated: isAuthenticated.value,
     })
 
     if (isAuthenticated.value && currentUser.value?.walletAddress === walletIdentifier.toString()) {
-      console.log('✅ User already authenticated with same wallet')
+      logger.info('✅ User already authenticated with same wallet')
       return currentUser.value
     }
 
@@ -70,14 +71,12 @@ export const useUserStore = defineStore('user', () => {
       currentUser.value = user
       isAuthenticated.value = true
 
-      // Save user to localStorage
       localStorage.setItem('penguin-pool-user', JSON.stringify(user))
-
-      console.log('✅ User login successful:', { user, isAuthenticated: isAuthenticated.value })
+      logger.info('✅ User login successful:', { user, isAuthenticated: isAuthenticated.value })
       return user
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed'
-      console.error('❌ Login failed:', err)
+      logger.error('❌ Login failed:', err)
       throw err
     } finally {
       isLoading.value = false
@@ -99,9 +98,9 @@ export const useUserStore = defineStore('user', () => {
         clearAllCaches: false,
       })
 
-      console.log('User logout completed successfully')
+      logger.info('User logout completed successfully')
     } catch (err) {
-      console.error('Error during user logout:', err)
+      logger.error('Error during user logout:', err)
       currentUser.value = null
       isAuthenticated.value = false
       error.value = err instanceof Error ? err.message : 'Logout failed'
@@ -111,18 +110,18 @@ export const useUserStore = defineStore('user', () => {
   watch(
     session.isConnected,
     connected => {
-      console.log('🔄 User store watcher triggered:', {
+      logger.info('🔄 User store watcher triggered:', {
         connected,
         isAuthenticated: isAuthenticated.value,
       })
       if (connected) {
         if (!isAuthenticated.value) {
-          console.log('🔐 Logging in user with fingerprint:', session.fingerprint.value)
+          logger.info('🔐 Logging in user with fingerprint:', session.fingerprint.value)
           login(session.fingerprint.value)
         }
       } else {
         if (isAuthenticated.value) {
-          console.log('🚪 Logging out user')
+          logger.info('🚪 Logging out user')
           logout()
         }
       }
@@ -145,7 +144,7 @@ export const useUserStore = defineStore('user', () => {
         isAuthenticated.value = true
       }
     } catch (err) {
-      console.error('Failed to restore user session:', err)
+      logger.error('Failed to restore user session:', err)
       localStorage.removeItem('penguin-pool-user')
     }
   }
@@ -191,7 +190,7 @@ export const useUserStore = defineStore('user', () => {
         currentUser.value = user
         isAuthenticated.value = true
       } catch (err) {
-        console.error('Failed to restore user session:', err)
+        logger.error('Failed to restore user session:', err)
         localStorage.removeItem('penguin-pool-user')
       }
     }

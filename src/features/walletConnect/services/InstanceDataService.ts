@@ -1,3 +1,4 @@
+import { logger } from '@/shared/services/logger'
 import { useQuery } from '@tanstack/vue-query'
 import { WalletConnectModal } from '@walletconnect/modal'
 import SignClient from '@walletconnect/sign-client'
@@ -14,11 +15,13 @@ export function useInstanceDataService() {
     try {
       const signClient = await SignClient.init(SIGN_CLIENT_CONFIG)
       const modal = new WalletConnectModal(MODAL_CONFIG)
+
+      eventListeners.removeEventListeners(signClient)
       eventListeners.addEventListeners(signClient)
-      eventListeners.handlePendingSessionRequests()
+      eventListeners.handlePendingSessionRequests(signClient)
+
       return { signClient, modal }
     } catch (error) {
-      console.error('❌ Failed to initialize WalletConnect:', error)
       throw error
     }
   }
@@ -35,6 +38,21 @@ export function useInstanceDataService() {
     refetchOnReconnect: false,
   })
 
+  if (instanceQuery.isSuccess.value && instanceQuery.data.value?.signClient) {
+    logger.info('🔄 WalletConnect instance query succeeded, event listeners registered')
+  }
+
+  if (instanceQuery.isError.value && instanceQuery.error.value) {
+    logger.error('❌ WalletConnect instance query failed:', instanceQuery.error.value)
+  }
+
+  const cleanup = () => {
+    const signClient = instanceQuery.data.value?.signClient
+    if (signClient) {
+      eventListeners.removeEventListeners(signClient)
+    }
+  }
+
   return {
     data: instanceQuery.data,
     signClient: computed(() => instanceQuery.data.value?.signClient),
@@ -43,5 +61,7 @@ export function useInstanceDataService() {
     isInitialized: instanceQuery.isSuccess,
     error: instanceQuery.error,
     persistenceService: walletConnectPersistenceService,
+    cleanup,
+    eventListeners,
   }
 }

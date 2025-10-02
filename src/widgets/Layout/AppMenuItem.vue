@@ -68,12 +68,12 @@
 
   onBeforeMount(() => {
     itemKey.value = props.parentItemKey
-      ? props.parentItemKey + '-' + props.index
+      ? `${props.parentItemKey}-${props.index}`
       : String(props.index)
 
     const activeItem = layoutState.activeMenuItem
     isActiveMenu.value = Boolean(
-      activeItem === itemKey.value || (activeItem && activeItem.startsWith(itemKey.value + '-'))
+      activeItem === itemKey.value || (activeItem && activeItem.startsWith(`${itemKey.value}-`))
     )
   })
 
@@ -81,7 +81,7 @@
     () => layoutState.activeMenuItem,
     newVal => {
       isActiveMenu.value = Boolean(
-        newVal === itemKey.value || (newVal && newVal.startsWith(itemKey.value + '-'))
+        newVal === itemKey.value || (newVal && newVal.startsWith(`${itemKey.value}-`))
       )
     }
   )

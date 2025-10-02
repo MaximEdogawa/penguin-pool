@@ -394,8 +394,8 @@
         fee: storedOffer.fee,
         creatorAddress: storedOffer.creatorAddress,
       }))
-    } catch (error) {
-      console.error('Failed to refresh offers:', error)
+    } catch {
+      // Failed to refresh offers
     } finally {
       isLoading.value = false
     }
@@ -431,8 +431,8 @@
 
       showCancelConfirmation.value = false
       offerToCancel.value = null
-    } catch (error) {
-      console.error('Failed to cancel offer:', error)
+    } catch {
+      // Failed to cancel offer
       const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
       cancelError.value = `Failed to cancel offer: ${errorMsg}`
     } finally {
@@ -488,7 +488,7 @@
   }
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString()
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`
   }
 
   const copyOfferString = async (offerString: string) => {
@@ -500,8 +500,8 @@
       setTimeout(() => {
         isCopied.value = null
       }, 2000)
-    } catch (error) {
-      console.error('Failed to copy offer string:', error)
+    } catch {
+      // Failed to copy offer string
     }
   }
 

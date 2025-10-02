@@ -142,7 +142,7 @@
 
   watch(connection.isConnected, value => {
     if (value) {
-      console.log('Wallet Connected waiting for approval:', value)
+      // Wallet Connected waiting for approval
       session.waitForApproval()
     }
   })
@@ -151,7 +151,7 @@
     try {
       connection.connect()
     } catch (error) {
-      console.error('Connection failed:', error)
+      // Connection failed
       connectionStatus.value = {
         message: `Connection failed: ${error}`,
         type: 'error',
@@ -162,14 +162,14 @@
 
   const handleNetworkChange = async () => {
     try {
-      console.log('🔄 Network changed to:', selectedNetwork.value)
+      // Network changed
       connectionStatus.value = {
         message: `Switched to ${selectedNetwork.value === 'chia:mainnet' ? 'Mainnet' : 'Testnet'}`,
         type: 'success',
         icon: 'pi pi-check-circle',
       }
-    } catch (error) {
-      console.error('Failed to switch network:', error)
+    } catch {
+      // Failed to switch network
       connectionStatus.value = {
         message: 'Failed to switch network',
         type: 'error',

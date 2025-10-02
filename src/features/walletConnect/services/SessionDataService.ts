@@ -19,7 +19,7 @@ export function useSessionDataService() {
         walletConnectPersistenceService.saveSession(result)
         return result
       } catch (error) {
-        console.error('Approval failed:', error)
+        // Approval failed
         throw error
       }
     },

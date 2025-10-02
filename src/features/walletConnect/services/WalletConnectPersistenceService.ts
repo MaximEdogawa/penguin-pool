@@ -1,3 +1,4 @@
+import { logger } from '@/shared/services/logger'
 import type { SessionTypes } from '@walletconnect/types'
 import { ref } from 'vue'
 
@@ -8,9 +9,9 @@ export interface PersistedWalletConnectData {
 }
 
 class WalletConnectPersistenceService {
-  private STORAGE_KEY = 'penguin-pool-walletconnect-session'
-  private currentSession = ref<SessionTypes.Struct | null>(null)
-  private lastConnectedAt = ref<number | null>(null)
+  private readonly STORAGE_KEY = 'penguin-pool-walletconnect-session'
+  private readonly currentSession = ref<SessionTypes.Struct | null>(null)
+  private readonly lastConnectedAt = ref<number | null>(null)
 
   saveSession(session: SessionTypes.Struct): void {
     try {
@@ -24,7 +25,7 @@ class WalletConnectPersistenceService {
       this.currentSession.value = session
       this.lastConnectedAt.value = data.lastConnectedAt
     } catch (error) {
-      console.error('Failed to save WalletConnect session:', error)
+      logger.error('Failed to save WalletConnect session', error as Error)
     }
   }
 
@@ -35,16 +36,15 @@ class WalletConnectPersistenceService {
 
       const data: PersistedWalletConnectData = JSON.parse(stored)
 
-      if (data.session && this.isSessionValid(data.session)) {
-        this.currentSession.value = data.session
-        this.lastConnectedAt.value = data.lastConnectedAt
-        return data
-      } else {
+      if (!data.session || !this.isSessionValid(data.session)) {
         this.clearSession()
         return null
       }
-    } catch (error) {
-      console.error('Failed to load WalletConnect session:', error)
+
+      this.currentSession.value = data.session
+      this.lastConnectedAt.value = data.lastConnectedAt
+      return data
+    } catch {
       this.clearSession()
       return null
     }
@@ -56,7 +56,7 @@ class WalletConnectPersistenceService {
       this.currentSession.value = null
       this.lastConnectedAt.value = null
     } catch (error) {
-      console.error('Failed to clear WalletConnect session:', error)
+      logger.error('Failed to save WalletConnect session', error as Error)
     }
   }
 
@@ -102,9 +102,9 @@ class WalletConnectPersistenceService {
   initialize(): void {
     const persistedData = this.loadSession()
     if (persistedData) {
-      console.log('🔄 WalletConnect persistence initialized with existing session')
+      logger.info('🔄 WalletConnect persistence initialized with existing session')
     } else {
-      console.log('🔄 WalletConnect persistence initialized - no existing session')
+      logger.info('🔄 WalletConnect persistence initialized - no existing session')
     }
   }
 

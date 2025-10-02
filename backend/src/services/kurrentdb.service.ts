@@ -26,7 +26,7 @@ export class KurrentDBService implements OnModuleDestroy {
   private client: KurrentDBClient | null = null
   private connection: DatabaseConnection | null = null
   private isInitialized = false
-  private connectionString: string
+  private readonly connectionString: string
   private retryInterval: NodeJS.Timeout | null = null
 
   constructor() {
@@ -555,7 +555,7 @@ export class KurrentDBService implements OnModuleDestroy {
       }> = []
 
       for await (const resolvedEvent of events) {
-        const event = resolvedEvent.event
+        const { event } = resolvedEvent
         if (event) {
           result.push({
             id: event.id || `event_${Date.now()}`,
@@ -646,7 +646,7 @@ export class KurrentDBService implements OnModuleDestroy {
       }> = []
 
       for await (const resolvedEvent of events) {
-        const event = resolvedEvent.event
+        const { event } = resolvedEvent
         if (event) {
           if (event.type.startsWith('$')) {
             continue

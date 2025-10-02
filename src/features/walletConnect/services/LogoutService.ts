@@ -6,18 +6,18 @@ export function useLogoutService() {
     mutationFn: async (): Promise<void> => {
       try {
         await clearIndexedDB()
-        console.log('✅ Logout completed successfully')
+        // Logout completed successfully
       } catch (error) {
-        console.error('❌ Logout failed:', error)
+        // Logout failed
         throw error
       }
     },
     onSuccess: () => {
       queryClient.clear()
-      console.log('✅ All queries cleared')
+      // All queries cleared
     },
-    onError: error => {
-      console.error('❌ Logout failed:', error)
+    onError: _error => {
+      // Logout failed
     },
   })
 
@@ -32,12 +32,12 @@ export function useLogoutService() {
             deleteRequest.onsuccess = () => resolve(true)
             deleteRequest.onerror = () => reject(deleteRequest.error)
           })
-        } catch (error) {
-          console.warn(`Failed to clear ${dbName}:`, error)
+        } catch {
+          // Failed to clear database
         }
       }
-    } catch (error) {
-      console.warn('Failed to clear IndexedDB:', error)
+    } catch {
+      // Failed to clear IndexedDB
     }
   }
 

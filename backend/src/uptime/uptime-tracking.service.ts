@@ -1,20 +1,20 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common'
-import { KurrentDBService } from '../services/kurrentdb.service'
+import { BACKWARDS, FORWARDS } from '@kurrent/kurrentdb-client'
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
+import { WebSocket } from 'ws'
 import {
   ServiceUptimeRecord,
-  ServiceUptimeTimeline,
   ServiceUptimeSummary,
+  ServiceUptimeTimeline,
 } from '../entities/uptime.entity'
-import { WebSocket } from 'ws'
-import { BACKWARDS, FORWARDS } from '@kurrent/kurrentdb-client'
+import { KurrentDBService } from '../services/kurrentdb.service'
 
 @Injectable()
 export class UptimeTrackingService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(UptimeTrackingService.name)
-  private uptimeRecords: Map<string, ServiceUptimeRecord[]> = new Map()
-  private serviceStartTimes: Map<string, Date> = new Map()
-  private currentStatuses: Map<string, 'up' | 'down' | 'degraded'> = new Map()
-  private lastStatusChange: Map<string, Date> = new Map()
+  private readonly uptimeRecords: Map<string, ServiceUptimeRecord[]> = new Map()
+  private readonly serviceStartTimes: Map<string, Date> = new Map()
+  private readonly currentStatuses: Map<string, 'up' | 'down' | 'degraded'> = new Map()
+  private readonly lastStatusChange: Map<string, Date> = new Map()
   private trackingInterval: NodeJS.Timeout | null = null
   private streamReadingInterval: NodeJS.Timeout | null = null
   private readonly TRACKING_INTERVAL = 30000 // 30 seconds
@@ -23,8 +23,8 @@ export class UptimeTrackingService implements OnModuleInit, OnModuleDestroy {
   private readonly CLEANUP_INTERVAL = 3600000 // 1 hour
   private readonly MAX_AGE_HOURS = 168 // 7 days
   private readonly STREAM_PREFIX = 'service-uptime'
-  private lastReadPositions: Map<string, number> = new Map()
-  private streamErrorCounts: Map<string, number> = new Map()
+  private readonly lastReadPositions: Map<string, number> = new Map()
+  private readonly streamErrorCounts: Map<string, number> = new Map()
   private readonly MAX_STREAM_ERRORS = 5
 
   constructor(private readonly kurrentDBService: KurrentDBService) {}
@@ -432,7 +432,7 @@ export class UptimeTrackingService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async updateLocalStateFromStreamEvent(record: ServiceUptimeRecord): Promise<void> {
-    const serviceName = record.serviceName
+    const { serviceName } = record
     const records = this.uptimeRecords.get(serviceName) || []
 
     const existingRecord = records.find(r => r.id === record.id)
@@ -587,9 +587,8 @@ export class UptimeTrackingService implements OnModuleInit, OnModuleDestroy {
     let totalUptime = 0
     let totalDowntime = 0
 
-    for (let i = 0; i < validRecords.length; i++) {
-      const record = validRecords[i]
-      if (!record) continue
+    validRecords.forEach((record, i) => {
+      if (!record) return
 
       let recordDuration = 0
 
@@ -608,7 +607,7 @@ export class UptimeTrackingService implements OnModuleInit, OnModuleDestroy {
           totalDowntime += recordDuration
         }
       }
-    }
+    })
 
     const totalTime = totalUptime + totalDowntime
     const uptimePercentage = totalTime > 0 ? (totalUptime / totalTime) * 100 : 0

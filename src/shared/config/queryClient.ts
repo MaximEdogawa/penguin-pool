@@ -13,7 +13,7 @@ export const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000,
       retry: (failureCount, error) => {
         if (error instanceof Error && 'status' in error) {
-          const status = (error as { status: number }).status
+          const { status } = error as { status: number }
           if (status >= 400 && status < 500) {
             return false
           }
@@ -36,11 +36,11 @@ export const queryClient = new QueryClient({
 
 export function setupOfflineHandling() {
   const handleOnline = () => {
-    console.log('📡 Network online - queries started')
+    // Network online - queries started
   }
 
   const handleOffline = () => {
-    console.log('📡 Network offline - queries paused')
+    // Network offline - queries paused
   }
 
   window.addEventListener('online', handleOnline)
@@ -75,10 +75,8 @@ export function setupDebugging() {
         },
       })
 
-      console.log(
-        '🔍 TanStack Query debugging enabled - queryClient available at window.__QUERY_CLIENT__'
-      )
-      console.log('🔍 Vue DevTools should show TanStack Query data in the Timeline tab')
+      // TanStack Query debugging enabled
+      // Vue DevTools should show TanStack Query data
     }
   }
 }

@@ -1,19 +1,19 @@
+import { windows95Theme } from '../themes/windows95'
 import type {
-  CustomTheme,
   BuiltInTheme,
-  ThemeMode,
+  CustomTheme,
   PrimeUITheme,
+  ThemeMode,
   ThemeVariant,
 } from '../types/theme'
-import { windows95Theme } from '../themes/windows95'
 import { primeUIThemeService } from './primeUIThemeService'
 
 export class ThemeManager {
   private static instance: ThemeManager
   private currentTheme: ThemeMode = 'aura-light'
-  private availableThemes: CustomTheme[] = [windows95Theme]
+  private readonly availableThemes: CustomTheme[] = [windows95Theme]
   private customThemes: CustomTheme[] = []
-  private primeUIThemes: PrimeUITheme[] = ['aura', 'material', 'lara', 'nora']
+  private readonly primeUIThemes: PrimeUITheme[] = ['aura', 'material', 'lara', 'nora']
   private currentPrimeUITheme: PrimeUITheme = 'aura'
   private currentThemeVariant: ThemeVariant = 'light'
   private currentPrimaryColor: string = '#6366f1'
@@ -36,8 +36,8 @@ export class ThemeManager {
     if (savedCustomThemes) {
       try {
         this.customThemes = JSON.parse(savedCustomThemes)
-      } catch (error) {
-        console.error('Failed to load custom themes:', error)
+      } catch {
+        // Failed to load custom themes
         this.customThemes = []
       }
     }
@@ -167,7 +167,7 @@ export class ThemeManager {
         })
       )
     } catch (error) {
-      console.error('Failed to switch theme:', error)
+      // Failed to switch theme
       throw error
     }
   }
@@ -189,7 +189,7 @@ export class ThemeManager {
         await primeUIThemeService.updateColors(primaryColor, surfaceColor)
       }
     } catch (error) {
-      console.error('Failed to update PrimeUI colors:', error)
+      // Failed to update PrimeUI colors
       throw error
     }
   }
@@ -210,7 +210,7 @@ export class ThemeManager {
         localStorage.setItem('penguin-pool-theme-variant', variant)
       }
     } catch (error) {
-      console.error('Failed to switch theme variant:', error)
+      // Failed to switch theme variant
       throw error
     }
   }

@@ -99,24 +99,24 @@
   const setTheme = async (theme: 'light' | 'dark' | 'auto') => {
     try {
       await themeStore.setBuiltInTheme(theme)
-    } catch (error) {
-      console.error('Failed to set theme:', error)
+    } catch {
+      // Failed to set theme
     }
   }
 
   const setCustomTheme = async (themeId: string) => {
     try {
       await themeStore.setCustomTheme(themeId)
-    } catch (error) {
-      console.error('Failed to set custom theme:', error)
+    } catch {
+      // Failed to set custom theme
     }
   }
 
   const clearCustomTheme = async () => {
     try {
       await themeStore.clearCustomTheme()
-    } catch (error) {
-      console.error('Failed to clear custom theme:', error)
+    } catch {
+      // Failed to clear custom theme
     }
   }
 
@@ -143,7 +143,7 @@
       // Store in localStorage for persistence
       localStorage.setItem('penguin-pool-primary-color', color)
     } else {
-      console.error(`Color not found: ${color}`)
+      // Color not found
     }
   }
 

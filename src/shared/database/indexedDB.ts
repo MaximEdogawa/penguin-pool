@@ -32,9 +32,9 @@ export const db = new PenguinPoolDB()
 export async function initializeDatabase(): Promise<void> {
   try {
     await db.open()
-    console.log('✅ IndexedDB initialized successfully')
+    // IndexedDB initialized successfully
   } catch (error) {
-    console.error('❌ Failed to initialize IndexedDB:', error)
+    // Failed to initialize IndexedDB
     throw error
   }
 }
@@ -43,9 +43,9 @@ export async function initializeDatabase(): Promise<void> {
 export async function clearDatabase(): Promise<void> {
   try {
     await db.delete()
-    console.log('✅ IndexedDB cleared successfully')
+    // IndexedDB cleared successfully
   } catch (error) {
-    console.error('❌ Failed to clear IndexedDB:', error)
+    // Failed to clear IndexedDB
     throw error
   }
 }

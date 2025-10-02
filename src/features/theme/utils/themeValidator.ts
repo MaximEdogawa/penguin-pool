@@ -1,10 +1,3 @@
-/**
- * Theme Validation Utility
- *
- * This utility helps validate custom themes to ensure they don't break layout functionality.
- * It checks for dangerous CSS properties and provides warnings for potentially problematic themes.
- */
-
 export interface ThemeValidationResult {
   isValid: boolean
   warnings: string[]
@@ -19,7 +12,6 @@ export interface CSSRule {
 
 export class ThemeValidator {
   private static readonly DANGEROUS_PROPERTIES = [
-    // Layout properties that should NEVER be modified by themes
     'position',
     'display',
     'width',
@@ -128,7 +120,7 @@ export class ThemeValidator {
     try {
       const rules = this.parseCSS(cssContent)
 
-      for (const rule of rules) {
+      rules.forEach(rule => {
         const validation = this.validateCSSRule(rule, themeId)
 
         if (validation.errors.length > 0) {
@@ -143,9 +135,8 @@ export class ThemeValidator {
         if (validation.suggestions.length > 0) {
           result.suggestions.push(...validation.suggestions)
         }
-      }
+      })
 
-      // Add general suggestions
       result.suggestions.push(
         'Use CSS custom properties (--theme-*) for consistent theming',
         'Test your theme on different screen sizes',
@@ -174,10 +165,9 @@ export class ThemeValidator {
     // Check if this rule targets layout-critical elements
     const isLayoutCritical = this.isLayoutCriticalSelector(rule.selector)
 
-    for (const [property, value] of Object.entries(rule.properties)) {
+    Object.entries(rule.properties).forEach(([property, value]) => {
       const normalizedProperty = property.toLowerCase().trim()
 
-      // Check for dangerous properties
       if (this.DANGEROUS_PROPERTIES.includes(normalizedProperty)) {
         result.isValid = false
         result.errors.push(
@@ -205,7 +195,7 @@ export class ThemeValidator {
           `CRITICAL: Using !important with ${normalizedProperty} in "${rule.selector}" will definitely break layout`
         )
       }
-    }
+    })
 
     // Check for overly generic selectors
     if (this.isOverlyGenericSelector(rule.selector)) {
@@ -253,56 +243,41 @@ export class ThemeValidator {
     return genericPatterns.some(pattern => pattern.test(selector.trim()))
   }
 
-  /**
-   * Parses CSS content into structured rules
-   * Note: This is a simplified parser for validation purposes
-   */
   private static parseCSS(cssContent: string): CSSRule[] {
-    const rules: CSSRule[] = []
-
-    // Remove comments
     const cleanCSS = cssContent.replace(/\/\*[\s\S]*?\*\//g, '')
-
-    // Split into rules (simplified)
     const ruleBlocks = cleanCSS.split('}')
 
-    for (const block of ruleBlocks) {
-      if (!block.trim()) continue
+    return ruleBlocks
+      .filter(block => block.trim())
+      .map(block => {
+        const colonIndex = block.indexOf('{')
+        if (colonIndex === -1) return null
 
-      const colonIndex = block.indexOf('{')
-      if (colonIndex === -1) continue
+        const selector = block.substring(0, colonIndex).trim()
+        const propertiesBlock = block.substring(colonIndex + 1).trim()
 
-      const selector = block.substring(0, colonIndex).trim()
-      const propertiesBlock = block.substring(colonIndex + 1).trim()
+        if (!selector || !propertiesBlock) return null
 
-      if (!selector || !propertiesBlock) continue
+        const properties: Record<string, string> = {}
+        const propertyLines = propertiesBlock.split(';')
 
-      const properties: Record<string, string> = {}
-      const propertyLines = propertiesBlock.split(';')
+        propertyLines.forEach(line => {
+          const colonPos = line.indexOf(':')
+          if (colonPos === -1) return
 
-      for (const line of propertyLines) {
-        const colonPos = line.indexOf(':')
-        if (colonPos === -1) continue
+          const property = line.substring(0, colonPos).trim()
+          const value = line.substring(colonPos + 1).trim()
 
-        const property = line.substring(0, colonPos).trim()
-        const value = line.substring(colonPos + 1).trim()
+          if (property && value) {
+            properties[property] = value
+          }
+        })
 
-        if (property && value) {
-          properties[property] = value
-        }
-      }
-
-      if (Object.keys(properties).length > 0) {
-        rules.push({ selector, properties })
-      }
-    }
-
-    return rules
+        return Object.keys(properties).length > 0 ? { selector, properties } : null
+      })
+      .filter((rule): rule is CSSRule => rule !== null)
   }
 
-  /**
-   * Generates a safe theme template
-   */
   static generateSafeThemeTemplate(themeId: string): string {
     return `/* Safe Theme Template for ${themeId} */
 /* This template only includes safe CSS properties */

@@ -54,11 +54,11 @@ export const loadFeatureFlagsFromEnv = (): FeatureFlagsConfig => {
           feature.enabled = envValue
           feature.environments[currentEnv] = envValue
         } else {
-          console.error(`[FEATURE FLAGS] Feature not found: ${category}.${featureKey}`)
+          // Feature not found
         }
       }
-    } catch (error) {
-      console.error(`[FEATURE FLAGS] Error loading feature flag ${category}.${featureKey}:`, error)
+    } catch {
+      // Error loading feature flag
     }
   }
 
@@ -139,11 +139,11 @@ export const validateFeatureFlags = (): {
   }
 
   if (errors.length > 0) {
-    console.error('[FEATURE FLAGS] Validation errors:', errors)
+    // Validation errors
   }
 
   if (warnings.length > 0) {
-    console.warn('[FEATURE FLAGS] Validation warnings:', warnings)
+    // Validation warnings
   }
 
   return result

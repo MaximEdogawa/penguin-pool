@@ -151,7 +151,7 @@ export class KurrentDBService {
   private httpClient: KurrentDBHTTPClient | null = null
   private connection: DatabaseConnection | null = null
   private isInitialized = false
-  private config: KurrentDBHTTPConfig
+  private readonly config: KurrentDBHTTPConfig
 
   constructor() {
     // Configuration for local KurrentDB instance via proxy
@@ -184,14 +184,14 @@ export class KurrentDBService {
       try {
         await this.connect()
         this.isInitialized = true
-        console.log('Successfully connected to KurrentDB via HTTP proxy')
-      } catch (httpError) {
-        console.warn('HTTP connection failed:', httpError)
+        // Successfully connected to KurrentDB via HTTP proxy
+      } catch {
+        // HTTP connection failed
         this.connection!.status = 'error'
         this.connection!.isConnected = false
       }
-    } catch (error) {
-      console.error('Failed to initialize KurrentDB service:', error)
+    } catch {
+      // Failed to initialize KurrentDB service
       this.connection = {
         isConnected: false,
         environment: 'unknown',
@@ -222,9 +222,9 @@ export class KurrentDBService {
       this.connection!.status = 'connected'
       this.connection!.lastSync = new Date()
 
-      console.log('Connected to KurrentDB via HTTP proxy')
-    } catch (error) {
-      console.error('Failed to connect to KurrentDB:', error)
+      // Connected to KurrentDB via HTTP proxy
+    } catch {
+      // Failed to connect to KurrentDB
       this.connection!.status = 'error'
       this.connection!.isConnected = false
     }
@@ -327,7 +327,7 @@ export class KurrentDBService {
         uptime: Date.now() - (this.connection.lastSync?.getTime() || Date.now()),
       }
     } catch (error) {
-      console.error('Failed to get metrics:', error)
+      // Failed to get metrics
       throw error
     }
   }
@@ -338,7 +338,7 @@ export class KurrentDBService {
       this.connection.status = 'disconnected'
       this.connection.lastSync = null
     }
-    console.log('Disconnected from KurrentDB')
+    // Disconnected from KurrentDB
   }
 
   // Basic stream operations
@@ -368,10 +368,10 @@ export class KurrentDBService {
         },
       }
 
-      console.log('Created stream:', stream.name)
+      // Created stream
       return stream
     } catch (error) {
-      console.error('Failed to create stream:', error)
+      // Failed to create stream
       throw error
     }
   }
@@ -415,12 +415,12 @@ export class KurrentDBService {
     return stream
   }
 
-  async deleteStream(id: string): Promise<void> {
+  async deleteStream(_id: string): Promise<void> {
     if (!this.httpClient || !this.connection?.isConnected) {
       throw new Error('Not connected to database')
     }
 
-    console.log('Deleted stream:', id)
+    // Deleted stream
   }
 
   // User data operations
@@ -450,9 +450,8 @@ export class KurrentDBService {
     return []
   }
 
-  async deleteUserData(userId: string, type: string, category: string): Promise<void> {
-    const streamName = `user-${userId}-${type}-${category}`
-    console.log('Deleted user data stream:', streamName)
+  async deleteUserData(_userId: string, _type: string, _category: string): Promise<void> {
+    // Deleted user data stream
   }
 
   // Utility methods

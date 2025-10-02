@@ -39,8 +39,8 @@ export interface HTTPResponse<T = unknown> {
 }
 
 export class KurrentDBHTTPClient {
-  private config: KurrentDBHTTPConfig
-  private baseHeaders: Record<string, string>
+  private readonly config: KurrentDBHTTPConfig
+  private readonly baseHeaders: Record<string, string>
 
   constructor(config: KurrentDBHTTPConfig) {
     this.config = {
@@ -242,8 +242,8 @@ export class KurrentDBHTTPClient {
           callback(response.data)
           lastEventNumber = Math.max(...response.data.map(e => parseInt(e.id)))
         }
-      } catch (error) {
-        console.error('Error polling stream updates:', error)
+      } catch {
+        // Error polling stream updates
       }
 
       if (isSubscribed) {

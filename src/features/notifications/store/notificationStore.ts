@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 
 export interface Notification {
   id: string
@@ -120,8 +120,8 @@ export const useNotificationStore = defineStore('notifications', () => {
       }
 
       isInitialized.value = true
-    } catch (error) {
-      console.error('Failed to initialize notifications:', error)
+    } catch {
+      // Failed to initialize notifications
       isInitialized.value = true
     }
   }

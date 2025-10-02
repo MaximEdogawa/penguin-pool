@@ -279,22 +279,21 @@
   // Actions
   const refreshBalance = async (force = false) => {
     if (isBalanceLoading.value && !force) {
-      console.log('⏰ Balance refresh already in progress, skipping')
+      // Balance refresh already in progress, skipping
       return
     }
 
     try {
       await walletDataService.balance.refetch()
       balanceLastUpdated.value = new Date()
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      console.error('❌ Failed to refresh wallet balance:', errorMessage)
+    } catch {
+      // Failed to refresh wallet balance
     }
   }
 
   const startAutoRefresh = () => {
     if (autoRefreshEnabled.value) {
-      console.log('🔄 Starting auto-refresh')
+      // Starting auto-refresh
       // Auto-refresh every 5 minutes
       setInterval(
         () => {
@@ -308,7 +307,7 @@
   }
 
   const stopAutoRefresh = () => {
-    console.log('⏹️ Stopping auto-refresh')
+    // Stopping auto-refresh
     autoRefreshEnabled.value = false
   }
 
@@ -350,8 +349,8 @@
           copyButton.style.color = ''
         }, 1500)
       }
-    } catch (error) {
-      console.error('Failed to copy address:', error)
+    } catch {
+      // Failed to copy address
     }
   }
 
@@ -366,8 +365,8 @@
   onMounted(async () => {
     try {
       userStore.value = useUserStore()
-    } catch (error) {
-      console.error('Failed to initialize dashboard:', error)
+    } catch {
+      // Failed to initialize dashboard
     }
   })
 </script>

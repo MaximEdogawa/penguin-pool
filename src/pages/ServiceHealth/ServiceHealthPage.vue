@@ -636,13 +636,13 @@
         addMessage('warning', `WebSocket disconnected: ${reason}`)
       })
 
-      ws.value.on('connect_error', error => {
+      ws.value.on('connect_error', _error => {
         wsConnected.value = false
         wsConnecting.value = false
         wsConnectionStatus.value = 'Connection error'
         wsConnectionTime.value = null
         addMessage('error', 'WebSocket connection error')
-        console.error('WebSocket error:', error)
+        // WebSocket error
       })
     } catch (err) {
       wsConnecting.value = false

@@ -99,8 +99,8 @@
   onMounted(async () => {
     try {
       await themeStore.initializeTheme()
-    } catch (error) {
-      console.error('Failed to initialize theme store:', error)
+    } catch {
+      // Failed to initialize theme store
     }
   })
 
@@ -141,13 +141,13 @@
   const handleLogout = async () => {
     try {
       const userStore = useUserStore()
-      console.log('👤 Logging out user...')
+      // Logging out user
       await userStore.logout()
       isUserMenuVisible.value = false
-      console.log('✅ Logout completed, redirecting to auth...')
+      // Logout completed, redirecting to auth
       await router.push('/auth')
-    } catch (error) {
-      console.error('❌ Logout failed:', error)
+    } catch {
+      // Logout failed
     }
   }
 </script>
