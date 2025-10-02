@@ -1,3 +1,4 @@
+import { logger } from '@/shared/services/logger'
 import type { SignClient } from '@walletconnect/sign-client/dist/types/client'
 import type { ComputedRef } from 'vue'
 import { SageMethods } from '../constants/sage-methods'
@@ -50,12 +51,10 @@ export async function makeWalletRequest<T>(
     if (result && typeof result === 'object' && 'error' in result) {
       return { success: false, error: 'Wallet returned an error' }
     }
-    // Wallet request completed
-
+    logger.info(`Wallet request for ${method}:`, result)
     return { success: true, data: result as T }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    // WalletConnect request failed
     return { success: false, error: errorMessage }
   }
 }
