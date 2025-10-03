@@ -1,5 +1,9 @@
-import type { DexiePostOfferParams, DexieSearchParams } from '@/shared/services/DexieDataService'
-import { useDexieDataService } from '@/shared/services/DexieDataService'
+import type {
+  DexiePostOfferParams,
+  DexieSearchParams,
+  ValidatedOfferString,
+} from '@/shared/services/DexieDataService'
+import { useDexieDataService, validateOfferString } from '@/shared/services/DexieDataService'
 
 /**
  * Composable for offer inspection and search using Dexie API
@@ -17,6 +21,24 @@ export function useOfferInspection() {
     } catch (error) {
       throw error
     }
+  }
+
+  /**
+   * Inspect offer with polling functionality - checks every 20 seconds until expired/completed/cancelled
+   */
+  const inspectOfferWithPolling = async (offerString: string, maxAttempts: number = 30) => {
+    try {
+      return await dexieDataService.inspectOfferWithPolling(offerString, maxAttempts)
+    } catch (error) {
+      throw error
+    }
+  }
+
+  /**
+   * Validate an offer string before processing
+   */
+  const validateOffer = (offerString: string): ValidatedOfferString => {
+    return validateOfferString(offerString)
   }
 
   /**
@@ -95,18 +117,26 @@ export function useOfferInspection() {
 
     // Convenience methods
     inspectOffer,
+    inspectOfferWithPolling,
     searchOffers,
     getOfferById,
     postOffer,
     searchOffersByAsset,
     searchOffersByMaker,
     getRecentOffers,
+    validateOffer,
+
+    // Enhanced mutation access
+    searchOffersMutation: dexieDataService.searchOffersMutation,
+    inspectOfferMutation: dexieDataService.inspectOfferMutation,
+    postOfferMutation: dexieDataService.postOfferMutation,
 
     // Loading states
     isLoading: dexieDataService.isLoading,
     isSearching: dexieDataService.isSearching,
     isInspecting: dexieDataService.isInspecting,
     isPosting: dexieDataService.isPosting,
+    isGettingOfferById: dexieDataService.isGettingOfferById,
 
     // Error state
     error: dexieDataService.error,
@@ -114,5 +144,8 @@ export function useOfferInspection() {
     // Data
     offers: dexieDataService.offers,
     currentOffer: dexieDataService.currentOffer,
+
+    // Refresh functions
+    refreshOffers: dexieDataService.refreshOffers,
   }
 }

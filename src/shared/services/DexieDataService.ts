@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, ref } from 'vue'
 import {
   dexieRepository,
@@ -10,7 +10,6 @@ import {
 } from '../repositories/DexieRepository'
 import { logger } from './logger'
 
-// Legacy types for backward compatibility
 export interface DexieOfferResponse {
   success: boolean
   id: string
@@ -20,7 +19,7 @@ export interface DexieOfferResponse {
 
 export interface DexieOffer {
   id: string
-  status: number // 0=Open, 1=Pending, 2=Cancelling, 3=Cancelled, 4=Completed, 5=Unknown, 6=Expired
+  status: number
   involved_coins: string[]
   date_found: string
   date_completed?: string
@@ -65,7 +64,6 @@ export interface DexiePostOfferParams {
   claim_rewards?: boolean
 }
 
-// CAT token mapping for human-readable names
 export interface CatTokenInfo {
   assetId: string
   ticker: string
@@ -73,197 +71,131 @@ export interface CatTokenInfo {
   symbol: string
 }
 
+export type ValidatedOfferString = string & { readonly __validated: true }
+
+export function validateOfferString(offerString: string): ValidatedOfferString {
+  if (!offerString || offerString.trim().length === 0) {
+    throw new Error('Offer string cannot be empty')
+  }
+
+  const cleanOffer = offerString.trim()
+  if (cleanOffer.length < 50) {
+    throw new Error('Offer string too short')
+  }
+
+  const isBase64 = /^[A-Za-z0-9+/]*={0,2}$/.test(cleanOffer)
+  const startsWithOffer = cleanOffer.startsWith('offer')
+
+  if (!isBase64 && !startsWithOffer) {
+    throw new Error('Invalid offer format')
+  }
+
+  return cleanOffer as ValidatedOfferString
+}
+
+const DEXIE_KEY = 'dexie'
+const TICKERS_KEY = 'tickers'
+const PAIRS_KEY = 'pairs'
+
 export function useDexieDataService() {
   const queryClient = useQueryClient()
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // Tickers query - invalidates once per day
-  const tickersQuery = {
-    queryKey: ['dexie', 'tickers'],
+  const tickersQuery = useQuery({
+    queryKey: [DEXIE_KEY, TICKERS_KEY],
     queryFn: async (): Promise<DexieTickerResponse> => {
       return await dexieRepository.getAllTickers()
     },
     staleTime: 24 * 60 * 60 * 1000, // 24 hours
     gcTime: 24 * 60 * 60 * 1000, // 24 hours
-  }
+    retry: 3,
+  })
 
-  // Pairs query
-  const pairsQuery = {
-    queryKey: ['dexie', 'pairs'],
+  const pairsQuery = useQuery({
+    queryKey: [DEXIE_KEY, PAIRS_KEY],
     queryFn: async (): Promise<DexiePairsResponse> => {
       return await dexieRepository.getAllPairs()
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-  }
+    retry: 3,
+  })
 
-  // Search offers query
-  const searchOffers = async (params: DexieOfferSearchParams = {}) => {
-    try {
-      isLoading.value = true
-      error.value = null
+  const searchOffersMutation = useMutation({
+    mutationFn: async (params: DexieOfferSearchParams = {}) => {
+      return await dexieRepository.searchOffers(params)
+    },
+    onSuccess: () => {
+      logger.info('Offers searched successfully')
+    },
+    onError: error => {
+      logger.error('Failed to search offers:', error)
+    },
+  })
 
-      const result = await queryClient.fetchQuery({
-        queryKey: ['dexie', 'offers', 'search', params],
-        queryFn: async ({ queryKey }) => {
-          const params = (queryKey[3] as DexieOfferSearchParams) || {}
-          return await dexieRepository.searchOffers(params)
-        },
-        staleTime: 30 * 1000, // 30 seconds
-      })
+  const inspectOfferMutation = useMutation({
+    mutationFn: async (offerString: ValidatedOfferString) => {
+      return await dexieRepository.inspectOffer(offerString)
+    },
+    onSuccess: data => {
+      logger.info('Offer inspected successfully:', data)
+      if (data.success && data.id)
+        queryClient.invalidateQueries({ queryKey: [DEXIE_KEY, 'offers'] })
+    },
+    onError: error => {
+      logger.error('Failed to inspect offer:', error)
+    },
+  })
 
-      return result
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Unknown error'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
+  const getOfferByIdMutation = useMutation({
+    mutationFn: async (offerId: string) => {
+      return await dexieRepository.getOfferById(offerId)
+    },
+    onSuccess: data => {
+      logger.info('Offer retrieved successfully:', data)
+      queryClient.invalidateQueries({ queryKey: [DEXIE_KEY, 'offers'] })
+    },
+    onError: error => {
+      logger.error('Failed to get offer by ID:', error)
+    },
+  })
 
-  // Inspect offer query
-  const inspectOffer = async (offerString: string) => {
-    try {
-      isLoading.value = true
-      error.value = null
+  const getTickerMutation = useMutation({
+    mutationFn: async (tickerId: string) => {
+      return await dexieRepository.getTicker(tickerId)
+    },
+    onSuccess: () => {
+      logger.info('Ticker retrieved successfully')
+    },
+    onError: error => {
+      logger.error('Failed to get ticker:', error)
+    },
+  })
 
-      // Basic validation
-      if (!offerString || offerString.trim().length === 0) {
-        throw new Error('Offer string cannot be empty')
-      }
+  const getOrderBookMutation = useMutation({
+    mutationFn: async ({ tickerId, depth = 10 }: { tickerId: string; depth?: number }) => {
+      return await dexieRepository.getOrderBook(tickerId, depth)
+    },
+    onSuccess: () => {
+      logger.info('Order book retrieved successfully')
+    },
+    onError: error => {
+      logger.error('Failed to get order book:', error)
+    },
+  })
 
-      const cleanOffer = offerString.trim()
+  const getHistoricalTradesMutation = useMutation({
+    mutationFn: async ({ tickerId, limit = 100 }: { tickerId: string; limit?: number }) => {
+      return await dexieRepository.getHistoricalTrades(tickerId, limit)
+    },
+    onSuccess: () => {
+      logger.info('Historical trades retrieved successfully')
+    },
+    onError: error => {
+      logger.error('Failed to get historical trades:', error)
+    },
+  })
 
-      // Check minimum length for complete offers
-      if (cleanOffer.length < 50) {
-        throw new Error('Offer string too short')
-      }
-
-      // Check if it looks like a valid offer string
-      const isBase64 = /^[A-Za-z0-9+/]*={0,2}$/.test(cleanOffer)
-      const startsWithOffer = cleanOffer.startsWith('offer')
-
-      if (!isBase64 && !startsWithOffer) {
-        throw new Error('Invalid offer format')
-      }
-
-      const result = await queryClient.fetchQuery({
-        queryKey: ['dexie', 'offers', 'inspect', offerString],
-        queryFn: async ({ queryKey }) => {
-          const offerString = queryKey[3] as string
-          return await dexieRepository.inspectOffer(offerString)
-        },
-        staleTime: 5 * 60 * 1000, // 5 minutes
-      })
-
-      return result
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Unknown error'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  // Get offer by ID
-  const getOfferById = async (offerId: string) => {
-    try {
-      isLoading.value = true
-      error.value = null
-
-      const result = await queryClient.fetchQuery({
-        queryKey: ['dexie', 'offers', 'by-id', offerId],
-        queryFn: async ({ queryKey }) => {
-          const offerId = queryKey[3] as string
-          return await dexieRepository.getOfferById(offerId)
-        },
-        staleTime: 5 * 60 * 1000, // 5 minutes
-      })
-
-      return result
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Unknown error'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  // Get ticker by ID
-  const getTicker = async (tickerId: string) => {
-    try {
-      isLoading.value = true
-      error.value = null
-
-      const result = await queryClient.fetchQuery({
-        queryKey: ['dexie', 'ticker', tickerId],
-        queryFn: async ({ queryKey }) => {
-          const tickerId = queryKey[2] as string
-          return await dexieRepository.getTicker(tickerId)
-        },
-        staleTime: 5 * 60 * 1000, // 5 minutes
-      })
-
-      return result
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Unknown error'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  // Get order book
-  const getOrderBook = async (tickerId: string, depth: number = 10) => {
-    try {
-      isLoading.value = true
-      error.value = null
-
-      const result = await queryClient.fetchQuery({
-        queryKey: ['dexie', 'orderbook', tickerId, depth],
-        queryFn: async ({ queryKey }) => {
-          const tickerId = queryKey[2] as string
-          const depth = (queryKey[3] as number) || 10
-          return await dexieRepository.getOrderBook(tickerId, depth)
-        },
-        staleTime: 30 * 1000, // 30 seconds
-      })
-
-      return result
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Unknown error'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  // Get historical trades
-  const getHistoricalTrades = async (tickerId: string, limit: number = 100) => {
-    try {
-      isLoading.value = true
-      error.value = null
-
-      const result = await queryClient.fetchQuery({
-        queryKey: ['dexie', 'trades', tickerId, limit],
-        queryFn: async ({ queryKey }) => {
-          const tickerId = queryKey[2] as string
-          const limit = (queryKey[3] as number) || 100
-          return await dexieRepository.getHistoricalTrades(tickerId, limit)
-        },
-        staleTime: 5 * 60 * 1000, // 5 minutes
-      })
-
-      return result
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Unknown error'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  // Post offer mutation
   const postOfferMutation = useMutation({
     mutationFn: async (params: DexiePostOfferParams): Promise<DexiePostOfferResponse> => {
       return await dexieRepository.postOffer(params)
@@ -271,56 +203,130 @@ export function useDexieDataService() {
     onSuccess: data => {
       logger.info('Offer posted successfully:', data)
       // Invalidate offers queries to refresh the list
-      queryClient.invalidateQueries({ queryKey: ['dexie', 'offers'] })
+      queryClient.invalidateQueries({ queryKey: [DEXIE_KEY, 'offers'] })
     },
     onError: error => {
       logger.error('Failed to post offer:', error)
     },
   })
 
+  const inspectOfferWithPolling = async (offerString: string, maxAttempts: number = 30) => {
+    try {
+      isLoading.value = true
+      error.value = null
+
+      const validatedOfferString = validateOfferString(offerString)
+      const inspectionResult = await inspectOfferMutation.mutateAsync(validatedOfferString)
+
+      if (!inspectionResult.success || !inspectionResult.id)
+        throw new Error('Offer not found or invalid Dexie ID')
+
+      const dexieId = inspectionResult.id
+      let attempts = 0
+
+      const pollOfferStatus = async (): Promise<DexiePostOfferResponse> => {
+        const result = await getOfferByIdMutation.mutateAsync(dexieId)
+        const finalStates = [3, 4, 6]
+        if (finalStates.includes(result.offer.status)) {
+          return result
+        }
+
+        attempts++
+        if (attempts >= maxAttempts) {
+          logger.warn(`Offer polling timed out after ${maxAttempts} attempts`)
+          return result
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 20000))
+        return pollOfferStatus()
+      }
+
+      return await pollOfferStatus()
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const refreshTickers = async () => {
+    await queryClient.invalidateQueries({ queryKey: [DEXIE_KEY, TICKERS_KEY] })
+  }
+
+  const refreshPairs = async () => {
+    await queryClient.invalidateQueries({ queryKey: [DEXIE_KEY, PAIRS_KEY] })
+  }
+
+  const refreshOffers = async () => {
+    await queryClient.invalidateQueries({ queryKey: [DEXIE_KEY, 'offers'] })
+  }
+
   // Computed properties
   const offers = computed(() => [])
   const currentOffer = computed(() => null)
-  const isSearching = computed(() => isLoading.value)
-  const isInspecting = computed(() => isLoading.value)
-  const isPosting = computed(() => postOfferMutation.isPending.value)
 
   return {
-    // Queries
     tickersQuery,
     pairsQuery,
-    searchOffers,
-    inspectOffer,
-    getOfferById,
-    getTicker,
-    getOrderBook,
-    getHistoricalTrades,
-
-    // Mutations
-    postOfferMutation,
+    searchOffers: searchOffersMutation.mutateAsync,
+    inspectOffer: async (offerString: string) => {
+      const validatedOfferString = validateOfferString(offerString)
+      return await inspectOfferMutation.mutateAsync(validatedOfferString)
+    },
+    getOfferById: getOfferByIdMutation.mutateAsync,
+    getTicker: getTickerMutation.mutateAsync,
+    getOrderBook: ({ tickerId, depth }: { tickerId: string; depth?: number }) =>
+      getOrderBookMutation.mutateAsync({ tickerId, depth }),
+    getHistoricalTrades: ({ tickerId, limit }: { tickerId: string; limit?: number }) =>
+      getHistoricalTradesMutation.mutateAsync({ tickerId, limit }),
+    inspectOfferWithPolling,
     postOffer: postOfferMutation.mutateAsync,
+    refreshTickers,
+    refreshPairs,
+    refreshOffers,
+    validateOfferString,
+    searchOffersMutation,
+    inspectOfferMutation,
+    getOfferByIdMutation,
+    getTickerMutation,
+    getOrderBookMutation,
+    getHistoricalTradesMutation,
+    postOfferMutation,
 
-    // State
     offers,
     currentOffer,
-    isLoading: computed(() => isLoading.value),
+    isLoading: computed(
+      () =>
+        isLoading.value ||
+        searchOffersMutation.isPending.value ||
+        inspectOfferMutation.isPending.value ||
+        getOfferByIdMutation.isPending.value ||
+        getTickerMutation.isPending.value ||
+        getOrderBookMutation.isPending.value ||
+        getHistoricalTradesMutation.isPending.value ||
+        postOfferMutation.isPending.value
+    ),
     error: computed(() => error.value),
-    isSearching,
-    isInspecting,
-    isPosting,
+    isSearching: searchOffersMutation.isPending,
+    isInspecting: inspectOfferMutation.isPending,
+    isPosting: postOfferMutation.isPending,
+    isGettingOfferById: getOfferByIdMutation.isPending,
+    isGettingTicker: getTickerMutation.isPending,
+    isGettingOrderBook: getOrderBookMutation.isPending,
+    isGettingTrades: getHistoricalTradesMutation.isPending,
   }
 }
 
-// Utility functions for converting between Dexie and app formats
 export function convertDexieOfferToAppOffer(dexieResponse: DexiePostOfferResponse) {
   const dexieOffer = dexieResponse.offer
 
   return {
     id: dexieOffer.id,
     tradeId: dexieOffer.id,
-    offerString: '', // Not provided in response
+    offerString: '',
     status: convertDexieStatus(dexieOffer.status),
-    dexieStatus: dexieOffer.status, // Include raw Dexie status number
+    dexieStatus: dexieOffer.status,
     createdAt: new Date(dexieOffer.date_found),
     assetsOffered: dexieOffer.offered.map(convertDexieAsset),
     assetsRequested: dexieOffer.requested.map(convertDexieAsset),
@@ -329,9 +335,7 @@ export function convertDexieOfferToAppOffer(dexieResponse: DexiePostOfferRespons
 }
 
 export function convertDexieAsset(dexieAsset: DexieAsset) {
-  // Determine asset type based on ID
   const assetType = dexieAsset.id === 'xch' ? 'xch' : 'cat'
-
   return {
     assetId: dexieAsset.id,
     amount: dexieAsset.amount,
@@ -346,31 +350,27 @@ export function convertDexieStatus(
 ): 'pending' | 'active' | 'completed' | 'cancelled' | 'expired' | 'failed' {
   switch (status) {
     case 0:
-      return 'active' // Open
+      return 'active'
     case 1:
-      return 'pending' // Pending
+      return 'pending'
     case 2:
-      return 'pending' // Cancelling
+      return 'pending'
     case 3:
-      return 'cancelled' // Cancelled
+      return 'cancelled'
     case 4:
-      return 'completed' // Completed
+      return 'completed'
     case 5:
-      return 'failed' // Unknown
+      return 'failed'
     case 6:
-      return 'expired' // Expired
+      return 'expired'
     default:
       return 'failed'
   }
 }
 
 export function getDexieStatusDescription(status: number | string): string {
-  // Handle both legacy number status and new string state
-  if (typeof status === 'string') {
-    return status // Already a string state
-  }
+  if (typeof status === 'string') return status
 
-  // Legacy number status conversion
   switch (status) {
     case 0:
       return 'Open'
@@ -391,7 +391,6 @@ export function getDexieStatusDescription(status: number | string): string {
   }
 }
 
-// CAT token mapping utilities
 export function createCatTokenMap(tickers: DexieTicker[]): Map<string, CatTokenInfo> {
   const catMap = new Map<string, CatTokenInfo>()
 
