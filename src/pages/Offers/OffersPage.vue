@@ -301,11 +301,6 @@
           </button>
         </div>
       </div>
-
-      <!-- CAT Tokens List -->
-      <div class="mt-6">
-        <CatTokensList />
-      </div>
     </div>
 
     <!-- Create Offer Modal -->
@@ -349,7 +344,6 @@
 </template>
 
 <script setup lang="ts">
-  import CatTokensList from '@/components/Offers/CatTokensList.vue'
   import CreateOfferModal from '@/components/Offers/CreateOfferModal.vue'
   import OfferDetailsModal from '@/components/Offers/OfferDetailsModal.vue'
   import TakeOfferModal from '@/components/Offers/TakeOfferModal.vue'
@@ -434,7 +428,7 @@
     if (!offerToCancel.value) return
 
     isCancelling.value = true
-    cancelError.value = '' // Clear any previous errors
+    cancelError.value = ''
 
     try {
       await walletDataService.cancelOffer({
@@ -442,18 +436,11 @@
         fee: offerToCancel.value.fee,
       })
 
-      // Update the offer status locally
-      offerToCancel.value.status = 'cancelled'
-
-      // Update in IndexedDB
       await offerStorage.updateOffer(offerToCancel.value.id, { status: 'cancelled' })
-
       showCancelConfirmation.value = false
       offerToCancel.value = null
-    } catch {
-      // Failed to cancel offer
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
-      cancelError.value = `Failed to cancel offer: ${errorMsg}`
+    } catch (error) {
+      cancelError.value = `Failed to cancel offer: ${error}`
     } finally {
       isCancelling.value = false
     }

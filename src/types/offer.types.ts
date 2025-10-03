@@ -72,6 +72,9 @@ export interface OfferDetails {
   dateExpiry?: string
   blockExpiry?: number
   spentBlockIndex?: number
+
+  // Additional state indicators
+  knownTaker?: unknown // null = cancelled, not null = completed
 }
 
 export interface CreateOfferForm {
