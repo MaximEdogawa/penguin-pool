@@ -73,12 +73,16 @@
                         {{ formatAssetAmount(asset.amount, asset.type) }}
                       </span>
                       <span class="text-sm font-medium text-gray-600 dark:text-gray-300">
-                        {{ asset.symbol || asset.type.toUpperCase() }}
+                        {{
+                          asset.assetId
+                            ? getTickerSymbol(asset.assetId)
+                            : asset.symbol || asset.type.toUpperCase()
+                        }}
                       </span>
                     </div>
                     <div v-if="asset.assetId" class="mt-1">
                       <p class="text-xs text-gray-500 dark:text-gray-400 font-mono break-all">
-                        {{ asset.assetId }}
+                        {{ getTickerSymbol(asset.assetId) }}
                       </p>
                     </div>
                   </div>
@@ -110,12 +114,16 @@
                         {{ formatAssetAmount(asset.amount, asset.type) }}
                       </span>
                       <span class="text-sm font-medium text-gray-600 dark:text-gray-300">
-                        {{ asset.symbol || asset.type.toUpperCase() }}
+                        {{
+                          asset.assetId
+                            ? getTickerSymbol(asset.assetId)
+                            : asset.symbol || asset.type.toUpperCase()
+                        }}
                       </span>
                     </div>
                     <div v-if="asset.assetId" class="mt-1">
                       <p class="text-xs text-gray-500 dark:text-gray-400 font-mono break-all">
-                        {{ asset.assetId }}
+                        {{ getTickerSymbol(asset.assetId) }}
                       </p>
                     </div>
                   </div>
@@ -248,6 +256,7 @@
   import ConfirmationDialog from '@/components/Shared/ConfirmationDialog.vue'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
   import { useOfferStorage } from '@/shared/composables/useOfferStorage'
+  import { useTickerMapping } from '@/shared/composables/useTickerMapping'
   import { formatAssetAmount } from '@/shared/utils/chia-units'
   import type { OfferDetails } from '@/types/offer.types'
   import { ref } from 'vue'
@@ -268,6 +277,7 @@
   // Services
   const walletDataService = useWalletDataService()
   const offerStorage = useOfferStorage()
+  const { getTickerSymbol } = useTickerMapping()
 
   // State
   const isCancelling = ref(false)

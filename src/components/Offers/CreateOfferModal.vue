@@ -31,6 +31,7 @@
                 <div class="flex-1">
                   <select
                     v-model="asset.type"
+                    @change="clearAssetSelection(asset)"
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                   >
                     <option value="xch">XCH (Chia)</option>
@@ -39,12 +40,50 @@
                   </select>
                 </div>
                 <div class="flex-1">
+                  <!-- XCH Asset (no selection needed) -->
+                  <div
+                    v-if="asset.type === 'xch'"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 text-sm"
+                  >
+                    XCH (Chia)
+                  </div>
+
+                  <!-- CAT Token Searchable Dropdown -->
+                  <div v-else-if="asset.type === 'cat'" class="relative flex-2">
+                    <input
+                      v-model="asset.searchQuery"
+                      @focus="asset.showDropdown = true"
+                      @blur="setTimeout(() => (asset.showDropdown = false), 200)"
+                      type="text"
+                      placeholder="Search CAT tokens..."
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    />
+
+                    <!-- Dropdown -->
+                    <div
+                      v-if="asset.showDropdown && filteredCatTokens(asset.searchQuery).length > 0"
+                      class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                    >
+                      <div
+                        v-for="token in filteredCatTokens(asset.searchQuery)"
+                        :key="token.assetId"
+                        @click="selectCatToken(asset, token)"
+                        class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm"
+                      >
+                        <div class="font-medium text-gray-900 dark:text-white">
+                          {{ token.ticker }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- NFT Asset ID Input -->
                   <input
+                    v-else
                     v-model="asset.assetId"
                     type="text"
-                    :placeholder="asset.type === 'xch' ? 'XCH (leave empty)' : 'Asset ID'"
-                    :disabled="asset.type === 'xch'"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm disabled:bg-gray-100 dark:disabled:bg-gray-600"
+                    placeholder="NFT Asset ID"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                   />
                 </div>
                 <div class="flex-1">
@@ -58,7 +97,16 @@
                   />
                 </div>
                 <div class="flex-1">
+                  <!-- Auto-populated symbol for CAT tokens -->
+                  <div
+                    v-if="asset.type === 'cat' && asset.assetId"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm"
+                  >
+                    {{ getCatTokenInfo(asset.assetId).ticker }}
+                  </div>
+                  <!-- Manual symbol input for other types -->
                   <input
+                    v-else
                     v-model="asset.symbol"
                     type="text"
                     placeholder="Symbol (optional)"
@@ -96,6 +144,7 @@
                 <div class="flex-1">
                   <select
                     v-model="asset.type"
+                    @change="clearAssetSelection(asset)"
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                   >
                     <option value="xch">XCH (Chia)</option>
@@ -104,12 +153,50 @@
                   </select>
                 </div>
                 <div class="flex-1">
+                  <!-- XCH Asset (no selection needed) -->
+                  <div
+                    v-if="asset.type === 'xch'"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 text-sm"
+                  >
+                    XCH (Chia)
+                  </div>
+
+                  <!-- CAT Token Searchable Dropdown -->
+                  <div v-else-if="asset.type === 'cat'" class="relative flex-2">
+                    <input
+                      v-model="asset.searchQuery"
+                      @focus="asset.showDropdown = true"
+                      @blur="setTimeout(() => (asset.showDropdown = false), 200)"
+                      type="text"
+                      placeholder="Search CAT tokens..."
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    />
+
+                    <!-- Dropdown -->
+                    <div
+                      v-if="asset.showDropdown && filteredCatTokens(asset.searchQuery).length > 0"
+                      class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                    >
+                      <div
+                        v-for="token in filteredCatTokens(asset.searchQuery)"
+                        :key="token.assetId"
+                        @click="selectCatToken(asset, token)"
+                        class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm"
+                      >
+                        <div class="font-medium text-gray-900 dark:text-white">
+                          {{ token.ticker }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- NFT Asset ID Input -->
                   <input
+                    v-else
                     v-model="asset.assetId"
                     type="text"
-                    :placeholder="asset.type === 'xch' ? 'XCH (leave empty)' : 'Asset ID'"
-                    :disabled="asset.type === 'xch'"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm disabled:bg-gray-100 dark:disabled:bg-gray-600"
+                    placeholder="NFT Asset ID"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                   />
                 </div>
                 <div class="flex-1">
@@ -123,7 +210,16 @@
                   />
                 </div>
                 <div class="flex-1">
+                  <!-- Auto-populated symbol for CAT tokens -->
+                  <div
+                    v-if="asset.type === 'cat' && asset.assetId"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm"
+                  >
+                    {{ getCatTokenInfo(asset.assetId).ticker }}
+                  </div>
+                  <!-- Manual symbol input for other types -->
                   <input
+                    v-else
                     v-model="asset.symbol"
                     type="text"
                     placeholder="Symbol (optional)"
@@ -280,6 +376,7 @@
 <script setup lang="ts">
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
   import { useOfferStorage } from '@/shared/composables/useOfferStorage'
+  import { useTickerData } from '@/shared/composables/useTickerData'
   import { formatAssetAmount, xchToMojos } from '@/shared/utils/chia-units'
   import type { CreateOfferForm, OfferDetails } from '@/types/offer.types'
   import { computed, reactive, ref } from 'vue'
@@ -294,6 +391,7 @@
   // Services
   const walletDataService = useWalletDataService()
   const offerStorage = useOfferStorage()
+  const { availableCatTokens, getCatTokenInfo } = useTickerData()
 
   // Form state
   const form = reactive<CreateOfferForm>({
@@ -331,6 +429,8 @@
       amount: 0,
       type: 'xch',
       symbol: '',
+      searchQuery: '',
+      showDropdown: false,
     })
   }
 
@@ -344,11 +444,45 @@
       amount: 0,
       type: 'xch',
       symbol: '',
+      searchQuery: '',
+      showDropdown: false,
     })
   }
 
   const removeRequestedAsset = (index: number) => {
     form.assetsRequested.splice(index, 1)
+  }
+
+  // Search functionality
+  const filteredCatTokens = (searchQuery: string) => {
+    if (!searchQuery) return availableCatTokens.value
+    const query = searchQuery.toLowerCase()
+    return availableCatTokens.value.filter(
+      token =>
+        token.ticker.toLowerCase().includes(query) || token.name.toLowerCase().includes(query)
+    )
+  }
+
+  const selectCatToken = (
+    asset: { assetId: string; symbol: string; searchQuery: string; showDropdown: boolean },
+    token: { assetId: string; ticker: string }
+  ) => {
+    asset.assetId = token.assetId
+    asset.symbol = token.ticker
+    asset.searchQuery = token.ticker
+    asset.showDropdown = false
+  }
+
+  const clearAssetSelection = (asset: {
+    assetId: string
+    symbol: string
+    searchQuery: string
+    showDropdown: boolean
+  }) => {
+    asset.assetId = ''
+    asset.symbol = ''
+    asset.searchQuery = ''
+    asset.showDropdown = false
   }
 
   const handleSubmit = async () => {
