@@ -29,7 +29,7 @@
 
     <div class="content-body">
       <!-- Offers List -->
-      <div class="card p-4 sm:p-6">
+      <div class="card p-4 sm:p-6 pb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">My Offers</h2>
           <div class="flex items-center space-x-2">
@@ -196,11 +196,11 @@
         </div>
 
         <!-- Mobile Card View -->
-        <div v-if="offers.length > 0" class="md:hidden space-y-4">
+        <div v-if="offers.length > 0" class="md:hidden space-y-4 pb-8">
           <div
             v-for="offer in filteredOffers"
             :key="offer.id"
-            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4"
           >
             <!-- Header with Offer String and Status -->
             <div class="flex items-center justify-between mb-3">
@@ -329,6 +329,7 @@
       @close="selectedOffer = null"
       @offer-cancelled="handleOfferCancelled"
       @offer-deleted="handleOfferDeleted"
+      @offer-updated="handleOfferUpdated"
     />
 
     <!-- Cancel Confirmation Dialog -->
@@ -407,6 +408,10 @@
         assetsRequested: storedOffer.assetsRequested,
         fee: storedOffer.fee,
         creatorAddress: storedOffer.creatorAddress,
+        dexieOfferId: storedOffer.dexieOfferId,
+        dexieStatus: storedOffer.dexieStatus,
+        uploadedToDexie: storedOffer.uploadedToDexie,
+        dexieOfferData: storedOffer.dexieOfferData,
       }))
     } catch {
       // Failed to refresh offers
@@ -488,6 +493,19 @@
       offers.value.splice(index, 1)
     }
     selectedOffer.value = null
+  }
+
+  const handleOfferUpdated = (offer: OfferDetails) => {
+    const existingOffer = offers.value.find(o => o.id === offer.id)
+    if (existingOffer) {
+      // Update the existing offer with new data
+      Object.assign(existingOffer, offer)
+    }
+    // Update the selected offer to reflect changes in the modal
+    if (selectedOffer.value && selectedOffer.value.id === offer.id) {
+      Object.assign(selectedOffer.value, offer)
+    }
+    // Don't close the modal - let user see the success message
   }
 
   const getStatusClass = (status: string) => {

@@ -25,6 +25,16 @@
               >
                 {{ offer.status.toUpperCase() }}
               </span>
+              <span
+                v-if="
+                  offer.uploadedToDexie &&
+                  offer.dexieStatus !== undefined &&
+                  offer.dexieStatus !== null
+                "
+                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
+              >
+                Dexie: {{ getDexieStatusDescription(offer.dexieStatus || 0) }}
+              </span>
             </div>
             <div class="flex flex-col sm:items-end">
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">Offer ID</p>
@@ -165,7 +175,9 @@
               <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Transaction Fee
               </h4>
-              <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ offer.fee }} XCH</p>
+              <p class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ offer.fee || 0 }} XCH
+              </p>
             </div>
             <div>
               <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Created</h4>
@@ -178,7 +190,7 @@
                 Creator Address
               </h4>
               <p class="text-sm text-gray-900 dark:text-white font-mono break-all">
-                {{ offer.creatorAddress }}
+                {{ offer.creatorAddress || 'Unknown' }}
               </p>
             </div>
             <div v-if="offer.expiresAt">
@@ -218,6 +230,109 @@
               <i v-else class="pi pi-times mr-1.5 text-xs"></i>
               {{ isCancelling ? 'Cancelling...' : 'Cancel' }}
             </button>
+            <!-- Show upload button if no Dexie ID -->
+            <button
+              v-if="!offer.dexieOfferId && offer.offerString"
+              @click="uploadToDexie"
+              :disabled="isUploading"
+              class="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-medium rounded-md transition-colors duration-200 flex items-center"
+            >
+              <i v-if="isUploading" class="pi pi-spin pi-spinner mr-1.5 text-xs"></i>
+              <i v-else class="pi pi-upload mr-1.5 text-xs"></i>
+              {{ isUploading ? 'Uploading...' : 'Upload to Dexie' }}
+            </button>
+
+            <!-- Show Dexie actions if ID exists -->
+            <template v-if="offer.dexieOfferId">
+              <button
+                @click="handleValidateOfferState"
+                :disabled="isValidating"
+                class="px-3 py-1.5 text-sm bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-medium rounded-md transition-colors duration-200 flex items-center"
+              >
+                <i v-if="isValidating" class="pi pi-spin pi-spinner mr-1.5 text-xs"></i>
+                <i v-else class="pi pi-refresh mr-1.5 text-xs"></i>
+                {{ isValidating ? 'Validating...' : 'Validate State' }}
+              </button>
+              <button
+                @click="
+                  isStateValidating ? handleStopStateValidation() : handleStartStateValidation()
+                "
+                :disabled="isValidating"
+                class="px-3 py-1.5 text-sm bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white font-medium rounded-md transition-colors duration-200 flex items-center"
+              >
+                <i v-if="isStateValidating" class="pi pi-spin pi-spinner mr-1.5 text-xs"></i>
+                <i v-else class="pi pi-play mr-1.5 text-xs"></i>
+                {{ isStateValidating ? 'Stop Monitoring' : 'Monitor State' }}
+              </button>
+              <a
+                :href="`https://testnet.dexie.space/offers/${offer.dexieOfferId}`"
+                target="_blank"
+                class="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-colors duration-200 flex items-center"
+              >
+                <i class="pi pi-external-link mr-1.5 text-xs"></i>
+                View on Dexie
+              </a>
+            </template>
+          </div>
+
+          <!-- Upload Success Display -->
+          <div
+            v-if="offer.dexieOfferId"
+            class="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md"
+          >
+            <div class="flex items-start">
+              <i class="pi pi-check-circle text-green-500 mr-3 mt-0.5"></i>
+              <div class="flex-1">
+                <h4 class="text-sm font-medium text-green-800 dark:text-green-300 mb-2">
+                  ✅ Successfully uploaded to Dexie!
+                </h4>
+                <p class="text-sm text-green-700 dark:text-green-300 mb-3">
+                  Your offer is now live on the Dexie marketplace and can be discovered by other
+                  traders.
+                </p>
+                <a
+                  :href="`https://testnet.dexie.space/offers/${offer.dexieOfferId}`"
+                  target="_blank"
+                  class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200"
+                >
+                  <i class="pi pi-external-link mr-2"></i>
+                  View on Dexie.space
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload Error Display -->
+          <div
+            v-if="uploadError"
+            class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md"
+          >
+            <div class="flex items-center">
+              <i class="pi pi-exclamation-triangle text-red-500 mr-2"></i>
+              <span class="text-sm text-red-700 dark:text-red-300">{{ uploadError }}</span>
+            </div>
+          </div>
+
+          <!-- Validation Error Display -->
+          <div
+            v-if="validationError"
+            class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md"
+          >
+            <div class="flex items-center">
+              <i class="pi pi-exclamation-triangle text-red-500 mr-2"></i>
+              <span class="text-sm text-red-700 dark:text-red-300">{{ validationError }}</span>
+            </div>
+          </div>
+
+          <!-- State Validation Error Display -->
+          <div
+            v-if="stateValidationError"
+            class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md"
+          >
+            <div class="flex items-center">
+              <i class="pi pi-exclamation-triangle text-red-500 mr-2"></i>
+              <span class="text-sm text-red-700 dark:text-red-300">{{ stateValidationError }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -255,10 +370,16 @@
 <script setup lang="ts">
   import ConfirmationDialog from '@/components/Shared/ConfirmationDialog.vue'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
+  import { useOfferInspection } from '@/shared/composables/useOfferInspection'
+  import { useOfferStateValidation } from '@/shared/composables/useOfferStateValidation'
   import { useOfferStorage } from '@/shared/composables/useOfferStorage'
+  import { useOfferValidation } from '@/shared/composables/useOfferValidation'
   import { useTickerMapping } from '@/shared/composables/useTickerMapping'
+  import { calculateOfferState } from '@/shared/repositories/DexieRepository'
+  import { getDexieStatusDescription } from '@/shared/services/DexieDataService'
   import { formatAssetAmount } from '@/shared/utils/chia-units'
   import type { OfferDetails } from '@/types/offer.types'
+  import { convertOfferStateToStatus } from '@/types/offer.types'
   import { ref } from 'vue'
 
   interface Props {
@@ -269,6 +390,7 @@
     (e: 'close'): void
     (e: 'offer-cancelled', offer: OfferDetails): void
     (e: 'offer-deleted', offer: OfferDetails): void
+    (e: 'offer-updated', offer: OfferDetails): void
   }
 
   const props = defineProps<Props>()
@@ -278,18 +400,29 @@
   const walletDataService = useWalletDataService()
   const offerStorage = useOfferStorage()
   const { getTickerSymbol } = useTickerMapping()
+  const { postOffer } = useOfferInspection()
+  const { validateOfferState } = useOfferValidation()
+  const { startValidation, stopValidation, shouldContinueValidation } = useOfferStateValidation()
 
   // State
   const isCancelling = ref(false)
   const isDeleting = ref(false)
+  const isUploading = ref(false)
+  const isValidating = ref(false)
+  const isStateValidating = ref(false)
   const isCopied = ref(false)
   const showCancelConfirmation = ref(false)
   const showDeleteConfirmation = ref(false)
   const cancelError = ref('')
   const deleteError = ref('')
+  const uploadError = ref('')
+  const validationError = ref('')
+  const stateValidationError = ref('')
 
   // Methods
-  const getStatusClass = (status: string) => {
+  const getStatusClass = (status: string | undefined | null) => {
+    if (!status) return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300'
+
     const classes = {
       pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300',
       active: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300',
@@ -300,8 +433,13 @@
     return classes[status as keyof typeof classes] || classes.pending
   }
 
-  const formatDate = (date: Date) => {
-    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`
+  const formatDate = (date: Date | undefined | null) => {
+    if (!date) return 'Unknown'
+    try {
+      return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`
+    } catch {
+      return 'Invalid Date'
+    }
   }
 
   const copyOfferString = async () => {
@@ -390,4 +528,167 @@
       isDeleting.value = false
     }
   }
+
+  const uploadToDexie = async () => {
+    if (!props.offer.offerString) {
+      uploadError.value = 'No offer string available to upload'
+      return
+    }
+
+    isUploading.value = true
+    uploadError.value = ''
+
+    try {
+      // Step 1: Upload offer to Dexie
+      const uploadResult = await postOffer({
+        offer: props.offer.offerString,
+        drop_only: false,
+        claim_rewards: false,
+      })
+
+      if (!uploadResult || !uploadResult.success) {
+        uploadError.value = 'Failed to upload offer to Dexie - no success response'
+        return
+      }
+
+      // Step 2: Extract offer data from the response
+      const dexieOfferId = uploadResult.id
+      const dexieOfferData = uploadResult.offer
+
+      if (!dexieOfferId || !dexieOfferData) {
+        uploadError.value = 'Upload successful but no offer ID or data returned'
+        return
+      }
+
+      // Step 3: Calculate state from the offer data
+      const calculatedState = calculateOfferState(dexieOfferData)
+
+      // Step 4: Update the offer in IndexedDB with Dexie information
+      await offerStorage.updateOffer(props.offer.id, {
+        dexieOfferId: dexieOfferId,
+        dexieStatus: calculatedState,
+        uploadedToDexie: true,
+        // Store additional Dexie data for future reference
+        dexieOfferData: dexieOfferData,
+      })
+
+      // Emit event to update parent component
+      const updatedOffer = {
+        ...props.offer,
+        dexieOfferId: dexieOfferId,
+        dexieStatus: calculatedState,
+        uploadedToDexie: true,
+        dexieOfferData: dexieOfferData,
+      }
+      emit('offer-updated', updatedOffer)
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
+      uploadError.value = `Failed to upload to Dexie: ${errorMsg}`
+    } finally {
+      isUploading.value = false
+    }
+  }
+
+  const handleValidateOfferState = async () => {
+    if (!props.offer.dexieOfferId) {
+      validationError.value = 'No Dexie offer ID available for validation'
+      return
+    }
+
+    isValidating.value = true
+    validationError.value = ''
+
+    try {
+      const result = await validateOfferState(props.offer.dexieOfferId)
+
+      if (result && result.success && result.offer) {
+        // Calculate state from date fields instead of using status field
+        const calculatedState = calculateOfferState(result.offer)
+
+        // Update the offer with the latest Dexie status
+        await offerStorage.updateOffer(props.offer.id, {
+          dexieStatus: calculatedState,
+          status: convertOfferStateToAppStatus(calculatedState),
+        })
+
+        // Emit event to update parent component
+        const updatedOffer = {
+          ...props.offer,
+          dexieStatus: calculatedState,
+          status: convertOfferStateToAppStatus(calculatedState),
+        }
+        emit('offer-updated', updatedOffer)
+      } else {
+        validationError.value = 'Failed to validate offer state - no data returned'
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
+      validationError.value = `Failed to validate offer: ${errorMsg}`
+    } finally {
+      isValidating.value = false
+    }
+  }
+
+  const handleStartStateValidation = async () => {
+    if (!props.offer.dexieOfferId) {
+      stateValidationError.value = 'No Dexie offer ID available for state validation'
+      return
+    }
+
+    isStateValidating.value = true
+    stateValidationError.value = ''
+
+    try {
+      // Start the continuous validation with callbacks
+      await startValidation(
+        props.offer.dexieOfferId,
+        // onUpdate callback
+        data => {
+          if (data && data.success && data.offer) {
+            // Calculate state from date fields instead of using status field
+            const calculatedState = calculateOfferState(data.offer)
+
+            // Update the offer with the latest status
+            offerStorage.updateOffer(props.offer.id, {
+              dexieStatus: calculatedState,
+              status: convertOfferStateToAppStatus(calculatedState),
+            })
+
+            // Emit event to update parent component
+            const updatedOffer = {
+              ...props.offer,
+              dexieStatus: calculatedState,
+              status: convertOfferStateToAppStatus(calculatedState),
+            }
+            emit('offer-updated', updatedOffer)
+
+            // Check if we should stop validation
+            if (!shouldContinueValidation(calculatedState)) {
+              stopValidation(props.offer.dexieOfferId)
+              isStateValidating.value = false
+            }
+          }
+        },
+        // onError callback
+        error => {
+          stateValidationError.value = `State validation error: ${error.message}`
+          isStateValidating.value = false
+        }
+      )
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
+      stateValidationError.value = `Failed to start state validation: ${errorMsg}`
+      isStateValidating.value = false
+    }
+  }
+
+  const handleStopStateValidation = () => {
+    if (props.offer.dexieOfferId) {
+      stopValidation(props.offer.dexieOfferId)
+    }
+    isStateValidating.value = false
+    stateValidationError.value = ''
+  }
+
+  const convertOfferStateToAppStatus = convertOfferStateToStatus
 </script>

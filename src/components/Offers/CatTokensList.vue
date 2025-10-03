@@ -2,7 +2,7 @@
   <div class="content-page">
     <div class="content-body">
       <!-- CAT Tokens List -->
-      <div class="card p-4 sm:p-6">
+      <div class="card w-full p-4 sm:p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
             Available CAT Tokens

@@ -89,12 +89,112 @@ export interface DexieOfferSearchParams {
   status?: number
 }
 
+export interface DexieAsset {
+  id: string
+  code: string
+  name: string
+  amount: number
+}
+
+export interface DexieOffer {
+  id: string
+  status: number // Legacy field - we'll calculate state from dates instead
+  date_found: string
+  date_completed?: string | null
+  date_pending?: string | null
+  date_expiry?: string | null
+  block_expiry?: number | null
+  spent_block_index?: number | null
+  price: number
+  offered: DexieAsset[]
+  requested: DexieAsset[]
+  fees: number
+}
+
 export interface DexieOfferSearchResponse {
   success: boolean
-  data: unknown[]
+  data: DexieOffer[] | unknown[]
   total: number
   page: number
   page_size: number
+}
+
+export type OfferState =
+  | 'Open'
+  | 'Pending'
+  | 'Cancelling'
+  | 'Cancelled'
+  | 'Completed'
+  | 'Unknown'
+  | 'Expired'
+
+/**
+ * Calculate offer state based on date fields according to the specified logic:
+ * - Completed: if date_completed exists
+ * - Cancelled: if spent_block_index exists
+ * - Pending: if date_pending exists
+ * - Expired: if date_expiry or block_expiry after date_found
+ * - Open: if there is a date_found but no completed date or date_found is smaller than date_expiry
+ * - Unknown: if every date is null
+ * - Cancelling: (to be researched)
+ */
+export function calculateOfferState(offer: DexieOffer): OfferState {
+  const dateFound = offer.date_found ? new Date(offer.date_found) : null
+  const dateCompleted = offer.date_completed ? new Date(offer.date_completed) : null
+  const datePending = offer.date_pending ? new Date(offer.date_pending) : null
+  const dateExpiry = offer.date_expiry ? new Date(offer.date_expiry) : null
+  const blockExpiry = offer.block_expiry
+  const spentBlockIndex = offer.spent_block_index
+
+  // Completed: if date_completed exists
+  if (dateCompleted) {
+    return 'Completed'
+  }
+
+  // Cancelled: if spent_block_index exists
+  if (spentBlockIndex !== null && spentBlockIndex !== undefined) {
+    return 'Cancelled'
+  }
+
+  // Pending: if date_pending exists
+  if (datePending) {
+    return 'Pending'
+  }
+
+  // Expired: if date_expiry or block_expiry after date_found
+  if (dateFound) {
+    if (dateExpiry && dateExpiry < dateFound) {
+      return 'Expired'
+    }
+    if (blockExpiry !== null && blockExpiry !== undefined) {
+      return 'Expired'
+    }
+  }
+
+  // Open: if there is a date_found but no completed date or date_found is smaller than date_expiry
+  if (dateFound && !dateCompleted) {
+    // Check if date_found is smaller than date_expiry (if date_expiry exists)
+    if (dateExpiry && dateFound < dateExpiry) {
+      return 'Open'
+    } else if (!dateExpiry) {
+      return 'Open'
+    }
+  }
+
+  // Unknown: if every date is null
+  if (
+    !dateFound &&
+    !dateCompleted &&
+    !datePending &&
+    !dateExpiry &&
+    blockExpiry === null &&
+    spentBlockIndex === null
+  ) {
+    return 'Unknown'
+  }
+
+  // Default fallback
+  return 'Unknown'
 }
 
 export interface DexiePostOfferParams {
@@ -105,22 +205,9 @@ export interface DexiePostOfferParams {
 
 export interface DexiePostOfferResponse {
   success: boolean
-  data: {
-    offer_id: string
-    status: string
-  }
-}
-
-export interface DexieInspectOfferResponse {
-  success: boolean
-  data: {
-    offer_id: string
-    status: number
-    offered: unknown[]
-    requested: unknown[]
-    fees: number
-    date_found: string
-  }
+  id: string
+  known: boolean
+  offer: DexieOffer
 }
 
 /**
@@ -278,10 +365,27 @@ export class DexieRepository {
       }
 
       const data = await response.json()
+
+      // Handle different response structures
+      let offersData: unknown[] = []
+      if (Array.isArray(data)) {
+        // Direct array response
+        offersData = data
+      } else if (data && typeof data === 'object') {
+        // Object response - check for nested arrays
+        if (Array.isArray(data.data)) {
+          offersData = data.data
+        } else if (Array.isArray(data.offers)) {
+          offersData = data.offers
+        } else if (Array.isArray(data.results)) {
+          offersData = data.results
+        }
+      }
+
       return {
         success: true,
-        data: data.data || data,
-        total: data.total || 0,
+        data: offersData,
+        total: data.total || offersData.length,
         page: data.page || 1,
         page_size: data.page_size || 10,
       }
@@ -294,7 +398,7 @@ export class DexieRepository {
   /**
    * Inspect a specific offer by offer string
    */
-  async inspectOffer(offerString: string): Promise<DexieInspectOfferResponse> {
+  async inspectOffer(offerString: string): Promise<DexiePostOfferResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/v1/offers`, {
         method: 'POST',
@@ -311,8 +415,10 @@ export class DexieRepository {
 
       const data = await response.json()
       return {
-        success: true,
-        data: data.data || data,
+        success: data.success,
+        id: data.id,
+        known: data.known,
+        offer: data.offer,
       }
     } catch (error) {
       logger.error('Failed to inspect offer:', error)
@@ -323,7 +429,7 @@ export class DexieRepository {
   /**
    * Get offer by ID
    */
-  async getOfferById(offerId: string): Promise<DexieInspectOfferResponse> {
+  async getOfferById(offerId: string): Promise<DexiePostOfferResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/v1/offers/${offerId}`)
 
@@ -333,8 +439,10 @@ export class DexieRepository {
 
       const data = await response.json()
       return {
-        success: true,
-        data: data.data || data,
+        success: data.success,
+        id: data.offer.id, // Extract ID from the offer object
+        known: true, // GET requests are always "known" since we're fetching by ID
+        offer: data.offer,
       }
     } catch (error) {
       logger.error('Failed to fetch offer by ID:', error)
@@ -362,8 +470,10 @@ export class DexieRepository {
 
       const data = await response.json()
       return {
-        success: true,
-        data: data.data || data,
+        success: data.success,
+        id: data.id,
+        known: data.known,
+        offer: data.offer,
       }
     } catch (error) {
       logger.error('Failed to post offer:', error)

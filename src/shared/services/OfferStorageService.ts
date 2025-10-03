@@ -18,6 +18,16 @@ export class OfferStorageService {
     walletAddress?: string
   ): Promise<StoredOffer> {
     try {
+      // Check if offer already exists
+      const existingOffer = await db.offers.where('id').equals(offer.id).first()
+
+      if (existingOffer) {
+        logger.info('⚠️ Offer already exists, updating instead of creating:', { offerId: offer.id })
+        // Update existing offer instead of creating duplicate
+        await this.updateOffer(offer.id, offer)
+        return { ...existingOffer, ...offer, id: offer.id }
+      }
+
       const storedOffer: StoredOffer = {
         ...offer,
         lastModified: new Date(),
@@ -62,10 +72,49 @@ export class OfferStorageService {
   }
 
   /**
+   * Remove duplicate offers (keep the most recent one)
+   */
+  async removeDuplicates(): Promise<void> {
+    try {
+      const allOffers = await db.offers.toArray()
+      const offerGroups = new Map<string, StoredOffer[]>()
+
+      // Group offers by their ID
+      allOffers.forEach(offer => {
+        if (!offerGroups.has(offer.id)) {
+          offerGroups.set(offer.id, [])
+        }
+        offerGroups.get(offer.id)!.push(offer)
+      })
+
+      // Remove duplicates, keeping the most recent
+      for (const [offerId, offers] of offerGroups) {
+        if (offers.length > 1) {
+          // Sort by lastModified, keep the most recent
+          offers.sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime())
+          const duplicatesToRemove = offers.slice(1)
+
+          // Remove duplicates
+          for (const duplicate of duplicatesToRemove) {
+            await db.offers.delete(duplicate.id as number)
+            logger.info('🗑️ Removed duplicate offer:', { offerId, duplicateId: duplicate.id })
+          }
+        }
+      }
+    } catch (error) {
+      logger.error('❌ Failed to remove duplicates:', error)
+      throw error
+    }
+  }
+
+  /**
    * Get all offers with optional filtering
    */
   async getOffers(options: OfferStorageOptions = {}): Promise<StoredOffer[]> {
     try {
+      // Remove duplicates before fetching
+      await this.removeDuplicates()
+
       let query = db.offers.orderBy('lastModified').reverse()
 
       // Filter by wallet address if provided

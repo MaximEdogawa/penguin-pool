@@ -4,6 +4,7 @@ import {
   dexieRepository,
   type DexieOfferSearchParams,
   type DexiePairsResponse,
+  type DexiePostOfferResponse,
   type DexieTicker,
   type DexieTickerResponse,
 } from '../repositories/DexieRepository'
@@ -20,6 +21,7 @@ export interface DexieOfferResponse {
 export interface DexieOffer {
   id: string
   status: number // 0=Open, 1=Pending, 2=Cancelling, 3=Cancelled, 4=Completed, 5=Unknown, 6=Expired
+  involved_coins: string[]
   date_found: string
   date_completed?: string
   date_pending?: string
@@ -30,6 +32,13 @@ export interface DexieOffer {
   offered: DexieAsset[]
   requested: DexieAsset[]
   fees: number
+  mempool?: unknown
+  related_offers: unknown[]
+  mod_version: number
+  trade_id: string
+  known_taker?: unknown
+  input_coins: Record<string, unknown[]>
+  output_coins: Record<string, unknown[]>
 }
 
 export interface DexieAsset {
@@ -54,14 +63,6 @@ export interface DexiePostOfferParams {
   offer: string
   drop_only?: boolean
   claim_rewards?: boolean
-}
-
-export interface DexiePostOfferResponse {
-  success: boolean
-  data: {
-    offer_id: string
-    status: string
-  }
 }
 
 // CAT token mapping for human-readable names
@@ -311,7 +312,7 @@ export function useDexieDataService() {
 }
 
 // Utility functions for converting between Dexie and app formats
-export function convertDexieOfferToAppOffer(dexieResponse: DexieOfferResponse) {
+export function convertDexieOfferToAppOffer(dexieResponse: DexiePostOfferResponse) {
   const dexieOffer = dexieResponse.offer
 
   return {
@@ -363,7 +364,13 @@ export function convertDexieStatus(
   }
 }
 
-export function getDexieStatusDescription(status: number): string {
+export function getDexieStatusDescription(status: number | string): string {
+  // Handle both legacy number status and new string state
+  if (typeof status === 'string') {
+    return status // Already a string state
+  }
+
+  // Legacy number status conversion
   switch (status) {
     case 0:
       return 'Open'
