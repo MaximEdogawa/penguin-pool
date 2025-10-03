@@ -120,6 +120,32 @@ export function formatAssetAmount(
 }
 
 /**
+ * Format asset amount with ticker symbol for display
+ * @param amount - Amount to format
+ * @param assetId - Asset ID to get ticker symbol for
+ * @param assetType - Type of asset ('xch', 'cat', 'nft')
+ * @param precision - Number of decimal places for XCH (default: 6)
+ * @returns Formatted string with ticker symbol
+ */
+export function formatAssetAmountWithTicker(
+  amount: AssetAmount,
+  assetId: string,
+  assetType: AssetType,
+  precision: number = 6
+): string {
+  const formattedAmount = formatAssetAmount(amount, assetType, precision)
+
+  // For XCH, always show XCH
+  if (assetType.toLowerCase() === 'xch') {
+    return `${formattedAmount} XCH`
+  }
+
+  // For other assets, we'll need to get the ticker symbol from the mapping
+  // This will be enhanced when the ticker mapping is available
+  return `${formattedAmount} ${assetId.slice(0, 8)}...`
+}
+
+/**
  * Format asset amount from smallest unit to display unit
  * @param amount - Amount in smallest unit (mojos for XCH, whole units for CAT/NFT)
  * @param assetType - Type of asset ('xch', 'cat', 'nft')

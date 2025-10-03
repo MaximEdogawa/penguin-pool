@@ -1,8 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { computed, ref } from 'vue'
+import {
+  dexieRepository,
+  type DexieOfferSearchParams,
+  type DexiePairsResponse,
+  type DexieTicker,
+  type DexieTickerResponse,
+} from '../repositories/DexieRepository'
 import { logger } from './logger'
 
-// Dexie API types based on documentation
+// Legacy types for backward compatibility
 export interface DexieOfferResponse {
   success: boolean
   id: string
@@ -50,212 +57,256 @@ export interface DexiePostOfferParams {
 }
 
 export interface DexiePostOfferResponse {
-  id: string
-  offer: string
-  status: number
-  created_at: string
-  maker_address: string
-  maker_assets: DexieAsset[]
-  taker_assets: DexieAsset[]
-  fee: number
+  success: boolean
+  data: {
+    offer_id: string
+    status: string
+  }
 }
 
-// Environment configuration
-const DEXIE_API_BASE_URL =
-  import.meta.env.VITE_DEXIE_API_URL || 'https://api-testnet.dexie.space/v1'
+// CAT token mapping for human-readable names
+export interface CatTokenInfo {
+  assetId: string
+  ticker: string
+  name: string
+  symbol: string
+}
 
 export function useDexieDataService() {
   const queryClient = useQueryClient()
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // Search offers query - using queryClient.fetchQuery for dynamic search params
-  // No static query needed since we pass search params dynamically
+  // Tickers query - invalidates once per day
+  const tickersQuery = {
+    queryKey: ['dexie', 'tickers'],
+    queryFn: async (): Promise<DexieTickerResponse> => {
+      return await dexieRepository.getAllTickers()
+    },
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours
+    gcTime: 24 * 60 * 60 * 1000, // 24 hours
+  }
 
-  // Inspect offer query - using queryClient.fetchQuery for dynamic offer strings
-  // No static query needed since we pass offerString dynamically
+  // Pairs query
+  const pairsQuery = {
+    queryKey: ['dexie', 'pairs'],
+    queryFn: async (): Promise<DexiePairsResponse> => {
+      return await dexieRepository.getAllPairs()
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  }
 
-  // Post offer mutation
-  const postOfferMutation = useMutation({
-    mutationFn: async (params: DexiePostOfferParams) => {
+  // Search offers query
+  const searchOffers = async (params: DexieOfferSearchParams = {}) => {
+    try {
       isLoading.value = true
       error.value = null
 
-      try {
-        const url = `${DEXIE_API_BASE_URL}/offers`
+      const result = await queryClient.fetchQuery({
+        queryKey: ['dexie', 'offers', 'search', params],
+        queryFn: async ({ queryKey }) => {
+          const params = (queryKey[3] as DexieOfferSearchParams) || {}
+          return await dexieRepository.searchOffers(params)
+        },
+        staleTime: 30 * 1000, // 30 seconds
+      })
 
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(params),
-        })
+      return result
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
 
-        if (!response.ok) {
-          throw new Error(`Dexie API error: ${response.status} ${response.statusText}`)
-        }
+  // Inspect offer query
+  const inspectOffer = async (offerString: string) => {
+    try {
+      isLoading.value = true
+      error.value = null
 
-        const data = await response.json()
-        return data as DexiePostOfferResponse
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to post offer'
-        error.value = errorMessage
-        logger.error('❌ Dexie offer posting failed:', err)
-        throw err
-      } finally {
-        isLoading.value = false
+      // Basic validation
+      if (!offerString || offerString.trim().length === 0) {
+        throw new Error('Offer string cannot be empty')
       }
+
+      const cleanOffer = offerString.trim()
+
+      // Check minimum length for complete offers
+      if (cleanOffer.length < 50) {
+        throw new Error('Offer string too short')
+      }
+
+      // Check if it looks like a valid offer string
+      const isBase64 = /^[A-Za-z0-9+/]*={0,2}$/.test(cleanOffer)
+      const startsWithOffer = cleanOffer.startsWith('offer')
+
+      if (!isBase64 && !startsWithOffer) {
+        throw new Error('Invalid offer format')
+      }
+
+      const result = await queryClient.fetchQuery({
+        queryKey: ['dexie', 'offers', 'inspect', offerString],
+        queryFn: async ({ queryKey }) => {
+          const offerString = queryKey[3] as string
+          return await dexieRepository.inspectOffer(offerString)
+        },
+        staleTime: 5 * 60 * 1000, // 5 minutes
+      })
+
+      return result
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Get offer by ID
+  const getOfferById = async (offerId: string) => {
+    try {
+      isLoading.value = true
+      error.value = null
+
+      const result = await queryClient.fetchQuery({
+        queryKey: ['dexie', 'offers', 'by-id', offerId],
+        queryFn: async ({ queryKey }) => {
+          const offerId = queryKey[3] as string
+          return await dexieRepository.getOfferById(offerId)
+        },
+        staleTime: 5 * 60 * 1000, // 5 minutes
+      })
+
+      return result
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Get ticker by ID
+  const getTicker = async (tickerId: string) => {
+    try {
+      isLoading.value = true
+      error.value = null
+
+      const result = await queryClient.fetchQuery({
+        queryKey: ['dexie', 'ticker', tickerId],
+        queryFn: async ({ queryKey }) => {
+          const tickerId = queryKey[2] as string
+          return await dexieRepository.getTicker(tickerId)
+        },
+        staleTime: 5 * 60 * 1000, // 5 minutes
+      })
+
+      return result
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Get order book
+  const getOrderBook = async (tickerId: string, depth: number = 10) => {
+    try {
+      isLoading.value = true
+      error.value = null
+
+      const result = await queryClient.fetchQuery({
+        queryKey: ['dexie', 'orderbook', tickerId, depth],
+        queryFn: async ({ queryKey }) => {
+          const tickerId = queryKey[2] as string
+          const depth = (queryKey[3] as number) || 10
+          return await dexieRepository.getOrderBook(tickerId, depth)
+        },
+        staleTime: 30 * 1000, // 30 seconds
+      })
+
+      return result
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Get historical trades
+  const getHistoricalTrades = async (tickerId: string, limit: number = 100) => {
+    try {
+      isLoading.value = true
+      error.value = null
+
+      const result = await queryClient.fetchQuery({
+        queryKey: ['dexie', 'trades', tickerId, limit],
+        queryFn: async ({ queryKey }) => {
+          const tickerId = queryKey[2] as string
+          const limit = (queryKey[3] as number) || 100
+          return await dexieRepository.getHistoricalTrades(tickerId, limit)
+        },
+        staleTime: 5 * 60 * 1000, // 5 minutes
+      })
+
+      return result
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Unknown error'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Post offer mutation
+  const postOfferMutation = useMutation({
+    mutationFn: async (params: DexiePostOfferParams): Promise<DexiePostOfferResponse> => {
+      return await dexieRepository.postOffer(params)
+    },
+    onSuccess: data => {
+      logger.info('Offer posted successfully:', data)
+      // Invalidate offers queries to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['dexie', 'offers'] })
+    },
+    onError: error => {
+      logger.error('Failed to post offer:', error)
     },
   })
 
-  // Helper methods
-  const searchOffers = async (params: DexieSearchParams = {}) => {
-    return await queryClient.fetchQuery({
-      queryKey: ['dexie', 'offers', 'search', params],
-      queryFn: async ({ queryKey }) => {
-        const params = (queryKey[3] as DexieSearchParams) || {}
-        isLoading.value = true
-        error.value = null
-
-        try {
-          const searchParams = new URLSearchParams()
-
-          if (params.maker_address) searchParams.append('maker_address', params.maker_address)
-          if (params.taker_address) searchParams.append('taker_address', params.taker_address)
-          if (params.asset_id) searchParams.append('asset_id', params.asset_id)
-          if (params.status !== undefined) searchParams.append('status', params.status.toString())
-          if (params.limit) searchParams.append('limit', params.limit.toString())
-          if (params.offset) searchParams.append('offset', params.offset.toString())
-          if (params.sort_by) searchParams.append('sort_by', params.sort_by)
-          if (params.sort_order) searchParams.append('sort_order', params.sort_order)
-
-          const url = `${DEXIE_API_BASE_URL}/offers?${searchParams.toString()}`
-
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          })
-
-          if (!response.ok) {
-            throw new Error(`Dexie API error: ${response.status} ${response.statusText}`)
-          }
-
-          const data = await response.json()
-          return data as DexieOffer[]
-        } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : 'Failed to search offers'
-          error.value = errorMessage
-          logger.error('❌ Dexie search failed:', err)
-          throw err
-        } finally {
-          isLoading.value = false
-        }
-      },
-      staleTime: 30000, // 30 seconds
-    })
-  }
-
-  const inspectOffer = async (offerString: string) => {
-    return await queryClient.fetchQuery({
-      queryKey: ['dexie', 'offers', 'inspect', offerString],
-      queryFn: async ({ queryKey }) => {
-        const offerString = queryKey[3] as string
-        isLoading.value = true
-        error.value = null
-
-        try {
-          if (!offerString || offerString.trim().length === 0) {
-            throw new Error('Offer string is empty')
-          }
-
-          const trimmedOffer = offerString.trim()
-          if (trimmedOffer.length < 50) {
-            throw new Error(
-              'Offer string appears to be incomplete - too short for a valid Chia offer'
-            )
-          }
-
-          if (!trimmedOffer.startsWith('offer') && !trimmedOffer.match(/^[A-Za-z0-9+/=]+$/)) {
-            throw new Error('Offer string does not appear to be a valid Chia offer format')
-          }
-
-          const url = `${DEXIE_API_BASE_URL}/offers`
-
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ offer: offerString }),
-          })
-
-          if (!response.ok) {
-            const errorText = await response.text()
-            logger.error('Dexie API error:', {
-              status: response.status,
-              statusText: response.statusText,
-              errorText,
-            })
-            throw new Error(
-              `Dexie API error: ${response.status} ${response.statusText} - ${errorText}`
-            )
-          }
-
-          const data = await response.json()
-
-          if (!data.success) {
-            throw new Error('Dexie API returned unsuccessful response')
-          }
-
-          return data as DexieOfferResponse
-        } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : 'Failed to inspect offer'
-          error.value = errorMessage
-          logger.error('❌ Dexie offer inspection failed:', err)
-          throw err
-        } finally {
-          isLoading.value = false
-        }
-      },
-      staleTime: 60000, // 1 minute
-    })
-  }
-
-  const postOffer = async (params: DexiePostOfferParams) => {
-    return await postOfferMutation.mutateAsync(params)
-  }
-
   // Computed properties
-  const offers = computed(() => []) // No static offers since we use dynamic queries
-  const currentOffer = computed(() => null) // No static current offer since we use dynamic queries
-  const isSearching = computed(() => isLoading.value) // Use our local loading state
-  const isInspecting = computed(() => isLoading.value) // Use our local loading state
+  const offers = computed(() => [])
+  const currentOffer = computed(() => null)
+  const isSearching = computed(() => isLoading.value)
+  const isInspecting = computed(() => isLoading.value)
   const isPosting = computed(() => postOfferMutation.isPending.value)
 
   return {
-    // Data
+    // Queries
+    tickersQuery,
+    pairsQuery,
+    searchOffers,
+    inspectOffer,
+    getOfferById,
+    getTicker,
+    getOrderBook,
+    getHistoricalTrades,
+
+    // Mutations
+    postOfferMutation,
+    postOffer: postOfferMutation.mutateAsync,
+
+    // State
     offers,
     currentOffer,
-
-    // Loading states
     isLoading: computed(() => isLoading.value),
+    error: computed(() => error.value),
     isSearching,
     isInspecting,
     isPosting,
-
-    // Error state
-    error: computed(() => error.value),
-
-    // Methods
-    searchOffers,
-    inspectOffer,
-    postOffer,
-
-    // Raw queries for advanced usage
-    postOfferMutation,
   }
 }
 
@@ -331,4 +382,33 @@ export function getDexieStatusDescription(status: number): string {
     default:
       return 'Unknown'
   }
+}
+
+// CAT token mapping utilities
+export function createCatTokenMap(tickers: DexieTicker[]): Map<string, CatTokenInfo> {
+  const catMap = new Map<string, CatTokenInfo>()
+
+  tickers.forEach(ticker => {
+    if (ticker.target_currency === 'xch' && ticker.base_currency !== 'xch') {
+      catMap.set(ticker.base_currency, {
+        assetId: ticker.base_currency,
+        ticker: ticker.base_code,
+        name: ticker.base_name,
+        symbol: ticker.base_code,
+      })
+    }
+  })
+
+  return catMap
+}
+
+export function getCatTokenInfo(assetId: string, catMap: Map<string, CatTokenInfo>): CatTokenInfo {
+  return (
+    catMap.get(assetId) || {
+      assetId,
+      ticker: assetId,
+      name: assetId,
+      symbol: assetId,
+    }
+  )
 }

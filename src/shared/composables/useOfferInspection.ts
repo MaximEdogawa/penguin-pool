@@ -31,6 +31,17 @@ export function useOfferInspection() {
   }
 
   /**
+   * Get offer by ID
+   */
+  const getOfferById = async (offerId: string) => {
+    try {
+      return await dexieDataService.getOfferById(offerId)
+    } catch (error) {
+      throw error
+    }
+  }
+
+  /**
    * Post an offer to Dexie
    */
   const postOffer = async (params: DexiePostOfferParams) => {
@@ -85,6 +96,7 @@ export function useOfferInspection() {
     // Convenience methods
     inspectOffer,
     searchOffers,
+    getOfferById,
     postOffer,
     searchOffersByAsset,
     searchOffersByMaker,
