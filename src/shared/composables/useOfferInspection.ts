@@ -13,12 +13,12 @@ export function useOfferInspection() {
   const dexieDataService = useDexieDataService()
 
   /**
-   * Inspect a specific offer by offer string
+   * Inspect a specific offer by Dexie ID
    */
-  const inspectOffer = async (offerString: string) => {
+  const inspectOffer = async (dexieId: string) => {
     try {
-      return await dexieDataService.inspectOffer(offerString)
-    } catch (error) {
+      return await dexieDataService.inspectOffer(dexieId)
+    } catch (error: unknown) {
       throw error
     }
   }
@@ -26,9 +26,9 @@ export function useOfferInspection() {
   /**
    * Inspect offer with polling functionality - checks every 20 seconds until expired/completed/cancelled
    */
-  const inspectOfferWithPolling = async (offerString: string, maxAttempts: number = 30) => {
+  const inspectOfferWithPolling = async (dexieId: string, maxAttempts: number = 30) => {
     try {
-      return await dexieDataService.inspectOfferWithPolling(offerString, maxAttempts)
+      return await dexieDataService.inspectOfferWithPolling(dexieId, maxAttempts)
     } catch (error) {
       throw error
     }
@@ -57,7 +57,7 @@ export function useOfferInspection() {
    */
   const getOfferById = async (offerId: string) => {
     try {
-      return await dexieDataService.getOfferById(offerId)
+      return await dexieDataService.inspectOffer(offerId)
     } catch (error) {
       throw error
     }
@@ -136,7 +136,6 @@ export function useOfferInspection() {
     isSearching: dexieDataService.isSearching,
     isInspecting: dexieDataService.isInspecting,
     isPosting: dexieDataService.isPosting,
-    isGettingOfferById: dexieDataService.isGettingOfferById,
 
     // Error state
     error: dexieDataService.error,

@@ -99,6 +99,7 @@ export interface DexieAsset {
 export interface DexieOffer {
   id: string
   status: number // Legacy field - we'll calculate state from dates instead
+  offer?: string // Original offer string (available in POST responses)
   date_found: string
   date_completed?: string | null
   date_pending?: string | null
@@ -155,19 +156,21 @@ export function calculateOfferState(offer: DexieOffer): OfferState {
 
   // 1. COMPLETED: date_completed exists AND known_taker is not null
   if (dateCompleted && hasValidKnownTaker) return 'Completed'
-  // 2. CANCELLED: known_taker is null (for active offers) OR spent_block_index exists
-  if ((!hasValidKnownTaker && dateFound) || hasValidSpentBlockIndex) return 'Cancelled'
-  // 3. PENDING: date_pending exists
-  if (datePending) return 'Pending'
+
+  // 2. CANCELLED: spent_block_index exists (coin was spent, offer cancelled)
+  if (hasValidSpentBlockIndex) return 'Cancelled'
+
+  // 3. PENDING: date_pending exists but no date_found yet
+  if (datePending && !dateFound) return 'Pending'
+
   // 4. EXPIRED: date_expiry is before date_found OR block_expiry exists
   if (dateExpiry && dateFound && dateExpiry < dateFound) return 'Expired'
   if (hasValidBlockExpiry) return 'Expired'
-  // 5. OPEN: date_found exists, no completion, and within expiry (if any)
+
+  // 5. OPEN: date_found exists, no completion, no spending, within expiry (if any)
   if (dateFound && !dateCompleted) {
     const isWithinExpiry = !dateExpiry || dateFound < dateExpiry
-    if (isWithinExpiry) {
-      return 'Open'
-    }
+    if (isWithinExpiry) return 'Open'
   }
 
   return 'Unknown'
@@ -211,7 +214,8 @@ export interface DexiePostOfferResponse {
   success: boolean
   id: string
   known: boolean
-  offer: DexieOffer
+  offer: DexieOffer | null
+  error_message?: string
 }
 
 /**
@@ -400,54 +404,36 @@ export class DexieRepository {
   }
 
   /**
-   * Inspect a specific offer by offer string
+   * Inspect offer by ID
    */
-  async inspectOffer(offerString: string): Promise<DexiePostOfferResponse> {
+  async inspectOfferById(id: string): Promise<DexiePostOfferResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/v1/offers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ offer: offerString }),
-      })
+      logger.info(`Fetching offer by ID: ${id}`)
+      const response = await fetch(`${this.baseUrl}/v1/offers/${id}`)
+
+      const result = await response.json()
+      logger.info(`Response status: ${response.status}, Result:`, result)
 
       if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`Dexie API error: ${response.status} ${errorText}`)
+        logger.warn(`Offer not found or expired for ID ${id}:`, result)
+        // Return the error response in DexiePostOfferResponse format
+        return {
+          success: false,
+          id: id,
+          known: false,
+          offer: null,
+          error_message: result.error_message || `HTTP error! status: ${response.status}`,
+        } as DexiePostOfferResponse
       }
 
-      const data = await response.json()
-      return {
-        success: data.success,
-        id: data.id,
-        known: data.known,
-        offer: data.offer,
-      }
-    } catch (error) {
-      logger.error('Failed to inspect offer:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Get offer by ID
-   */
-  async getOfferById(offerId: string): Promise<DexiePostOfferResponse> {
-    try {
-      const response = await fetch(`${this.baseUrl}/v1/offers/${offerId}`)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      return {
-        success: data.success,
-        id: data.offer.id, // Extract ID from the offer object
+      const responseData = {
+        success: result.success,
+        id: result.offer?.id || id,
         known: true, // GET requests are always "known" since we're fetching by ID
-        offer: data.offer,
+        offer: result.offer,
       }
+      logger.info(`Returning successful response:`, responseData)
+      return responseData
     } catch (error) {
       logger.error('Failed to fetch offer by ID:', error)
       throw error

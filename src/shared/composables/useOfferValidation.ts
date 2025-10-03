@@ -22,7 +22,7 @@ export function useOfferValidation() {
           if (!dexieOfferId) {
             throw new Error('Dexie offer ID is required')
           }
-          return await dexieRepository.getOfferById(dexieOfferId)
+          return await dexieRepository.inspectOfferById(dexieOfferId)
         },
         staleTime: 30000, // 30 seconds
         gcTime: 5 * 60 * 1000, // 5 minutes

@@ -10,7 +10,7 @@ export function useOfferStateValidation() {
 
   /**
    * Start continuous validation for an offer
-   * Uses getOfferById API with the Dexie offer ID
+   * Uses inspectOfferById API with the Dexie offer ID
    */
   const startValidation = async (
     dexieOfferId: string,
@@ -26,7 +26,7 @@ export function useOfferStateValidation() {
 
     // Initial fetch
     try {
-      const result = await dexieRepository.getOfferById(dexieOfferId)
+      const result = await dexieRepository.inspectOfferById(dexieOfferId)
       onUpdate(result)
     } catch (error) {
       onError(error instanceof Error ? error : new Error('Unknown error'))
@@ -36,7 +36,7 @@ export function useOfferStateValidation() {
     // Set up interval for continuous validation
     const interval = setInterval(async () => {
       try {
-        const result = await dexieRepository.getOfferById(dexieOfferId)
+        const result = await dexieRepository.inspectOfferById(dexieOfferId)
         onUpdate(result)
 
         // Check if we should stop validation

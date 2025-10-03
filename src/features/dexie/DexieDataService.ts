@@ -1,5 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { computed, ref } from 'vue'
+import { logger } from '@/shared/logger/logger'
 import {
   dexieRepository,
   type DexieOfferSearchParams,
@@ -7,8 +6,9 @@ import {
   type DexiePostOfferResponse,
   type DexieTicker,
   type DexieTickerResponse,
-} from '../repositories/DexieRepository'
-import { logger } from './logger'
+} from '@/shared/repositories/DexieRepository'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { computed, ref } from 'vue'
 
 export interface DexieOfferResponse {
   success: boolean
@@ -328,11 +328,6 @@ export function useDexieDataService() {
 export function convertDexieOfferToAppOffer(dexieResponse: DexiePostOfferResponse) {
   const dexieOffer = dexieResponse.offer
 
-  // Handle case where offer is null (e.g., offer expired/not found)
-  if (!dexieOffer) {
-    throw new Error(dexieResponse.error_message || 'Offer not found or expired')
-  }
-
   return {
     id: dexieOffer.id,
     tradeId: dexieOffer.id,
@@ -358,7 +353,7 @@ export function convertDexieOfferToAppOffer(dexieResponse: DexiePostOfferRespons
 }
 
 export function convertDexieAsset(dexieAsset: DexieAsset) {
-  const assetType: 'xch' | 'cat' = dexieAsset.id === 'xch' ? 'xch' : 'cat'
+  const assetType = dexieAsset.id === 'xch' ? 'xch' : 'cat'
   return {
     assetId: dexieAsset.id,
     amount: dexieAsset.amount,

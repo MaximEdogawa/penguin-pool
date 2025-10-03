@@ -147,7 +147,7 @@ export class SessionManager {
               db.name &&
               (db.name.includes('walletconnect') ||
                 db.name.includes('wc@') ||
-                db.name.includes('penguin-pool') ||
+                (db.name.includes('penguin-pool') && !db.name.includes('penguin-pool-db')) ||
                 db.name.includes('kurrentdb'))
           )
           .map(db => {
@@ -163,15 +163,8 @@ export class SessionManager {
       }
     }
 
-    if ('navigator' in window && 'storage' in navigator) {
-      try {
-        if ('clear' in navigator.storage) {
-          await (navigator.storage as { clear: () => Promise<void> }).clear()
-        }
-      } catch (error) {
-        logger.error('Failed to clear session data', error as Error)
-      }
-    }
+    // Note: navigator.storage.clear() would clear ALL storage including offers,
+    // so we skip this to preserve offers data during logout
   }
 
   private async clearServiceWorker(): Promise<void> {

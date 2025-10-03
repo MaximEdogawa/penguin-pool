@@ -36,7 +36,7 @@
             <div v-if="offerInspection.isInspecting.value" class="mt-2 flex items-center">
               <i class="pi pi-spinner pi-spin text-blue-600 dark:text-blue-400 mr-2 text-xs"></i>
               <p class="text-xs text-blue-600 dark:text-blue-400">
-                Inspecting offer on Dexie marketplace...
+                Processing offer with Dexie marketplace...
               </p>
             </div>
           </div>
@@ -237,10 +237,16 @@
 
     // Use Dexie to inspect the offer and get real asset details
     try {
-      const dexieResponse = await offerInspection.inspectOffer(offerString.trim())
+      // First POST the offer to Dexie to get the Dexie ID
+      const postResponse = await offerInspection.postOffer({
+        offer: offerString.trim(),
+        drop_only: false,
+        claim_rewards: false,
+      })
 
-      if (dexieResponse && dexieResponse.success) {
-        const appOffer = convertDexieOfferToAppOffer(dexieResponse)
+      if (postResponse && postResponse.success && postResponse.offer) {
+        // The POST response contains the full offer data - use it directly
+        const appOffer = convertDexieOfferToAppOffer(postResponse)
 
         offerPreview.value = {
           assetsOffered: appOffer.assetsOffered,
@@ -252,9 +258,27 @@
         }
         parseError.value = ''
         return
+      } else if (postResponse && postResponse.success && postResponse.id) {
+        // Handle case where POST only returns ID (older API behavior)
+        const dexieResponse = await offerInspection.inspectOffer(postResponse.id)
+
+        if (dexieResponse && dexieResponse.success) {
+          const appOffer = convertDexieOfferToAppOffer(dexieResponse)
+
+          offerPreview.value = {
+            assetsOffered: appOffer.assetsOffered,
+            assetsRequested: appOffer.assetsRequested,
+            creatorAddress: appOffer.creatorAddress,
+            fee: appOffer.fee,
+            status: appOffer.status,
+            dexieStatus: appOffer.dexieStatus,
+          }
+          parseError.value = ''
+          return
+        }
       }
     } catch {
-      parseError.value = 'Offer not found on Dexie marketplace'
+      parseError.value = 'Error inspecting offer on Dexie marketplace'
       offerPreview.value = null
       return
     }
@@ -286,10 +310,10 @@
         fee: form.fee,
       })
 
-      if (result.success && result.tradeId) {
+      if (result?.success && result?.tradeId) {
         const takenOffer: OfferDetails = {
           id: Date.now().toString(),
-          tradeId: result.tradeId,
+          tradeId: result!.tradeId,
           offerString: form.offerString.trim(),
           status: 'pending',
           createdAt: new Date(),
@@ -307,7 +331,7 @@
         form.fee = 0
         offerPreview.value = null
       } else {
-        throw new Error(result.error || 'Failed to take offer')
+        throw new Error('Failed to take offer')
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
