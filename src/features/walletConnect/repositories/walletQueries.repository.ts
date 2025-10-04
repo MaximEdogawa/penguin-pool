@@ -2,6 +2,7 @@ import { logger } from '@/shared/services/logger'
 import type { SignClient } from '@walletconnect/sign-client/dist/types/client'
 import type { ComputedRef } from 'vue'
 import { SageMethods } from '../constants/sage-methods'
+import { walletConnectPersistenceService } from '../services/WalletConnectPersistenceService'
 import type {
   AssetType,
   CancelOfferRequest,
@@ -62,12 +63,8 @@ export async function makeWalletRequest<T>(
     return { success: true, data: result as T }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-
     if (errorMessage.includes('Missing or invalid') || errorMessage.includes('recently deleted')) {
       logger.warn('🗑️ Session was deleted, clearing persistence')
-      const { walletConnectPersistenceService } = await import(
-        '../services/WalletConnectPersistenceService'
-      )
       walletConnectPersistenceService.clearSession()
     }
 

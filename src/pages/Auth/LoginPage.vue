@@ -72,12 +72,7 @@
       </div>
     </div>
 
-    <IOSWalletModal
-      v-if="isIOS && isModalVisible"
-      :uri="connection.uri.value"
-      @close="closeModal"
-      @continue="handleContinue"
-    ></IOSWalletModal>
+    <IOSWalletModal v-if="isIOS && isModalVisible" :uri="connection.uri.value!"></IOSWalletModal>
   </div>
 </template>
 
@@ -142,7 +137,6 @@
 
   watch(connection.isConnected, value => {
     if (value) {
-      // Wallet Connected waiting for approval
       session.waitForApproval()
     }
   })
@@ -151,7 +145,6 @@
     try {
       connection.connect()
     } catch (error) {
-      // Connection failed
       connectionStatus.value = {
         message: `Connection failed: ${error}`,
         type: 'error',
@@ -162,14 +155,12 @@
 
   const handleNetworkChange = async () => {
     try {
-      // Network changed
       connectionStatus.value = {
         message: `Switched to ${selectedNetwork.value === 'chia:mainnet' ? 'Mainnet' : 'Testnet'}`,
         type: 'success',
         icon: 'pi pi-check-circle',
       }
     } catch {
-      // Failed to switch network
       connectionStatus.value = {
         message: 'Failed to switch network',
         type: 'error',

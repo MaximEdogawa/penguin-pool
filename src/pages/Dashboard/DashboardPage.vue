@@ -248,7 +248,7 @@
   const router = useRouter()
 
   const walletBalance = computed(() => walletDataService.balance.data.value || null)
-  const isBalanceLoading = computed(() => walletDataService.balance.isLoading.value)
+  const isBalanceLoading = computed(() => walletDataService.balance.isRefetching.value)
   const balanceLastUpdated = ref<Date | null>(null)
   const autoRefreshEnabled = ref(true)
   const isConnected = computed(() => session.isConnected.value)

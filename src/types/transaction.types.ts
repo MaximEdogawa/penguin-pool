@@ -1,11 +1,9 @@
 // Transaction types for the Penguin Pool application
 
-export interface TransactionAsset {
-  assetId: string
-  amount: number
-  type: 'xch' | 'cat' | 'nft'
-  symbol?: string
-}
+// Import shared types
+import type { AssetAmount, AssetType, BaseAsset } from './asset.types'
+
+export type TransactionAsset = BaseAsset
 
 export interface TransactionDetails {
   id: string
@@ -16,17 +14,17 @@ export interface TransactionDetails {
   fromAddress: string
   toAddress: string
   asset: TransactionAsset
-  fee: number
+  fee: AssetAmount
   memo?: string
   blockHeight?: number
 }
 
 export interface SendTransactionForm {
   recipient: string
-  amount: number
-  assetType: 'xch' | 'cat' | 'nft'
+  amount: AssetAmount
+  assetType: AssetType
   assetId?: string
-  fee: number
+  fee: AssetAmount
   memo?: string
 }
 

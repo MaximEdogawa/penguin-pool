@@ -1,8 +1,7 @@
 <template>
   <div class="content-page">
-    <div class="content-body">
-      <!-- Action Buttons -->
-      <div class="flex flex-col sm:flex-row gap-4 mb-6">
+    <div class="content-header">
+      <div class="flex flex-col sm:flex-row gap-4">
         <button
           @click="showCreateOffer = true"
           class="flex items-center justify-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200"
@@ -26,9 +25,11 @@
           Refresh
         </button>
       </div>
+    </div>
 
+    <div class="content-body">
       <!-- Offers List -->
-      <div class="card p-4 sm:p-6">
+      <div class="card p-4 sm:p-6 pb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">My Offers</h2>
           <div class="flex items-center space-x-2">
@@ -129,9 +130,11 @@
                         :key="`offered-${asset.assetId}-${asset.amount}`"
                         class="text-xs flex items-center justify-between"
                       >
-                        <span class="font-medium">{{ asset.amount }}</span>
+                        <span class="font-medium">{{
+                          formatAssetAmount(asset.amount, asset.type)
+                        }}</span>
                         <span class="text-gray-500 dark:text-gray-400 ml-2">
-                          {{ asset.symbol || asset.type.toUpperCase() }}
+                          {{ getTickerSymbol(asset.assetId) }}
                         </span>
                       </div>
                       <div
@@ -156,9 +159,11 @@
                           :key="`tooltip-offered-${asset.assetId}-${asset.amount}`"
                           class="flex items-center justify-between py-1"
                         >
-                          <span class="font-medium">{{ asset.amount }}</span>
+                          <span class="font-medium">{{
+                            formatAssetAmount(asset.amount, asset.type)
+                          }}</span>
                           <span class="text-gray-500 dark:text-gray-400 ml-2">
-                            {{ asset.symbol || asset.type.toUpperCase() }}
+                            {{ getTickerSymbol(asset.assetId) }}
                           </span>
                         </div>
                       </div>
@@ -191,11 +196,11 @@
         </div>
 
         <!-- Mobile Card View -->
-        <div v-if="offers.length > 0" class="md:hidden space-y-4">
+        <div v-if="offers.length > 0" class="md:hidden space-y-4 pb-8">
           <div
             v-for="offer in filteredOffers"
             :key="offer.id"
-            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-4"
           >
             <!-- Header with Offer String and Status -->
             <div class="flex items-center justify-between mb-3">
@@ -241,9 +246,9 @@
                   :key="`mobile-offered-${asset.assetId}-${asset.amount}`"
                   class="flex items-center justify-between text-xs py-1"
                 >
-                  <span class="font-medium">{{ asset.amount }}</span>
+                  <span class="font-medium">{{ formatAssetAmount(asset.amount, asset.type) }}</span>
                   <span class="text-gray-500 dark:text-gray-400">
-                    {{ asset.symbol || asset.type.toUpperCase() }}
+                    {{ getTickerSymbol(asset.assetId) }}
                   </span>
                 </div>
                 <div
@@ -319,6 +324,7 @@
       @close="selectedOffer = null"
       @offer-cancelled="handleOfferCancelled"
       @offer-deleted="handleOfferDeleted"
+      @offer-updated="handleOfferUpdated"
     />
 
     <!-- Cancel Confirmation Dialog -->
@@ -344,12 +350,15 @@
   import ConfirmationDialog from '@/components/Shared/ConfirmationDialog.vue'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
   import { useOfferStorage } from '@/shared/composables/useOfferStorage'
+  import { useTickerMapping } from '@/shared/composables/useTickerMapping'
+  import { formatAssetAmount } from '@/shared/utils/chia-units'
   import type { OfferDetails, OfferFilters } from '@/types/offer.types'
   import { computed, onMounted, ref } from 'vue'
 
   // Services
   const walletDataService = useWalletDataService()
   const offerStorage = useOfferStorage()
+  const { getTickerSymbol } = useTickerMapping()
 
   // State
   const offers = ref<OfferDetails[]>([])
@@ -393,6 +402,10 @@
         assetsRequested: storedOffer.assetsRequested,
         fee: storedOffer.fee,
         creatorAddress: storedOffer.creatorAddress,
+        dexieOfferId: storedOffer.dexieOfferId,
+        dexieStatus: storedOffer.dexieStatus,
+        uploadedToDexie: storedOffer.uploadedToDexie,
+        dexieOfferData: storedOffer.dexieOfferData,
       }))
     } catch {
       // Failed to refresh offers
@@ -415,7 +428,7 @@
     if (!offerToCancel.value) return
 
     isCancelling.value = true
-    cancelError.value = '' // Clear any previous errors
+    cancelError.value = ''
 
     try {
       await walletDataService.cancelOffer({
@@ -423,18 +436,11 @@
         fee: offerToCancel.value.fee,
       })
 
-      // Update the offer status locally
-      offerToCancel.value.status = 'cancelled'
-
-      // Update in IndexedDB
       await offerStorage.updateOffer(offerToCancel.value.id, { status: 'cancelled' })
-
       showCancelConfirmation.value = false
       offerToCancel.value = null
-    } catch {
-      // Failed to cancel offer
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
-      cancelError.value = `Failed to cancel offer: ${errorMsg}`
+    } catch (error) {
+      cancelError.value = `Failed to cancel offer: ${error}`
     } finally {
       isCancelling.value = false
     }
@@ -476,6 +482,19 @@
     selectedOffer.value = null
   }
 
+  const handleOfferUpdated = (offer: OfferDetails) => {
+    const existingOffer = offers.value.find(o => o.id === offer.id)
+    if (existingOffer) {
+      // Update the existing offer with new data
+      Object.assign(existingOffer, offer)
+    }
+    // Update the selected offer to reflect changes in the modal
+    if (selectedOffer.value && selectedOffer.value.id === offer.id) {
+      Object.assign(selectedOffer.value, offer)
+    }
+    // Don't close the modal - let user see the success message
+  }
+
   const getStatusClass = (status: string) => {
     const classes = {
       pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300',
@@ -513,11 +532,15 @@
 
 <style scoped>
   .content-page {
-    @apply h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8 overflow-y-auto;
+    @apply min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8;
+  }
+
+  .content-header {
+    @apply mb-1;
   }
 
   .content-body {
-    @apply space-y-6;
+    @apply space-y-1;
   }
 
   .card {

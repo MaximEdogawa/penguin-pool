@@ -30,6 +30,15 @@
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Paste the complete offer string from the offer creator
             </p>
+            <p v-if="parseError" class="mt-1 text-xs text-red-500 dark:text-red-400">
+              {{ parseError }}
+            </p>
+            <div v-if="offerInspection.isInspecting.value" class="mt-2 flex items-center">
+              <i class="pi pi-spinner pi-spin text-blue-600 dark:text-blue-400 mr-2 text-xs"></i>
+              <p class="text-xs text-blue-600 dark:text-blue-400">
+                Processing offer with Dexie marketplace...
+              </p>
+            </div>
           </div>
 
           <!-- Transaction Fee -->
@@ -41,12 +50,13 @@
               v-model.number="form.fee"
               type="number"
               step="0.000001"
-              min="0.000001"
+              min="0"
               placeholder="0.000001"
               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              required
             />
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Minimum fee: 0.000001 XCH</p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Fee can be 0 for free transactions
+            </p>
           </div>
 
           <!-- Offer Preview (if valid) -->
@@ -57,9 +67,14 @@
                 <span class="text-gray-600 dark:text-gray-400">You will receive:</span>
                 <span class="text-gray-900 dark:text-white">
                   {{
-                    offerPreview.assetsOffered
-                      ?.map(a => `${a.amount} ${a.symbol || a.type.toUpperCase()}`)
-                      .join(', ') || 'Unknown'
+                    offerPreview.assetsOffered?.length
+                      ? offerPreview.assetsOffered
+                          .map(
+                            a =>
+                              `${formatAssetAmount(a.amount, a.type)} ${a.symbol || a.type.toUpperCase()}`
+                          )
+                          .join(', ')
+                      : 'Assets from offer'
                   }}
                 </span>
               </div>
@@ -67,15 +82,42 @@
                 <span class="text-gray-600 dark:text-gray-400">You will pay:</span>
                 <span class="text-gray-900 dark:text-white">
                   {{
-                    offerPreview.assetsRequested
-                      ?.map(a => `${a.amount} ${a.symbol || a.type.toUpperCase()}`)
-                      .join(', ') || 'Unknown'
+                    offerPreview.assetsRequested?.length
+                      ? offerPreview.assetsRequested
+                          .map(
+                            a =>
+                              `${formatAssetAmount(a.amount, a.type)} ${a.symbol || a.type.toUpperCase()}`
+                          )
+                          .join(', ')
+                      : 'Assets to offer creator'
                   }}
                 </span>
               </div>
               <div class="flex justify-between border-t border-gray-200 dark:border-gray-600 pt-2">
                 <span class="font-medium text-gray-700 dark:text-gray-300">Fee:</span>
-                <span class="font-medium text-gray-900 dark:text-white">{{ form.fee }} XCH</span>
+                <span class="font-medium text-gray-900 dark:text-white">
+                  {{ offerPreview.fee !== undefined ? offerPreview.fee : form.fee }} XCH
+                </span>
+              </div>
+              <div
+                v-if="offerPreview.dexieStatus !== undefined"
+                class="flex justify-between border-t border-gray-200 dark:border-gray-600 pt-2"
+              >
+                <span class="font-medium text-gray-700 dark:text-gray-300">Status:</span>
+                <span class="font-medium text-gray-900 dark:text-white">
+                  {{ getDexieStatusDescription(offerPreview.dexieStatus) }}
+                </span>
+              </div>
+              <div
+                v-if="offerPreview.creatorAddress"
+                class="flex justify-between border-t border-gray-200 dark:border-gray-600 pt-2"
+              >
+                <span class="font-medium text-gray-700 dark:text-gray-300">Creator:</span>
+                <span class="font-medium text-gray-900 dark:text-white text-xs">
+                  {{ offerPreview.creatorAddress.slice(0, 8) }}...{{
+                    offerPreview.creatorAddress.slice(-8)
+                  }}
+                </span>
               </div>
             </div>
           </div>
@@ -127,12 +169,15 @@
 </template>
 
 <script setup lang="ts">
-  import type {
-    OfferAsset,
-    OfferDetails,
-    TakeOfferWalletRequest,
-    TakeOfferWalletResponse,
-  } from '@/types/offer.types'
+  import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
+  import { useOfferInspection } from '@/shared/composables/useOfferInspection'
+  import {
+    convertDexieOfferToAppOffer,
+    getDexieStatusDescription,
+  } from '@/shared/services/DexieDataService'
+  import { formatAssetAmount } from '@/shared/utils/chia-units'
+  import { isValidOfferString } from '@/shared/utils/offer-parser'
+  import type { OfferAsset, OfferDetails } from '@/types/offer.types'
   import { computed, reactive, ref, watch } from 'vue'
 
   interface Emits {
@@ -142,10 +187,14 @@
 
   const emit = defineEmits<Emits>()
 
+  // Services
+  const walletDataService = useWalletDataService()
+  const offerInspection = useOfferInspection()
+
   // Form state
   const form = reactive({
     offerString: '',
-    fee: 0.000001,
+    fee: 0,
   })
 
   // UI state
@@ -155,30 +204,92 @@
   const offerPreview = ref<{
     assetsOffered?: OfferAsset[]
     assetsRequested?: OfferAsset[]
+    creatorAddress?: string
+    fee?: number
+    status?: string
+    dexieStatus?: number
   } | null>(null)
+  const parseError = ref('')
 
   // Computed
   const isFormValid = computed(() => {
-    return form.offerString.trim().length > 0 && form.fee > 0
+    return (
+      form.offerString.trim().length > 0 &&
+      form.fee >= 0 &&
+      (!parseError.value || parseError.value.includes('validated'))
+    )
   })
 
   // Methods
-  const parseOfferString = (offerString: string) => {
-    // This is a simplified parser - in a real implementation, you'd parse the actual offer format
-    // For now, we'll just return a mock preview
+  const parseOffer = async (offerString: string) => {
+    parseError.value = ''
+
+    if (!offerString.trim()) {
+      offerPreview.value = null
+      return
+    }
+
+    if (!isValidOfferString(offerString)) {
+      parseError.value = 'Invalid offer string format'
+      offerPreview.value = null
+      return
+    }
+
+    // Use Dexie to inspect the offer and get real asset details
     try {
-      if (offerString.length > 10) {
-        return {
-          assetsOffered: [{ assetId: 'xch', amount: 1.0, type: 'xch' as const, symbol: 'XCH' }],
-          assetsRequested: [
-            { assetId: 'cat123', amount: 100, type: 'cat' as const, symbol: 'TOKEN' },
-          ],
+      // First POST the offer to Dexie to get the Dexie ID
+      const postResponse = await offerInspection.postOffer({
+        offer: offerString.trim(),
+        drop_only: false,
+        claim_rewards: false,
+      })
+
+      if (postResponse && postResponse.success && postResponse.offer) {
+        // The POST response contains the full offer data - use it directly
+        const appOffer = convertDexieOfferToAppOffer(postResponse)
+
+        offerPreview.value = {
+          assetsOffered: appOffer.assetsOffered,
+          assetsRequested: appOffer.assetsRequested,
+          creatorAddress: appOffer.creatorAddress,
+          fee: appOffer.fee,
+          status: appOffer.status,
+          dexieStatus: appOffer.dexieStatus,
+        }
+        parseError.value = ''
+        return
+      } else if (postResponse && postResponse.success && postResponse.id) {
+        // Handle case where POST only returns ID (older API behavior)
+        const dexieResponse = await offerInspection.inspectOffer(postResponse.id)
+
+        if (dexieResponse && dexieResponse.success) {
+          const appOffer = convertDexieOfferToAppOffer(dexieResponse)
+
+          offerPreview.value = {
+            assetsOffered: appOffer.assetsOffered,
+            assetsRequested: appOffer.assetsRequested,
+            creatorAddress: appOffer.creatorAddress,
+            fee: appOffer.fee,
+            status: appOffer.status,
+            dexieStatus: appOffer.dexieStatus,
+          }
+          parseError.value = ''
+          return
         }
       }
-      return null
     } catch {
-      // Failed to parse offer string
-      return null
+      parseError.value = 'Error inspecting offer on Dexie marketplace'
+      offerPreview.value = null
+      return
+    }
+
+    // If Dexie inspection failed, show basic validation
+    parseError.value = 'Offer string validated - details will be confirmed by wallet'
+    offerPreview.value = {
+      assetsOffered: [],
+      assetsRequested: [],
+      creatorAddress: undefined,
+      fee: undefined,
     }
   }
 
@@ -194,31 +305,22 @@
     isSubmitting.value = true
 
     try {
-      const takeOffer = async (_data: TakeOfferWalletRequest): Promise<TakeOfferWalletResponse> => {
-        // Take offer called
-        return {
-          success: true,
-          tradeId: 'test-trade-id',
-          error: null,
-        }
-      }
-
-      const result = await takeOffer({
+      const result = await walletDataService.takeOffer({
         offer: form.offerString.trim(),
         fee: form.fee,
       })
 
-      if (result.success && result.tradeId) {
+      if (result?.success && result?.tradeId) {
         const takenOffer: OfferDetails = {
           id: Date.now().toString(),
-          tradeId: result.tradeId,
+          tradeId: result!.tradeId,
           offerString: form.offerString.trim(),
-          status: result.success ? 'pending' : 'failed',
+          status: 'pending',
           createdAt: new Date(),
           assetsOffered: offerPreview.value?.assetsOffered || [],
           assetsRequested: offerPreview.value?.assetsRequested || [],
-          fee: form.fee,
-          creatorAddress: 'xch1offer_creator', // This would come from the offer
+          fee: offerPreview.value?.fee || form.fee,
+          creatorAddress: offerPreview.value?.creatorAddress || 'unknown',
         }
 
         successMessage.value = 'Offer taken successfully!'
@@ -226,10 +328,10 @@
 
         // Reset form
         form.offerString = ''
-        form.fee = 0.000001
+        form.fee = 0
         offerPreview.value = null
       } else {
-        throw new Error(result.error || 'Failed to take offer')
+        throw new Error('Failed to take offer')
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
@@ -242,12 +344,8 @@
   // Watch for offer string changes to update preview
   watch(
     () => form.offerString,
-    newValue => {
-      if (newValue.trim().length > 10) {
-        offerPreview.value = parseOfferString(newValue)
-      } else {
-        offerPreview.value = null
-      }
+    async newValue => {
+      await parseOffer(newValue)
     }
   )
 </script>

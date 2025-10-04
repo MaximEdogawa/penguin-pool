@@ -15,7 +15,6 @@
     return userStore.isAuthenticated
   })
 
-  // Initialize feature flags on app startup
   onMounted(() => {
     featureFlags.loadFromEnvironment()
   })
@@ -28,11 +27,6 @@
       <RouterView />
     </AppLayout>
     <RouterView v-else />
-    <!-- TanStack Query DevTools - only shown in development -->
     <VueQueryDevtools />
   </AppProvider>
 </template>
-
-<style scoped>
-  /* App-level styles are now handled by AppLayout */
-</style>

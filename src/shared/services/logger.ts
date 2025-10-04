@@ -87,17 +87,25 @@ class LoggerService implements Logger {
     })
   }
 
-  error(message: string, error?: Error): void {
+  error(message: string, error?: Error | unknown | undefined): void {
     if (error) {
-      this.logger.error({ error: error.stack || error.message }, message)
+      if (error instanceof Error) {
+        this.logger.error({ error: error.stack || error.message }, message)
+      } else {
+        this.logger.error({ error }, message)
+      }
     } else {
       this.logger.error(message)
     }
   }
 
-  warn(message: string, error?: Error): void {
+  warn(message: string, error?: Error | unknown | undefined): void {
     if (error) {
-      this.logger.warn({ error: error.stack || error.message }, message)
+      if (error instanceof Error) {
+        this.logger.warn({ error: error.stack || error.message }, message)
+      } else {
+        this.logger.warn({ error }, message)
+      }
     } else {
       this.logger.warn(message)
     }
@@ -121,4 +129,4 @@ class LoggerService implements Logger {
 }
 
 export const logger = new LoggerService()
-export type { LogLevel, Logger }
+export type { Logger, LogLevel }

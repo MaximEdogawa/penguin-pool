@@ -20,7 +20,7 @@ export class PenguinPoolDB extends Dexie {
     super(environment.database.indexedDB.name)
 
     this.version(environment.database.indexedDB.version).stores({
-      offers: '++id, tradeId, status, createdAt, lastModified, walletAddress, syncedAt',
+      offers: '++id, id, tradeId, status, createdAt, lastModified, walletAddress, syncedAt',
     })
   }
 }

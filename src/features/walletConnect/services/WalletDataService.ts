@@ -7,11 +7,13 @@ import {
   getWalletAddress,
   sendTransaction,
   signMessage,
+  takeOffer,
 } from '../repositories/walletQueries.repository'
 import type {
   AssetType,
   CancelOfferRequest,
   OfferRequest,
+  TakeOfferRequest,
   TransactionRequest,
 } from '../types/command.types'
 import { useInstanceDataService } from './InstanceDataService'
@@ -92,6 +94,14 @@ export function useWalletDataService() {
     },
   })
 
+  const takeOfferMutation = useMutation({
+    mutationFn: async (data: TakeOfferRequest) => {
+      const result = await takeOffer(data, signClient, session)
+      if (!result.success) throw new Error(result.error)
+      return result.data
+    },
+  })
+
   const refreshBalance = async () => {
     await queryClient.invalidateQueries({ queryKey: [WALLET_CONNECT_KEY, BALLANCE_KEY] })
   }
@@ -104,11 +114,13 @@ export function useWalletDataService() {
     getBalance: getBalanceMutation.mutateAsync,
     createOffer: createOfferMutation.mutateAsync,
     cancelOffer: cancelOfferMutation.mutateAsync,
+    takeOffer: takeOfferMutation.mutateAsync,
     refreshBalance,
     isSigning: signMessageMutation.isPending,
     isSending: sendTransactionMutation.isPending,
     isGettingBalance: getBalanceMutation.isPending,
     isCreatingOffer: createOfferMutation.isPending,
     isCancellingOffer: cancelOfferMutation.isPending,
+    isTakingOffer: takeOfferMutation.isPending,
   }
 }

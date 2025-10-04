@@ -39,10 +39,6 @@
 
       <!-- Send Transaction Section -->
       <div class="card p-4 sm:p-6">
-        <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          Send Transaction
-        </h2>
-
         <SendTransactionComponent
           :wallet-id="1"
           :available-balance="parseFloat(userBalance)"
@@ -89,7 +85,7 @@
 
   const formatBalance = (mojos: number): string => {
     if (mojos === 0) return '0.000000'
-    return (mojos / 1000000000000).toFixed(6)
+    return (mojos / 1000000000000).toString()
   }
 
   const formatAddress = (address: string): string => {
