@@ -53,7 +53,15 @@ export default defineConfigWithVueTs(
         },
       ],
       '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          args: 'none',
+        },
+      ],
       'vue/max-lines-per-block': [
         'error',
         {
