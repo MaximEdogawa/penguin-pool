@@ -1,13 +1,4 @@
 #!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 
-echo "🔍 Running pre-commit checks..."
-
-# Run lint-staged to format and lint staged files (excludes backend)
-echo "📝 Formatting and linting staged files..."
-npm run lint-staged
-
-# Run frontend unit tests only (excludes backend tests)
-echo "🧪 Running frontend unit tests..."
-npm run test:run
-
-echo "✅ Pre-commit checks completed successfully!"
+npx lint-staged
