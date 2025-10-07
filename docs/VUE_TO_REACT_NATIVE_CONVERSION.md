@@ -145,6 +145,7 @@ project-root/
 4. **Install core dependencies**
 5. **Set up development environment**
 6. **Configure Metro bundler**
+7. Try to build and start project
 
 ### Phase 2: Environment Configuration
 
@@ -152,37 +153,78 @@ project-root/
 2. Update configuration files
 3. Remove Vite-specific dependencies
 4. Add React Native-specific configurations
+5. Try to build and start project
 
 ### Phase 3: UI Framework Selection
 
-1. Evaluate UI libraries (GluestackUI, React Native Elements, Tamagui)
+1. Evaluate UI libraries (Tamagui)
 2. Install chosen framework
 3. Configure theming system
 4. Set up component library
+5. Try so to build and set a rule for all components to use the chosen framework
 
-### Phase 4: Component Migration
+### Phase 4: Import Eslint rules
+
+1. Convert eslint rules in to expo
+2. Implement husky like functionality in before git
+3. Add logger to project and no "console log" rule
+4. Import all development rules set for the project
+
+### Phase 5: Logging Stragety
+
+1. Use the logger everywhere
+2. Logging strategy with logging only with errors and warning
+3. Logging strategy info only minimal
+4. Use no comments in the project and only use json function description
+
+### Phase 5: Navigation Implementation
+
+1. Set up React native Navigation
+2. Convert Vue Router routes
+3. Implement mobile-optimized navigation pattern
+
+### Phase 6: Component Migration
 
 1. Convert Vue components to React Native components
-2. Adapt layout systems
-3. Update styling approaches
-4. Handle platform-specific behaviors
+2. Similar folder structure and feature sliced design
+3. Adapt layout systems to chosen framework (Tamagui)
+4. Update styling approaches
+5. Handle platform-specific behaviors
+6. Implement all the pages and features with mocked data
+7. The theme system should be thought about
+8. Mock first everything to that first the ui is beautiful and correct
+9. Wait until if everything builds, is beautiful and the flow is checked
 
-### Phase 5: State Management
+### Phase 7: State Management
 
 1. **Migrate Pinia stores to Zustand** for client state management
-2. **Set up TanStack Query** for server state and data fetching
+2. **Set up TanStack Query** for server state and data fetching for react native
 3. **Separate concerns**: Keep client state (UI, user preferences) separate from server state (API data)
 4. **Update reactive patterns** from Vue.js to React patterns
 5. **Implement cross-platform state persistence** for Zustand stores
 6. **Configure query caching** and offline support with TanStack Query
 7. **Test state synchronization** across platforms
 
-### Phase 6: Navigation Implementation
+### Phase 8: Wallet Connect
 
-1. Set up React Navigation
-2. Convert Vue Router routes
-3. Implement mobile-optimized navigation patterns
-4. Handle deep linking
+1. Implement wallet connection with react native wallet connect
+2. Implement it with tanstack query request like in the source project
+3. Try to separate into dataServices and Services
+4. Build and lint until the wallet connect flow work without errors.
+
+### Phase 9: Wallet Requests
+
+1. Implement all wallet requests and repositories like in the source project
+2. Implement all mocked feature with the correct wallet requests
+
+### Phase 10: Persistant Storage
+
+1. Use dexie package for persistant storage in indexDB
+2. Offers and theming should persist per user session
+
+### Phase 11: Integrate Backend
+
+1. Integrate the service health page with all the backend features
 
 ## Running Both Applications Simultaneously
 
