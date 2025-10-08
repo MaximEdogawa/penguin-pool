@@ -1,21 +1,8 @@
 import { Button, H2, Paragraph, Text, YStack } from 'tamagui'
-import { createLogger } from '../../shared/lib/logger'
-
-const logger = createLogger('DashboardPage')
 
 export function DashboardPage() {
-  logger.describeFunction({
-    name: 'DashboardPage',
-    purpose: 'Renders the main dashboard interface for the Penguin Pool DeFi platform',
-    returns: 'React component displaying dashboard content',
-    sideEffects: ['Logs dashboard page render event'],
-  })
-
-  logger.warn('Dashboard page rendered')
-  logger.warn('Dashboard page loaded successfully - logging system working!')
-
   const handleButtonPress = () => {
-    logger.warn('Dashboard button pressed - user interaction logged!')
+    // Button press handler
   }
 
   return (
@@ -31,7 +18,7 @@ export function DashboardPage() {
         borderRadius="$4"
         padding="$4"
       >
-        <Text color="$white" fontSize="$4" fontWeight="bold">
+        <Text color="$color" fontSize="$4" fontWeight="bold">
           Test Logging System
         </Text>
       </Button>

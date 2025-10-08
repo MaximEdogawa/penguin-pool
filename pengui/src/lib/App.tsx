@@ -1,4 +1,5 @@
 import React from 'react'
+import '../polyfills/warnings'
 import { AppProvider } from './AppProvider'
 
 interface AppProps {

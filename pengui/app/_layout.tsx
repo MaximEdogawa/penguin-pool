@@ -10,9 +10,6 @@ import { useEffect } from 'react'
 import { useColorScheme } from 'react-native'
 import { useTheme } from 'tamagui'
 import { App } from '../src/lib/App'
-import { createLogger } from '../src/shared/lib/logger'
-
-const _logger = createLogger('RootLayout')
 
 export { ErrorBoundary } from 'expo-router'
 
