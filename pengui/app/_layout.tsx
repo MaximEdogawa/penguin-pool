@@ -8,6 +8,8 @@ import { useFonts } from 'expo-font'
 import { SplashScreen, Stack } from 'expo-router'
 import { Provider } from 'components/Provider'
 import { useTheme } from 'tamagui'
+import InterMedium from '@tamagui/font-inter/otf/Inter-Medium.otf'
+import InterBold from '@tamagui/font-inter/otf/Inter-Bold.otf'
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -24,8 +26,8 @@ SplashScreen.preventAutoHideAsync()
 
 export default function RootLayout() {
   const [interLoaded, interError] = useFonts({
-    Inter: require('@tamagui/font-inter/otf/Inter-Medium.otf'),
-    InterBold: require('@tamagui/font-inter/otf/Inter-Bold.otf'),
+    Inter: InterMedium,
+    InterBold: InterBold,
   })
 
   useEffect(() => {

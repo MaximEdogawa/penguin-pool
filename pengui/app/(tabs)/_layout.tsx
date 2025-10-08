@@ -24,7 +24,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Tab One',
-          tabBarIcon: ({ color }) => <Atom color={color as any} />,
+          tabBarIcon: ({ color }) => <Atom color={color} />,
           headerRight: () => (
             <Link href="/modal" asChild>
               <Button mr="$4" size="$2.5">
@@ -38,7 +38,7 @@ export default function TabLayout() {
         name="two"
         options={{
           title: 'Tab Two',
-          tabBarIcon: ({ color }) => <AudioWaveform color={color as any} />,
+          tabBarIcon: ({ color }) => <AudioWaveform color={color} />,
         }}
       />
     </Tabs>

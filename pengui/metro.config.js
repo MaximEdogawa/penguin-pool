@@ -2,17 +2,17 @@
 /**
  * @type {import('expo/metro-config').MetroConfig}
  */
-const { getDefaultConfig } = require('expo/metro-config')
-const { withTamagui } = require('@tamagui/metro-plugin')
+import { getDefaultConfig } from 'expo/metro-config'
+import { withTamagui } from '@tamagui/metro-plugin'
 
-const config = getDefaultConfig(__dirname, {
+const config = getDefaultConfig(import.meta.url, {
   // [Web-only]: Enables CSS support in Metro.
   isCSSEnabled: true,
 })
 
 config.resolver.sourceExts.push('mjs')
 
-module.exports = withTamagui(config, {
+export default withTamagui(config, {
   components: ['tamagui'],
   config: './tamagui.config.ts',
   outputCSS: './tamagui-web.css',
