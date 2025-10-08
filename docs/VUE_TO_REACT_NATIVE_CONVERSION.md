@@ -108,7 +108,7 @@ This document outlines the key learnings and challenges encountered when convert
 
 ### Phase 0: Project Structure Setup (CRITICAL)
 
-1. **Create separate conversion folder**: `react-native-conversion/` or `mobile-app/`
+1. **Create separate conversion folder**: pengui
 2. **Keep original Vue.js project intact** for reference and comparison
 3. **Initialize React Native project** in the new folder
 4. **Document the parallel structure** for easy reference
@@ -122,7 +122,7 @@ project-root/
 │   ├── pages/
 │   ├── stores/
 │   └── ...
-├── react-native/              # New React Native application
+├── pengui/              # New React Native application
 │   ├── src/
 │   ├── package.json
 │   ├── app.json
@@ -137,53 +137,22 @@ project-root/
 - **React Native app**: Configure to run on port 3000 as well
 - **Both apps**: Can run simultaneously for side-by-side comparison
 
-### Phase 1: Project Setup
 
-1. **Create React Native folder**: `mkdir react-native && cd react-native`
-2. **Initialize React Native project** with Expo in the new folder
-3. **Configure port 3000** to match Vue.js app
-4. **Install core dependencies**
-5. **Set up development environment**
-6. **Configure Metro bundler**
-7. Try to build and start project
-
-### Phase 2: Environment Configuration
-
-1. Convert environment variables from Vite to Node.js format
-2. Update configuration files
-3. Remove Vite-specific dependencies
-4. Add React Native-specific configurations
-5. Try to build and start project
-
-### Phase 3: UI Framework Selection
-
-1. Evaluate UI libraries (Tamagui)
-2. Install chosen framework
-3. Configure theming system
-4. Set up component library
-5. Try so to build and set a rule for all components to use the chosen framework
-
-### Phase 4: Import Eslint rules
-
-1. Convert eslint rules in to expo
-2. Implement husky like functionality in before git
-3. Add logger to project and no "console log" rule
-4. Import all development rules set for the project
-
-### Phase 5: Logging Stragety
+### Phase 1: Logging Stragety
 
 1. Use the logger everywhere
-2. Logging strategy with logging only with errors and warning
-3. Logging strategy info only minimal
-4. Use no comments in the project and only use json function description
+2. Use Feature Sliced design folder structure
+3. Logging strategy with logging only with errors and warning
+4. Logging strategy info only minimal
+5. Use no comments in the project and only use json function description
 
-### Phase 5: Navigation Implementation
+### Phase 2: Navigation Implementation
 
 1. Set up React native Navigation
 2. Convert Vue Router routes
 3. Implement mobile-optimized navigation pattern
 
-### Phase 6: Component Migration
+### Phase 3: Component Migration
 
 1. Convert Vue components to React Native components
 2. Similar folder structure and feature sliced design
@@ -195,7 +164,7 @@ project-root/
 8. Mock first everything to that first the ui is beautiful and correct
 9. Wait until if everything builds, is beautiful and the flow is checked
 
-### Phase 7: State Management
+### Phase 4: State Management
 
 1. **Migrate Pinia stores to Zustand** for client state management
 2. **Set up TanStack Query** for server state and data fetching for react native
@@ -205,24 +174,24 @@ project-root/
 6. **Configure query caching** and offline support with TanStack Query
 7. **Test state synchronization** across platforms
 
-### Phase 8: Wallet Connect
+### Phase 5: Wallet Connect
 
 1. Implement wallet connection with react native wallet connect
 2. Implement it with tanstack query request like in the source project
 3. Try to separate into dataServices and Services
 4. Build and lint until the wallet connect flow work without errors.
 
-### Phase 9: Wallet Requests
+### Phase 6: Wallet Requests
 
 1. Implement all wallet requests and repositories like in the source project
 2. Implement all mocked feature with the correct wallet requests
 
-### Phase 10: Persistant Storage
+### Phase 7: Persistant Storage
 
 1. Use dexie package for persistant storage in indexDB
 2. Offers and theming should persist per user session
 
-### Phase 11: Integrate Backend
+### Phase 8: Integrate Backend
 
 1. Integrate the service health page with all the backend features
 

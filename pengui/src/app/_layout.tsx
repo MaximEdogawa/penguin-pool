@@ -1,16 +1,16 @@
-import '../tamagui-web.css'
+import '../../tamagui-web.css'
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import InterBold from '@tamagui/font-inter/otf/Inter-Bold.otf'
-import InterMedium from '@tamagui/font-inter/otf/Inter-Medium.otf'
+import InterRegular from '@tamagui/font-inter/otf/Inter-Regular.otf'
 import { useFonts } from 'expo-font'
 import { SplashScreen, Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { useColorScheme } from 'react-native'
 import { useTheme } from 'tamagui'
-import { App } from '../src/lib/App'
-import { createLogger } from '../src/shared/lib/logger'
+import { App } from '../lib/App'
+import { createLogger } from '../shared/lib/logger'
 
 const _logger = createLogger('RootLayout')
 
@@ -24,7 +24,7 @@ SplashScreen.preventAutoHideAsync()
 
 export default function RootLayout() {
   const [interLoaded, interError] = useFonts({
-    Inter: InterMedium,
+    Inter: InterRegular,
     InterBold: InterBold,
   })
 
