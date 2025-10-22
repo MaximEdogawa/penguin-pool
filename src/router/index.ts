@@ -7,6 +7,7 @@ import OptionContractsPage from '@/pages/OptionContracts/OptionContractsPage.vue
 import PiggyBankPage from '@/pages/PiggyBank/PiggyBankPage.vue'
 import ProfilePage from '@/pages/Profile/ProfilePage.vue'
 import ServiceHealthPage from '@/pages/ServiceHealth/ServiceHealthPage.vue'
+import TradingViewPage from '@/pages/Trading/TradingViewPage.vue'
 import WalletPage from '@/pages/Wallet/WalletPage.vue'
 import {
   defaultFeatureFlags,
@@ -48,6 +49,16 @@ const routes = [
       title: 'Offers',
       requiresAuth: true,
       featureFlag: 'offers',
+    },
+  },
+  {
+    path: '/trading',
+    name: 'trading',
+    component: TradingViewPage,
+    meta: {
+      title: 'Trading',
+      requiresAuth: true,
+      featureFlag: 'trading',
     },
   },
   {

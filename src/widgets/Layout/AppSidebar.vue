@@ -203,6 +203,14 @@
         featureFlag: 'offers',
       },
       {
+        label: !props.isCollapsed && !isSmallScreen.value ? 'Trading' : '',
+        icon: 'pi pi-chart-line',
+        command: () => navigateTo('/trading'),
+        class: route.path === '/trading' ? 'nav-link-active' : '',
+        title: 'Trading',
+        featureFlag: 'trading',
+      },
+      {
         label: !props.isCollapsed && !isSmallScreen.value ? 'Option Contracts' : '',
         icon: 'pi pi-file-edit',
         command: () => navigateTo('/option-contracts'),
