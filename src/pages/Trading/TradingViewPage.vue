@@ -1,63 +1,125 @@
 <template>
   <div class="content-page">
-    <div class="content-header">
-      <div class="flex gap-2 mb-2 border-b border-gray-200 dark:border-gray-700">
-        <button
-          @click="activeView = 'trade'"
-          :class="[
-            'px-6 py-3 font-medium transition-colors',
-            activeView === 'trade'
-              ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300',
-          ]"
-        >
-          Trade
-        </button>
-        <button
-          @click="activeView = 'history'"
-          :class="[
-            'px-6 py-3 font-medium transition-colors',
-            activeView === 'history'
-              ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300',
-          ]"
-        >
-          Order History
-        </button>
-      </div>
-    </div>
     <div class="content-body">
-      <!-- Trading View -->
-      <div v-if="activeView === 'trade'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Order Book Sidebar -->
+      <!-- Shared Asset Search Filter -->
+      <div class="mb-4">
+        <div class="px-2 py-1">
+          <div class="relative">
+            <InputText
+              v-model="sharedSearchValue"
+              placeholder="Search by asset... (AND logic - all selected assets must match)"
+              class="w-full text-sm"
+              @input="handleSharedSearchChange"
+            />
+            <div
+              v-if="sharedFilteredSuggestions.length > 0 && sharedSearchValue"
+              class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+            >
+              <div
+                v-for="(suggestion, idx) in sharedFilteredSuggestions"
+                :key="idx"
+                @click="addSharedFilter(suggestion.column, suggestion.value)"
+                class="w-full text-left px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm flex items-center justify-between"
+              >
+                <span>{{ suggestion.label }}</span>
+                <span
+                  :class="[
+                    'text-xs px-2 py-0.5 rounded-full',
+                    suggestion.column === 'buyAsset'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                      : suggestion.column === 'sellAsset'
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
+                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
+                  ]"
+                >
+                  {{
+                    suggestion.column === 'buyAsset'
+                      ? 'Buy'
+                      : suggestion.column === 'sellAsset'
+                        ? 'Sell'
+                        : 'Status'
+                  }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Filters -->
+          <div v-if="hasActiveSharedFilters" class="space-y-2 mt-2">
+            <div
+              v-for="(values, column) in sharedFilters"
+              :key="column"
+              v-show="values && values.length > 0"
+              class="flex items-start gap-2"
+            >
+              <div class="text-xs font-medium text-gray-600 dark:text-gray-400 mt-1">
+                {{
+                  column === 'buyAsset'
+                    ? 'Buy Assets:'
+                    : column === 'sellAsset'
+                      ? 'Sell Assets:'
+                      : 'Status:'
+                }}
+              </div>
+              <div class="flex flex-wrap gap-1">
+                <span
+                  v-for="value in values"
+                  :key="value"
+                  :class="[
+                    'inline-flex items-center gap-1 px-2 py-1 rounded text-xs',
+                    column === 'buyAsset'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                      : column === 'sellAsset'
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
+                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
+                  ]"
+                >
+                  {{ value }}
+                  <button
+                    @click="removeSharedFilter(column as keyof FilterState, value)"
+                    class="hover:opacity-70 ml-1"
+                  >
+                    ×
+                  </button>
+                </span>
+              </div>
+            </div>
+            <button
+              @click="clearAllSharedFilters"
+              class="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+            >
+              Clear All Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Layout: Order Book + Right Panel -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Order Book Sidebar - Always Visible -->
         <div class="lg:col-span-1">
           <OrderBook
             :order-book-data="orderBookData"
             :loading="orderBookLoading"
             :has-more="orderBookHasMore"
-            :filters="orderBookFilters"
-            :search-value="orderBookSearchValue"
-            :filtered-suggestions="orderBookFilteredSuggestions"
+            :filters="sharedFilters"
+            :search-value="sharedSearchValue"
+            :filtered-suggestions="sharedFilteredSuggestions"
             @load-more="loadOrderBookData"
-            @update-filters="updateOrderBookFilters"
-            @update-search="updateOrderBookSearch"
-            @add-filter="addOrderBookFilter"
-            @remove-filter="removeOrderBookFilter"
-            @clear-filters="clearOrderBookFilters"
             @fill-from-order-book="fillFromOrderBook"
             @use-as-template="useAsTemplate"
           />
         </div>
 
-        <!-- Trading Interface -->
+        <!-- Right Panel with Single Tab Menu -->
         <div class="lg:col-span-1">
-          <!-- Maker/Taker Tabs -->
-          <div class="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+          <!-- Single Tab Menu -->
+          <div class="flex gap-2 mb-2 border-b border-gray-200 dark:border-gray-700">
             <button
-              @click="activeTab = 'maker'"
+              @click="activeView = 'create'"
               :class="[
-                'px-6 py-3 font-medium transition-colors',
-                activeTab === 'maker'
+                'px-4 py-2 text-sm font-medium transition-colors',
+                activeView === 'create'
                   ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300',
               ]"
@@ -65,45 +127,67 @@
               Create Offer
             </button>
             <button
-              @click="activeTab = 'taker'"
+              @click="activeView = 'take'"
               :class="[
-                'px-6 py-3 font-medium transition-colors',
-                activeTab === 'taker'
+                'px-4 py-2 text-sm font-medium transition-colors',
+                activeView === 'take'
                   ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300',
               ]"
             >
               Take Offer
             </button>
+            <button
+              @click="activeView = 'history'"
+              :class="[
+                'px-4 py-2 text-sm font-medium transition-colors',
+                activeView === 'history'
+                  ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300',
+              ]"
+            >
+              Offer History
+            </button>
           </div>
 
-          <!-- Create Offer Component -->
-          <CreateOffer
-            :mode="activeTab"
-            :initial-offering-assets="makerAssets"
-            :initial-requested-assets="takerAssets"
-            :initial-price-adjustment="priceAdjustment"
-            @submit="handleOfferSubmit"
-          />
-        </div>
-      </div>
+          <!-- Content based on active view -->
+          <!-- Create Offer View -->
+          <div v-if="activeView === 'create'">
+            <CreateOffer
+              mode="maker"
+              :initial-offering-assets="makerAssets"
+              :initial-requested-assets="takerAssets"
+              :initial-price-adjustment="priceAdjustment"
+              @submit="handleOfferSubmit"
+            />
+          </div>
 
-      <!-- Order History View -->
-      <div v-if="activeView === 'history'">
-        <OrderHistory
-          :trades="displayedTrades"
-          :loading="loading"
-          :has-more="hasMore"
-          :filters="filters"
-          :search-value="searchValue"
-          :filtered-suggestions="filteredSuggestions"
-          @load-more="loadData"
-          @update-filters="updateFilters"
-          @update-search="updateSearch"
-          @add-filter="addFilter"
-          @remove-filter="removeFilter"
-          @clear-filters="clearFilters"
-        />
+          <!-- Take Offer View -->
+          <div v-if="activeView === 'take'">
+            <CreateOffer
+              mode="taker"
+              :initial-offering-assets="makerAssets"
+              :initial-requested-assets="takerAssets"
+              :initial-price-adjustment="priceAdjustment"
+              @submit="handleOfferSubmit"
+            />
+          </div>
+
+          <!-- Offer History View -->
+          <div v-if="activeView === 'history'">
+            <OrderHistory
+              :trades="displayedTrades"
+              :loading="loading"
+              :has-more="hasMore"
+              :filters="sharedFilters"
+              :search-value="sharedSearchValue"
+              :filtered-suggestions="sharedFilteredSuggestions"
+              @load-more="loadData"
+              @fill-from-order-book="fillFromOrderBook"
+              @use-as-template="useAsTemplate"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -113,12 +197,14 @@
   import CreateOffer from '@/components/Offers/CreateOffer.vue'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
   import { useOfferStorage } from '@/shared/composables/useOfferStorage'
+  import { useTickerMapping } from '@/shared/composables/useTickerMapping'
   import type { DexieOffer } from '@/shared/services/DexieDataService'
   import { useDexieDataService } from '@/shared/services/DexieDataService'
   import { logger } from '@/shared/services/logger'
   import { xchToMojos } from '@/shared/utils/chia-units'
   import type { OfferDetails } from '@/types/offer.types'
-  import { onMounted, reactive, ref, watch } from 'vue'
+  import InputText from 'primevue/inputtext'
+  import { computed, onMounted, reactive, ref, watch } from 'vue'
   import OrderBook from './components/OrderBook.vue'
   import OrderHistory from './components/OrderHistory.vue'
 
@@ -189,9 +275,10 @@
   const walletDataService = useWalletDataService()
   const offerStorage = useOfferStorage()
   const dexieDataService = useDexieDataService()
+  const { getTickerSymbol } = useTickerMapping()
 
   // State
-  const activeView = ref<'trade' | 'history'>('trade')
+  const activeView = ref<'create' | 'take' | 'history'>('create')
   const activeTab = ref<'maker' | 'taker'>('maker')
   const priceAdjustment = ref(0)
 
@@ -203,6 +290,15 @@
     { assetId: '', amount: 0, type: 'xch', symbol: '', searchQuery: '', showDropdown: false },
   ])
 
+  // Shared filter state
+  const sharedSearchValue = ref('')
+  const sharedFilteredSuggestions = ref<SuggestionItem[]>([])
+  const sharedFilters = reactive<FilterState>({
+    buyAsset: [],
+    sellAsset: [],
+    status: [],
+  })
+
   // Order book data
   const orderBookData = ref<OrderBookOrder[]>([])
   const orderBookLoading = ref(false)
@@ -210,28 +306,20 @@
   const selectedOrderForTaking = ref<OrderBookOrder | null>(null)
   const fetchedOfferString = ref<string>('')
   const orderBookPage = ref(0)
-  const orderBookSearchValue = ref('')
-  const orderBookFilteredSuggestions = ref<SuggestionItem[]>([])
-  const orderBookFilters = reactive<FilterState>({
-    buyAsset: [],
-    sellAsset: [],
-  })
 
   // Order history data
   const displayedTrades = ref<Trade[]>([])
   const loading = ref(false)
   const hasMore = ref(true)
   const page = ref(0)
-  const searchValue = ref('')
-  const filteredSuggestions = ref<SuggestionItem[]>([])
-  const filters = reactive<FilterState>({
-    buyAsset: [],
-    sellAsset: [],
-    status: [],
-  })
 
   // Constants
   const rowsPerPage = 20
+
+  // Computed
+  const hasActiveSharedFilters = computed(() => {
+    return Object.values(sharedFilters).some(f => f && f.length > 0)
+  })
 
   // Mock USD prices for assets (in a real app, this would come from an API)
   const usdPrices: Record<string, number> = {
@@ -347,7 +435,7 @@
           type: asset.type,
         }))
 
-      if (data.mode === 'maker') {
+      if (data.mode === 'maker' || activeView.value === 'create') {
         // Create maker offer - use same logic as CreateOfferModal
         const result = await walletDataService.createOffer({
           walletId: 1,
@@ -476,6 +564,127 @@
     }
   }
 
+  // Shared filter methods
+  const handleSharedSearchChange = () => {
+    // Generate suggestions from both order book and order history data
+    const suggestions: SuggestionItem[] = []
+    const lowerSearch = sharedSearchValue.value.toLowerCase()
+
+    // Get unique assets from order book data
+    const orderBookAssets = new Set<string>()
+    orderBookData.value.forEach(order => {
+      order.offering.forEach(asset => {
+        const tickerSymbol = getTickerSymbol(asset.id)
+        if (tickerSymbol) {
+          orderBookAssets.add(tickerSymbol)
+        }
+      })
+      order.receiving.forEach(asset => {
+        const tickerSymbol = getTickerSymbol(asset.id)
+        if (tickerSymbol) {
+          orderBookAssets.add(tickerSymbol)
+        }
+      })
+    })
+
+    // Get unique assets from order history data
+    const orderHistoryAssets = new Set<string>()
+    displayedTrades.value.forEach(trade => {
+      trade.sellAssets.forEach(asset => {
+        const tickerSymbol = getTickerSymbol(asset.id)
+        if (tickerSymbol) {
+          orderHistoryAssets.add(tickerSymbol)
+        }
+      })
+      trade.buyAssets.forEach(asset => {
+        const tickerSymbol = getTickerSymbol(asset.id)
+        if (tickerSymbol) {
+          orderHistoryAssets.add(tickerSymbol)
+        }
+      })
+    })
+
+    // Combine all unique assets
+    const allAssets = new Set([...orderBookAssets, ...orderHistoryAssets])
+
+    // Generate suggestions
+    allAssets.forEach(tickerSymbol => {
+      if (tickerSymbol.toLowerCase().includes(lowerSearch)) {
+        if (!sharedFilters.buyAsset.includes(tickerSymbol)) {
+          suggestions.push({
+            value: tickerSymbol,
+            column: 'buyAsset',
+            label: `Buy ${tickerSymbol}`,
+          })
+        }
+        if (!sharedFilters.sellAsset.includes(tickerSymbol)) {
+          suggestions.push({
+            value: tickerSymbol,
+            column: 'sellAsset',
+            label: `Sell ${tickerSymbol}`,
+          })
+        }
+      }
+    })
+
+    // Add status suggestions
+    const statusOptions = ['Open', 'Filled', 'Cancelled', 'Partial']
+    statusOptions.forEach(status => {
+      if (
+        status.toLowerCase().includes(lowerSearch) &&
+        !(sharedFilters.status?.includes(status) ?? false)
+      ) {
+        suggestions.push({
+          value: status,
+          column: 'status',
+          label: `Status: ${status}`,
+        })
+      }
+    })
+
+    sharedFilteredSuggestions.value = suggestions
+  }
+
+  const addSharedFilter = (column: string, value: string) => {
+    if (column === 'buyAsset' && !sharedFilters.buyAsset.includes(value)) {
+      sharedFilters.buyAsset.push(value)
+    } else if (column === 'sellAsset' && !sharedFilters.sellAsset.includes(value)) {
+      sharedFilters.sellAsset.push(value)
+    } else if (column === 'status' && !(sharedFilters.status?.includes(value) ?? false)) {
+      if (!sharedFilters.status) {
+        sharedFilters.status = []
+      }
+      sharedFilters.status.push(value)
+    }
+    sharedSearchValue.value = ''
+    sharedFilteredSuggestions.value = []
+  }
+
+  const removeSharedFilter = (column: keyof FilterState, value: string) => {
+    if (column === 'buyAsset') {
+      const index = sharedFilters.buyAsset.indexOf(value)
+      if (index > -1) {
+        sharedFilters.buyAsset.splice(index, 1)
+      }
+    } else if (column === 'sellAsset') {
+      const index = sharedFilters.sellAsset.indexOf(value)
+      if (index > -1) {
+        sharedFilters.sellAsset.splice(index, 1)
+      }
+    } else if (column === 'status' && sharedFilters.status) {
+      const index = sharedFilters.status.indexOf(value)
+      if (index > -1) {
+        sharedFilters.status.splice(index, 1)
+      }
+    }
+  }
+
+  const clearAllSharedFilters = () => {
+    sharedFilters.buyAsset = []
+    sharedFilters.sellAsset = []
+    sharedFilters.status = []
+  }
+
   // Order book methods
   const loadOrderBookData = async () => {
     if (orderBookLoading.value || !orderBookHasMore.value) return
@@ -505,35 +714,6 @@
       void error // Suppress unused variable warning
     } finally {
       orderBookLoading.value = false
-    }
-  }
-
-  const updateOrderBookFilters = (newFilters: Partial<FilterState>) => {
-    Object.assign(orderBookFilters, newFilters)
-  }
-
-  const updateOrderBookSearch = (value: string) => {
-    orderBookSearchValue.value = value
-  }
-
-  const addOrderBookFilter = (column: string, value: string) => {
-    if (orderBookFilters[column] && !orderBookFilters[column]!.includes(value)) {
-      orderBookFilters[column]!.push(value)
-    }
-  }
-
-  const removeOrderBookFilter = (column: string, value: string) => {
-    if (orderBookFilters[column]) {
-      const index = orderBookFilters[column]!.indexOf(value)
-      if (index > -1) {
-        orderBookFilters[column]!.splice(index, 1)
-      }
-    }
-  }
-
-  const clearOrderBookFilters = (column: string) => {
-    if (orderBookFilters[column]) {
-      orderBookFilters[column] = []
     }
   }
 
@@ -567,33 +747,6 @@
     } finally {
       loading.value = false
     }
-  }
-
-  const updateFilters = (newFilters: Partial<FilterState>) => {
-    Object.assign(filters, newFilters)
-  }
-
-  const updateSearch = (value: string) => {
-    searchValue.value = value
-  }
-
-  const addFilter = (column: string, value: string) => {
-    if (filters[column] && !filters[column]!.includes(value)) {
-      filters[column]!.push(value)
-    }
-  }
-
-  const removeFilter = (column: string, value: string) => {
-    if (filters[column]) {
-      const index = filters[column]!.indexOf(value)
-      if (index > -1) {
-        filters[column]!.splice(index, 1)
-      }
-    }
-  }
-
-  const clearFilters = (column: string) => {
-    filters[column] = []
   }
 
   // Helper function to convert Dexie offer to OrderBookOrder format
@@ -688,7 +841,10 @@
 
   // Lifecycle
   onMounted(() => {
-    if (activeView.value === 'trade' && orderBookData.value.length === 0) {
+    if (
+      (activeView.value === 'create' || activeView.value === 'take') &&
+      orderBookData.value.length === 0
+    ) {
       loadOrderBookData()
     }
   })
@@ -697,7 +853,7 @@
   watch(activeView, newView => {
     if (newView === 'history' && displayedTrades.value.length === 0) {
       loadData()
-    } else if (newView === 'trade' && orderBookData.value.length === 0) {
+    } else if ((newView === 'create' || newView === 'take') && orderBookData.value.length === 0) {
       loadOrderBookData()
     }
   })
@@ -705,15 +861,11 @@
 
 <style scoped>
   .content-page {
-    @apply min-h-screen bg-gray-50 dark:bg-gray-900 p-2 sm:p-4 lg:p-6;
-  }
-
-  .content-header {
-    @apply mb-2;
+    @apply min-h-screen bg-gray-50 dark:bg-gray-900 px-1 sm:px-2 lg:px-3 py-0 sm:py-1 lg:py-1;
   }
 
   .content-body {
-    @apply space-y-4;
+    @apply space-y-2;
   }
 
   .card {

@@ -1,99 +1,13 @@
 <template>
   <div>
-    <!-- Filters Section -->
-    <div class="px-2 py-1">
-      <!-- Search Input -->
-      <div class="relative">
-        <InputText
-          v-model="localSearchValue"
-          placeholder="Search by asset or status... (AND logic - all selected must match)"
-          class="w-full text-sm"
-          @input="handleSearchChange"
-        />
-        <div
-          v-if="filteredSuggestions.length > 0 && localSearchValue"
-          class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto"
-        >
-          <div
-            v-for="(suggestion, idx) in filteredSuggestions"
-            :key="idx"
-            @click="addFilter(suggestion.column, suggestion.value)"
-            class="w-full text-left px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm flex items-center justify-between"
-          >
-            <span>{{ suggestion.label }}</span>
-            <span
-              :class="[
-                'text-xs px-2 py-0.5 rounded-full',
-                suggestion.column === 'buyAsset'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-                  : suggestion.column === 'sellAsset'
-                    ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
-                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
-              ]"
-            >
-              {{
-                suggestion.column === 'buyAsset'
-                  ? 'Buy'
-                  : suggestion.column === 'sellAsset'
-                    ? 'Sell'
-                    : 'Status'
-              }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Active Filters -->
-      <div v-if="hasActiveFilters" class="space-y-2">
-        <div
-          v-for="(values, column) in filters"
-          :key="column"
-          v-show="values.length > 0"
-          class="flex items-start gap-2"
-        >
-          <span class="text-xs font-medium text-gray-500 dark:text-gray-400 capitalize min-w-16">
-            {{ column === 'buyAsset' ? 'Buy' : column === 'sellAsset' ? 'Sell' : 'Status' }}:
-          </span>
-          <div class="flex items-center gap-1 flex-wrap">
-            <span
-              v-for="value in values"
-              :key="value"
-              :class="[
-                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs',
-                column === 'buyAsset'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-                  : column === 'sellAsset'
-                    ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
-                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
-              ]"
-            >
-              {{ value }}
-              <button
-                @click="removeFilter(column, value)"
-                class="ml-1 hover:bg-black hover:bg-opacity-10 rounded-full p-0.5"
-              >
-                ×
-              </button>
-            </span>
-            <button
-              @click="clearFilters(column)"
-              class="text-xs text-gray-500 hover:text-gray-400 underline"
-            >
-              Clear all
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Orders Table -->
     <div class="card overflow-hidden mt-1">
       <div
         class="flex justify-between items-center p-2 border-b border-gray-200 dark:border-gray-700"
       >
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Order History</h3>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Offer History</h3>
         <div class="text-sm text-gray-500 dark:text-gray-400">
-          Showing {{ filteredTrades.length }} orders
+          Showing {{ filteredTrades.length }} offers
         </div>
       </div>
 
@@ -124,7 +38,13 @@
         >
           <Column field="id" header="ID" :sortable="false">
             <template #body="{ data }">
-              <span class="text-gray-600 dark:text-gray-400">#{{ data.id }}</span>
+              <button
+                @click="showOrderDetails(data)"
+                class="text-xs text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:underline cursor-pointer transition-colors duration-200 font-mono"
+                :title="`Click for details: ${data.id}`"
+              >
+                #{{ data.id.slice(0, 8) }}...
+              </button>
             </template>
           </Column>
 
@@ -201,18 +121,18 @@
         <div
           ref="observerTarget"
           class="flex justify-center items-center py-2"
-          v-if="hasMore && !loading && filteredTrades.length > 0"
+          v-if="hasMore && !loading && !isLoadingMore && filteredTrades.length > 0"
         >
-          <div class="text-sm text-gray-500 dark:text-gray-400">Scroll to load more...</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Scroll to load more offers...</div>
         </div>
 
         <!-- Loading indicator for infinite scroll -->
         <div
-          v-if="loading && filteredTrades.length > 0"
+          v-if="(loading || isLoadingMore) && filteredTrades.length > 0"
           class="flex justify-center items-center py-2"
         >
           <ProgressSpinner size="20" />
-          <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">Loading more orders...</span>
+          <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">Loading more offers...</span>
         </div>
 
         <!-- No more data indicator -->
@@ -220,27 +140,27 @@
           v-if="!hasMore && filteredTrades.length > 0"
           class="text-center py-2 text-gray-500 dark:text-gray-400 text-sm"
         >
-          No more orders to load
+          No more offers to load
         </div>
 
-        <!-- Empty state - No orders available -->
+        <!-- Empty state - No offers available -->
         <div
           v-if="!loading && filteredTrades.length === 0 && !hasMore"
           class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400"
         >
           <div class="text-center">
-            <div class="text-lg mb-2">No orders available</div>
-            <div class="text-sm">There are currently no orders in the system</div>
+            <div class="text-lg mb-2">No offers available</div>
+            <div class="text-sm">There are currently no offers in the system</div>
           </div>
         </div>
 
-        <!-- Empty state - No orders match filters -->
+        <!-- Empty state - No offers match filters -->
         <div
           v-if="!loading && filteredTrades.length === 0 && hasMore && hasActiveFilters"
           class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400"
         >
           <div class="text-center">
-            <div class="text-lg mb-2">No orders match your filters</div>
+            <div class="text-lg mb-2">No offers match your filters</div>
             <div class="text-sm">Try adjusting your search criteria or clear filters</div>
             <button
               @click="clearAllFilters"
@@ -252,13 +172,128 @@
         </div>
       </div>
     </div>
+
+    <!-- Order Details Modal -->
+    <Dialog
+      v-model:visible="showDetailsModal"
+      modal
+      header="Order Details"
+      :style="{ width: '90vw', maxWidth: '600px' }"
+      class="p-fluid order-details-modal"
+    >
+      <div v-if="selectedOrder" class="space-y-4">
+        <!-- Order ID -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Order ID</label
+          >
+          <div
+            class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg font-mono text-sm text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600"
+          >
+            {{ selectedOrder.id }}
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Status</label
+          >
+          <Tag
+            :value="selectedOrder.status"
+            :severity="getStatusSeverity(selectedOrder.status)"
+            class="text-sm"
+          />
+        </div>
+
+        <!-- Sell Side -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >Sell Side</label
+          >
+          <div class="space-y-2">
+            <div
+              v-for="(asset, idx) in selectedOrder.sellAssets"
+              :key="idx"
+              class="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800"
+            >
+              <div class="flex items-center gap-2">
+                <span
+                  class="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-mono border border-red-200 dark:border-red-700"
+                >
+                  {{ getTickerSymbol(asset.id) }}
+                </span>
+                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{
+                  asset.type?.toUpperCase() || 'Unknown'
+                }}</span>
+              </div>
+              <span class="text-red-600 dark:text-red-400 font-mono font-semibold">
+                {{ (asset.amount || 0).toFixed(6) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buy Side -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >Buy Side</label
+          >
+          <div class="space-y-2">
+            <div
+              v-for="(asset, idx) in selectedOrder.buyAssets"
+              :key="idx"
+              class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800"
+            >
+              <div class="flex items-center gap-2">
+                <span
+                  class="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-mono border border-green-200 dark:border-green-700"
+                >
+                  {{ getTickerSymbol(asset.id) }}
+                </span>
+                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{
+                  asset.type?.toUpperCase() || 'Unknown'
+                }}</span>
+              </div>
+              <span class="text-green-600 dark:text-green-400 font-mono font-semibold">
+                {{ (asset.amount || 0).toFixed(6) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Maker -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Maker</label
+          >
+          <div
+            class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg font-mono text-sm text-gray-900 dark:text-gray-100 break-all border border-gray-200 dark:border-gray-600"
+          >
+            {{ selectedOrder.maker }}
+          </div>
+        </div>
+
+        <!-- Timestamp -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >Timestamp</label
+          >
+          <div
+            class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600"
+          >
+            {{ selectedOrder.timestamp }}
+          </div>
+        </div>
+      </div>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
   import Column from 'primevue/column'
   import DataTable from 'primevue/datatable'
-  import InputText from 'primevue/inputtext'
+  import Dialog from 'primevue/dialog'
   import ProgressSpinner from 'primevue/progressspinner'
   import Tag from 'primevue/tag'
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -310,12 +345,11 @@
   const { getTickerSymbol } = useTickerMapping()
 
   // Local state
-  const localSearchValue = ref(props.searchValue)
+  const showDetailsModal = ref(false)
+  const selectedOrder = ref<Trade | null>(null)
+  const isLoadingMore = ref(false)
   const rowsPerPage = 20
   const totalRecords = computed(() => props.trades.length)
-
-  // Constants
-  const statusOptions = ['Open', 'Filled', 'Cancelled', 'Partial']
 
   // Computed
   const hasActiveFilters = computed(() => {
@@ -346,59 +380,6 @@
     })
   })
 
-  const filteredSuggestions = computed(() => {
-    if (!localSearchValue.value) return []
-    const lowerSearch = localSearchValue.value.toLowerCase()
-    const suggestions: Array<{ value: string; column: string; label: string }> = []
-
-    // Get unique assets from the actual trade data
-    const allAssets = new Set<string>()
-
-    // Collect all unique asset codes from sell and buy assets
-    props.trades.forEach(trade => {
-      trade.sellAssets.forEach(asset => {
-        const tickerSymbol = getTickerSymbol(asset.id)
-        if (tickerSymbol) {
-          allAssets.add(tickerSymbol)
-        }
-      })
-      trade.buyAssets.forEach(asset => {
-        const tickerSymbol = getTickerSymbol(asset.id)
-        if (tickerSymbol) {
-          allAssets.add(tickerSymbol)
-        }
-      })
-    })
-
-    // Generate suggestions from real data
-    allAssets.forEach(tickerSymbol => {
-      if (tickerSymbol.toLowerCase().includes(lowerSearch)) {
-        if (!props.filters.buyAsset.includes(tickerSymbol)) {
-          suggestions.push({
-            value: tickerSymbol,
-            column: 'buyAsset',
-            label: `Buy ${tickerSymbol}`,
-          })
-        }
-        if (!props.filters.sellAsset.includes(tickerSymbol)) {
-          suggestions.push({
-            value: tickerSymbol,
-            column: 'sellAsset',
-            label: `Sell ${tickerSymbol}`,
-          })
-        }
-      }
-    })
-
-    statusOptions.forEach(status => {
-      if (status.toLowerCase().includes(lowerSearch) && !props.filters.status.includes(status)) {
-        suggestions.push({ value: status, column: 'status', label: status })
-      }
-    })
-
-    return suggestions
-  })
-
   // Methods
   const getStatusSeverity = (status: string) => {
     switch (status) {
@@ -415,28 +396,9 @@
     }
   }
 
-  const handleSearchChange = () => {
-    emit('update-search', localSearchValue.value)
-  }
-
-  const addFilter = (column: string, value: string) => {
-    emit('add-filter', column, value)
-    localSearchValue.value = ''
-  }
-
-  const removeFilter = (column: string, value: string) => {
-    emit('remove-filter', column, value)
-  }
-
-  const clearFilters = (column: string) => {
-    emit('clear-filters', column)
-  }
-
-  const clearAllFilters = () => {
-    // Clear all filter columns
-    Object.keys(props.filters).forEach(column => {
-      emit('clear-filters', column)
-    })
+  const showOrderDetails = (order: Trade) => {
+    selectedOrder.value = order
+    showDetailsModal.value = true
   }
 
   const onPage = (event: { page: number; rows: number }) => {
@@ -457,9 +419,15 @@
             entries[0].isIntersecting &&
             props.hasMore &&
             !props.loading &&
+            !isLoadingMore.value &&
             props.trades.length > 0
           ) {
+            isLoadingMore.value = true
             emit('load-more')
+            // Reset loading state after a short delay to prevent rapid firing
+            setTimeout(() => {
+              isLoadingMore.value = false
+            }, 1000)
           }
         },
         {
@@ -484,14 +452,6 @@
       observer.observe(newTarget)
     }
   })
-
-  // Watch for prop changes
-  watch(
-    () => props.searchValue,
-    newValue => {
-      localSearchValue.value = newValue
-    }
-  )
 </script>
 
 <style scoped>
@@ -612,6 +572,36 @@
 
   :deep(.p-datatable .p-datatable-scrollable-body) {
     overflow: visible !important;
+  }
+
+  /* Dialog dark mode styling */
+  :deep(.p-dialog) {
+    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700;
+  }
+
+  :deep(.p-dialog-header) {
+    @apply bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700;
+  }
+
+  :deep(.p-dialog-title) {
+    @apply text-gray-900 dark:text-gray-100 font-semibold;
+  }
+
+  :deep(.p-dialog-content) {
+    @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100;
+  }
+
+  :deep(.p-dialog-footer) {
+    @apply bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700;
+  }
+
+  :deep(.p-dialog-close-icon) {
+    @apply text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200;
+  }
+
+  /* Dialog backdrop */
+  :deep(.p-dialog-mask) {
+    @apply bg-black/50;
   }
 
   /* Ensure proper scrolling behavior */

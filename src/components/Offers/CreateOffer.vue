@@ -1,12 +1,12 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-3">
     <!-- Price Adjustment for Maker Orders -->
-    <div v-if="mode === 'maker'" class="card p-4 mb-6">
-      <div class="flex justify-between items-center mb-2">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Price Adjustment</label>
+    <div v-if="mode === 'maker'" class="card p-3 mb-3">
+      <div class="flex justify-between items-center mb-1">
+        <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Price Adjustment</label>
         <span
           :class="[
-            'text-sm font-mono',
+            'text-xs font-mono',
             priceAdjustment > 0
               ? 'text-green-600 dark:text-green-400'
               : priceAdjustment < 0
@@ -26,17 +26,17 @@
     </div>
 
     <!-- Asset Selection Forms -->
-    <div class="space-y-6">
+    <div class="space-y-3">
       <!-- Sell Assets Section -->
       <div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+        <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">
           {{ mode === 'maker' ? "Assets I'm Offering" : 'Offering Assets' }}
         </h3>
-        <div class="space-y-3">
+        <div class="space-y-2">
           <div
             v-for="(asset, index) in offeringAssets"
             :key="`offering-${index}`"
-            class="flex items-center space-x-2 p-2 border border-gray-200 dark:border-gray-600 rounded-lg"
+            class="flex items-center space-x-1 p-1 border border-gray-200 dark:border-gray-600 rounded-lg"
           >
             <div class="flex-1">
               <select
@@ -140,14 +140,14 @@
 
       <!-- Buy Assets Section -->
       <div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+        <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">
           {{ mode === 'maker' ? 'Assets I Want' : 'Requested Assets' }}
         </h3>
-        <div class="space-y-3">
+        <div class="space-y-2">
           <div
             v-for="(asset, index) in requestedAssets"
             :key="`requested-${index}`"
-            class="flex items-center space-x-2 p-2 border border-gray-200 dark:border-gray-600 rounded-lg"
+            class="flex items-center space-x-1 p-1 border border-gray-200 dark:border-gray-600 rounded-lg"
           >
             <div class="flex-1">
               <select
@@ -251,10 +251,10 @@
 
     <!-- Offer Summary -->
     <div
-      class="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+      class="mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
     >
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Offer Summary</h3>
-      <div class="space-y-3">
+      <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Offer Summary</h3>
+      <div class="space-y-2">
         <div class="flex justify-between items-center">
           <span class="text-sm text-gray-600 dark:text-gray-400">Offer Type:</span>
           <span class="text-sm font-medium text-gray-900 dark:text-white">
@@ -286,13 +286,13 @@
     </div>
 
     <!-- Action Button -->
-    <div class="mt-6 flex justify-center">
+    <div class="mt-3 flex justify-center">
       <Button
         @click="handleSubmit"
         :label="mode === 'maker' ? 'Create Offer' : 'Take Offer'"
         icon="pi pi-shopping-cart"
-        size="large"
-        class="px-8 py-3"
+        size="small"
+        class="px-6 py-2"
         :loading="isSubmitting"
         :disabled="!isFormValid"
       />

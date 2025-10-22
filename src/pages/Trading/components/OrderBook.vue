@@ -1,84 +1,6 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="px-2 py-1">
-      <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Order Book</h2>
-    </div>
-
-    <!-- Search Input -->
-    <div class="px-2 py-1">
-      <div class="relative">
-        <InputText
-          v-model="localSearchValue"
-          placeholder="Search by asset... (AND logic - all selected assets must match)"
-          class="w-full text-sm"
-          @input="handleSearchChange"
-        />
-        <div
-          v-if="filteredSuggestions.length > 0 && localSearchValue"
-          class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto"
-        >
-          <div
-            v-for="(suggestion, idx) in filteredSuggestions"
-            :key="idx"
-            @click="addFilter(suggestion.column, suggestion.value)"
-            class="w-full text-left px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm flex items-center justify-between"
-          >
-            <span>{{ suggestion.label }}</span>
-            <span
-              :class="[
-                'text-xs px-2 py-0.5 rounded-full',
-                suggestion.column === 'buyAsset'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300',
-              ]"
-            >
-              {{ suggestion.column === 'buyAsset' ? 'Buy' : 'Sell' }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Active Filters -->
-    <div v-if="hasActiveFilters" class="px-2 py-1 space-y-2">
-      <div
-        v-for="(values, column) in filters"
-        :key="column"
-        v-show="values.length > 0"
-        class="flex items-start gap-2"
-      >
-        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 capitalize min-w-12">
-          {{ column === 'buyAsset' ? 'Buy' : 'Sell' }}:
-        </span>
-        <div class="flex items-center gap-1 flex-wrap">
-          <span
-            v-for="value in values"
-            :key="value"
-            :class="[
-              'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs',
-              column === 'buyAsset'
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-                : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300',
-            ]"
-          >
-            {{ value }}
-            <button
-              @click="removeFilter(column, value)"
-              class="ml-0.5 hover:bg-black hover:bg-opacity-10 rounded-full"
-            >
-              ×
-            </button>
-          </span>
-          <button
-            @click="clearFilters(column)"
-            class="text-xs text-gray-500 hover:text-gray-400 underline"
-          >
-            Clear
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- Order Book Display -->
     <div
@@ -116,7 +38,7 @@
           >
             <div
               class="absolute inset-0 bg-red-100 dark:bg-red-900 opacity-20 group-hover:opacity-30 transition-opacity"
-              :style="{ width: `${Math.min(100, (order.id % 8) * 15)}%`, right: 0 }"
+              :style="{ width: `${Math.min(100, (parseInt(order.id) % 8) * 15)}%`, right: 0 }"
             />
 
             <div class="relative grid grid-cols-12 gap-2 py-2 text-sm items-center">
@@ -208,7 +130,7 @@
           >
             <div
               class="absolute inset-0 bg-green-100 dark:bg-green-900 opacity-20 group-hover:opacity-30 transition-opacity"
-              :style="{ width: `${Math.min(100, (order.id % 8) * 15)}%`, right: 0 }"
+              :style="{ width: `${Math.min(100, (parseInt(order.id) % 8) * 15)}%`, right: 0 }"
             />
 
             <div class="relative grid grid-cols-12 gap-2 py-2 text-sm items-center">
@@ -278,10 +200,8 @@
 
 <script setup lang="ts">
   import { useTickerMapping } from '@/shared/composables/useTickerMapping'
-  import InputText from 'primevue/inputtext'
   import ProgressSpinner from 'primevue/progressspinner'
-  import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-  import OrderTooltip from './OrderTooltip.vue'
+  import { computed, onMounted, onUnmounted, ref } from 'vue'
 
   interface Order {
     id: string
@@ -333,7 +253,6 @@
   const { getTickerSymbol } = useTickerMapping()
 
   // Local state
-  const localSearchValue = ref(props.searchValue)
   const sellScrollRef = ref<HTMLElement>()
   const buyScrollRef = ref<HTMLElement>()
 
@@ -387,10 +306,6 @@
   }
 
   // Computed
-  const hasActiveFilters = computed(() => {
-    return Object.values(props.filters).some(f => f.length > 0)
-  })
-
   const filteredOrders = computed(() => {
     return props.orderBookData.filter(order => {
       // For buy assets: order must be receiving ALL selected buy assets (AND logic)
@@ -423,53 +338,6 @@
     return orders
       .sort((a, b) => b.pricePerUnit - a.pricePerUnit)
       .slice(Math.ceil(orders.length / 2))
-  })
-
-  const filteredSuggestions = computed(() => {
-    if (!localSearchValue.value) return []
-    const lowerSearch = localSearchValue.value.toLowerCase()
-    const suggestions: Array<{ value: string; column: string; label: string }> = []
-
-    // Get unique assets from the actual order book data
-    const allAssets = new Set<string>()
-
-    // Collect all unique asset codes from offering and receiving
-    props.orderBookData.forEach(order => {
-      order.offering.forEach(asset => {
-        const tickerSymbol = getTickerSymbol(asset.id)
-        if (tickerSymbol) {
-          allAssets.add(tickerSymbol)
-        }
-      })
-      order.receiving.forEach(asset => {
-        const tickerSymbol = getTickerSymbol(asset.id)
-        if (tickerSymbol) {
-          allAssets.add(tickerSymbol)
-        }
-      })
-    })
-
-    // Generate suggestions from real data
-    allAssets.forEach(tickerSymbol => {
-      if (tickerSymbol.toLowerCase().includes(lowerSearch)) {
-        if (!props.filters.buyAsset.includes(tickerSymbol)) {
-          suggestions.push({
-            value: tickerSymbol,
-            column: 'buyAsset',
-            label: `Buy ${tickerSymbol}`,
-          })
-        }
-        if (!props.filters.sellAsset.includes(tickerSymbol)) {
-          suggestions.push({
-            value: tickerSymbol,
-            column: 'sellAsset',
-            label: `Sell ${tickerSymbol}`,
-          })
-        }
-      }
-    })
-
-    return suggestions
   })
 
   // Methods
@@ -511,23 +379,6 @@
     })
 
     return totalVolume > 0 ? weightedPriceSum / totalVolume : 1
-  }
-
-  const handleSearchChange = () => {
-    emit('update-search', localSearchValue.value)
-  }
-
-  const addFilter = (column: string, value: string) => {
-    emit('add-filter', column, value)
-    localSearchValue.value = ''
-  }
-
-  const removeFilter = (column: string, value: string) => {
-    emit('remove-filter', column, value)
-  }
-
-  const clearFilters = (column: string) => {
-    emit('clear-filters', column)
   }
 
   const handleOrderClick = (order: Order) => {
@@ -578,14 +429,6 @@
       buyElement.removeEventListener('scroll', handleBuyScroll)
     }
   })
-
-  // Watch for prop changes
-  watch(
-    () => props.searchValue,
-    newValue => {
-      localSearchValue.value = newValue
-    }
-  )
 </script>
 
 <style scoped>
