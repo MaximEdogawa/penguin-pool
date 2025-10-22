@@ -1,17 +1,7 @@
 <template>
   <div class="content-page">
     <div class="content-header">
-      <div class="flex flex-col sm:flex-row gap-4">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Trading View</h1>
-        <p class="text-gray-600 dark:text-gray-400 text-sm">
-          Trade multiple assets in a single offer
-        </p>
-      </div>
-    </div>
-
-    <div class="content-body">
-      <!-- Navigation Tabs -->
-      <div class="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex gap-2 mb-2 border-b border-gray-200 dark:border-gray-700">
         <button
           @click="activeView = 'trade'"
           :class="[
@@ -35,9 +25,10 @@
           Order History
         </button>
       </div>
-
+    </div>
+    <div class="content-body">
       <!-- Trading View -->
-      <div v-if="activeView === 'trade'" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div v-if="activeView === 'trade'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Order Book Sidebar -->
         <div class="lg:col-span-1">
           <OrderBook
@@ -59,7 +50,7 @@
         </div>
 
         <!-- Trading Interface -->
-        <div class="lg:col-span-2">
+        <div class="lg:col-span-1">
           <!-- Maker/Taker Tabs -->
           <div class="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
             <button
@@ -71,7 +62,7 @@
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300',
               ]"
             >
-              Maker Order
+              Create Offer
             </button>
             <button
               @click="activeTab = 'taker'"
@@ -82,140 +73,18 @@
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300',
               ]"
             >
-              Taker Order
+              Take Offer
             </button>
           </div>
 
-          <!-- Price Adjustment for Maker Orders -->
-          <div v-if="activeTab === 'maker'" class="card p-4 mb-6">
-            <div class="flex justify-between items-center mb-2">
-              <label class="text-sm font-medium text-gray-700 dark:text-gray-300"
-                >Price Adjustment</label
-              >
-              <span
-                :class="[
-                  'text-sm font-mono',
-                  priceAdjustment > 0
-                    ? 'text-green-600 dark:text-green-400'
-                    : priceAdjustment < 0
-                      ? 'text-red-600 dark:text-red-400'
-                      : 'text-gray-500 dark:text-gray-400',
-                ]"
-              >
-                {{ priceAdjustment > 0 ? '+' : '' }}{{ priceAdjustment }}%
-              </span>
-            </div>
-            <Slider v-model="priceAdjustment" :min="-50" :max="50" :step="1" class="w-full" />
-            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-              <span>-50%</span>
-              <span>0%</span>
-              <span>+50%</span>
-            </div>
-          </div>
-
-          <!-- Asset Selection Forms -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Sell Assets -->
-            <div class="card p-6">
-              <h2 class="text-lg font-semibold mb-4 text-red-600 dark:text-red-400">You Sell</h2>
-
-              <div v-for="(asset, index) in makerAssets" :key="`maker-${index}`" class="mb-4">
-                <div class="flex gap-3">
-                  <Dropdown
-                    v-model="asset.asset"
-                    :options="availableAssets"
-                    option-label="label"
-                    option-value="value"
-                    placeholder="Select Asset"
-                    class="flex-1"
-                    @change="updateMakerAsset(index, 'asset', $event)"
-                  />
-                  <InputNumber
-                    v-model="asset.amount"
-                    placeholder="Amount"
-                    :min-fraction-digits="6"
-                    :max-fraction-digits="6"
-                    class="flex-1"
-                    @update:model-value="updateMakerAsset(index, 'amount', $event)"
-                  />
-                  <Button
-                    v-if="makerAssets.length > 1"
-                    @click="removeMakerAsset(index)"
-                    icon="pi pi-times"
-                    severity="danger"
-                    size="small"
-                    text
-                    rounded
-                  />
-                </div>
-              </div>
-
-              <Button
-                @click="addMakerAsset"
-                label="+ Add Asset"
-                icon="pi pi-plus"
-                severity="secondary"
-                text
-                class="w-full"
-              />
-            </div>
-
-            <!-- Buy Assets -->
-            <div class="card p-6">
-              <h2 class="text-lg font-semibold mb-4 text-green-600 dark:text-green-400">You Buy</h2>
-
-              <div v-for="(asset, index) in takerAssets" :key="`taker-${index}`" class="mb-4">
-                <div class="flex gap-3">
-                  <Dropdown
-                    v-model="asset.asset"
-                    :options="availableAssets"
-                    option-label="label"
-                    option-value="value"
-                    placeholder="Select Asset"
-                    class="flex-1"
-                    @change="updateTakerAsset(index, 'asset', $event)"
-                  />
-                  <InputNumber
-                    v-model="asset.amount"
-                    placeholder="Amount"
-                    :min-fraction-digits="6"
-                    :max-fraction-digits="6"
-                    class="flex-1"
-                    @update:model-value="updateTakerAsset(index, 'amount', $event)"
-                  />
-                  <Button
-                    v-if="takerAssets.length > 1"
-                    @click="removeTakerAsset(index)"
-                    icon="pi pi-times"
-                    severity="danger"
-                    size="small"
-                    text
-                    rounded
-                  />
-                </div>
-              </div>
-
-              <Button
-                @click="addTakerAsset"
-                label="+ Add Asset"
-                icon="pi pi-plus"
-                severity="secondary"
-                text
-                class="w-full"
-              />
-            </div>
-          </div>
-
-          <!-- Create Offer Button -->
-          <div class="mt-6 flex justify-center">
-            <Button
-              @click="createOffer"
-              :label="activeTab === 'maker' ? 'Create Maker Order' : 'Take Order'"
-              icon="pi pi-shopping-cart"
-              size="large"
-              class="px-8 py-3"
-            />
-          </div>
+          <!-- Create Offer Component -->
+          <CreateOffer
+            :mode="activeTab"
+            :initial-offering-assets="makerAssets"
+            :initial-requested-assets="takerAssets"
+            :initial-price-adjustment="priceAdjustment"
+            @submit="handleOfferSubmit"
+          />
         </div>
       </div>
 
@@ -241,48 +110,73 @@
 </template>
 
 <script setup lang="ts">
+  import CreateOffer from '@/components/Offers/CreateOffer.vue'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
   import { useOfferStorage } from '@/shared/composables/useOfferStorage'
-  import { useTickerData } from '@/shared/composables/useTickerData'
+  import type { DexieOffer } from '@/shared/services/DexieDataService'
+  import { useDexieDataService } from '@/shared/services/DexieDataService'
+  import { logger } from '@/shared/services/logger'
+  import { xchToMojos } from '@/shared/utils/chia-units'
   import type { OfferDetails } from '@/types/offer.types'
-  import Button from 'primevue/button'
-  import Dropdown from 'primevue/dropdown'
-  import InputNumber from 'primevue/inputnumber'
-  import Slider from 'primevue/slider'
-  import { computed, onMounted, reactive, ref, watch } from 'vue'
+  import { onMounted, reactive, ref, watch } from 'vue'
   import OrderBook from './components/OrderBook.vue'
   import OrderHistory from './components/OrderHistory.vue'
 
   // Interfaces
   interface AssetItem {
-    asset: string
-    amount: string
+    assetId: string
+    amount: number
+    type: 'xch' | 'cat' | 'nft'
+    symbol: string
+    searchQuery: string
+    showDropdown: boolean
+  }
+
+  interface DexieAssetItem {
+    id: string
+    code: string
+    name: string
+    amount: number
   }
 
   interface OrderBookOrder {
-    id: number
-    offering: AssetItem[]
-    receiving: AssetItem[]
+    id: string
+    offering: DexieAssetItem[]
+    receiving: DexieAssetItem[]
     maker: string
     timestamp: string
     offeringUsdValue: number
     receivingUsdValue: number
     pricePerUnit: number
+    status: number
+    date_found: string
+    date_completed?: string | null
+    date_pending?: string | null
+    date_expiry?: string | null
+    known_taker?: unknown | null
+    offerString?: string
+    creatorAddress?: string
   }
 
   interface Trade {
-    id: number
-    sellAssets: AssetItem[]
-    buyAssets: AssetItem[]
+    id: string
+    sellAssets: DexieAssetItem[]
+    buyAssets: DexieAssetItem[]
     status: string
     maker: string
     timestamp: string
+    date_found: string
+    date_completed?: string | null
+    date_pending?: string | null
+    date_expiry?: string | null
+    known_taker?: unknown | null
   }
 
   interface FilterState {
     buyAsset: string[]
     sellAsset: string[]
     status?: string[]
+    [key: string]: string[] | undefined
   }
 
   interface SuggestionItem {
@@ -291,15 +185,10 @@
     label: string
   }
 
-  interface AssetOption {
-    label: string
-    value: string
-  }
-
   // Services
   const walletDataService = useWalletDataService()
   const offerStorage = useOfferStorage()
-  const { availableCatTokens } = useTickerData()
+  const dexieDataService = useDexieDataService()
 
   // State
   const activeView = ref<'trade' | 'history'>('trade')
@@ -307,13 +196,19 @@
   const priceAdjustment = ref(0)
 
   // Asset management
-  const makerAssets = ref<AssetItem[]>([{ asset: '', amount: '' }])
-  const takerAssets = ref<AssetItem[]>([{ asset: '', amount: '' }])
+  const makerAssets = ref<AssetItem[]>([
+    { assetId: '', amount: 0, type: 'xch', symbol: '', searchQuery: '', showDropdown: false },
+  ])
+  const takerAssets = ref<AssetItem[]>([
+    { assetId: '', amount: 0, type: 'xch', symbol: '', searchQuery: '', showDropdown: false },
+  ])
 
   // Order book data
   const orderBookData = ref<OrderBookOrder[]>([])
   const orderBookLoading = ref(false)
   const orderBookHasMore = ref(true)
+  const selectedOrderForTaking = ref<OrderBookOrder | null>(null)
+  const fetchedOfferString = ref<string>('')
   const orderBookPage = ref(0)
   const orderBookSearchValue = ref('')
   const orderBookFilteredSuggestions = ref<SuggestionItem[]>([])
@@ -337,20 +232,9 @@
 
   // Constants
   const rowsPerPage = 20
-  const availableAssets = computed((): AssetOption[] => [
-    { label: 'XCH (Chia)', value: 'XCH' },
-    { label: 'USDT', value: 'USDT' },
-    { label: 'USDC', value: 'USDC' },
-    ...availableCatTokens.value.map(token => ({
-      label: `${token.ticker} (${token.name})`,
-      value: token.ticker,
-    })),
-  ])
-
-  const statusOptions = ['Open', 'Filled', 'Cancelled', 'Partial']
 
   // Mock USD prices for assets (in a real app, this would come from an API)
-  const usdPrices = {
+  const usdPrices: Record<string, number> = {
     XCH: 30,
     BTC: 122013,
     ETH: 3500,
@@ -363,111 +247,228 @@
   }
 
   // Methods
-  const addMakerAsset = () => {
-    makerAssets.value.push({ asset: '', amount: '' })
-  }
 
-  const removeMakerAsset = (index: number) => {
-    if (makerAssets.value.length > 1) {
-      makerAssets.value.splice(index, 1)
+  const fillFromOrderBook = async (order: OrderBookOrder) => {
+    // Store the selected order for taking
+    selectedOrderForTaking.value = order
+
+    // Fetch the offer string using the order ID
+    try {
+      const response = await dexieDataService.inspectOffer(order.id)
+      if (response.success && response.offer?.offer) {
+        fetchedOfferString.value = response.offer.offer
+      } else {
+        fetchedOfferString.value = ''
+        logger.warn('Could not fetch offer string for order:', order.id)
+      }
+    } catch (error) {
+      logger.error('Failed to fetch offer string:', error)
+      fetchedOfferString.value = ''
     }
-  }
 
-  const addTakerAsset = () => {
-    takerAssets.value.push({ asset: '', amount: '' })
-  }
+    // Don't change tab - keep current mode
+    // Convert order data to the format expected by the component
+    makerAssets.value = order.offering.map(asset => ({
+      assetId: asset.id,
+      amount: asset.amount,
+      type: asset.id === '' ? 'xch' : 'cat',
+      symbol: asset.code || '',
+      searchQuery: asset.code || '', // Pre-fill search with ticker symbol
+      showDropdown: false,
+    }))
 
-  const removeTakerAsset = (index: number) => {
-    if (takerAssets.value.length > 1) {
-      takerAssets.value.splice(index, 1)
-    }
-  }
-
-  const updateMakerAsset = (index: number, field: keyof AssetItem, value: string) => {
-    makerAssets.value[index][field] = value
-  }
-
-  const updateTakerAsset = (index: number, field: keyof AssetItem, value: string) => {
-    takerAssets.value[index][field] = value
-  }
-
-  const fillFromOrderBook = (order: OrderBookOrder) => {
-    if (activeTab.value === 'maker') {
-      makerAssets.value = order.offering.map((a: AssetItem) => ({ ...a }))
-      takerAssets.value = order.receiving.map((a: AssetItem) => ({ ...a }))
-    } else {
-      takerAssets.value = order.offering.map((a: AssetItem) => ({ ...a }))
-      makerAssets.value = order.receiving.map((a: AssetItem) => ({ ...a }))
-    }
+    takerAssets.value = order.receiving.map(asset => ({
+      assetId: asset.id,
+      amount: asset.amount,
+      type: asset.id === '' ? 'xch' : 'cat',
+      symbol: asset.code || '',
+      searchQuery: asset.code || '', // Pre-fill search with ticker symbol
+      showDropdown: false,
+    }))
   }
 
   const useAsTemplate = (order: OrderBookOrder) => {
     if (activeTab.value === 'maker') {
-      makerAssets.value = order.offering.map((a: AssetItem) => ({ ...a }))
-      takerAssets.value = order.receiving.map((a: AssetItem) => ({ ...a }))
+      makerAssets.value = order.offering.map(asset => ({
+        assetId: asset.id,
+        amount: asset.amount,
+        type: asset.id === '' ? 'xch' : 'cat',
+        symbol: asset.code || '',
+        searchQuery: asset.code || '', // Pre-fill search with ticker symbol
+        showDropdown: false,
+      }))
+      takerAssets.value = order.receiving.map(asset => ({
+        assetId: asset.id,
+        amount: asset.amount,
+        type: asset.id === '' ? 'xch' : 'cat',
+        symbol: asset.code || '',
+        searchQuery: asset.code || '', // Pre-fill search with ticker symbol
+        showDropdown: false,
+      }))
     }
   }
 
-  const createOffer = async () => {
+  const handleOfferSubmit = async (data: {
+    offeringAssets: Array<{ assetId: string; amount: number; type: string; symbol: string }>
+    requestedAssets: Array<{ assetId: string; amount: number; type: string; symbol: string }>
+    priceAdjustment: number
+    mode: 'maker' | 'taker'
+  }) => {
     try {
+      // Helper function to convert amounts to the smallest unit based on asset type
+      const convertToSmallestUnit = (amount: number, assetType: string): number => {
+        switch (assetType) {
+          case 'xch':
+            return xchToMojos(amount) // XCH to mojos using shared utility
+          case 'cat':
+            // CAT tokens might need conversion to smallest unit
+            return Math.round(amount * 1000)
+          case 'nft':
+            return Math.floor(amount) // NFTs are whole numbers
+          default:
+            return amount // Default to exact amount for unknown tokens
+        }
+      }
+
       // Convert assets to the format expected by the wallet
-      const offerAssets = makerAssets.value
-        .filter(asset => asset.asset && asset.amount)
+      const offerAssets = data.offeringAssets
+        .filter(asset => asset.amount > 0)
         .map(asset => ({
-          assetId: asset.asset === 'XCH' ? '' : asset.asset,
-          amount: parseFloat(asset.amount) * 1000000000000, // Convert to mojos
-          type: asset.asset === 'XCH' ? 'xch' : 'cat',
+          assetId: asset.type === 'xch' ? '' : asset.assetId,
+          amount: convertToSmallestUnit(asset.amount, asset.type),
+          type: asset.type,
         }))
 
-      const requestAssets = takerAssets.value
-        .filter(asset => asset.asset && asset.amount)
+      const requestAssets = data.requestedAssets
+        .filter(asset => asset.amount > 0)
         .map(asset => ({
-          assetId: asset.asset === 'XCH' ? '' : asset.asset,
-          amount: parseFloat(asset.amount) * 1000000000000, // Convert to mojos
-          type: asset.asset === 'XCH' ? 'xch' : 'cat',
+          assetId: asset.type === 'xch' ? '' : asset.assetId,
+          amount: convertToSmallestUnit(asset.amount, asset.type),
+          type: asset.type,
         }))
 
-      if (activeTab.value === 'maker') {
-        // Create maker offer
+      if (data.mode === 'maker') {
+        // Create maker offer - use same logic as CreateOfferModal
         const result = await walletDataService.createOffer({
           walletId: 1,
           offerAssets,
           requestAssets,
-          fee: 1000000, // 0.000001 XCH fee
+          fee: xchToMojos(0.000001), // Use same fee conversion as CreateOfferModal
         })
 
-        if (result?.offer) {
-          const newOffer: OfferDetails = {
-            id: result.id || Date.now().toString(),
-            tradeId: result.tradeId || result.id || 'unknown',
-            offerString: result.offer,
-            status: 'active',
+        if (!result || !result.offer) {
+          throw new Error('Wallet did not return a valid offer string')
+        }
+
+        const newOffer: OfferDetails = {
+          id: result?.id || Date.now().toString(),
+          tradeId: result?.tradeId || result?.id || 'unknown',
+          offerString: result?.offer || '',
+          status: 'active',
+          createdAt: new Date(),
+          assetsOffered: data.offeringAssets.map(asset => ({
+            assetId: asset.type === 'xch' ? '' : asset.assetId,
+            amount: asset.amount || 0,
+            type: asset.type as 'xch' | 'cat' | 'nft',
+            symbol: asset.symbol || '',
+          })),
+          assetsRequested: data.requestedAssets.map(asset => ({
+            assetId: asset.type === 'xch' ? '' : asset.assetId,
+            amount: asset.amount || 0,
+            type: asset.type as 'xch' | 'cat' | 'nft',
+            symbol: asset.symbol || '',
+          })),
+          fee: 0.000001,
+          creatorAddress: walletDataService.address.data.value?.address || 'unknown',
+        }
+
+        await offerStorage.saveOffer(newOffer, true)
+        // Reset form
+        makerAssets.value = [
+          {
+            assetId: '',
+            amount: 0,
+            type: 'xch',
+            symbol: '',
+            searchQuery: '',
+            showDropdown: false,
+          },
+        ]
+        takerAssets.value = [
+          {
+            assetId: '',
+            amount: 0,
+            type: 'xch',
+            symbol: '',
+            searchQuery: '',
+            showDropdown: false,
+          },
+        ]
+        priceAdjustment.value = 0
+      } else {
+        // Take existing offer - use the fetched offer string
+        if (!fetchedOfferString.value || fetchedOfferString.value.trim() === '') {
+          throw new Error(
+            'No offer string available. Please select an order from the order book first.'
+          )
+        }
+
+        const result = await walletDataService.takeOffer({
+          offer: fetchedOfferString.value.trim(),
+          fee: 0.000001, // Use same fee as TakeOfferModal
+        })
+
+        if (result?.success && result?.tradeId) {
+          const takenOffer: OfferDetails = {
+            id: Date.now().toString(),
+            tradeId: result.tradeId,
+            offerString: fetchedOfferString.value.trim(),
+            status: 'pending',
             createdAt: new Date(),
-            assetsOffered: makerAssets.value.map(asset => ({
-              assetId: asset.asset || '',
-              amount: parseFloat(asset.amount) || 0,
-              type: asset.asset === 'XCH' ? 'xch' : 'cat',
-              symbol: asset.asset || '',
+            assetsOffered: data.offeringAssets.map(asset => ({
+              assetId: asset.type === 'xch' ? '' : asset.assetId,
+              amount: asset.amount || 0,
+              type: asset.type as 'xch' | 'cat' | 'nft',
+              symbol: asset.symbol || '',
             })),
-            assetsRequested: takerAssets.value.map(asset => ({
-              assetId: asset.asset || '',
-              amount: parseFloat(asset.amount) || 0,
-              type: asset.asset === 'XCH' ? 'xch' : 'cat',
-              symbol: asset.asset || '',
+            assetsRequested: data.requestedAssets.map(asset => ({
+              assetId: asset.type === 'xch' ? '' : asset.assetId,
+              amount: asset.amount || 0,
+              type: asset.type as 'xch' | 'cat' | 'nft',
+              symbol: asset.symbol || '',
             })),
             fee: 0.000001,
-            creatorAddress: walletDataService.address.data.value?.address || 'unknown',
+            creatorAddress: selectedOrderForTaking.value?.creatorAddress || 'unknown',
           }
 
-          await offerStorage.saveOffer(newOffer, true)
+          await offerStorage.saveOffer(takenOffer, true)
           // Reset form
-          makerAssets.value = [{ asset: '', amount: '' }]
-          takerAssets.value = [{ asset: '', amount: '' }]
+          makerAssets.value = [
+            {
+              assetId: '',
+              amount: 0,
+              type: 'xch',
+              symbol: '',
+              searchQuery: '',
+              showDropdown: false,
+            },
+          ]
+          takerAssets.value = [
+            {
+              assetId: '',
+              amount: 0,
+              type: 'xch',
+              symbol: '',
+              searchQuery: '',
+              showDropdown: false,
+            },
+          ]
           priceAdjustment.value = 0
+          selectedOrderForTaking.value = null
+          fetchedOfferString.value = ''
+        } else {
+          throw new Error('Failed to take offer')
         }
-      } else {
-        // Take existing offer (would need offer string from order book)
-        // This would be implemented based on the selected order
       }
     } catch (error) {
       // Handle error appropriately - could emit an event or show a toast notification
@@ -476,20 +477,35 @@
   }
 
   // Order book methods
-  const loadOrderBookData = () => {
+  const loadOrderBookData = async () => {
     if (orderBookLoading.value || !orderBookHasMore.value) return
 
     orderBookLoading.value = true
-    setTimeout(() => {
-      const newData = generateOrderBookData(orderBookPage.value * rowsPerPage, rowsPerPage)
-      orderBookData.value.push(...newData)
-      orderBookPage.value++
-      orderBookLoading.value = false
+    try {
+      const response = await dexieDataService.searchOffers({
+        page: orderBookPage.value,
+        page_size: rowsPerPage,
+        status: 0, // Only open offers
+      })
 
-      if (orderBookPage.value >= 5) {
-        orderBookHasMore.value = false
+      if (response.success && Array.isArray(response.data)) {
+        const newOrders = (response.data as DexieOffer[])
+          .filter((offer: DexieOffer) => offer && offer.offered && offer.requested) // Filter out invalid offers
+          .map(convertDexieOfferToOrderBookOrder)
+        orderBookData.value.push(...newOrders)
+        orderBookPage.value++
+
+        // Check if we have more data
+        if (newOrders.length < rowsPerPage) {
+          orderBookHasMore.value = false
+        }
       }
-    }, 500)
+    } catch (error) {
+      // Handle error appropriately - could emit an event or show a toast notification
+      void error // Suppress unused variable warning
+    } finally {
+      orderBookLoading.value = false
+    }
   }
 
   const updateOrderBookFilters = (newFilters: Partial<FilterState>) => {
@@ -501,37 +517,56 @@
   }
 
   const addOrderBookFilter = (column: string, value: string) => {
-    if (!orderBookFilters[column].includes(value)) {
-      orderBookFilters[column].push(value)
+    if (orderBookFilters[column] && !orderBookFilters[column]!.includes(value)) {
+      orderBookFilters[column]!.push(value)
     }
   }
 
   const removeOrderBookFilter = (column: string, value: string) => {
-    const index = orderBookFilters[column].indexOf(value)
-    if (index > -1) {
-      orderBookFilters[column].splice(index, 1)
+    if (orderBookFilters[column]) {
+      const index = orderBookFilters[column]!.indexOf(value)
+      if (index > -1) {
+        orderBookFilters[column]!.splice(index, 1)
+      }
     }
   }
 
   const clearOrderBookFilters = (column: string) => {
-    orderBookFilters[column] = []
+    if (orderBookFilters[column]) {
+      orderBookFilters[column] = []
+    }
   }
 
   // Order history methods
-  const loadData = () => {
+  const loadData = async () => {
     if (loading.value || !hasMore.value) return
 
     loading.value = true
-    setTimeout(() => {
-      const newData = generateTrades(page.value * rowsPerPage, rowsPerPage)
-      displayedTrades.value.push(...newData)
-      page.value++
-      loading.value = false
+    try {
+      const response = await dexieDataService.searchOffers({
+        page: page.value,
+        page_size: rowsPerPage,
+        // No status filter to get all offers for history
+      })
 
-      if (page.value >= 5) {
-        hasMore.value = false
+      if (response.success && Array.isArray(response.data)) {
+        const newTrades = (response.data as DexieOffer[])
+          .filter((offer: DexieOffer) => offer && offer.offered && offer.requested) // Filter out invalid offers
+          .map(convertDexieOfferToTrade)
+        displayedTrades.value.push(...newTrades)
+        page.value++
+
+        // Check if we have more data
+        if (newTrades.length < rowsPerPage) {
+          hasMore.value = false
+        }
       }
-    }, 500)
+    } catch (error) {
+      // Handle error appropriately - could emit an event or show a toast notification
+      void error // Suppress unused variable warning
+    } finally {
+      loading.value = false
+    }
   }
 
   const updateFilters = (newFilters: Partial<FilterState>) => {
@@ -543,15 +578,17 @@
   }
 
   const addFilter = (column: string, value: string) => {
-    if (!filters[column].includes(value)) {
-      filters[column].push(value)
+    if (filters[column] && !filters[column]!.includes(value)) {
+      filters[column]!.push(value)
     }
   }
 
   const removeFilter = (column: string, value: string) => {
-    const index = filters[column].indexOf(value)
-    if (index > -1) {
-      filters[column].splice(index, 1)
+    if (filters[column]) {
+      const index = filters[column]!.indexOf(value)
+      if (index > -1) {
+        filters[column]!.splice(index, 1)
+      }
     }
   }
 
@@ -559,94 +596,95 @@
     filters[column] = []
   }
 
-  // Mock data generators
-  const generateTrades = (startIndex: number, count: number): Trade[] => {
-    return Array.from({ length: count }, (_, i) => {
-      const assets = ['XCH', 'BTC', 'ETH', 'SOL', 'MATIC', 'AVAX', 'LINK']
-      const selectedAsset = assets[Math.floor(Math.random() * assets.length)]
-      const isSellOrder = Math.random() > 0.5
+  // Helper function to convert Dexie offer to OrderBookOrder format
+  const convertDexieOfferToOrderBookOrder = (dexieOffer: DexieOffer): OrderBookOrder => {
+    // Ensure amounts are numbers and handle undefined/null values
+    const safeOffered = dexieOffer.offered.map(item => ({
+      ...item,
+      amount: typeof item.amount === 'number' ? item.amount : 0,
+    }))
+    const safeRequested = dexieOffer.requested.map(item => ({
+      ...item,
+      amount: typeof item.amount === 'number' ? item.amount : 0,
+    }))
 
-      const basePrice = usdPrices[selectedAsset] || 1
-      const priceVariation = (Math.random() - 0.5) * 0.04
-      const assetPriceInUsdc = basePrice * (1 + priceVariation)
+    const offeringUsdValue = safeOffered.reduce(
+      (sum: number, item: DexieAssetItem) => sum + item.amount * (usdPrices[item.code] || 0),
+      0
+    )
+    const receivingUsdValue = safeRequested.reduce(
+      (sum: number, item: DexieAssetItem) => sum + item.amount * (usdPrices[item.code] || 0),
+      0
+    )
 
-      const assetAmount =
-        selectedAsset === 'BTC'
-          ? (Math.random() * 2 + 0.01).toFixed(4)
-          : selectedAsset === 'ETH'
-            ? (Math.random() * 10 + 0.1).toFixed(4)
-            : (Math.random() * 100 + 1).toFixed(4)
-
-      const usdcAmount = (parseFloat(assetAmount) * assetPriceInUsdc).toFixed(2)
-
-      const sellAssets = isSellOrder
-        ? [{ asset: selectedAsset, amount: assetAmount }]
-        : [{ asset: 'USDC', amount: usdcAmount }]
-
-      const buyAssets = isSellOrder
-        ? [{ asset: 'USDC', amount: usdcAmount }]
-        : [{ asset: selectedAsset, amount: assetAmount }]
-
-      return {
-        id: startIndex + i,
-        sellAssets,
-        buyAssets,
-        status: statusOptions[Math.floor(Math.random() * statusOptions.length)],
-        maker: `0x${Math.random().toString(16).substr(2, 4)}...${Math.random().toString(16).substr(2, 4)}`,
-        timestamp: new Date(Date.now() - Math.random() * 86400000).toLocaleString(),
-      }
-    })
+    return {
+      id: dexieOffer.id,
+      offering: safeOffered,
+      receiving: safeRequested,
+      maker: `0x${dexieOffer.id.substring(0, 8)}...${dexieOffer.id.substring(-8)}`,
+      timestamp: new Date(dexieOffer.date_found).toLocaleTimeString(),
+      offeringUsdValue,
+      receivingUsdValue,
+      pricePerUnit: receivingUsdValue / offeringUsdValue,
+      status: dexieOffer.status,
+      date_found: dexieOffer.date_found,
+      date_completed: dexieOffer.date_completed,
+      date_pending: dexieOffer.date_pending,
+      date_expiry: dexieOffer.date_expiry,
+      known_taker: dexieOffer.known_taker,
+    }
   }
 
-  const generateOrderBookData = (startIndex: number, count: number): OrderBookOrder[] => {
-    return Array.from({ length: count }, (_, i) => {
-      const assets = ['XCH', 'BTC', 'ETH', 'SOL', 'MATIC', 'AVAX', 'LINK']
-      const selectedAsset = assets[Math.floor(Math.random() * assets.length)]
-      const isSellOrder = Math.random() > 0.5
+  // Helper function to convert Dexie offer to Trade format
+  const convertDexieOfferToTrade = (dexieOffer: DexieOffer): Trade => {
+    // Ensure amounts are numbers and handle undefined/null values
+    const safeOffered = dexieOffer.offered.map(item => ({
+      ...item,
+      amount: typeof item.amount === 'number' ? item.amount : 0,
+    }))
+    const safeRequested = dexieOffer.requested.map(item => ({
+      ...item,
+      amount: typeof item.amount === 'number' ? item.amount : 0,
+    }))
 
-      const basePrice = usdPrices[selectedAsset] || 1
-      const priceVariation = (Math.random() - 0.5) * 0.04
-      const assetPriceInUsdc = basePrice * (1 + priceVariation)
-
-      const assetAmount =
-        selectedAsset === 'BTC'
-          ? (Math.random() * 2 + 0.01).toFixed(4)
-          : selectedAsset === 'ETH'
-            ? (Math.random() * 10 + 0.1).toFixed(4)
-            : (Math.random() * 100 + 1).toFixed(4)
-
-      const usdcAmount = (parseFloat(assetAmount) * assetPriceInUsdc).toFixed(2)
-
-      const offering = isSellOrder
-        ? [{ asset: selectedAsset, amount: assetAmount }]
-        : [{ asset: 'USDC', amount: usdcAmount }]
-
-      const receiving = isSellOrder
-        ? [{ asset: 'USDC', amount: usdcAmount }]
-        : [{ asset: selectedAsset, amount: assetAmount }]
-
-      const offeringUsdValue = offering.reduce(
-        (sum, item) => sum + parseFloat(item.amount) * (usdPrices[item.asset] || 0),
-        0
-      )
-      const receivingUsdValue = receiving.reduce(
-        (sum, item) => sum + parseFloat(item.amount) * (usdPrices[item.asset] || 0),
-        0
-      )
-
-      return {
-        id: startIndex + i,
-        offering,
-        receiving,
-        maker: `0x${Math.random().toString(16).substr(2, 4)}...${Math.random().toString(16).substr(2, 4)}`,
-        timestamp: new Date(Date.now() - Math.random() * 3600000).toLocaleTimeString(),
-        offeringUsdValue,
-        receivingUsdValue,
-        pricePerUnit: receivingUsdValue / offeringUsdValue,
-        assetPriceInUsdc,
-      }
-    })
+    return {
+      id: dexieOffer.id,
+      sellAssets: safeOffered,
+      buyAssets: safeRequested,
+      status: calculateOfferState(dexieOffer),
+      maker: `0x${dexieOffer.id.substring(0, 8)}...${dexieOffer.id.substring(-8)}`,
+      timestamp: new Date(dexieOffer.date_found).toLocaleString(),
+      date_found: dexieOffer.date_found,
+      date_completed: dexieOffer.date_completed,
+      date_pending: dexieOffer.date_pending,
+      date_expiry: dexieOffer.date_expiry,
+      known_taker: dexieOffer.known_taker,
+    }
   }
+
+  // Helper function to calculate offer state
+  const calculateOfferState = (offer: DexieOffer): string => {
+    const dateFound = offer.date_found ? new Date(offer.date_found) : null
+    const dateCompleted = offer.date_completed ? new Date(offer.date_completed) : null
+    const datePending = offer.date_pending ? new Date(offer.date_pending) : null
+    const dateExpiry = offer.date_expiry ? new Date(offer.date_expiry) : null
+    const knownTaker = offer.known_taker
+
+    if (dateCompleted && knownTaker !== null && knownTaker !== undefined) return 'Completed'
+    if (offer.spent_block_index !== null && offer.spent_block_index !== undefined)
+      return 'Cancelled'
+    if (datePending && !dateFound) return 'Pending'
+    if (dateExpiry && dateFound && dateExpiry < dateFound) return 'Expired'
+    if (offer.block_expiry !== null && offer.block_expiry !== undefined) return 'Expired'
+    if (dateFound && !dateCompleted) {
+      const isWithinExpiry = !dateExpiry || dateFound < dateExpiry
+      if (isWithinExpiry) return 'Open'
+    }
+
+    return 'Unknown'
+  }
+
+  // Mock data generators removed - using real data from Dexie API
 
   // Lifecycle
   onMounted(() => {
@@ -667,15 +705,15 @@
 
 <style scoped>
   .content-page {
-    @apply min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8;
+    @apply min-h-screen bg-gray-50 dark:bg-gray-900 p-2 sm:p-4 lg:p-6;
   }
 
   .content-header {
-    @apply mb-6;
+    @apply mb-2;
   }
 
   .content-body {
-    @apply space-y-6;
+    @apply space-y-4;
   }
 
   .card {

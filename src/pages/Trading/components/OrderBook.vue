@@ -1,42 +1,47 @@
 <template>
-  <div class="card p-4">
-    <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Order Book</h2>
+  <div>
+    <!-- Header -->
+    <div class="px-2 py-1">
+      <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Order Book</h2>
+    </div>
 
     <!-- Search Input -->
-    <div class="relative mb-4">
-      <InputText
-        v-model="localSearchValue"
-        placeholder="Search by asset... (AND logic - all selected assets must match)"
-        class="w-full"
-        @input="handleSearchChange"
-      />
-      <div
-        v-if="filteredSuggestions.length > 0 && localSearchValue"
-        class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto"
-      >
+    <div class="px-2 py-1">
+      <div class="relative">
+        <InputText
+          v-model="localSearchValue"
+          placeholder="Search by asset... (AND logic - all selected assets must match)"
+          class="w-full text-sm"
+          @input="handleSearchChange"
+        />
         <div
-          v-for="(suggestion, idx) in filteredSuggestions"
-          :key="idx"
-          @click="addFilter(suggestion.column, suggestion.value)"
-          class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm flex items-center justify-between"
+          v-if="filteredSuggestions.length > 0 && localSearchValue"
+          class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto"
         >
-          <span>{{ suggestion.label }}</span>
-          <span
-            :class="[
-              'text-xs px-2 py-0.5 rounded-full',
-              suggestion.column === 'buyAsset'
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-                : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300',
-            ]"
+          <div
+            v-for="(suggestion, idx) in filteredSuggestions"
+            :key="idx"
+            @click="addFilter(suggestion.column, suggestion.value)"
+            class="w-full text-left px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm flex items-center justify-between"
           >
-            {{ suggestion.column === 'buyAsset' ? 'Buy' : 'Sell' }}
-          </span>
+            <span>{{ suggestion.label }}</span>
+            <span
+              :class="[
+                'text-xs px-2 py-0.5 rounded-full',
+                suggestion.column === 'buyAsset'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300',
+              ]"
+            >
+              {{ suggestion.column === 'buyAsset' ? 'Buy' : 'Sell' }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Active Filters -->
-    <div v-if="hasActiveFilters" class="space-y-2 mb-4">
+    <div v-if="hasActiveFilters" class="px-2 py-1 space-y-2">
       <div
         v-for="(values, column) in filters"
         :key="column"
@@ -77,7 +82,7 @@
 
     <!-- Order Book Display -->
     <div
-      class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700"
+      class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mt-1 order-book-container"
     >
       <!-- Header -->
       <div
@@ -91,8 +96,12 @@
       <!-- Sell Orders (Asks) -->
       <div
         ref="sellScrollRef"
-        class="overflow-y-scroll"
-        style="height: 280px; display: flex; flex-direction: column-reverse"
+        class="overflow-y-scroll sell-orders-section"
+        :style="{
+          height: `${sellSectionHeight}%`,
+          display: 'flex',
+          flexDirection: 'column-reverse',
+        }"
       >
         <div class="px-3 py-2">
           <div v-if="loading" class="flex justify-center items-center py-4">
@@ -130,13 +139,9 @@
                   :key="idx"
                   class="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900 bg-opacity-50 dark:bg-opacity-30 text-red-700 dark:text-red-400 rounded text-xs font-mono whitespace-nowrap"
                 >
-                  {{ item.asset }}
+                  {{ getTickerSymbol(item.id) }}
                   <span class="text-gray-600 dark:text-gray-400">
-                    {{
-                      parseFloat(item.amount).toFixed(
-                        item.asset === 'BTC' ? 4 : item.asset === 'USDC' ? 2 : 2
-                      )
-                    }}
+                    {{ (item.amount || 0).toFixed(6) }}
                   </span>
                 </span>
               </div>
@@ -180,8 +185,20 @@
         </div>
       </div>
 
+      <!-- Resize Handle -->
+      <div
+        class="resize-handle bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 cursor-row-resize transition-colors"
+        @mousedown="startResize"
+      >
+        <div class="h-1 w-full"></div>
+      </div>
+
       <!-- Buy Orders (Bids) -->
-      <div ref="buyScrollRef" class="overflow-y-scroll" style="height: 280px">
+      <div
+        ref="buyScrollRef"
+        class="overflow-y-scroll buy-orders-section"
+        :style="{ height: `${buySectionHeight}%` }"
+      >
         <div class="px-3 py-2">
           <div
             v-for="order in filteredBuyOrders"
@@ -214,13 +231,9 @@
                   :key="idx"
                   class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900 bg-opacity-50 dark:bg-opacity-30 text-green-700 dark:text-green-400 rounded text-xs font-mono whitespace-nowrap"
                 >
-                  {{ item.asset }}
+                  {{ getTickerSymbol(item.id) }}
                   <span class="text-gray-600 dark:text-gray-400">
-                    {{
-                      parseFloat(item.amount).toFixed(
-                        item.asset === 'BTC' ? 4 : item.asset === 'USDC' ? 2 : 2
-                      )
-                    }}
+                    {{ (item.amount || 0).toFixed(6) }}
                   </span>
                 </span>
               </div>
@@ -264,21 +277,27 @@
 </template>
 
 <script setup lang="ts">
+  import { useTickerMapping } from '@/shared/composables/useTickerMapping'
   import InputText from 'primevue/inputtext'
   import ProgressSpinner from 'primevue/progressspinner'
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
   import OrderTooltip from './OrderTooltip.vue'
 
   interface Order {
-    id: number
-    offering: Array<{ asset: string; amount: string }>
-    receiving: Array<{ asset: string; amount: string }>
+    id: string
+    offering: Array<{ id: string; code: string; name: string; amount: number }>
+    receiving: Array<{ id: string; code: string; name: string; amount: number }>
     maker: string
     timestamp: string
     offeringUsdValue: number
     receivingUsdValue: number
     pricePerUnit: number
-    assetPriceInUsdc: number
+    status: number
+    date_found: string
+    date_completed?: string | null
+    date_pending?: string | null
+    date_expiry?: string | null
+    known_taker?: unknown | null
   }
 
   interface Props {
@@ -310,10 +329,49 @@
     'use-as-template': [order: Order]
   }>()
 
+  // Services
+  const { getTickerSymbol } = useTickerMapping()
+
   // Local state
   const localSearchValue = ref(props.searchValue)
   const sellScrollRef = ref<HTMLElement>()
   const buyScrollRef = ref<HTMLElement>()
+
+  // Resize functionality
+  const isResizing = ref(false)
+  const sellSectionHeight = ref(50) // percentage
+  const buySectionHeight = ref(50) // percentage
+
+  const startResize = (event: MouseEvent) => {
+    isResizing.value = true
+    event.preventDefault()
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing.value) return
+
+      const container = sellScrollRef.value?.parentElement
+      if (!container) return
+
+      const containerRect = container.getBoundingClientRect()
+      const relativeY = e.clientY - containerRect.top
+      const percentage = (relativeY / containerRect.height) * 100
+
+      // Constrain between 20% and 80%
+      const constrainedPercentage = Math.max(20, Math.min(80, percentage))
+
+      sellSectionHeight.value = constrainedPercentage
+      buySectionHeight.value = 100 - constrainedPercentage
+    }
+
+    const handleMouseUp = () => {
+      isResizing.value = false
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }
 
   // Mock USD prices
   const usdPrices: Record<string, number> = {
@@ -328,8 +386,6 @@
     LINK: 15,
   }
 
-  const availableAssets = ['XCH', 'BTC', 'ETH', 'USDT', 'USDC', 'SOL', 'MATIC', 'AVAX', 'LINK']
-
   // Computed
   const hasActiveFilters = computed(() => {
     return Object.values(props.filters).some(f => f.length > 0)
@@ -341,14 +397,14 @@
       const buyMatch =
         props.filters.buyAsset.length === 0 ||
         props.filters.buyAsset.every(filterAsset =>
-          order.receiving.some(orderAsset => orderAsset.asset === filterAsset)
+          order.receiving.some(orderAsset => getTickerSymbol(orderAsset.id) === filterAsset)
         )
 
       // For sell assets: order must be offering ALL selected sell assets (AND logic)
       const sellMatch =
         props.filters.sellAsset.length === 0 ||
         props.filters.sellAsset.every(filterAsset =>
-          order.offering.some(orderAsset => orderAsset.asset === filterAsset)
+          order.offering.some(orderAsset => getTickerSymbol(orderAsset.id) === filterAsset)
         )
 
       return buyMatch && sellMatch
@@ -374,13 +430,41 @@
     const lowerSearch = localSearchValue.value.toLowerCase()
     const suggestions: Array<{ value: string; column: string; label: string }> = []
 
-    availableAssets.forEach(asset => {
-      if (asset.toLowerCase().includes(lowerSearch)) {
-        if (!props.filters.buyAsset.includes(asset)) {
-          suggestions.push({ value: asset, column: 'buyAsset', label: `Buy ${asset}` })
+    // Get unique assets from the actual order book data
+    const allAssets = new Set<string>()
+
+    // Collect all unique asset codes from offering and receiving
+    props.orderBookData.forEach(order => {
+      order.offering.forEach(asset => {
+        const tickerSymbol = getTickerSymbol(asset.id)
+        if (tickerSymbol) {
+          allAssets.add(tickerSymbol)
         }
-        if (!props.filters.sellAsset.includes(asset)) {
-          suggestions.push({ value: asset, column: 'sellAsset', label: `Sell ${asset}` })
+      })
+      order.receiving.forEach(asset => {
+        const tickerSymbol = getTickerSymbol(asset.id)
+        if (tickerSymbol) {
+          allAssets.add(tickerSymbol)
+        }
+      })
+    })
+
+    // Generate suggestions from real data
+    allAssets.forEach(tickerSymbol => {
+      if (tickerSymbol.toLowerCase().includes(lowerSearch)) {
+        if (!props.filters.buyAsset.includes(tickerSymbol)) {
+          suggestions.push({
+            value: tickerSymbol,
+            column: 'buyAsset',
+            label: `Buy ${tickerSymbol}`,
+          })
+        }
+        if (!props.filters.sellAsset.includes(tickerSymbol)) {
+          suggestions.push({
+            value: tickerSymbol,
+            column: 'sellAsset',
+            label: `Sell ${tickerSymbol}`,
+          })
         }
       }
     })
@@ -391,15 +475,16 @@
   // Methods
   const calculatePriceInUsdc = (order: Order) => {
     const firstAsset = order.offering[0]
+    if (!firstAsset) return 0
 
-    if (firstAsset.asset === 'USDC') {
+    if (firstAsset.code === 'USDC') {
       return 1
     } else {
-      const usdcReceiving = order.receiving.find(a => a.asset === 'USDC')
+      const usdcReceiving = order.receiving.find(a => a.code === 'USDC')
       if (usdcReceiving) {
-        return parseFloat(usdcReceiving.amount) / parseFloat(firstAsset.amount)
+        return usdcReceiving.amount / firstAsset.amount
       } else {
-        return usdPrices[firstAsset.asset] || 1
+        return usdPrices[firstAsset.code] || 1
       }
     }
   }
@@ -412,13 +497,13 @@
 
     filteredOrders.value.forEach(order => {
       const firstAsset = order.offering[0]
-      if (firstAsset.asset !== 'USDC') {
+      if (firstAsset && firstAsset.code !== 'USDC') {
         const usdcItem =
-          order.receiving.find(a => a.asset === 'USDC') ||
-          order.offering.find(a => a.asset === 'USDC')
+          order.receiving.find(a => a.code === 'USDC') ||
+          order.offering.find(a => a.code === 'USDC')
         if (usdcItem) {
-          const volume = parseFloat(firstAsset.amount)
-          const price = parseFloat(usdcItem.amount) / volume
+          const volume = firstAsset.amount
+          const price = usdcItem.amount / volume
           totalVolume += volume
           weightedPriceSum += price * volume
         }
@@ -520,6 +605,79 @@
   /* Dark mode for loading spinner */
   :deep(.p-progress-spinner-circle) {
     @apply stroke-primary-500 dark:stroke-primary-400;
+  }
+
+  /* Order Book Container - Responsive and Resizable */
+  .order-book-container {
+    min-height: 60vh;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Responsive heights for order sections */
+  .sell-orders-section {
+    min-height: 200px;
+    max-height: 400px;
+  }
+
+  .buy-orders-section {
+    min-height: 200px;
+    max-height: 400px;
+  }
+
+  /* Resize handle styling */
+  .resize-handle {
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  .resize-handle:hover {
+    background-color: rgb(156 163 175) !important; /* gray-400 */
+  }
+
+  .dark .resize-handle:hover {
+    background-color: rgb(107 114 128) !important; /* gray-500 */
+  }
+
+  /* Responsive breakpoints */
+  @media (min-width: 640px) {
+    .order-book-container {
+      min-height: 65vh;
+      max-height: 85vh;
+    }
+
+    .sell-orders-section,
+    .buy-orders-section {
+      min-height: 250px;
+      max-height: 500px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .order-book-container {
+      min-height: 70vh;
+      max-height: 90vh;
+    }
+
+    .sell-orders-section,
+    .buy-orders-section {
+      min-height: 300px;
+      max-height: 600px;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .order-book-container {
+      min-height: 75vh;
+      max-height: 95vh;
+    }
+
+    .sell-orders-section,
+    .buy-orders-section {
+      min-height: 350px;
+      max-height: 700px;
+    }
   }
 
   /* Dark mode for scrollbars */
