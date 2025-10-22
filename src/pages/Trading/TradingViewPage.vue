@@ -610,14 +610,22 @@
     // Generate suggestions
     allAssets.forEach(tickerSymbol => {
       if (tickerSymbol.toLowerCase().includes(lowerSearch)) {
-        if (!sharedFilters.buyAsset.includes(tickerSymbol)) {
+        if (
+          !sharedFilters.buyAsset.some(
+            filter => filter.toLowerCase() === tickerSymbol.toLowerCase()
+          )
+        ) {
           suggestions.push({
             value: tickerSymbol,
             column: 'buyAsset',
             label: `Buy ${tickerSymbol}`,
           })
         }
-        if (!sharedFilters.sellAsset.includes(tickerSymbol)) {
+        if (
+          !sharedFilters.sellAsset.some(
+            filter => filter.toLowerCase() === tickerSymbol.toLowerCase()
+          )
+        ) {
           suggestions.push({
             value: tickerSymbol,
             column: 'sellAsset',
@@ -646,11 +654,20 @@
   }
 
   const addSharedFilter = (column: string, value: string) => {
-    if (column === 'buyAsset' && !sharedFilters.buyAsset.includes(value)) {
+    if (
+      column === 'buyAsset' &&
+      !sharedFilters.buyAsset.some(filter => filter.toLowerCase() === value.toLowerCase())
+    ) {
       sharedFilters.buyAsset.push(value)
-    } else if (column === 'sellAsset' && !sharedFilters.sellAsset.includes(value)) {
+    } else if (
+      column === 'sellAsset' &&
+      !sharedFilters.sellAsset.some(filter => filter.toLowerCase() === value.toLowerCase())
+    ) {
       sharedFilters.sellAsset.push(value)
-    } else if (column === 'status' && !(sharedFilters.status?.includes(value) ?? false)) {
+    } else if (
+      column === 'status' &&
+      !(sharedFilters.status?.some(filter => filter.toLowerCase() === value.toLowerCase()) ?? false)
+    ) {
       if (!sharedFilters.status) {
         sharedFilters.status = []
       }
@@ -658,31 +675,40 @@
     }
     sharedSearchValue.value = ''
     sharedFilteredSuggestions.value = []
+    saveFilterState()
   }
 
   const removeSharedFilter = (column: keyof FilterState, value: string) => {
     if (column === 'buyAsset') {
-      const index = sharedFilters.buyAsset.indexOf(value)
+      const index = sharedFilters.buyAsset.findIndex(
+        filter => filter.toLowerCase() === value.toLowerCase()
+      )
       if (index > -1) {
         sharedFilters.buyAsset.splice(index, 1)
       }
     } else if (column === 'sellAsset') {
-      const index = sharedFilters.sellAsset.indexOf(value)
+      const index = sharedFilters.sellAsset.findIndex(
+        filter => filter.toLowerCase() === value.toLowerCase()
+      )
       if (index > -1) {
         sharedFilters.sellAsset.splice(index, 1)
       }
     } else if (column === 'status' && sharedFilters.status) {
-      const index = sharedFilters.status.indexOf(value)
+      const index = sharedFilters.status.findIndex(
+        filter => filter.toLowerCase() === value.toLowerCase()
+      )
       if (index > -1) {
         sharedFilters.status.splice(index, 1)
       }
     }
+    saveFilterState()
   }
 
   const clearAllSharedFilters = () => {
     sharedFilters.buyAsset = []
     sharedFilters.sellAsset = []
     sharedFilters.status = []
+    saveFilterState()
   }
 
   // Order book methods
@@ -837,10 +863,68 @@
     return 'Unknown'
   }
 
+  // Session store for filter persistence
+  const sessionFilterStore = ref<{
+    buyAsset: string[]
+    sellAsset: string[]
+    status: string[]
+    searchValue: string
+  }>({
+    buyAsset: [],
+    sellAsset: [],
+    status: [],
+    searchValue: '',
+  })
+
+  // Filter persistence methods
+  const saveFilterState = () => {
+    sessionFilterStore.value = {
+      buyAsset: [...sharedFilters.buyAsset],
+      sellAsset: [...sharedFilters.sellAsset],
+      status: [...(sharedFilters.status || [])],
+      searchValue: sharedSearchValue.value,
+    }
+  }
+
+  const loadFilterState = () => {
+    sharedFilters.buyAsset = [...sessionFilterStore.value.buyAsset]
+    sharedFilters.sellAsset = [...sessionFilterStore.value.sellAsset]
+    sharedFilters.status = [...sessionFilterStore.value.status]
+    sharedSearchValue.value = sessionFilterStore.value.searchValue
+  }
+
+  const setDefaultFilter = () => {
+    // Set default XCH TBYC filter (buy XCH, sell TBYC)
+    sharedFilters.buyAsset = ['XCH']
+    sharedFilters.sellAsset = ['TBYC']
+    saveFilterState()
+  }
+
+  // Watch for filter changes to save state
+  watch(
+    sharedFilters,
+    () => {
+      saveFilterState()
+    },
+    { deep: true }
+  )
+
+  watch(sharedSearchValue, () => {
+    saveFilterState()
+  })
+
   // Mock data generators removed - using real data from Dexie API
 
   // Lifecycle
   onMounted(() => {
+    // Load saved filter state from localStorage
+    loadFilterState()
+
+    // Set default filter if no filters are applied
+    if (!hasActiveSharedFilters.value) {
+      setDefaultFilter()
+    }
+
     if (
       (activeView.value === 'create' || activeView.value === 'take') &&
       orderBookData.value.length === 0

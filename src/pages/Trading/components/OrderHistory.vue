@@ -128,7 +128,7 @@
 
         <!-- Loading indicator for infinite scroll -->
         <div
-          v-if="(loading || isLoadingMore) && filteredTrades.length > 0"
+          v-if="(loading || isLoadingMore) && filteredTrades.length > 0 && hasMore"
           class="flex justify-center items-center py-2"
         >
           <ProgressSpinner size="20" />
@@ -362,14 +362,18 @@
       const buyMatch =
         props.filters.buyAsset.length === 0 ||
         props.filters.buyAsset.every(filterAsset =>
-          trade.buyAssets.some(tradeAsset => getTickerSymbol(tradeAsset.id) === filterAsset)
+          trade.buyAssets.some(
+            tradeAsset => getTickerSymbol(tradeAsset.id).toLowerCase() === filterAsset.toLowerCase()
+          )
         )
 
       // For sell assets: trade must contain ALL selected sell assets
       const sellMatch =
         props.filters.sellAsset.length === 0 ||
         props.filters.sellAsset.every(filterAsset =>
-          trade.sellAssets.some(tradeAsset => getTickerSymbol(tradeAsset.id) === filterAsset)
+          trade.sellAssets.some(
+            tradeAsset => getTickerSymbol(tradeAsset.id).toLowerCase() === filterAsset.toLowerCase()
+          )
         )
 
       // For status: trade status must match one of selected statuses

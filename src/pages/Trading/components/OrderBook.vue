@@ -83,7 +83,71 @@
             <div
               class="absolute left-0 top-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded p-3 shadow-lg z-20 hidden group-hover:block min-w-[300px]"
             >
-              <OrderTooltip :order="order" :usd-prices="usdPrices" />
+              <div class="space-y-2">
+                <div class="text-sm font-semibold text-gray-900 dark:text-white">Order Details</div>
+
+                <!-- Order ID -->
+                <div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">ID:</span>
+                  <span class="text-xs font-mono text-gray-900 dark:text-white ml-1"
+                    >{{ order.id.slice(0, 16) }}...</span
+                  >
+                </div>
+
+                <!-- Offering Assets -->
+                <div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Offering:</span>
+                  <div class="mt-1 space-y-1">
+                    <div
+                      v-for="(asset, idx) in order.offering"
+                      :key="idx"
+                      class="flex items-center justify-between text-xs"
+                    >
+                      <span class="text-gray-900 dark:text-white">{{
+                        getTickerSymbol(asset.id)
+                      }}</span>
+                      <span class="font-mono text-gray-700 dark:text-gray-300">{{
+                        (asset.amount || 0).toFixed(6)
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Receiving Assets -->
+                <div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Receiving:</span>
+                  <div class="mt-1 space-y-1">
+                    <div
+                      v-for="(asset, idx) in order.receiving"
+                      :key="idx"
+                      class="flex items-center justify-between text-xs"
+                    >
+                      <span class="text-gray-900 dark:text-white">{{
+                        getTickerSymbol(asset.id)
+                      }}</span>
+                      <span class="font-mono text-gray-700 dark:text-gray-300">{{
+                        (asset.amount || 0).toFixed(6)
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Maker -->
+                <div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Maker:</span>
+                  <span class="text-xs font-mono text-gray-900 dark:text-white ml-1">{{
+                    order.maker
+                  }}</span>
+                </div>
+
+                <!-- Timestamp -->
+                <div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Time:</span>
+                  <span class="text-xs text-gray-900 dark:text-white ml-1">{{
+                    order.timestamp
+                  }}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -175,7 +239,71 @@
             <div
               class="absolute left-0 top-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded p-3 shadow-lg z-20 hidden group-hover:block min-w-[300px]"
             >
-              <OrderTooltip :order="order" :usd-prices="usdPrices" />
+              <div class="space-y-2">
+                <div class="text-sm font-semibold text-gray-900 dark:text-white">Order Details</div>
+
+                <!-- Order ID -->
+                <div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">ID:</span>
+                  <span class="text-xs font-mono text-gray-900 dark:text-white ml-1"
+                    >{{ order.id.slice(0, 16) }}...</span
+                  >
+                </div>
+
+                <!-- Offering Assets -->
+                <div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Offering:</span>
+                  <div class="mt-1 space-y-1">
+                    <div
+                      v-for="(asset, idx) in order.offering"
+                      :key="idx"
+                      class="flex items-center justify-between text-xs"
+                    >
+                      <span class="text-gray-900 dark:text-white">{{
+                        getTickerSymbol(asset.id)
+                      }}</span>
+                      <span class="font-mono text-gray-700 dark:text-gray-300">{{
+                        (asset.amount || 0).toFixed(6)
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Receiving Assets -->
+                <div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Receiving:</span>
+                  <div class="mt-1 space-y-1">
+                    <div
+                      v-for="(asset, idx) in order.receiving"
+                      :key="idx"
+                      class="flex items-center justify-between text-xs"
+                    >
+                      <span class="text-gray-900 dark:text-white">{{
+                        getTickerSymbol(asset.id)
+                      }}</span>
+                      <span class="font-mono text-gray-700 dark:text-gray-300">{{
+                        (asset.amount || 0).toFixed(6)
+                      }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Maker -->
+                <div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Maker:</span>
+                  <span class="text-xs font-mono text-gray-900 dark:text-white ml-1">{{
+                    order.maker
+                  }}</span>
+                </div>
+
+                <!-- Timestamp -->
+                <div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Time:</span>
+                  <span class="text-xs text-gray-900 dark:text-white ml-1">{{
+                    order.timestamp
+                  }}</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -312,14 +440,18 @@
       const buyMatch =
         props.filters.buyAsset.length === 0 ||
         props.filters.buyAsset.every(filterAsset =>
-          order.receiving.some(orderAsset => getTickerSymbol(orderAsset.id) === filterAsset)
+          order.receiving.some(
+            orderAsset => getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase()
+          )
         )
 
       // For sell assets: order must be offering ALL selected sell assets (AND logic)
       const sellMatch =
         props.filters.sellAsset.length === 0 ||
         props.filters.sellAsset.every(filterAsset =>
-          order.offering.some(orderAsset => getTickerSymbol(orderAsset.id) === filterAsset)
+          order.offering.some(
+            orderAsset => getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase()
+          )
         )
 
       return buyMatch && sellMatch
