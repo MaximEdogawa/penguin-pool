@@ -100,10 +100,10 @@
             </div>
             <div class="flex-1">
               <input
-                v-model.number="asset.amount"
-                type="number"
-                step="0.000001"
-                min="0"
+                v-model="asset.amount"
+                type="text"
+                inputmode="decimal"
+                pattern="[0-9]*\.?[0-9]*"
                 placeholder="Amount"
                 :disabled="mode === 'taker'"
                 class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
@@ -114,6 +114,7 @@
                     ($event.target as HTMLInputElement)?.value || ''
                   )
                 "
+                @paste="handleAmountPaste($event, index, 'offering')"
               />
             </div>
             <button
@@ -211,10 +212,10 @@
             </div>
             <div class="flex-1">
               <input
-                v-model.number="asset.amount"
-                type="number"
-                step="0.000001"
-                min="0"
+                v-model="asset.amount"
+                type="text"
+                inputmode="decimal"
+                pattern="[0-9]*\.?[0-9]*"
                 placeholder="Amount"
                 :disabled="mode === 'taker'"
                 class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs"
@@ -225,6 +226,7 @@
                     ($event.target as HTMLInputElement)?.value || ''
                   )
                 "
+                @paste="handleAmountPaste($event, index, 'requested')"
               />
             </div>
             <button
@@ -434,6 +436,29 @@
 
   const updateRequestedAsset = (index: number, field: keyof AssetItem, value: string | number) => {
     requestedAssets[index][field] = value as never
+  }
+
+  // Handle paste events for amount fields
+  const handleAmountPaste = (
+    event: ClipboardEvent,
+    index: number,
+    type: 'offering' | 'requested'
+  ) => {
+    event.preventDefault()
+    const pastedText = event.clipboardData?.getData('text') || ''
+
+    // Clean the pasted text to only allow numbers and decimal points
+    const cleanedText = pastedText.replace(/[^0-9.]/g, '')
+
+    // Ensure only one decimal point
+    const parts = cleanedText.split('.')
+    const finalText = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : cleanedText
+
+    if (type === 'offering') {
+      updateOfferingAsset(index, 'amount', finalText)
+    } else {
+      updateRequestedAsset(index, 'amount', finalText)
+    }
   }
 
   // Asset selection methods

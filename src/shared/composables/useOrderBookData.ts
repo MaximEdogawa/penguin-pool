@@ -237,7 +237,7 @@ export function useOrderBookData(toastService?: { add: (options: ToastOptions) =
           severity: 'info',
           summary: '🔄 Market Data Updated',
           detail: 'Order book refreshed with latest market data',
-          life: 4000,
+          life: 6000,
           closable: true,
           group: 'auto-refresh',
         })

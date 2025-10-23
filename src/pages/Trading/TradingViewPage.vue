@@ -168,7 +168,7 @@
   const handleOfferSubmitWithView = async (data: OfferSubmitData) => {
     const result = await handleOfferSubmit(data, activeView.value)
 
-    // If offer was created successfully, automatically upload to Dexie
+    // Handle successful offer creation
     if (result?.success && result?.offerString) {
       try {
         // Show uploading toast with beautiful styling
@@ -177,7 +177,7 @@
           summary: '🚀 Uploading Offer',
           detail:
             'Your offer is being uploaded to Dexie for public trading. This may take a few moments...',
-          life: 6000,
+          life: 10000,
           closable: true,
           group: 'offer-upload',
         })
@@ -190,7 +190,7 @@
           severity: 'success',
           summary: '✅ Offer Uploaded Successfully!',
           detail: `Your offer is now live on Dexie! Other traders can now see and take your offer. Dexie ID: ${uploadResult.dexieId}`,
-          life: 8000,
+          life: 15000,
           closable: true,
           group: 'offer-upload',
         })
@@ -204,7 +204,7 @@
           summary: '📊 Order Book Updated',
           detail:
             'The order book has been refreshed to show your new offer and latest market data.',
-          life: 5000,
+          life: 8000,
           closable: true,
           group: 'order-book',
         })
@@ -214,11 +214,21 @@
           severity: 'error',
           summary: '❌ Upload Failed',
           detail: `Failed to upload your offer to Dexie. ${error instanceof Error ? error.message : 'Please try again later.'}`,
-          life: 10000,
+          life: 20000,
           closable: true,
           group: 'offer-upload',
         })
       }
+    } else if (result?.success === false) {
+      // Handle offer creation failure
+      toast.add({
+        severity: 'error',
+        summary: '❌ Offer Creation Failed',
+        detail: result.error || 'Failed to create offer. Please try again.',
+        life: 15000,
+        closable: true,
+        group: 'offer-creation',
+      })
     }
   }
 
@@ -337,38 +347,115 @@
   }
 
   :deep(.p-toast .p-toast-message) {
-    @apply shadow-lg border-0 rounded-lg;
+    @apply shadow-2xl border-0 rounded-xl transform transition-all duration-300 ease-in-out;
+    min-width: 400px;
+    max-width: 500px;
   }
 
   :deep(.p-toast .p-toast-message.p-toast-message-success) {
-    @apply bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-l-4 border-green-500;
+    @apply bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border-l-4 border-green-500;
+    box-shadow:
+      0 10px 25px -5px rgba(34, 197, 94, 0.3),
+      0 10px 10px -5px rgba(34, 197, 94, 0.1);
   }
 
   :deep(.p-toast .p-toast-message.p-toast-message-error) {
-    @apply bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-l-4 border-red-500;
+    @apply bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/30 dark:to-rose-900/30 border-l-4 border-red-500;
+    box-shadow:
+      0 10px 25px -5px rgba(239, 68, 68, 0.3),
+      0 10px 10px -5px rgba(239, 68, 68, 0.1);
   }
 
   :deep(.p-toast .p-toast-message.p-toast-message-info) {
-    @apply bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-l-4 border-blue-500;
+    @apply bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border-l-4 border-blue-500;
+    box-shadow:
+      0 10px 25px -5px rgba(59, 130, 246, 0.3),
+      0 10px 10px -5px rgba(59, 130, 246, 0.1);
   }
 
   :deep(.p-toast .p-toast-message.p-toast-message-warn) {
-    @apply bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border-l-4 border-yellow-500;
+    @apply bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/30 dark:to-amber-900/30 border-l-4 border-yellow-500;
+    box-shadow:
+      0 10px 25px -5px rgba(245, 158, 11, 0.3),
+      0 10px 10px -5px rgba(245, 158, 11, 0.1);
   }
 
   :deep(.p-toast .p-toast-message-content) {
-    @apply p-4;
+    @apply p-6;
   }
 
   :deep(.p-toast .p-toast-summary) {
-    @apply font-semibold text-gray-900 dark:text-gray-100 text-base;
+    @apply font-bold text-gray-900 dark:text-gray-100 text-lg mb-2;
   }
 
   :deep(.p-toast .p-toast-detail) {
-    @apply text-gray-700 dark:text-gray-300 text-sm mt-1;
+    @apply text-gray-700 dark:text-gray-300 text-base leading-relaxed;
   }
 
   :deep(.p-toast .p-toast-icon-close) {
-    @apply text-gray-400 hover:text-gray-600 dark:hover:text-gray-300;
+    @apply text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200;
+  }
+
+  /* Toast entrance animation */
+  :deep(.p-toast .p-toast-message) {
+    animation: slideInRight 0.5s ease-out;
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  /* Toast hover effects */
+  :deep(.p-toast .p-toast-message:hover) {
+    @apply transform scale-105;
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Toast pulse animation for important messages */
+  :deep(.p-toast .p-toast-message.p-toast-message-success) {
+    animation:
+      slideInRight 0.5s ease-out,
+      pulseSuccess 2s ease-in-out infinite;
+  }
+
+  :deep(.p-toast .p-toast-message.p-toast-message-error) {
+    animation:
+      slideInRight 0.5s ease-out,
+      pulseError 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseSuccess {
+    0%,
+    100% {
+      box-shadow:
+        0 10px 25px -5px rgba(34, 197, 94, 0.3),
+        0 10px 10px -5px rgba(34, 197, 94, 0.1);
+    }
+    50% {
+      box-shadow:
+        0 15px 35px -5px rgba(34, 197, 94, 0.5),
+        0 15px 15px -5px rgba(34, 197, 94, 0.2);
+    }
+  }
+
+  @keyframes pulseError {
+    0%,
+    100% {
+      box-shadow:
+        0 10px 25px -5px rgba(239, 68, 68, 0.3),
+        0 10px 10px -5px rgba(239, 68, 68, 0.1);
+    }
+    50% {
+      box-shadow:
+        0 15px 35px -5px rgba(239, 68, 68, 0.5),
+        0 15px 15px -5px rgba(239, 68, 68, 0.2);
+    }
   }
 </style>

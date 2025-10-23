@@ -221,7 +221,13 @@ export function useOfferSubmission() {
       }
     } catch (error) {
       // Handle error appropriately - could emit an event or show a toast notification
-      void error // Suppress unused variable warning
+      logger.error('Error in handleOfferSubmit:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        offer: null,
+        offerString: null,
+      }
     }
   }
 
