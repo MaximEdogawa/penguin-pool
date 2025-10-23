@@ -358,10 +358,10 @@
         return requestingSellAsset && offeringBuyAsset
       })
       .sort((a, b) => {
-        // Sort sell orders by price (low to high - best asks first)
+        // Sort sell orders by price (high to low - best asks first)
         const priceA = a.receiving[0]?.amount / a.offering[0]?.amount || 0
         const priceB = b.receiving[0]?.amount / b.offering[0]?.amount || 0
-        return priceA - priceB
+        return priceB - priceA
       })
   })
 

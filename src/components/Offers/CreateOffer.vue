@@ -285,7 +285,7 @@
           </span>
         </div>
         <div v-if="mode === 'maker'" class="flex justify-between items-center">
-          <span class="text-sm text-gray-600 dark:text-gray-400">New Price:</span>
+          <span class="text-sm text-gray-600 dark:text-gray-400">New Amount:</span>
           <span
             :class="[
               'text-sm font-medium',
@@ -302,6 +302,21 @@
                 ? addAmount(offeringAssets[0].amount, priceAdjustment, 4)
                 : reduceAmount(offeringAssets[0].amount, priceAdjustment, 4)
             }}
+          </span>
+        </div>
+        <div v-if="mode === 'maker'" class="flex justify-between items-center">
+          <span class="text-sm text-gray-600 dark:text-gray-400">New Price:</span>
+          <span
+            :class="[
+              'text-sm font-medium',
+              priceAdjustment > 0
+                ? 'text-green-600 dark:text-green-400'
+                : priceAdjustment < 0
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-gray-900 dark:text-white',
+            ]"
+          >
+            {{ calculatePrice() }}
           </span>
         </div>
       </div>
@@ -483,6 +498,30 @@
     setTimeout(() => {
       asset.showDropdown = false
     }, 200)
+  }
+
+  // Calculate price with proper rounding to 4 decimal places
+  const calculatePrice = (): number => {
+    if (offeringAssets.length === 0 || requestedAssets.length === 0) {
+      return 0
+    }
+
+    const offeringAmount = offeringAssets[0].amount
+    const requestedAmount = requestedAssets[0].amount
+
+    if (offeringAmount === 0) {
+      return 0
+    }
+
+    let adjustedOfferingAmount: number
+    if (priceAdjustment.value > 0) {
+      adjustedOfferingAmount = addAmount(offeringAmount, priceAdjustment.value, 4)
+    } else {
+      adjustedOfferingAmount = reduceAmount(offeringAmount, priceAdjustment.value, 4)
+    }
+
+    const price = requestedAmount / adjustedOfferingAmount
+    return Math.round(price * 10000) / 10000 // Round to 4 decimal places
   }
 
   // Handle form submission
