@@ -32,6 +32,7 @@
             v-for="order in filteredSellOrders"
             :key="`sell-${order.id}`"
             @click="handleOrderClick(order)"
+            @mousemove="updateTooltipPosition"
             class="w-full group relative mb-1 cursor-pointer"
           >
             <div
@@ -79,7 +80,9 @@
 
             <!-- Tooltip -->
             <div
-              class="absolute left-0 top-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded p-3 shadow-lg z-20 hidden group-hover:block min-w-[300px]"
+              ref="tooltipRef"
+              class="fixed bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50 rounded-lg p-3 shadow-xl z-50 hidden group-hover:block min-w-[300px] pointer-events-none"
+              :style="tooltipStyle"
             >
               <div class="space-y-2">
                 <div class="text-sm font-semibold text-gray-900 dark:text-white">Order Details</div>
@@ -195,6 +198,7 @@
             v-for="order in filteredBuyOrders"
             :key="`buy-${order.id}`"
             @click="handleOrderClick(order)"
+            @mousemove="updateTooltipPosition"
             class="w-full group relative mb-1 cursor-pointer"
           >
             <div
@@ -242,7 +246,9 @@
 
             <!-- Tooltip -->
             <div
-              class="absolute left-0 top-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded p-3 shadow-lg z-20 hidden group-hover:block min-w-[300px]"
+              ref="tooltipRef"
+              class="fixed bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50 rounded-lg p-3 shadow-xl z-50 hidden group-hover:block min-w-[300px] pointer-events-none"
+              :style="tooltipStyle"
             >
               <div class="space-y-2">
                 <div class="text-sm font-semibold text-gray-900 dark:text-white">Order Details</div>
@@ -387,6 +393,10 @@
   const buyScrollRef = ref<HTMLElement>()
   const sellSectionHeight = ref(50)
   const buySectionHeight = ref(50)
+
+  // Refs for tooltip positioning
+  const tooltipRef = ref<HTMLElement>()
+  const tooltipStyle = ref({})
 
   // Mock USD prices
   const usdPrices: Record<string, number> = {
@@ -569,6 +579,43 @@
 
   const handleOrderClick = (order: Order) => {
     emit('fill-from-order-book', order)
+  }
+
+  const updateTooltipPosition = (event: MouseEvent) => {
+    if (!tooltipRef.value) return
+
+    const tooltip = tooltipRef.value
+    const rect = tooltip.getBoundingClientRect()
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+
+    let left = event.clientX + 10
+    let top = event.clientY + 10
+
+    // Adjust if tooltip would go off screen horizontally
+    if (left + rect.width > viewportWidth) {
+      left = event.clientX - rect.width - 10
+    }
+
+    // Adjust if tooltip would go off screen vertically
+    if (top + rect.height > viewportHeight) {
+      top = event.clientY - rect.height - 10
+    }
+
+    // Ensure tooltip doesn't go off the left edge
+    if (left < 10) {
+      left = 10
+    }
+
+    // Ensure tooltip doesn't go off the top edge
+    if (top < 10) {
+      top = 10
+    }
+
+    tooltipStyle.value = {
+      left: `${left}px`,
+      top: `${top}px`,
+    }
   }
 
   const startResize = (event: MouseEvent) => {
