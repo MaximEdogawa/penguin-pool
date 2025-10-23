@@ -291,13 +291,13 @@
 </template>
 
 <script setup lang="ts">
+  import { useTickerMapping } from '@/shared/composables/useTickerMapping'
   import Column from 'primevue/column'
   import DataTable from 'primevue/datatable'
   import Dialog from 'primevue/dialog'
   import ProgressSpinner from 'primevue/progressspinner'
   import Tag from 'primevue/tag'
   import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-  import { useTickerMapping } from '@/shared/composables/useTickerMapping'
 
   interface Trade {
     id: string
@@ -403,6 +403,10 @@
   const showOrderDetails = (order: Trade) => {
     selectedOrder.value = order
     showDetailsModal.value = true
+  }
+
+  const clearAllFilters = () => {
+    emit('clear-filters', 'all')
   }
 
   const onPage = (event: { page: number; rows: number }) => {

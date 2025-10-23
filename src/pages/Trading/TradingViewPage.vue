@@ -33,8 +33,8 @@
       ref="stickyFilterPanelRef"
       :has-active-filters="hasActiveSharedFilters"
       :shared-filters="sharedFilters"
-      @remove-shared-filter="globalFilterStore.removeFilter"
-      @clear-all-shared-filters="globalFilterStore.clearAllFilters"
+      @remove-shared-filter="(column, value) => globalFilterStore.removeFilter(column, value)"
+      @clear-all-shared-filters="() => globalFilterStore.clearAllFilters()"
     />
   </div>
 </template>
@@ -44,6 +44,7 @@
   import { useOfferSubmission } from '@/shared/composables/useOfferSubmission'
   import { useOrderBookData } from '@/shared/composables/useOrderBookData'
   import { useOrderHistoryData } from '@/shared/composables/useOrderHistoryData'
+  import { useTickerMapping } from '@/shared/composables/useTickerMapping'
   import { globalFilterStore } from '@/shared/stores/globalFilterStore'
   import { useToast } from 'primevue/usetoast'
   import { onMounted, ref, watch } from 'vue'
@@ -56,6 +57,9 @@
   const sharedFilters = globalFilterStore.filters
   const hasActiveSharedFilters = globalFilterStore.hasActiveFilters
   const showFilterPane = globalFilterStore.showFilterPane
+
+  // Use ticker mapping service
+  const { getTickerSymbol } = useTickerMapping()
 
   // Toast service
   const toast = useToast()
@@ -93,54 +97,57 @@
     const lowerSearch = sharedSearchValue.value.toLowerCase()
 
     // Get unique assets from order book data
-    const orderBookAssets = new Set<string>()
+    const orderBookAssets = new Map<string, string>() // assetId -> ticker
     orderBookData.value.forEach(order => {
       order.offering.forEach(asset => {
-        // Add asset logic here
-        orderBookAssets.add(asset.id)
+        const ticker = getTickerSymbol(asset.id)
+        orderBookAssets.set(asset.id, ticker)
       })
       order.receiving.forEach(asset => {
-        orderBookAssets.add(asset.id)
+        const ticker = getTickerSymbol(asset.id)
+        orderBookAssets.set(asset.id, ticker)
       })
     })
 
     // Get unique assets from order history data
-    const orderHistoryAssets = new Set<string>()
+    const orderHistoryAssets = new Map<string, string>() // assetId -> ticker
     displayedTrades.value.forEach(trade => {
       trade.sellAssets.forEach(asset => {
-        orderHistoryAssets.add(asset.id)
+        const ticker = getTickerSymbol(asset.id)
+        orderHistoryAssets.set(asset.id, ticker)
       })
       trade.buyAssets.forEach(asset => {
-        orderHistoryAssets.add(asset.id)
+        const ticker = getTickerSymbol(asset.id)
+        orderHistoryAssets.set(asset.id, ticker)
       })
     })
 
     // Combine all unique assets
-    const allAssets = new Set([...orderBookAssets, ...orderHistoryAssets])
+    const allAssets = new Map([...orderBookAssets, ...orderHistoryAssets])
 
-    // Generate suggestions
-    allAssets.forEach(assetId => {
-      if (assetId.toLowerCase().includes(lowerSearch)) {
+    // Generate suggestions using ticker symbols
+    allAssets.forEach((ticker, _assetId) => {
+      if (ticker.toLowerCase().includes(lowerSearch)) {
         if (
           !sharedFilters.value.buyAsset.some(
-            filter => filter.toLowerCase() === assetId.toLowerCase()
+            filter => filter.toLowerCase() === ticker.toLowerCase()
           )
         ) {
           suggestions.push({
-            value: assetId,
+            value: ticker,
             column: 'buyAsset',
-            label: `Buy ${assetId}`,
+            label: `Buy ${ticker}`,
           })
         }
         if (
           !sharedFilters.value.sellAsset.some(
-            filter => filter.toLowerCase() === assetId.toLowerCase()
+            filter => filter.toLowerCase() === ticker.toLowerCase()
           )
         ) {
           suggestions.push({
-            value: assetId,
+            value: ticker,
             column: 'sellAsset',
-            label: `Sell ${assetId}`,
+            label: `Sell ${ticker}`,
           })
         }
       }

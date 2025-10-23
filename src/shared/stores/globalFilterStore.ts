@@ -7,6 +7,7 @@ export interface GlobalFilterState {
   filters: FilterState
   assetsSwapped: boolean
   showFilterPane: boolean
+  userClearedFilters: boolean
 }
 
 class GlobalFilterStore {
@@ -20,6 +21,7 @@ class GlobalFilterStore {
     },
     assetsSwapped: false,
     showFilterPane: false,
+    userClearedFilters: false,
   })
 
   // Computed properties
@@ -84,6 +86,7 @@ class GlobalFilterStore {
     }
     this.state.searchValue = ''
     this.state.filteredSuggestions = []
+    this.state.userClearedFilters = false // Reset flag when user adds filters
     this.saveToLocalStorage()
   }
 
@@ -117,6 +120,9 @@ class GlobalFilterStore {
     this.state.filters.buyAsset = []
     this.state.filters.sellAsset = []
     this.state.filters.status = []
+    this.state.searchValue = ''
+    this.state.filteredSuggestions = []
+    this.state.userClearedFilters = true
     this.saveToLocalStorage()
   }
 
@@ -149,6 +155,7 @@ class GlobalFilterStore {
         filters: this.state.filters,
         searchValue: this.state.searchValue,
         assetsSwapped: this.state.assetsSwapped,
+        userClearedFilters: this.state.userClearedFilters,
       }
       localStorage.setItem('globalFilterState', JSON.stringify(stateToSave))
     } catch (error) {
@@ -169,6 +176,7 @@ class GlobalFilterStore {
         }
         this.state.searchValue = parsed.searchValue || ''
         this.state.assetsSwapped = parsed.assetsSwapped || false
+        this.state.userClearedFilters = parsed.userClearedFilters || false
       }
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -187,8 +195,8 @@ class GlobalFilterStore {
   initialize() {
     this.loadFromLocalStorage()
 
-    // Set default filter if no filters are applied
-    if (!this.hasActiveFilters.value) {
+    // Set default filter if no filters are applied AND user hasn't explicitly cleared them
+    if (!this.hasActiveFilters.value && !this.state.userClearedFilters) {
       this.setDefaultFilter()
     }
   }
