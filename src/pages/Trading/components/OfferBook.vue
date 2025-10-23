@@ -2,17 +2,17 @@
   <div>
     <!-- Header -->
 
-    <!-- Order Book Display -->
+    <!-- Offer Book Display -->
     <div
-      class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mt-1 order-book-container"
+      class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mt-1 offer-book-container"
     >
       <!-- Header -->
       <div
         class="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-medium text-gray-700 dark:text-gray-300"
       >
-        <div class="col-span-3 text-right">Price (USD)</div>
-        <div class="col-span-6 text-center">Assets</div>
-        <div class="col-span-3 text-right">Total (USD)</div>
+        <div class="col-span-4 text-right">Price (Receiving)</div>
+        <div class="col-span-4 text-center">Amount</div>
+        <div class="col-span-4 text-right">Total (USD)</div>
       </div>
 
       <!-- Sell Orders (Asks) -->
@@ -42,34 +42,34 @@
             />
 
             <div class="relative grid grid-cols-12 gap-2 py-2 text-sm items-center">
-              <!-- Price -->
-              <div class="col-span-3 text-right">
-                <div class="text-red-600 dark:text-red-400 font-mono text-xs">
-                  ${{
-                    calculatePriceInUsdc(order).toLocaleString('en-US', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })
-                  }}
+              <!-- Price (What the other side is offering) -->
+              <div class="col-span-4 text-right">
+                <div class="flex flex-col gap-1">
+                  <div
+                    v-for="(item, idx) in order.receiving"
+                    :key="idx"
+                    class="text-red-600 dark:text-red-400 font-mono text-xs"
+                  >
+                    {{ formatAmount(item.amount || 0) }} {{ getTickerSymbol(item.id) }}
+                  </div>
                 </div>
               </div>
 
-              <!-- Assets -->
-              <div class="col-span-6 flex flex-wrap gap-1 justify-center">
-                <span
-                  v-for="(item, idx) in order.offering"
-                  :key="idx"
-                  class="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900 bg-opacity-50 dark:bg-opacity-30 text-red-700 dark:text-red-400 rounded text-xs font-mono whitespace-nowrap"
-                >
-                  {{ getTickerSymbol(item.id) }}
-                  <span class="text-gray-600 dark:text-gray-400">
-                    {{ (item.amount || 0).toFixed(6) }}
-                  </span>
-                </span>
+              <!-- Amount -->
+              <div class="col-span-4 text-center">
+                <div class="flex flex-col gap-1">
+                  <div
+                    v-for="(item, idx) in order.offering"
+                    :key="idx"
+                    class="text-xs font-mono text-gray-700 dark:text-gray-300"
+                  >
+                    {{ formatAmount(item.amount || 0) }} {{ getTickerSymbol(item.id) }}
+                  </div>
+                </div>
               </div>
 
               <!-- Total -->
-              <div class="col-span-3 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
+              <div class="col-span-4 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
                 ${{
                   order.offeringUsdValue.toLocaleString('en-US', {
                     minimumFractionDigits: 0,
@@ -106,9 +106,17 @@
                       <span class="text-gray-900 dark:text-white">{{
                         getTickerSymbol(asset.id)
                       }}</span>
-                      <span class="font-mono text-gray-700 dark:text-gray-300">{{
-                        (asset.amount || 0).toFixed(6)
-                      }}</span>
+                      <div class="flex flex-col items-end">
+                        <span class="font-mono text-gray-700 dark:text-gray-300">{{
+                          formatAmount(asset.amount || 0)
+                        }}</span>
+                        <span class="font-mono text-xs text-gray-500 dark:text-gray-400">
+                          Full: {{ (asset.amount || 0).toFixed(8) }}
+                        </span>
+                        <span class="font-mono text-xs text-green-600 dark:text-green-400">
+                          ${{ calculateAssetUsdValue(asset).toFixed(2) }}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -125,9 +133,17 @@
                       <span class="text-gray-900 dark:text-white">{{
                         getTickerSymbol(asset.id)
                       }}</span>
-                      <span class="font-mono text-gray-700 dark:text-gray-300">{{
-                        (asset.amount || 0).toFixed(6)
-                      }}</span>
+                      <div class="flex flex-col items-end">
+                        <span class="font-mono text-gray-700 dark:text-gray-300">{{
+                          formatAmount(asset.amount || 0)
+                        }}</span>
+                        <span class="font-mono text-xs text-gray-500 dark:text-gray-400">
+                          Full: {{ (asset.amount || 0).toFixed(8) }}
+                        </span>
+                        <span class="font-mono text-xs text-green-600 dark:text-green-400">
+                          ${{ calculateAssetUsdValue(asset).toFixed(2) }}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -198,34 +214,34 @@
             />
 
             <div class="relative grid grid-cols-12 gap-2 py-2 text-sm items-center">
-              <!-- Price -->
-              <div class="col-span-3 text-right">
-                <div class="text-green-600 dark:text-green-400 font-mono text-xs">
-                  ${{
-                    calculatePriceInUsdc(order).toLocaleString('en-US', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })
-                  }}
+              <!-- Price (What the other side is offering) -->
+              <div class="col-span-4 text-right">
+                <div class="flex flex-col gap-1">
+                  <div
+                    v-for="(item, idx) in order.receiving"
+                    :key="idx"
+                    class="text-green-600 dark:text-green-400 font-mono text-xs"
+                  >
+                    {{ formatAmount(item.amount || 0) }} {{ getTickerSymbol(item.id) }}
+                  </div>
                 </div>
               </div>
 
-              <!-- Assets -->
-              <div class="col-span-6 flex flex-wrap gap-1 justify-center">
-                <span
-                  v-for="(item, idx) in order.offering"
-                  :key="idx"
-                  class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900 bg-opacity-50 dark:bg-opacity-30 text-green-700 dark:text-green-400 rounded text-xs font-mono whitespace-nowrap"
-                >
-                  {{ getTickerSymbol(item.id) }}
-                  <span class="text-gray-600 dark:text-gray-400">
-                    {{ (item.amount || 0).toFixed(6) }}
-                  </span>
-                </span>
+              <!-- Amount -->
+              <div class="col-span-4 text-center">
+                <div class="flex flex-col gap-1">
+                  <div
+                    v-for="(item, idx) in order.offering"
+                    :key="idx"
+                    class="text-xs font-mono text-gray-700 dark:text-gray-300"
+                  >
+                    {{ formatAmount(item.amount || 0) }} {{ getTickerSymbol(item.id) }}
+                  </div>
+                </div>
               </div>
 
               <!-- Total -->
-              <div class="col-span-3 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
+              <div class="col-span-4 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
                 ${{
                   order.offeringUsdValue.toLocaleString('en-US', {
                     minimumFractionDigits: 0,
@@ -262,9 +278,17 @@
                       <span class="text-gray-900 dark:text-white">{{
                         getTickerSymbol(asset.id)
                       }}</span>
-                      <span class="font-mono text-gray-700 dark:text-gray-300">{{
-                        (asset.amount || 0).toFixed(6)
-                      }}</span>
+                      <div class="flex flex-col items-end">
+                        <span class="font-mono text-gray-700 dark:text-gray-300">{{
+                          formatAmount(asset.amount || 0)
+                        }}</span>
+                        <span class="font-mono text-xs text-gray-500 dark:text-gray-400">
+                          Full: {{ (asset.amount || 0).toFixed(8) }}
+                        </span>
+                        <span class="font-mono text-xs text-green-600 dark:text-green-400">
+                          ${{ calculateAssetUsdValue(asset).toFixed(2) }}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -281,9 +305,17 @@
                       <span class="text-gray-900 dark:text-white">{{
                         getTickerSymbol(asset.id)
                       }}</span>
-                      <span class="font-mono text-gray-700 dark:text-gray-300">{{
-                        (asset.amount || 0).toFixed(6)
-                      }}</span>
+                      <div class="flex flex-col items-end">
+                        <span class="font-mono text-gray-700 dark:text-gray-300">{{
+                          formatAmount(asset.amount || 0)
+                        }}</span>
+                        <span class="font-mono text-xs text-gray-500 dark:text-gray-400">
+                          Full: {{ (asset.amount || 0).toFixed(8) }}
+                        </span>
+                        <span class="font-mono text-xs text-green-600 dark:text-green-400">
+                          ${{ calculateAssetUsdValue(asset).toFixed(2) }}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -473,20 +505,28 @@
   })
 
   // Methods
-  const calculatePriceInUsdc = (order: Order) => {
-    const firstAsset = order.offering[0]
-    if (!firstAsset) return 0
 
-    if (firstAsset.code === 'USDC') {
-      return 1
+  const calculateAssetUsdValue = (asset: {
+    id: string
+    code: string
+    name: string
+    amount: number
+  }) => {
+    if (asset.code === 'USDC') {
+      return asset.amount
     } else {
-      const usdcReceiving = order.receiving.find(a => a.code === 'USDC')
-      if (usdcReceiving) {
-        return usdcReceiving.amount / firstAsset.amount
-      } else {
-        return usdPrices[firstAsset.code] || 1
-      }
+      return asset.amount * (usdPrices[asset.code] || 1)
     }
+  }
+
+  const formatAmount = (amount: number): string => {
+    if (amount === 0) return '0'
+    if (amount < 0.000001) return amount.toExponential(2)
+    if (amount < 0.01) return amount.toFixed(6)
+    if (amount < 1) return amount.toFixed(4)
+    if (amount < 100) return amount.toFixed(2)
+    if (amount < 10000) return amount.toFixed(1)
+    return amount.toFixed(0)
   }
 
   const calculateMarketPrice = () => {
@@ -583,7 +623,7 @@
   }
 
   /* Order Book Container - Responsive and Resizable */
-  .order-book-container {
+  .offer-book-container {
     min-height: 60vh;
     max-height: 80vh;
     display: flex;
@@ -617,7 +657,7 @@
 
   /* Responsive breakpoints */
   @media (min-width: 640px) {
-    .order-book-container {
+    .offer-book-container {
       min-height: 65vh;
       max-height: 85vh;
     }
@@ -630,7 +670,7 @@
   }
 
   @media (min-width: 1024px) {
-    .order-book-container {
+    .offer-book-container {
       min-height: 70vh;
       max-height: 90vh;
     }
@@ -643,7 +683,7 @@
   }
 
   @media (min-width: 1280px) {
-    .order-book-container {
+    .offer-book-container {
       min-height: 75vh;
       max-height: 95vh;
     }

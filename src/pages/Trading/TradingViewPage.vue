@@ -94,21 +94,109 @@
         </div>
       </div>
 
-      <!-- Main Layout: Order Book + Right Panel -->
+      <!-- Main Layout: Left Panel + Right Panel -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <!-- Order Book Sidebar - Always Visible -->
+        <!-- Left Panel with Trading Tabs -->
         <div class="lg:col-span-1">
-          <OrderBook
-            :order-book-data="orderBookData"
-            :loading="orderBookLoading"
-            :has-more="orderBookHasMore"
-            :filters="sharedFilters"
-            :search-value="sharedSearchValue"
-            :filtered-suggestions="sharedFilteredSuggestions"
-            @load-more="loadOrderBookData"
-            @fill-from-order-book="fillFromOrderBook"
-            @use-as-template="useAsTemplate"
-          />
+          <!-- Trading Tab Menu -->
+          <div class="flex gap-2 mb-2 border-b border-gray-200 dark:border-gray-700">
+            <button
+              @click="activeTradingView = 'orderbook'"
+              :class="[
+                'px-4 py-2 text-sm font-medium transition-colors',
+                activeTradingView === 'orderbook'
+                  ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300',
+              ]"
+            >
+              Offer Book
+            </button>
+            <button
+              @click="activeTradingView = 'chart'"
+              :class="[
+                'px-4 py-2 text-sm font-medium transition-colors',
+                activeTradingView === 'chart'
+                  ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300',
+              ]"
+            >
+              Chart
+            </button>
+            <button
+              @click="activeTradingView = 'depth'"
+              :class="[
+                'px-4 py-2 text-sm font-medium transition-colors',
+                activeTradingView === 'depth'
+                  ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300',
+              ]"
+            >
+              Depth
+            </button>
+            <button
+              @click="activeTradingView = 'trades'"
+              :class="[
+                'px-4 py-2 text-sm font-medium transition-colors',
+                activeTradingView === 'trades'
+                  ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300',
+              ]"
+            >
+              Market Trades
+            </button>
+          </div>
+
+          <!-- Trading Content based on active view -->
+          <!-- Offer Book View -->
+          <div v-if="activeTradingView === 'orderbook'">
+            <OfferBook
+              :order-book-data="orderBookData"
+              :loading="orderBookLoading"
+              :has-more="orderBookHasMore"
+              :filters="sharedFilters"
+              :search-value="sharedSearchValue"
+              :filtered-suggestions="sharedFilteredSuggestions"
+              @load-more="loadOrderBookData"
+              @fill-from-order-book="fillFromOrderBook"
+              @use-as-template="useAsTemplate"
+            />
+          </div>
+
+          <!-- Chart View -->
+          <div v-if="activeTradingView === 'chart'" class="card p-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Price Chart</h3>
+            <div
+              class="h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
+            >
+              <p class="text-gray-500 dark:text-gray-400">
+                Chart component will be implemented here
+              </p>
+            </div>
+          </div>
+
+          <!-- Depth View -->
+          <div v-if="activeTradingView === 'depth'" class="card p-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Market Depth</h3>
+            <div
+              class="h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
+            >
+              <p class="text-gray-500 dark:text-gray-400">
+                Depth chart component will be implemented here
+              </p>
+            </div>
+          </div>
+
+          <!-- Market Trades View -->
+          <div v-if="activeTradingView === 'trades'" class="card p-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Market Trades</h3>
+            <div
+              class="h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
+            >
+              <p class="text-gray-500 dark:text-gray-400">
+                Market trades component will be implemented here
+              </p>
+            </div>
+          </div>
         </div>
 
         <!-- Right Panel with Single Tab Menu -->
@@ -205,7 +293,7 @@
   import type { OfferDetails } from '@/types/offer.types'
   import InputText from 'primevue/inputtext'
   import { computed, onMounted, reactive, ref, watch } from 'vue'
-  import OrderBook from './components/OrderBook.vue'
+  import OfferBook from './components/OfferBook.vue'
   import OrderHistory from './components/OrderHistory.vue'
 
   // Interfaces
@@ -279,6 +367,7 @@
 
   // State
   const activeView = ref<'create' | 'take' | 'history'>('create')
+  const activeTradingView = ref<'orderbook' | 'chart' | 'depth' | 'trades'>('orderbook')
   const activeTab = ref<'maker' | 'taker'>('maker')
   const priceAdjustment = ref(0)
 
@@ -734,8 +823,11 @@
         if (newOrders.length < rowsPerPage) {
           orderBookHasMore.value = false
         }
+      } else {
+        logger.error('No data or unsuccessful response:', response)
       }
     } catch (error) {
+      logger.error('Error loading order book data:', error)
       // Handle error appropriately - could emit an event or show a toast notification
       void error // Suppress unused variable warning
     } finally {
@@ -925,10 +1017,8 @@
       setDefaultFilter()
     }
 
-    if (
-      (activeView.value === 'create' || activeView.value === 'take') &&
-      orderBookData.value.length === 0
-    ) {
+    // Load order book data if it's empty
+    if (orderBookData.value.length === 0) {
       loadOrderBookData()
     }
   })
