@@ -40,6 +40,15 @@ Detailed analysis of project dependencies, their purposes, and impact on bundle 
 - Performance impact assessment
 - Future optimization strategies
 
+### 📊 [Order Book Documentation](./)
+
+Core documentation for order book functionality and price calculation logic.
+
+**Contains:**
+
+- [Order Book Price Calculation](./ORDER_BOOK_PRICE_CALCULATION.md) - Comprehensive guide to price calculation logic
+- [Order Book Price Calculation Spec](./ORDER_BOOK_PRICE_CALCULATION_SPEC.md) - Technical specification and API reference
+
 ## 📖 How to Use
 
 - **New to the project?** Start with the [Design & Technical](./design-technical/) folder to understand the project architecture

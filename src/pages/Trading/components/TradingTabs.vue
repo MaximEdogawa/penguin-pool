@@ -1,7 +1,7 @@
 <template>
-  <div class="lg:col-span-1">
+  <div class="lg:col-span-1 flex flex-col h-full">
     <!-- Trading Tab Menu -->
-    <div class="flex gap-2 mb-2 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex gap-2 mb-2 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
       <button
         v-for="tab in tradingTabs"
         :key="tab.key"
@@ -18,18 +18,20 @@
     </div>
 
     <!-- Trading Content based on active view -->
-    <TradingContent
-      :active-trading-view="activeTradingView"
-      :order-book-data="orderBookData"
-      :order-book-loading="orderBookLoading"
-      :order-book-has-more="orderBookHasMore"
-      :shared-filters="sharedFilters"
-      :shared-search-value="sharedSearchValue"
-      :shared-filtered-suggestions="sharedFilteredSuggestions"
-      @load-more="loadOrderBookData"
-      @fill-from-order-book="fillFromOrderBook"
-      @use-as-template="useAsTemplate"
-    />
+    <div class="flex-1 flex flex-col min-h-0">
+      <TradingContent
+        :active-trading-view="activeTradingView"
+        :order-book-data="orderBookData"
+        :order-book-loading="orderBookLoading"
+        :order-book-has-more="orderBookHasMore"
+        :shared-filters="sharedFilters"
+        :shared-search-value="sharedSearchValue"
+        :shared-filtered-suggestions="sharedFilteredSuggestions"
+        @load-more="loadOrderBookData"
+        @fill-from-order-book="fillFromOrderBook"
+        @use-as-template="useAsTemplate"
+      />
+    </div>
   </div>
 </template>
 

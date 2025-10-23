@@ -1,6 +1,6 @@
 <template>
   <!-- Main Layout: Left Panel + Right Panel -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
     <!-- Left Panel with Trading Tabs -->
     <TradingTabs
       :active-trading-view="activeTradingView"

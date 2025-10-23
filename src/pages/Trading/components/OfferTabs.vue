@@ -1,7 +1,7 @@
 <template>
-  <div class="lg:col-span-1">
+  <div class="lg:col-span-1 flex flex-col h-full">
     <!-- Single Tab Menu -->
-    <div class="flex gap-2 mb-2 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex gap-2 mb-2 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
       <button
         v-for="tab in offerTabs"
         :key="tab.key"
@@ -18,22 +18,24 @@
     </div>
 
     <!-- Content based on active view -->
-    <OfferContent
-      :active-view="activeView"
-      :maker-assets="makerAssets"
-      :taker-assets="takerAssets"
-      :price-adjustment="priceAdjustment"
-      :displayed-trades="displayedTrades"
-      :loading="loading"
-      :has-more="hasMore"
-      :shared-filters="sharedFilters"
-      :shared-search-value="sharedSearchValue"
-      :shared-filtered-suggestions="sharedFilteredSuggestions"
-      @submit="handleOfferSubmit"
-      @load-more="loadData"
-      @fill-from-order-book="fillFromOrderBook"
-      @use-as-template="useAsTemplate"
-    />
+    <div class="flex-1 flex flex-col min-h-0">
+      <OfferContent
+        :active-view="activeView"
+        :maker-assets="makerAssets"
+        :taker-assets="takerAssets"
+        :price-adjustment="priceAdjustment"
+        :displayed-trades="displayedTrades"
+        :loading="loading"
+        :has-more="hasMore"
+        :shared-filters="sharedFilters"
+        :shared-search-value="sharedSearchValue"
+        :shared-filtered-suggestions="sharedFilteredSuggestions"
+        @submit="handleOfferSubmit"
+        @load-more="loadData"
+        @fill-from-order-book="fillFromOrderBook"
+        @use-as-template="useAsTemplate"
+      />
+    </div>
   </div>
 </template>
 

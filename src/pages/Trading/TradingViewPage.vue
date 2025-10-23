@@ -163,11 +163,11 @@
 
 <style scoped>
   .content-page {
-    @apply min-h-screen bg-gray-50 dark:bg-gray-900 px-0 sm:px-1 lg:px-1 py-0;
+    @apply h-screen bg-gray-50 dark:bg-gray-900 px-0 sm:px-1 lg:px-1 py-0 flex flex-col;
   }
 
   .content-body {
-    @apply space-y-2;
+    @apply flex-1 flex flex-col;
   }
 
   .card {

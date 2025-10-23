@@ -1,6 +1,6 @@
 <template>
   <!-- Order Book View -->
-  <div v-if="activeTradingView === 'orderbook'">
+  <div v-if="activeTradingView === 'orderbook'" class="h-full flex flex-col">
     <OfferBook
       :order-book-data="orderBookData"
       :loading="orderBookLoading"
@@ -15,25 +15,25 @@
   </div>
 
   <!-- Chart View -->
-  <div v-if="activeTradingView === 'chart'" class="card p-4">
+  <div v-if="activeTradingView === 'chart'" class="card p-4 h-full flex flex-col">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Price Chart</h3>
-    <div class="h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+    <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
       <p class="text-gray-500 dark:text-gray-400">Chart component will be implemented here</p>
     </div>
   </div>
 
   <!-- Depth View -->
-  <div v-if="activeTradingView === 'depth'" class="card p-4">
+  <div v-if="activeTradingView === 'depth'" class="card p-4 h-full flex flex-col">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Market Depth</h3>
-    <div class="h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+    <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
       <p class="text-gray-500 dark:text-gray-400">Depth chart component will be implemented here</p>
     </div>
   </div>
 
   <!-- Market Trades View -->
-  <div v-if="activeTradingView === 'trades'" class="card p-4">
+  <div v-if="activeTradingView === 'trades'" class="card p-4 h-full flex flex-col">
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Market Trades</h3>
-    <div class="h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+    <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
       <p class="text-gray-500 dark:text-gray-400">
         Market trades component will be implemented here
       </p>
