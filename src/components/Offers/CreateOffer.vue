@@ -282,6 +282,26 @@
             {{ priceAdjustment > 0 ? '+' : '' }}{{ priceAdjustment }}%
           </span>
         </div>
+        <div v-if="mode === 'maker'" class="flex justify-between items-center">
+          <span class="text-sm text-gray-600 dark:text-gray-400">New Price:</span>
+          <span
+            :class="[
+              'text-sm font-medium',
+              priceAdjustment > 0
+                ? 'text-green-600 dark:text-green-400'
+                : priceAdjustment < 0
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-gray-900 dark:text-white',
+            ]"
+          >
+            {{ priceAdjustment > 0 ? '+' : ''
+            }}{{
+              priceAdjustment > 0
+                ? addAmount(offeringAssets[0].amount, priceAdjustment, 4)
+                : reduceAmount(offeringAssets[0].amount, priceAdjustment, 4)
+            }}
+          </span>
+        </div>
       </div>
     </div>
 
@@ -304,7 +324,7 @@
   import { useTickerData } from '@/shared/composables/useTickerData'
   import Button from 'primevue/button'
   import Slider from 'primevue/slider'
-  import { computed, reactive, ref, watch } from 'vue'
+  import { computed, reactive, ref, watch, type Reactive } from 'vue'
 
   interface AssetItem {
     assetId: string
@@ -447,7 +467,7 @@
     isSubmitting.value = true
     try {
       emit('submit', {
-        offeringAssets: [...offeringAssets],
+        offeringAssets: [...addPriceAdjustments(offeringAssets)],
         requestedAssets: [...requestedAssets],
         priceAdjustment: priceAdjustment.value,
         mode: props.mode,
@@ -455,6 +475,35 @@
     } finally {
       isSubmitting.value = false
     }
+  }
+
+  const addPriceAdjustments = (offeringAssets: Reactive<AssetItem[]>) => {
+    return offeringAssets.map(asset => {
+      if (asset.type === 'xch') {
+        const adjustedAmount =
+          priceAdjustment.value > 0
+            ? addAmount(asset.amount, priceAdjustment.value, 4)
+            : reduceAmount(asset.amount, priceAdjustment.value, 4)
+        return { ...asset, amount: adjustedAmount }
+      } else if (asset.type === 'cat') {
+        const adjustedAmount =
+          priceAdjustment.value > 0
+            ? addAmount(asset.amount, priceAdjustment.value, 1)
+            : reduceAmount(asset.amount, priceAdjustment.value, 1)
+        return { ...asset, amount: adjustedAmount }
+      }
+      return asset
+    })
+  }
+
+  const addAmount = (amount: number, percentage: number, decimals: number = 2): number => {
+    const result = amount * (1 + percentage / 100)
+    return Math.round(result * Math.pow(10, decimals)) / Math.pow(10, decimals)
+  }
+
+  const reduceAmount = (amount: number, percentage: number, decimals: number = 2): number => {
+    const result = amount * (1 - -percentage / 100)
+    return Math.round(result * Math.pow(10, decimals)) / Math.pow(10, decimals)
   }
 
   // Watch for prop changes to update local state
