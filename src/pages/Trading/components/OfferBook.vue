@@ -23,7 +23,7 @@
           height: `${sellSectionHeight}%`,
         }"
       >
-        <div class="px-3 py-2">
+        <div class="px-3 py-2 flex flex-col justify-end min-h-full">
           <div v-if="loading" class="flex justify-center items-center py-4">
             <ProgressSpinner size="20" />
           </div>

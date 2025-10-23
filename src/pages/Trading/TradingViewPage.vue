@@ -1,21 +1,6 @@
 <template>
   <div class="content-page">
     <div class="content-body">
-      <!-- Trading Filters Component -->
-      <TradingFilters
-        :shared-search-value="sharedSearchValue"
-        :shared-filtered-suggestions="sharedFilteredSuggestions"
-        :shared-filters="sharedFilters"
-        :has-active-shared-filters="hasActiveSharedFilters"
-        :assets-swapped="assetsSwapped"
-        @update:shared-search-value="sharedSearchValue = $event"
-        @handle-search-change="handleSharedSearchChange"
-        @add-shared-filter="addSharedFilter"
-        @remove-shared-filter="removeSharedFilter"
-        @clear-all-shared-filters="clearAllSharedFilters"
-        @swap-buy-sell-assets="swapBuySellAssets"
-      />
-
       <!-- Main Trading Layout -->
       <TradingLayout
         :active-trading-view="activeTradingView"
@@ -41,6 +26,16 @@
         @use-as-template="useAsTemplate"
       />
     </div>
+
+    <!-- Sticky Filter Panel -->
+    <StickyFilterPanel
+      v-show="showFilterPane"
+      ref="stickyFilterPanelRef"
+      :has-active-filters="hasActiveSharedFilters"
+      :shared-filters="sharedFilters"
+      @remove-shared-filter="removeSharedFilter"
+      @clear-all-shared-filters="clearAllSharedFilters"
+    />
   </div>
 </template>
 
@@ -51,7 +46,7 @@
   import { useOrderHistoryData } from '@/shared/composables/useOrderHistoryData'
   import { useTradingFilters } from '@/shared/composables/useTradingFilters'
   import { onMounted, ref, watch } from 'vue'
-  import TradingFilters from './components/TradingFilters.vue'
+  import StickyFilterPanel from './components/StickyFilterPanel.vue'
   import TradingLayout from './components/TradingLayout.vue'
 
   // Use composables
@@ -87,15 +82,33 @@
   // State
   const activeView = ref<'create' | 'take' | 'history'>('create')
   const activeTradingView = ref<'orderbook' | 'chart' | 'depth' | 'trades'>('orderbook')
+  const showFilterPane = ref(false)
+  const stickyFilterPanelRef = ref()
 
   // Enhanced search handler that includes data
   const handleSharedSearchChange = () => {
     handleSharedSearchChangeBase(orderBookData.value, displayedTrades.value)
+    // Update AppTopbar with current state
+    updateAppTopbarState()
   }
 
   // Enhanced offer submit handler
   const handleOfferSubmitWithView = async (data: OfferSubmitData) => {
     await handleOfferSubmit(data, activeView.value)
+  }
+
+  // AppTopbar communication methods
+  const updateAppTopbarState = () => {
+    window.dispatchEvent(
+      new CustomEvent('trading-filters-updated', {
+        detail: {
+          filters: sharedFilters,
+          suggestions: sharedFilteredSuggestions.value,
+          searchValue: sharedSearchValue.value,
+          assetsSwapped: assetsSwapped.value,
+        },
+      })
+    )
   }
 
   // Lifecycle
@@ -112,6 +125,30 @@
     if (orderBookData.value.length === 0) {
       loadOrderBookData()
     }
+
+    // Listen for AppTopbar events
+    window.addEventListener('trading-search-change', (event: CustomEvent) => {
+      sharedSearchValue.value = event.detail.value
+      handleSharedSearchChange()
+    })
+
+    window.addEventListener('trading-filter-added', (event: CustomEvent) => {
+      const { column, value } = event.detail
+      addSharedFilter(column, value)
+      updateAppTopbarState()
+    })
+
+    window.addEventListener('trading-assets-swapped', () => {
+      swapBuySellAssets()
+      updateAppTopbarState()
+    })
+
+    window.addEventListener('trading-filter-pane-toggle', (event: CustomEvent) => {
+      showFilterPane.value = event.detail.show
+    })
+
+    // Initial state update
+    updateAppTopbarState()
   })
 
   // Watchers

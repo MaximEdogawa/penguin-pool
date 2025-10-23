@@ -10,6 +10,74 @@
       </button>
     </div>
 
+    <!-- Trading Search Bar (only visible on trading page) -->
+    <div v-if="isTradingPage" class="layout-topbar-center flex-1">
+      <div class="flex items-center gap-3 w-full">
+        <!-- Asset Swap Button -->
+        <button
+          @click="swapBuySellAssets"
+          class="layout-topbar-action"
+          :title="assetsSwapped ? 'Revert to normal view' : 'Swap buy and sell assets'"
+        >
+          <i class="pi pi-arrow-right-arrow-left"></i>
+        </button>
+
+        <!-- Search Input - Centered -->
+        <div class="search-container">
+          <input
+            :value="sharedSearchValue"
+            @input="handleSearchInput"
+            placeholder="Search by asset..."
+            class="search-input"
+          />
+          <div
+            v-if="sharedFilteredSuggestions.length > 0 && sharedSearchValue"
+            class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+          >
+            <div
+              v-for="(suggestion, idx) in sharedFilteredSuggestions"
+              :key="idx"
+              @click="addSharedFilter(suggestion.column, suggestion.value)"
+              class="w-full text-left px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm flex items-center justify-between"
+            >
+              <span>{{ suggestion.label }}</span>
+              <span
+                :class="[
+                  'text-xs px-2 py-0.5 rounded-full',
+                  suggestion.column === 'buyAsset'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                    : suggestion.column === 'sellAsset'
+                      ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
+                      : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
+                ]"
+              >
+                {{
+                  suggestion.column === 'buyAsset'
+                    ? assetsSwapped
+                      ? 'Sell'
+                      : 'Buy'
+                    : suggestion.column === 'sellAsset'
+                      ? assetsSwapped
+                        ? 'Buy'
+                        : 'Sell'
+                      : 'Status'
+                }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Toggle Button -->
+        <button
+          @click="toggleFilterPane"
+          class="layout-topbar-action m-4"
+          :title="showFilterPane ? 'Hide filter pane' : 'Show filter pane'"
+        >
+          <i :class="hasActiveFilters ? 'pi pi-filter-fill' : 'pi pi-filter'"></i>
+        </button>
+      </div>
+    </div>
+
     <div class="layout-topbar-actions">
       <!-- Notifications -->
       <button
@@ -68,14 +136,84 @@
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useNotificationStore } from '@/features/notifications/store/notificationStore'
   import { useThemeStore } from '@/features/theme/store/themeStore'
+  import type { FilterState, SuggestionItem } from '@/pages/Trading/types'
   import { computed, onMounted, ref } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { useRoute, useRouter } from 'vue-router'
   import AppConfigurator from './AppConfigurator.vue'
   import { useLayout } from './composables/layout'
+
   const router = useRouter()
+  const route = useRoute()
   const themeStore = useThemeStore()
   const notificationStore = useNotificationStore()
   const { toggleMenu, layoutState } = useLayout()
+
+  // Trading page detection
+  const isTradingPage = computed(() => route.path.includes('/trading'))
+
+  // Check if there are active filters
+  const hasActiveFilters = computed(() => {
+    return Object.values(sharedFilters.value).some(f => f && f.length > 0)
+  })
+
+  // Trading state (only active on trading page)
+  const sharedSearchValue = ref('')
+  const sharedFilteredSuggestions = ref<SuggestionItem[]>([])
+  const sharedFilters = ref<FilterState>({
+    buyAsset: [],
+    sellAsset: [],
+    status: [],
+  })
+  const assetsSwapped = ref(false)
+  const showFilterPane = ref(false)
+
+  // Trading methods
+  const handleSearchInput = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    sharedSearchValue.value = target.value
+    // Emit event to parent component for search handling
+    window.dispatchEvent(
+      new CustomEvent('trading-search-change', {
+        detail: { value: target.value },
+      })
+    )
+  }
+
+  const addSharedFilter = (column: string, value: string) => {
+    // Emit event to parent component to handle the filter addition
+    window.dispatchEvent(
+      new CustomEvent('trading-filter-added', {
+        detail: { column, value },
+      })
+    )
+  }
+
+  const swapBuySellAssets = () => {
+    // Emit event to parent component to handle the swap
+    window.dispatchEvent(new CustomEvent('trading-assets-swapped'))
+  }
+
+  const toggleFilterPane = () => {
+    showFilterPane.value = !showFilterPane.value
+    // Emit event to parent component
+    window.dispatchEvent(
+      new CustomEvent('trading-filter-pane-toggle', {
+        detail: { show: showFilterPane.value },
+      })
+    )
+  }
+
+  // Listen for events from trading components
+  onMounted(() => {
+    window.addEventListener('trading-filters-updated', (event: Event) => {
+      const customEvent = event as CustomEvent
+      const { filters, suggestions, searchValue, assetsSwapped: swapped } = customEvent.detail
+      sharedFilters.value = filters
+      sharedFilteredSuggestions.value = suggestions
+      sharedSearchValue.value = searchValue
+      assetsSwapped.value = swapped
+    })
+  })
 
   onMounted(async () => {
     try {
@@ -103,6 +241,11 @@
   const handleThemeToggle = () => {
     isThemeToggle.value = !isThemeToggle.value
     themeStore.setBuiltInTheme(isThemeToggle.value ? 'light' : 'dark')
+  }
+
+  const toggleNotifications = () => {
+    // Toggle notifications panel or show notification list
+    // TODO: Implement notifications functionality
   }
 
   const toggleConfigPanel = () => {
@@ -142,9 +285,56 @@
     transition: left 0.2s;
   }
 
-  .layout-topbar-logo-container {
-    @apply flex items-center;
-    width: auto;
+  .layout-topbar-center {
+    @apply flex items-center justify-center w-full;
+    flex: 1;
+    margin: 0 auto;
+    min-width: 0; /* Allow flex item to shrink below content size */
+    transition: margin-left 0.2s; /* Smooth transition when sidebar opens/closes */
+    position: relative;
+    z-index: 10;
+  }
+
+  .layout-topbar-center .layout-topbar-action {
+    @apply w-auto h-auto p-1 flex-shrink-0;
+  }
+
+  .layout-topbar-center .flex-1 {
+    min-width: 0; /* Allow search input to shrink */
+    max-width: none; /* Remove max width constraint for more flexibility */
+    flex-grow: 1; /* Allow it to grow and take available space */
+  }
+
+  /* Responsive adjustments for sidebar states */
+  @media (min-width: 1024px) {
+    .layout-topbar-center {
+      margin: 0 auto; /* Center on page */
+      max-width: 600px; /* Wider for better search experience */
+    }
+
+    .sidebar-collapsed .layout-topbar-center {
+      margin: 0 auto; /* Center on page */
+      max-width: 800px; /* Even wider when sidebar is collapsed */
+    }
+  }
+
+  @media (max-width: 1200px) and (min-width: 1024px) {
+    .layout-topbar-center {
+      margin: 0 auto; /* Center on page */
+      max-width: 500px; /* Wider on medium screens */
+    }
+
+    .sidebar-collapsed .layout-topbar-center {
+      margin: 0 auto; /* Center on page */
+      max-width: 700px; /* Wider when sidebar is collapsed */
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .layout-topbar-center {
+      margin: 0 auto; /* Keep centered on mobile */
+      max-width: none; /* Allow full width on mobile */
+    }
   }
 
   .layout-topbar-actions {
@@ -243,7 +433,13 @@
     }
 
     .layout-topbar-center {
-      display: none;
+      display: flex !important; /* Show search bar on mobile */
+      flex: 1;
+      margin: 0 auto; /* Center on mobile */
+    }
+
+    .layout-topbar-center .flex-1 {
+      max-width: none; /* Remove max-width constraint on mobile */
     }
 
     .layout-topbar-logo span {
@@ -263,5 +459,23 @@
     .layout-menu-button {
       margin-right: 0.5rem;
     }
+
+    .layout-topbar-center {
+      margin: 0 auto; /* Keep centered on smaller screens */
+      max-width: none; /* Allow full width */
+    }
+
+    .layout-topbar-center .flex-1 {
+      max-width: none; /* Ensure search input takes available space */
+    }
+  }
+
+  .search-container {
+    @apply relative w-full max-w-4xl;
+    height: 2rem;
+  }
+
+  .search-input {
+    @apply w-full h-full pl-4 pr-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200;
   }
 </style>
