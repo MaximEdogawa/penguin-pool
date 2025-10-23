@@ -370,7 +370,6 @@
       column: string
       label: string
     }>
-    isBuyView: boolean
   }
 
   const props = defineProps<Props>()
@@ -494,7 +493,7 @@
 
         return offeringSellAsset && receivingBuyAsset
       })
-      .sort((a, b) => b.offeringUsdValue - a.offeringUsdValue) // Higher USD values first for selling (asks)
+      .sort((a, b) => a.offeringUsdValue - b.offeringUsdValue) // Lower USD values first for selling (asks) - bottom alignment
   })
 
   const filteredBuyOrders = computed(() => {
