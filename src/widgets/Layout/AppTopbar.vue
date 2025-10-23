@@ -10,8 +10,8 @@
       </button>
     </div>
 
-    <!-- Trading Search Bar (only visible on trading page) -->
-    <div v-if="isTradingPage" class="layout-topbar-center flex-1">
+    <!-- Global Search Bar (visible on all pages) -->
+    <div class="layout-topbar-center flex-1">
       <div class="flex items-center gap-3 w-full">
         <!-- Asset Swap Button -->
         <button
@@ -136,83 +136,65 @@
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useNotificationStore } from '@/features/notifications/store/notificationStore'
   import { useThemeStore } from '@/features/theme/store/themeStore'
-  import type { FilterState, SuggestionItem } from '@/pages/Trading/types'
+  import { globalFilterStore } from '@/shared/stores/globalFilterStore'
   import { computed, onMounted, ref } from 'vue'
-  import { useRoute, useRouter } from 'vue-router'
+  import { useRouter } from 'vue-router'
   import AppConfigurator from './AppConfigurator.vue'
   import { useLayout } from './composables/layout'
 
   const router = useRouter()
-  const route = useRoute()
   const themeStore = useThemeStore()
   const notificationStore = useNotificationStore()
   const { toggleMenu, layoutState } = useLayout()
 
-  // Trading page detection
-  const isTradingPage = computed(() => route.path.includes('/trading'))
-
-  // Check if there are active filters
-  const hasActiveFilters = computed(() => {
-    return Object.values(sharedFilters.value).some(f => f && f.length > 0)
-  })
-
-  // Trading state (only active on trading page)
-  const sharedSearchValue = ref('')
-  const sharedFilteredSuggestions = ref<SuggestionItem[]>([])
-  const sharedFilters = ref<FilterState>({
-    buyAsset: [],
-    sellAsset: [],
-    status: [],
-  })
-  const assetsSwapped = ref(false)
-  const showFilterPane = ref(false)
+  // Use global filter store
+  const hasActiveFilters = globalFilterStore.hasActiveFilters
+  const sharedSearchValue = globalFilterStore.searchValue
+  const sharedFilteredSuggestions = globalFilterStore.filteredSuggestions
+  const assetsSwapped = globalFilterStore.assetsSwapped
+  const showFilterPane = globalFilterStore.showFilterPane
 
   // Trading methods
   const handleSearchInput = (event: Event) => {
     const target = event.target as HTMLInputElement
-    sharedSearchValue.value = target.value
+    globalFilterStore.setSearchValue(target.value)
     // Emit event to parent component for search handling
     window.dispatchEvent(
-      new CustomEvent('trading-search-change', {
+      new CustomEvent('global-search-change', {
         detail: { value: target.value },
       })
     )
   }
 
   const addSharedFilter = (column: string, value: string) => {
+    globalFilterStore.addFilter(column, value)
     // Emit event to parent component to handle the filter addition
     window.dispatchEvent(
-      new CustomEvent('trading-filter-added', {
+      new CustomEvent('global-filter-added', {
         detail: { column, value },
       })
     )
   }
 
   const swapBuySellAssets = () => {
+    globalFilterStore.swapBuySellAssets()
     // Emit event to parent component to handle the swap
-    window.dispatchEvent(new CustomEvent('trading-assets-swapped'))
+    window.dispatchEvent(new CustomEvent('global-assets-swapped'))
   }
 
   const toggleFilterPane = () => {
-    showFilterPane.value = !showFilterPane.value
+    globalFilterStore.toggleFilterPane()
     // Emit event to parent component
     window.dispatchEvent(
-      new CustomEvent('trading-filter-pane-toggle', {
-        detail: { show: showFilterPane.value },
+      new CustomEvent('global-filter-pane-toggle', {
+        detail: { show: globalFilterStore.showFilterPane.value },
       })
     )
   }
 
-  // Listen for events from trading components
+  // Initialize global filter store
   onMounted(() => {
-    window.addEventListener('trading-filters-updated', (event: Event) => {
-      const customEvent = event as CustomEvent
-      const { filters, suggestions, searchValue, assetsSwapped: swapped } = customEvent.detail
-      sharedFilters.value = filters
-      sharedFilteredSuggestions.value = suggestions
-      sharedSearchValue.value = searchValue
-      assetsSwapped.value = swapped
-    })
+    globalFilterStore.initialize()
   })
 
   onMounted(async () => {

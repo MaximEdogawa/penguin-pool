@@ -340,6 +340,16 @@
       @close="handleCancelDialogClose"
       @confirm="confirmCancelOffer"
     />
+
+    <!-- Sticky Filter Panel -->
+    <StickyFilterPanel
+      v-show="showFilterPane"
+      ref="stickyFilterPanelRef"
+      :has-active-filters="hasActiveSharedFilters"
+      :shared-filters="sharedFilters"
+      @remove-shared-filter="removeFilter"
+      @clear-all-shared-filters="clearAllFilters"
+    />
   </div>
 </template>
 
@@ -349,16 +359,22 @@
   import TakeOfferModal from '@/components/Offers/TakeOfferModal.vue'
   import ConfirmationDialog from '@/components/Shared/ConfirmationDialog.vue'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
+  import { useGlobalFilters } from '@/shared/composables/useGlobalFilters'
   import { useOfferStorage } from '@/shared/composables/useOfferStorage'
   import { useTickerMapping } from '@/shared/composables/useTickerMapping'
   import { formatAssetAmount } from '@/shared/utils/chia-units'
   import type { OfferDetails, OfferFilters } from '@/types/offer.types'
   import { computed, onMounted, ref } from 'vue'
+  import StickyFilterPanel from '../Trading/components/StickyFilterPanel.vue'
 
   // Services
   const walletDataService = useWalletDataService()
   const offerStorage = useOfferStorage()
   const { getTickerSymbol } = useTickerMapping()
+
+  // Global filters
+  const { sharedFilters, hasActiveSharedFilters, showFilterPane, removeFilter, clearAllFilters } =
+    useGlobalFilters()
 
   // State
   const offers = ref<OfferDetails[]>([])

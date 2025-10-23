@@ -33,37 +33,28 @@
       ref="stickyFilterPanelRef"
       :has-active-filters="hasActiveSharedFilters"
       :shared-filters="sharedFilters"
-      @remove-shared-filter="removeSharedFilter"
-      @clear-all-shared-filters="clearAllSharedFilters"
+      @remove-shared-filter="globalFilterStore.removeFilter"
+      @clear-all-shared-filters="globalFilterStore.clearAllFilters"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-  import type { OfferSubmitData } from '@/pages/Trading/types'
+  import type { OfferSubmitData, SuggestionItem } from '@/pages/Trading/types'
   import { useOfferSubmission } from '@/shared/composables/useOfferSubmission'
   import { useOrderBookData } from '@/shared/composables/useOrderBookData'
   import { useOrderHistoryData } from '@/shared/composables/useOrderHistoryData'
-  import { useTradingFilters } from '@/shared/composables/useTradingFilters'
+  import { globalFilterStore } from '@/shared/stores/globalFilterStore'
   import { onMounted, ref, watch } from 'vue'
   import StickyFilterPanel from './components/StickyFilterPanel.vue'
   import TradingLayout from './components/TradingLayout.vue'
 
-  // Use composables
-  const {
-    sharedSearchValue,
-    sharedFilteredSuggestions,
-    sharedFilters,
-    hasActiveSharedFilters,
-    assetsSwapped,
-    handleSharedSearchChange: handleSharedSearchChangeBase,
-    addSharedFilter,
-    removeSharedFilter,
-    clearAllSharedFilters,
-    swapBuySellAssets,
-    loadFilterState,
-    setDefaultFilter,
-  } = useTradingFilters()
+  // Use global filter store
+  const sharedSearchValue = globalFilterStore.searchValue
+  const sharedFilteredSuggestions = globalFilterStore.filteredSuggestions
+  const sharedFilters = globalFilterStore.filters
+  const hasActiveSharedFilters = globalFilterStore.hasActiveFilters
+  const showFilterPane = globalFilterStore.showFilterPane
 
   const { orderBookData, orderBookLoading, orderBookHasMore, loadOrderBookData } =
     useOrderBookData()
@@ -82,14 +73,84 @@
   // State
   const activeView = ref<'create' | 'take' | 'history'>('create')
   const activeTradingView = ref<'orderbook' | 'chart' | 'depth' | 'trades'>('orderbook')
-  const showFilterPane = ref(false)
   const stickyFilterPanelRef = ref()
 
   // Enhanced search handler that includes data
   const handleSharedSearchChange = () => {
-    handleSharedSearchChangeBase(orderBookData.value, displayedTrades.value)
-    // Update AppTopbar with current state
-    updateAppTopbarState()
+    // Generate suggestions from both order book and order history data
+    const suggestions: SuggestionItem[] = []
+    const lowerSearch = sharedSearchValue.value.toLowerCase()
+
+    // Get unique assets from order book data
+    const orderBookAssets = new Set<string>()
+    orderBookData.value.forEach(order => {
+      order.offering.forEach(asset => {
+        // Add asset logic here
+        orderBookAssets.add(asset.id)
+      })
+      order.receiving.forEach(asset => {
+        orderBookAssets.add(asset.id)
+      })
+    })
+
+    // Get unique assets from order history data
+    const orderHistoryAssets = new Set<string>()
+    displayedTrades.value.forEach(trade => {
+      trade.sellAssets.forEach(asset => {
+        orderHistoryAssets.add(asset.id)
+      })
+      trade.buyAssets.forEach(asset => {
+        orderHistoryAssets.add(asset.id)
+      })
+    })
+
+    // Combine all unique assets
+    const allAssets = new Set([...orderBookAssets, ...orderHistoryAssets])
+
+    // Generate suggestions
+    allAssets.forEach(assetId => {
+      if (assetId.toLowerCase().includes(lowerSearch)) {
+        if (
+          !sharedFilters.value.buyAsset.some(
+            filter => filter.toLowerCase() === assetId.toLowerCase()
+          )
+        ) {
+          suggestions.push({
+            value: assetId,
+            column: 'buyAsset',
+            label: `Buy ${assetId}`,
+          })
+        }
+        if (
+          !sharedFilters.value.sellAsset.some(
+            filter => filter.toLowerCase() === assetId.toLowerCase()
+          )
+        ) {
+          suggestions.push({
+            value: assetId,
+            column: 'sellAsset',
+            label: `Sell ${assetId}`,
+          })
+        }
+      }
+    })
+
+    // Add status suggestions
+    const statusOptions = ['Open', 'Filled', 'Cancelled', 'Partial']
+    statusOptions.forEach(status => {
+      if (
+        status.toLowerCase().includes(lowerSearch) &&
+        !(sharedFilters.value.status?.includes(status) ?? false)
+      ) {
+        suggestions.push({
+          value: status,
+          column: 'status',
+          label: `Status: ${status}`,
+        })
+      }
+    })
+
+    globalFilterStore.setFilteredSuggestions(suggestions)
   }
 
   // Enhanced offer submit handler
@@ -97,58 +158,29 @@
     await handleOfferSubmit(data, activeView.value)
   }
 
-  // AppTopbar communication methods
-  const updateAppTopbarState = () => {
-    window.dispatchEvent(
-      new CustomEvent('trading-filters-updated', {
-        detail: {
-          filters: sharedFilters,
-          suggestions: sharedFilteredSuggestions.value,
-          searchValue: sharedSearchValue.value,
-          assetsSwapped: assetsSwapped.value,
-        },
-      })
-    )
-  }
-
   // Lifecycle
   onMounted(() => {
-    // Load saved filter state from localStorage
-    loadFilterState()
-
-    // Set default filter if no filters are applied
-    if (!hasActiveSharedFilters.value) {
-      setDefaultFilter()
-    }
-
     // Load order book data if it's empty
     if (orderBookData.value.length === 0) {
       loadOrderBookData()
     }
 
-    // Listen for AppTopbar events
-    window.addEventListener('trading-search-change', (event: CustomEvent) => {
-      sharedSearchValue.value = event.detail.value
+    // Listen for global filter events
+    window.addEventListener('global-search-change', (_event: CustomEvent) => {
       handleSharedSearchChange()
     })
 
-    window.addEventListener('trading-filter-added', (event: CustomEvent) => {
-      const { column, value } = event.detail
-      addSharedFilter(column, value)
-      updateAppTopbarState()
+    window.addEventListener('global-filter-added', (_event: CustomEvent) => {
+      handleSharedSearchChange()
     })
 
-    window.addEventListener('trading-assets-swapped', () => {
-      swapBuySellAssets()
-      updateAppTopbarState()
+    window.addEventListener('global-assets-swapped', () => {
+      handleSharedSearchChange()
     })
 
-    window.addEventListener('trading-filter-pane-toggle', (event: CustomEvent) => {
-      showFilterPane.value = event.detail.show
+    window.addEventListener('global-filter-pane-toggle', (event: CustomEvent) => {
+      globalFilterStore.setShowFilterPane(event.detail.show)
     })
-
-    // Initial state update
-    updateAppTopbarState()
   })
 
   // Watchers
