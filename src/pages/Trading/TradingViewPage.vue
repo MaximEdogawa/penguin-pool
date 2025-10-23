@@ -71,7 +71,7 @@
   } = useOfferSubmission()
 
   // State
-  const activeView = ref<'create' | 'take' | 'history'>('create')
+  const activeView = ref<'create' | 'take' | 'history'>('take')
   const activeTradingView = ref<'orderbook' | 'chart' | 'depth' | 'trades'>('orderbook')
   const stickyFilterPanelRef = ref()
 

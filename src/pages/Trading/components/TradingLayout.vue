@@ -1,8 +1,8 @@
 <template>
   <!-- Main Layout: Left Panel + Resize Handle + Right Panel -->
   <div class="flex h-full">
-    <!-- Left Panel with Trading Tabs -->
-    <div class="flex flex-col" :style="{ width: `${leftPanelWidth}%` }">
+    <!-- Left Panel with Trading Tabs - Hidden on mobile and small screens -->
+    <div class="hidden md:flex flex-col" :style="{ width: `${leftPanelWidth}%` }">
       <TradingTabs
         :active-trading-view="activeTradingView"
         :order-book-data="orderBookData"
@@ -18,9 +18,9 @@
       />
     </div>
 
-    <!-- Resize Handle -->
+    <!-- Resize Handle - Hidden on mobile and small screens -->
     <div
-      class="resize-handle m-1 bg-gray-200 dark:bg-gray-900 hover:bg-gray-300 dark:hover:bg-gray-500 cursor-col-resize transition-colors flex items-center justify-center relative"
+      class="hidden md:flex resize-handle m-1 bg-gray-200 dark:bg-gray-900 hover:bg-gray-300 dark:hover:bg-gray-500 cursor-col-resize transition-colors items-center justify-center relative"
       @mousedown="startResize"
       title="Drag to resize panels"
     >
@@ -31,8 +31,11 @@
       <div class="absolute inset-0 w-6 h-full -left-1"></div>
     </div>
 
-    <!-- Right Panel with Single Tab Menu -->
-    <div class="flex flex-col" :style="{ width: `${rightPanelWidth}%` }">
+    <!-- Right Panel with Single Tab Menu - Full width on mobile and small screens -->
+    <div
+      class="flex flex-col w-full md:w-auto"
+      :style="{ width: isMobile ? '100%' : `${rightPanelWidth}%` }"
+    >
       <OfferTabs
         :active-view="activeView"
         :maker-assets="makerAssets"
@@ -63,7 +66,7 @@
     SuggestionItem,
     Trade,
   } from '@/pages/Trading/types'
-  import { ref } from 'vue'
+  import { computed, onMounted, onUnmounted, ref } from 'vue'
   import OfferTabs from './OfferTabs.vue'
   import TradingTabs from './TradingTabs.vue'
 
@@ -97,9 +100,26 @@
   defineProps<Props>()
   const emit = defineEmits<Emits>()
 
+  // Window width tracking for responsive behavior
+  const windowWidth = ref(window.innerWidth)
+  const isMobile = computed(() => windowWidth.value < 768)
+
   // Resize state
   const leftPanelWidth = ref(50)
   const rightPanelWidth = ref(50)
+
+  // Track window resize
+  const handleResize = () => {
+    windowWidth.value = window.innerWidth
+  }
+
+  onMounted(() => {
+    window.addEventListener('resize', handleResize)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('resize', handleResize)
+  })
 
   const updateActiveTradingView = (value: 'orderbook' | 'chart' | 'depth' | 'trades') => {
     emit('update:activeTradingView', value)

@@ -80,8 +80,8 @@
   const emit = defineEmits<Emits>()
 
   const offerTabs: OfferTab[] = [
-    { key: 'create', label: 'Create Offer' },
     { key: 'take', label: 'Take Offer' },
+    { key: 'create', label: 'Create Offer' },
     { key: 'history', label: 'Offer History' },
   ]
 

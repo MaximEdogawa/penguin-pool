@@ -37,6 +37,7 @@
 
 <script setup lang="ts">
   import type { FilterState, OrderBookOrder, SuggestionItem } from '@/pages/Trading/types'
+  import { computed, onMounted, onUnmounted, ref } from 'vue'
   import TradingContent from './TradingContent.vue'
 
   interface TradingTab {
@@ -64,12 +65,34 @@
   defineProps<Props>()
   const emit = defineEmits<Emits>()
 
-  const tradingTabs: TradingTab[] = [
+  // Window width tracking for responsive behavior
+  const windowWidth = ref(window.innerWidth)
+  const isMobile = computed(() => windowWidth.value < 768)
+
+  // Track window resize
+  const handleResize = () => {
+    windowWidth.value = window.innerWidth
+  }
+
+  onMounted(() => {
+    window.addEventListener('resize', handleResize)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('resize', handleResize)
+  })
+
+  const allTradingTabs: TradingTab[] = [
     { key: 'orderbook', label: 'Order Book' },
     { key: 'chart', label: 'Chart' },
     { key: 'depth', label: 'Depth' },
     { key: 'trades', label: 'Market Trades' },
   ]
+
+  // Filter tabs based on screen size - only show Order Book on mobile
+  const tradingTabs = computed(() => {
+    return isMobile.value ? allTradingTabs.filter(tab => tab.key === 'orderbook') : allTradingTabs
+  })
 
   const loadOrderBookData = () => {
     emit('loadOrderBookData')
