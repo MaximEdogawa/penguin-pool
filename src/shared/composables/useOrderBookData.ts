@@ -1,7 +1,7 @@
 import type { DexieOffer } from '@/shared/services/DexieDataService'
 import { useDexieDataService } from '@/shared/services/DexieDataService'
 import { logger } from '@/shared/services/logger'
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
 export interface DexieAssetItem {
   id: string
@@ -31,7 +31,16 @@ export interface OrderBookOrder {
   creatorAddress?: string
 }
 
-export function useOrderBookData() {
+export interface ToastOptions {
+  severity: 'success' | 'info' | 'warn' | 'error'
+  summary: string
+  detail: string
+  life: number
+  closable: boolean
+  group: string
+}
+
+export function useOrderBookData(toastService?: { add: (options: ToastOptions) => void }) {
   const dexieDataService = useDexieDataService()
 
   // State
@@ -39,6 +48,7 @@ export function useOrderBookData() {
   const orderBookLoading = ref(false)
   const orderBookHasMore = ref(true)
   const orderBookPage = ref(0)
+  const refreshInterval = ref<NodeJS.Timeout | null>(null)
 
   // Constants
   const rowsPerPage = 20
@@ -112,7 +122,59 @@ export function useOrderBookData() {
     }
   }
 
+  // Helper function to determine if an offer is a sell order (offering XCH/TXCH)
+  const isSellOrder = (order: OrderBookOrder): boolean => {
+    return order.offering.some(asset => asset.code === 'TXCH' || asset.code === 'XCH')
+  }
+
   // Methods
+  const refreshOrderBookData = async () => {
+    orderBookLoading.value = true
+    orderBookPage.value = 0
+    orderBookHasMore.value = true
+    orderBookData.value = []
+
+    try {
+      const response = await dexieDataService.searchOffers({
+        page: orderBookPage.value,
+        page_size: rowsPerPage,
+        status: 0, // Only open offers
+      })
+
+      if (response.success && Array.isArray(response.data)) {
+        const newOrders = (response.data as DexieOffer[])
+          .filter((offer: DexieOffer) => offer && offer.offered && offer.requested) // Filter out invalid offers
+          .map(convertDexieOfferToOrderBookOrder)
+          .sort((a, b) => {
+            // Sell orders: sort by price descending (high to low)
+            // Buy orders: sort by price ascending (low to high)
+            if (isSellOrder(a) && isSellOrder(b)) {
+              return b.pricePerUnit - a.pricePerUnit // High to low for sell orders
+            } else if (!isSellOrder(a) && !isSellOrder(b)) {
+              return a.pricePerUnit - b.pricePerUnit // Low to high for buy orders
+            } else {
+              // Mixed order types: sell orders first, then buy orders
+              return isSellOrder(a) ? -1 : 1
+            }
+          })
+        orderBookData.value = newOrders
+        orderBookPage.value++
+
+        // Check if we have more data
+        if (newOrders.length < rowsPerPage) {
+          orderBookHasMore.value = false
+        }
+      } else {
+        logger.error('No data or unsuccessful response:', response)
+      }
+    } catch (error) {
+      logger.error('Error refreshing order book data:', error)
+      void error // Suppress unused variable warning
+    } finally {
+      orderBookLoading.value = false
+    }
+  }
+
   const loadOrderBookData = async () => {
     if (orderBookLoading.value || !orderBookHasMore.value) return
 
@@ -129,6 +191,21 @@ export function useOrderBookData() {
           .filter((offer: DexieOffer) => offer && offer.offered && offer.requested) // Filter out invalid offers
           .map(convertDexieOfferToOrderBookOrder)
         orderBookData.value.push(...newOrders)
+
+        // Sort the entire order book after adding new orders
+        orderBookData.value.sort((a, b) => {
+          // Sell orders: sort by price descending (high to low)
+          // Buy orders: sort by price ascending (low to high)
+          if (isSellOrder(a) && isSellOrder(b)) {
+            return b.pricePerUnit - a.pricePerUnit // High to low for sell orders
+          } else if (!isSellOrder(a) && !isSellOrder(b)) {
+            return a.pricePerUnit - b.pricePerUnit // Low to high for buy orders
+          } else {
+            // Mixed order types: sell orders first, then buy orders
+            return isSellOrder(a) ? -1 : 1
+          }
+        })
+
         orderBookPage.value++
 
         // Check if we have more data
@@ -147,6 +224,39 @@ export function useOrderBookData() {
     }
   }
 
+  // Interval management
+  const startRefreshInterval = () => {
+    if (refreshInterval.value) return // Already started
+
+    refreshInterval.value = setInterval(() => {
+      refreshOrderBookData()
+
+      // Show subtle toast for automatic refresh (only if toast service is provided)
+      if (toastService && orderBookData.value.length > 0) {
+        toastService.add({
+          severity: 'info',
+          summary: '🔄 Market Data Updated',
+          detail: 'Order book refreshed with latest market data',
+          life: 4000,
+          closable: true,
+          group: 'auto-refresh',
+        })
+      }
+    }, 30000) // 30 seconds
+  }
+
+  const stopRefreshInterval = () => {
+    if (refreshInterval.value) {
+      clearInterval(refreshInterval.value)
+      refreshInterval.value = null
+    }
+  }
+
+  // Cleanup on unmount
+  onUnmounted(() => {
+    stopRefreshInterval()
+  })
+
   return {
     // State
     orderBookData,
@@ -155,5 +265,8 @@ export function useOrderBookData() {
 
     // Methods
     loadOrderBookData,
+    refreshOrderBookData,
+    startRefreshInterval,
+    stopRefreshInterval,
   }
 }

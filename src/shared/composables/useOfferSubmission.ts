@@ -172,7 +172,9 @@ export function useOfferSubmission() {
         }
 
         await offerStorage.saveOffer(newOffer, true)
-        resetForm()
+
+        // Return the created offer for potential Dexie upload
+        return { success: true, offer: newOffer, offerString: result.offer }
       } else {
         // Take existing offer - use the fetched offer string
         if (!fetchedOfferString.value || fetchedOfferString.value.trim() === '') {
@@ -210,9 +212,9 @@ export function useOfferSubmission() {
           }
 
           await offerStorage.saveOffer(takenOffer, true)
-          resetForm()
-          selectedOrderForTaking.value = null
-          fetchedOfferString.value = ''
+
+          // Return the taken offer
+          return { success: true, offer: takenOffer, offerString: fetchedOfferString.value.trim() }
         } else {
           throw new Error('Failed to take offer')
         }
@@ -220,6 +222,25 @@ export function useOfferSubmission() {
     } catch (error) {
       // Handle error appropriately - could emit an event or show a toast notification
       void error // Suppress unused variable warning
+    }
+  }
+
+  /**
+   * Upload an offer to Dexie
+   */
+  const uploadOfferToDexie = async (offerString: string) => {
+    try {
+      const result = await dexieDataService.postOfferMutation.mutateAsync({
+        offer: offerString,
+        drop_only: false,
+        claim_rewards: false,
+      })
+
+      logger.info('Offer uploaded to Dexie successfully:', result)
+      return { success: true, dexieId: result.id }
+    } catch (error) {
+      logger.error('Failed to upload offer to Dexie:', error)
+      throw error
     }
   }
 
@@ -259,6 +280,7 @@ export function useOfferSubmission() {
     fillFromOrderBook,
     useAsTemplate,
     handleOfferSubmit,
+    uploadOfferToDexie,
     resetForm,
   }
 }

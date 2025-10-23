@@ -350,12 +350,16 @@
       @remove-shared-filter="removeFilter"
       @clear-all-shared-filters="clearAllFilters"
     />
+
+    <!-- Offer Upload Notification -->
+    <OfferUploadNotification />
   </div>
 </template>
 
 <script setup lang="ts">
   import CreateOfferModal from '@/components/Offers/CreateOfferModal.vue'
   import OfferDetailsModal from '@/components/Offers/OfferDetailsModal.vue'
+  import OfferUploadNotification from '@/components/Offers/OfferUploadNotification.vue'
   import TakeOfferModal from '@/components/Offers/TakeOfferModal.vue'
   import ConfirmationDialog from '@/components/Shared/ConfirmationDialog.vue'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
@@ -471,6 +475,17 @@
   const handleOfferCreated = (offer: OfferDetails) => {
     offers.value.unshift(offer)
     showCreateOffer.value = false
+
+    // Trigger upload notification
+    window.dispatchEvent(
+      new CustomEvent('offer-created', {
+        detail: {
+          offer: offer,
+          offerString: offer.offerString,
+          source: 'offer-page',
+        },
+      })
+    )
   }
 
   const handleOfferTaken = (offer: OfferDetails) => {

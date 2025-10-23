@@ -45,6 +45,7 @@
   import { useOrderBookData } from '@/shared/composables/useOrderBookData'
   import { useOrderHistoryData } from '@/shared/composables/useOrderHistoryData'
   import { globalFilterStore } from '@/shared/stores/globalFilterStore'
+  import { useToast } from 'primevue/usetoast'
   import { onMounted, ref, watch } from 'vue'
   import StickyFilterPanel from './components/StickyFilterPanel.vue'
   import TradingLayout from './components/TradingLayout.vue'
@@ -56,8 +57,17 @@
   const hasActiveSharedFilters = globalFilterStore.hasActiveFilters
   const showFilterPane = globalFilterStore.showFilterPane
 
-  const { orderBookData, orderBookLoading, orderBookHasMore, loadOrderBookData } =
-    useOrderBookData()
+  // Toast service
+  const toast = useToast()
+
+  const {
+    orderBookData,
+    orderBookLoading,
+    orderBookHasMore,
+    loadOrderBookData,
+    refreshOrderBookData,
+    startRefreshInterval,
+  } = useOrderBookData(toast)
 
   const { displayedTrades, loading, hasMore, loadData } = useOrderHistoryData()
 
@@ -68,6 +78,7 @@
     fillFromOrderBook,
     useAsTemplate,
     handleOfferSubmit,
+    uploadOfferToDexie,
   } = useOfferSubmission()
 
   // State
@@ -155,7 +166,60 @@
 
   // Enhanced offer submit handler
   const handleOfferSubmitWithView = async (data: OfferSubmitData) => {
-    await handleOfferSubmit(data, activeView.value)
+    const result = await handleOfferSubmit(data, activeView.value)
+
+    // If offer was created successfully, automatically upload to Dexie
+    if (result?.success && result?.offerString) {
+      try {
+        // Show uploading toast with beautiful styling
+        toast.add({
+          severity: 'info',
+          summary: '🚀 Uploading Offer',
+          detail:
+            'Your offer is being uploaded to Dexie for public trading. This may take a few moments...',
+          life: 6000,
+          closable: true,
+          group: 'offer-upload',
+        })
+
+        // Upload to Dexie
+        const uploadResult = await uploadOfferToDexie(result.offerString)
+
+        // Show success toast with enhanced styling
+        toast.add({
+          severity: 'success',
+          summary: '✅ Offer Uploaded Successfully!',
+          detail: `Your offer is now live on Dexie! Other traders can now see and take your offer. Dexie ID: ${uploadResult.dexieId}`,
+          life: 8000,
+          closable: true,
+          group: 'offer-upload',
+        })
+
+        // Refresh order book to show the new offer
+        await refreshOrderBookData()
+
+        // Show order book refresh toast
+        toast.add({
+          severity: 'info',
+          summary: '📊 Order Book Updated',
+          detail:
+            'The order book has been refreshed to show your new offer and latest market data.',
+          life: 5000,
+          closable: true,
+          group: 'order-book',
+        })
+      } catch (error) {
+        // Show error toast with enhanced styling
+        toast.add({
+          severity: 'error',
+          summary: '❌ Upload Failed',
+          detail: `Failed to upload your offer to Dexie. ${error instanceof Error ? error.message : 'Please try again later.'}`,
+          life: 10000,
+          closable: true,
+          group: 'offer-upload',
+        })
+      }
+    }
   }
 
   // Lifecycle
@@ -165,12 +229,15 @@
       loadOrderBookData()
     }
 
+    // Start the refresh interval
+    startRefreshInterval()
+
     // Listen for global filter events
-    window.addEventListener('global-search-change', (_event: CustomEvent) => {
+    window.addEventListener('global-search-change', (_event: Event) => {
       handleSharedSearchChange()
     })
 
-    window.addEventListener('global-filter-added', (_event: CustomEvent) => {
+    window.addEventListener('global-filter-added', (_event: Event) => {
       handleSharedSearchChange()
     })
 
@@ -178,8 +245,9 @@
       handleSharedSearchChange()
     })
 
-    window.addEventListener('global-filter-pane-toggle', (event: CustomEvent) => {
-      globalFilterStore.setShowFilterPane(event.detail.show)
+    window.addEventListener('global-filter-pane-toggle', (event: Event) => {
+      const customEvent = event as CustomEvent
+      globalFilterStore.setShowFilterPane(customEvent.detail.show)
     })
   })
 
@@ -261,5 +329,46 @@
 
   :deep(.p-button.p-button-danger:hover) {
     @apply bg-red-600 dark:bg-red-700;
+  }
+
+  /* Enhanced Toast Styling */
+  :deep(.p-toast) {
+    @apply z-50;
+  }
+
+  :deep(.p-toast .p-toast-message) {
+    @apply shadow-lg border-0 rounded-lg;
+  }
+
+  :deep(.p-toast .p-toast-message.p-toast-message-success) {
+    @apply bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-l-4 border-green-500;
+  }
+
+  :deep(.p-toast .p-toast-message.p-toast-message-error) {
+    @apply bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-l-4 border-red-500;
+  }
+
+  :deep(.p-toast .p-toast-message.p-toast-message-info) {
+    @apply bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-l-4 border-blue-500;
+  }
+
+  :deep(.p-toast .p-toast-message.p-toast-message-warn) {
+    @apply bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border-l-4 border-yellow-500;
+  }
+
+  :deep(.p-toast .p-toast-message-content) {
+    @apply p-4;
+  }
+
+  :deep(.p-toast .p-toast-summary) {
+    @apply font-semibold text-gray-900 dark:text-gray-100 text-base;
+  }
+
+  :deep(.p-toast .p-toast-detail) {
+    @apply text-gray-700 dark:text-gray-300 text-sm mt-1;
+  }
+
+  :deep(.p-toast .p-toast-icon-close) {
+    @apply text-gray-400 hover:text-gray-600 dark:hover:text-gray-300;
   }
 </style>
