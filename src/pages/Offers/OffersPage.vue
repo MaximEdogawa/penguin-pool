@@ -532,7 +532,7 @@
 
 <style scoped>
   .content-page {
-    @apply min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8;
+    @apply min-h-screen bg-gray-50 dark:bg-gray-900 px-0 sm:px-1 lg:px-1 py-0;
   }
 
   .content-header {

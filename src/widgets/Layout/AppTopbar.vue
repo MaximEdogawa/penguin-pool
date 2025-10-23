@@ -8,24 +8,6 @@
       >
         <i class="pi pi-bars"></i>
       </button>
-      <router-link to="/" class="layout-topbar-logo">
-        <PenguinLogo class="logo-icon" />
-        <span>PENGUIN POOL</span>
-      </router-link>
-    </div>
-
-    <!-- Center: Search bar -->
-    <div class="layout-topbar-center">
-      <div class="search-container">
-        <i class="pi pi-search search-icon"></i>
-        <input
-          type="text"
-          placeholder="Search contracts, offers, users..."
-          class="search-input"
-          v-model="searchQuery"
-          @input="handleSearch"
-        />
-      </div>
     </div>
 
     <div class="layout-topbar-actions">
@@ -83,7 +65,6 @@
 </template>
 
 <script setup lang="ts">
-  import PenguinLogo from '@/components/PenguinLogo.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useNotificationStore } from '@/features/notifications/store/notificationStore'
   import { useThemeStore } from '@/features/theme/store/themeStore'
@@ -104,7 +85,6 @@
     }
   })
 
-  const searchQuery = ref('')
   const isUserMenuVisible = ref(false)
   const isConfigPanelVisible = ref(false)
   const isThemeToggle = ref(false)
@@ -155,8 +135,8 @@
 <style scoped>
   .layout-topbar {
     @apply fixed top-0 left-0 w-full z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700;
-    height: 4rem;
-    padding: 0 2rem;
+    height: 3rem;
+    padding: 0 1rem;
     display: flex;
     align-items: center;
     transition: left 0.2s;
@@ -164,42 +144,16 @@
 
   .layout-topbar-logo-container {
     @apply flex items-center;
-    width: 20rem;
-  }
-
-  .layout-topbar-logo {
-    @apply inline-flex items-center text-xl font-medium text-gray-900 dark:text-white;
-    gap: 0.5rem;
-  }
-
-  .logo-icon {
-    @apply w-8 h-8;
-  }
-
-  .layout-topbar-center {
-    @apply flex-1 flex justify-center;
-  }
-
-  .search-container {
-    @apply relative w-full max-w-2xl;
-    height: 2.5rem;
-  }
-
-  .search-icon {
-    @apply absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400;
-  }
-
-  .search-input {
-    @apply w-full h-full pl-10 pr-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200;
+    width: auto;
   }
 
   .layout-topbar-actions {
-    @apply flex items-center gap-4;
+    @apply flex items-center gap-2;
     margin-left: auto;
   }
 
   .layout-topbar-action {
-    @apply inline-flex justify-center items-center rounded-full w-10 h-10 text-gray-600 dark:text-gray-300 transition-all duration-200 cursor-pointer;
+    @apply inline-flex justify-center items-center rounded-full w-6 h-6 text-gray-600 dark:text-gray-300 transition-all duration-200 cursor-pointer;
     position: relative;
   }
 

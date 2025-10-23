@@ -2,8 +2,8 @@
   <div class="content-page">
     <div class="content-body">
       <!-- Shared Asset Search Filter -->
-      <div class="mb-4">
-        <div class="px-2 py-1">
+      <div class="mb-2">
+        <div class="px-1 py-1">
           <div class="relative">
             <InputText
               v-model="sharedSearchValue"
@@ -945,7 +945,7 @@
 
 <style scoped>
   .content-page {
-    @apply min-h-screen bg-gray-50 dark:bg-gray-900 px-1 sm:px-2 lg:px-3 py-0 sm:py-1 lg:py-1;
+    @apply min-h-screen bg-gray-50 dark:bg-gray-900 px-0 sm:px-1 lg:px-1 py-0;
   }
 
   .content-body {

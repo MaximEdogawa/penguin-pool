@@ -749,8 +749,8 @@
 
   /* Content page styles */
   .content-page {
-    @apply w-full h-full flex flex-col mt-16 sm:mt-18 md:mt-18 lg:mt-1 xl:mt-0;
-    @apply overflow-hidden max-h-[calc(100vh-4rem)] h-full;
+    @apply w-full h-full flex flex-col mt-12 sm:mt-12 md:mt-12 lg:mt-4 xl:mt-0;
+    @apply overflow-hidden max-h-[calc(100vh-3rem)] h-full;
     background-color: var(--surface-ground);
     overscroll-behavior: none;
     overscroll-behavior-y: none;
@@ -760,7 +760,7 @@
   }
 
   .content-header {
-    @apply mb-8 text-center p-6 flex-shrink-0;
+    @apply mb-4 text-center  pt-1 flex-shrink-0;
     background-color: var(--surface-ground);
   }
 
@@ -773,8 +773,8 @@
   }
 
   .content-body {
-    @apply flex-1 p-4 sm:p-6 overflow-x-hidden overflow-y-auto;
-    @apply max-h-[calc(100vh-4rem)] h-full;
+    @apply flex-1 overflow-x-hidden overflow-y-auto;
+    @apply max-h-[calc(100vh-3rem)] h-full;
     background-color: var(--surface-ground);
     overscroll-behavior: none;
     overscroll-behavior-y: none;
