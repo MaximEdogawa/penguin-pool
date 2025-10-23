@@ -106,7 +106,9 @@
 
         <!-- Invisible larger hit area -->
         <div class="absolute inset-0 w-full h-6 -top-1 pr-2"></div>
-        <div class="text-sm font-bold text-blue-700 dark:text-blue-300 font-mono pr-2 bg-gray-600">
+        <div
+          class="text-sm font-bold text-blue-700 dark:text-blue-300 font-mono pr-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg shadow-sm"
+        >
           {{ calculateAveragePrice() }}
         </div>
       </div>
