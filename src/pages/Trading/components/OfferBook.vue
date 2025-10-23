@@ -2,27 +2,25 @@
   <div>
     <!-- Header -->
 
-    <!-- Offer Book Display -->
+    <!-- Order Book Display -->
     <div
-      class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mt-1 offer-book-container"
+      class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mt-1 order-book-container"
     >
       <!-- Header -->
       <div
         class="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-medium text-gray-700 dark:text-gray-300"
       >
         <div class="col-span-4 text-right">Price (Receiving)</div>
-        <div class="col-span-4 text-center">Amount</div>
+        <div class="col-span-4 text-center">Amount (Requested)</div>
         <div class="col-span-4 text-right">Total (USD)</div>
       </div>
 
-      <!-- Sell Orders (Asks) -->
+      <!-- Sell Orders (Asks) - Top Section -->
       <div
         ref="sellScrollRef"
         class="overflow-y-scroll sell-orders-section"
         :style="{
           height: `${sellSectionHeight}%`,
-          display: 'flex',
-          flexDirection: 'column-reverse',
         }"
       >
         <div class="px-3 py-2">
@@ -148,20 +146,11 @@
                   </div>
                 </div>
 
-                <!-- Maker -->
-                <div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Maker:</span>
-                  <span class="text-xs font-mono text-gray-900 dark:text-white ml-1">{{
-                    order.maker
-                  }}</span>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  Maker: {{ order.maker.slice(0, 8) }}...
                 </div>
-
-                <!-- Timestamp -->
-                <div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Time:</span>
-                  <span class="text-xs text-gray-900 dark:text-white ml-1">{{
-                    order.timestamp
-                  }}</span>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ new Date(order.timestamp).toLocaleString() }}
                 </div>
               </div>
             </div>
@@ -174,7 +163,7 @@
         class="px-3 py-3 bg-gray-50 dark:bg-gray-700 border-y border-gray-200 dark:border-gray-600"
       >
         <div class="flex items-center justify-between">
-          <div class="text-xs text-gray-500 dark:text-gray-400">Market (USDC)</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">Market (TXCH)</div>
           <div class="text-lg font-bold text-gray-900 dark:text-white font-mono">
             ${{
               calculateMarketPrice().toLocaleString('en-US', {
@@ -320,20 +309,11 @@
                   </div>
                 </div>
 
-                <!-- Maker -->
-                <div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Maker:</span>
-                  <span class="text-xs font-mono text-gray-900 dark:text-white ml-1">{{
-                    order.maker
-                  }}</span>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  Maker: {{ order.maker.slice(0, 8) }}...
                 </div>
-
-                <!-- Timestamp -->
-                <div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Time:</span>
-                  <span class="text-xs text-gray-900 dark:text-white ml-1">{{
-                    order.timestamp
-                  }}</span>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ new Date(order.timestamp).toLocaleString() }}
                 </div>
               </div>
             </div>
@@ -371,13 +351,9 @@
     timestamp: string
     offeringUsdValue: number
     receivingUsdValue: number
+    offeringXchValue: number
+    receivingXchValue: number
     pricePerUnit: number
-    status: number
-    date_found: string
-    date_completed?: string | null
-    date_pending?: string | null
-    date_expiry?: string | null
-    known_taker?: unknown | null
   }
 
   interface Props {
@@ -394,69 +370,30 @@
       column: string
       label: string
     }>
+    isBuyView: boolean
   }
 
   const props = defineProps<Props>()
 
   const emit = defineEmits<{
     'load-more': []
-    'update-filters': [filters: Record<string, string[]>]
-    'update-search': [value: string]
-    'add-filter': [column: string, value: string]
-    'remove-filter': [column: string, value: string]
-    'clear-filters': [column: string]
     'fill-from-order-book': [order: Order]
     'use-as-template': [order: Order]
   }>()
 
-  // Services
   const { getTickerSymbol } = useTickerMapping()
 
-  // Local state
+  // Refs for resizing
   const sellScrollRef = ref<HTMLElement>()
   const buyScrollRef = ref<HTMLElement>()
-
-  // Resize functionality
-  const isResizing = ref(false)
-  const sellSectionHeight = ref(50) // percentage
-  const buySectionHeight = ref(50) // percentage
-
-  const startResize = (event: MouseEvent) => {
-    isResizing.value = true
-    event.preventDefault()
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing.value) return
-
-      const container = sellScrollRef.value?.parentElement
-      if (!container) return
-
-      const containerRect = container.getBoundingClientRect()
-      const relativeY = e.clientY - containerRect.top
-      const percentage = (relativeY / containerRect.height) * 100
-
-      // Constrain between 20% and 80%
-      const constrainedPercentage = Math.max(20, Math.min(80, percentage))
-
-      sellSectionHeight.value = constrainedPercentage
-      buySectionHeight.value = 100 - constrainedPercentage
-    }
-
-    const handleMouseUp = () => {
-      isResizing.value = false
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-    }
-
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-  }
+  const sellSectionHeight = ref(50)
+  const buySectionHeight = ref(50)
 
   // Mock USD prices
   const usdPrices: Record<string, number> = {
-    XCH: 30,
-    BTC: 122013,
-    ETH: 3500,
+    TXCH: 30,
+    BTC: 45000,
+    ETH: 3000,
     USDT: 1,
     USDC: 1,
     SOL: 120,
@@ -465,47 +402,137 @@
     LINK: 15,
   }
 
+  // Utility functions
+  const formatAmount = (amount: number): string => {
+    if (amount === 0) return '0'
+    if (amount < 0.000001) return amount.toExponential(2)
+    if (amount < 0.01) return amount.toFixed(6)
+    if (amount < 1) return amount.toFixed(4)
+    if (amount < 100) return amount.toFixed(2)
+    if (amount < 10000) return amount.toFixed(1)
+    return amount.toFixed(0)
+  }
+
   // Computed
   const filteredOrders = computed(() => {
     return props.orderBookData.filter(order => {
-      // For buy assets: order must be receiving ALL selected buy assets (AND logic)
-      const buyMatch =
+      // Show offers that involve BOTH the buy and sell assets (AND logic)
+      // This means the offer must contain both types of assets
+
+      // Check if the order involves any of the buy assets
+      const buyAssetMatch =
         props.filters.buyAsset.length === 0 ||
-        props.filters.buyAsset.every(filterAsset =>
-          order.receiving.some(
-            orderAsset => getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase()
-          )
+        props.filters.buyAsset.some(
+          filterAsset =>
+            order.offering.some(
+              orderAsset =>
+                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+            ) ||
+            order.receiving.some(
+              orderAsset =>
+                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+            )
         )
 
-      // For sell assets: order must be offering ALL selected sell assets (AND logic)
-      const sellMatch =
+      // Check if the order involves any of the sell assets
+      const sellAssetMatch =
         props.filters.sellAsset.length === 0 ||
-        props.filters.sellAsset.every(filterAsset =>
-          order.offering.some(
-            orderAsset => getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase()
-          )
+        props.filters.sellAsset.some(
+          filterAsset =>
+            order.offering.some(
+              orderAsset =>
+                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+            ) ||
+            order.receiving.some(
+              orderAsset =>
+                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+            )
         )
 
-      return buyMatch && sellMatch
+      // Show orders that involve BOTH types of assets (AND logic)
+      return buyAssetMatch && sellAssetMatch
     })
   })
 
   const filteredSellOrders = computed(() => {
     const orders = filteredOrders.value
+    // Sell orders: offers where you can sell the sell-assets to get buy-assets
+    // These are offers where maker is offering sell-assets and receiving buy-assets
     return orders
-      .sort((a, b) => b.pricePerUnit - a.pricePerUnit)
-      .slice(0, Math.ceil(orders.length / 2))
+      .filter(order => {
+        // Check if maker is offering sell-assets (what you want to sell)
+        const offeringSellAsset =
+          props.filters.sellAsset.length === 0 ||
+          props.filters.sellAsset.some(filterAsset =>
+            order.offering.some(
+              orderAsset =>
+                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+            )
+          )
+
+        // Check if maker is receiving buy-assets (what you want to buy)
+        const receivingBuyAsset =
+          props.filters.buyAsset.length === 0 ||
+          props.filters.buyAsset.some(filterAsset =>
+            order.receiving.some(
+              orderAsset =>
+                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+            )
+          )
+
+        return offeringSellAsset && receivingBuyAsset
+      })
+      .sort((a, b) => b.offeringUsdValue - a.offeringUsdValue) // Higher USD values first for selling (asks)
   })
 
   const filteredBuyOrders = computed(() => {
     const orders = filteredOrders.value
+    // Buy orders: offers where you can buy the buy-assets by giving sell-assets
+    // These are offers where maker is offering buy-assets and receiving sell-assets
     return orders
-      .sort((a, b) => b.pricePerUnit - a.pricePerUnit)
-      .slice(Math.ceil(orders.length / 2))
+      .filter(order => {
+        // Check if maker is offering buy-assets (what you want to buy)
+        const offeringBuyAsset =
+          props.filters.buyAsset.length === 0 ||
+          props.filters.buyAsset.some(filterAsset =>
+            order.offering.some(
+              orderAsset =>
+                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+            )
+          )
+
+        // Check if maker is receiving sell-assets (what you want to sell)
+        const receivingSellAsset =
+          props.filters.sellAsset.length === 0 ||
+          props.filters.sellAsset.some(filterAsset =>
+            order.receiving.some(
+              orderAsset =>
+                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+            )
+          )
+
+        return offeringBuyAsset && receivingSellAsset
+      })
+      .sort((a, b) => b.offeringUsdValue - a.offeringUsdValue) // Higher USD values first for buying (bids)
   })
 
   // Methods
-
   const calculateAssetUsdValue = (asset: {
     id: string
     code: string
@@ -519,16 +546,6 @@
     }
   }
 
-  const formatAmount = (amount: number): string => {
-    if (amount === 0) return '0'
-    if (amount < 0.000001) return amount.toExponential(2)
-    if (amount < 0.01) return amount.toFixed(6)
-    if (amount < 1) return amount.toFixed(4)
-    if (amount < 100) return amount.toFixed(2)
-    if (amount < 10000) return amount.toFixed(1)
-    return amount.toFixed(0)
-  }
-
   const calculateMarketPrice = () => {
     if (filteredOrders.value.length === 0) return 1
 
@@ -538,14 +555,12 @@
     filteredOrders.value.forEach(order => {
       const firstAsset = order.offering[0]
       if (firstAsset && firstAsset.code !== 'USDC') {
-        const usdcItem =
-          order.receiving.find(a => a.code === 'USDC') ||
-          order.offering.find(a => a.code === 'USDC')
+        const usdcItem = order.receiving.find(item => item.code === 'USDC')
         if (usdcItem) {
           const volume = firstAsset.amount
-          const price = usdcItem.amount / volume
+          const price = usdcItem.amount / firstAsset.amount
           totalVolume += volume
-          weightedPriceSum += price * volume
+          weightedPriceSum += volume * price
         }
       }
     })
@@ -554,161 +569,105 @@
   }
 
   const handleOrderClick = (order: Order) => {
-    // This would be determined by the parent component's activeTab
     emit('fill-from-order-book', order)
   }
 
-  // Scroll handling for infinite loading
-  const handleSellScroll = () => {
-    if (!sellScrollRef.value) return
-    const { scrollTop } = sellScrollRef.value
+  const startResize = (event: MouseEvent) => {
+    event.preventDefault()
+    const startY = event.clientY
+    const startSellHeight = sellSectionHeight.value
 
-    if (scrollTop === 0 && props.hasMore && !props.loading) {
-      emit('load-more')
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaY = e.clientY - startY
+      const containerHeight = 100
+      const newSellHeight = Math.max(
+        20,
+        Math.min(80, startSellHeight + (deltaY / containerHeight) * 100)
+      )
+      const newBuyHeight = 100 - newSellHeight
+
+      sellSectionHeight.value = newSellHeight
+      buySectionHeight.value = newBuyHeight
     }
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
   }
 
-  const handleBuyScroll = () => {
-    if (!buyScrollRef.value) return
-    const { scrollTop, scrollHeight, clientHeight } = buyScrollRef.value
+  // Intersection Observer for infinite scrolling
+  let observer: IntersectionObserver | null = null
 
-    if (scrollTop + clientHeight >= scrollHeight - 10 && props.hasMore && !props.loading) {
-      emit('load-more')
-    }
-  }
-
-  // Lifecycle
   onMounted(() => {
-    const sellElement = sellScrollRef.value
-    const buyElement = buyScrollRef.value
-
-    if (sellElement) {
-      sellElement.addEventListener('scroll', handleSellScroll)
-    }
-    if (buyElement) {
-      buyElement.addEventListener('scroll', handleBuyScroll)
+    if (sellScrollRef.value) {
+      observer = new IntersectionObserver(
+        entries => {
+          if (entries[0].isIntersecting && props.hasMore && !props.loading) {
+            emit('load-more')
+          }
+        },
+        { threshold: 0.1 }
+      )
+      observer.observe(sellScrollRef.value)
     }
   })
 
   onUnmounted(() => {
-    const sellElement = sellScrollRef.value
-    const buyElement = buyScrollRef.value
-
-    if (sellElement) {
-      sellElement.removeEventListener('scroll', handleSellScroll)
-    }
-    if (buyElement) {
-      buyElement.removeEventListener('scroll', handleBuyScroll)
+    if (observer) {
+      observer.disconnect()
     }
   })
 </script>
 
 <style scoped>
-  .card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700;
+  .order-book-container {
+    height: 60vh;
+    min-height: 400px;
+    max-height: 800px;
   }
 
-  /* Dark mode for input fields */
-  :deep(.p-inputtext) {
-    @apply bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100;
-  }
-
-  :deep(.p-inputtext:focus) {
-    @apply border-primary-500 dark:border-primary-400 ring-primary-500 dark:ring-primary-400;
-  }
-
-  /* Dark mode for loading spinner */
-  :deep(.p-progress-spinner-circle) {
-    @apply stroke-primary-500 dark:stroke-primary-400;
-  }
-
-  /* Order Book Container - Responsive and Resizable */
-  .offer-book-container {
-    min-height: 60vh;
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Responsive heights for order sections */
   .sell-orders-section {
-    min-height: 200px;
-    max-height: 400px;
+    min-height: 20%;
+    max-height: 80%;
   }
 
   .buy-orders-section {
-    min-height: 200px;
-    max-height: 400px;
+    min-height: 20%;
+    max-height: 80%;
   }
 
-  /* Resize handle styling */
   .resize-handle {
-    flex-shrink: 0;
-    user-select: none;
+    height: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .resize-handle:hover {
-    background-color: rgb(156 163 175) !important; /* gray-400 */
+    background-color: #d1d5db;
   }
 
   .dark .resize-handle:hover {
-    background-color: rgb(107 114 128) !important; /* gray-500 */
+    background-color: #4b5563;
   }
 
-  /* Responsive breakpoints */
-  @media (min-width: 640px) {
-    .offer-book-container {
-      min-height: 65vh;
-      max-height: 85vh;
-    }
-
-    .sell-orders-section,
-    .buy-orders-section {
-      min-height: 250px;
-      max-height: 500px;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .offer-book-container {
-      min-height: 70vh;
-      max-height: 90vh;
-    }
-
-    .sell-orders-section,
-    .buy-orders-section {
+  @media (max-width: 768px) {
+    .order-book-container {
+      height: 50vh;
       min-height: 300px;
       max-height: 600px;
     }
   }
 
-  @media (min-width: 1280px) {
-    .offer-book-container {
-      min-height: 75vh;
-      max-height: 95vh;
+  @media (max-width: 480px) {
+    .order-book-container {
+      height: 40vh;
+      min-height: 250px;
+      max-height: 500px;
     }
-
-    .sell-orders-section,
-    .buy-orders-section {
-      min-height: 350px;
-      max-height: 700px;
-    }
-  }
-
-  /* Dark mode for scrollbars */
-  .overflow-y-scroll::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .overflow-y-scroll::-webkit-scrollbar-track {
-    @apply bg-gray-100 dark:bg-gray-600 rounded;
-  }
-
-  .overflow-y-scroll::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 dark:bg-gray-500 rounded;
-  }
-
-  .overflow-y-scroll::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-400 dark:bg-gray-400;
   }
 </style>

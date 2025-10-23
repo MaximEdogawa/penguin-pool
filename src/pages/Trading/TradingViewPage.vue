@@ -44,6 +44,27 @@
             </div>
           </div>
 
+          <!-- Buy/Sell Toggle -->
+          <div class="flex items-center justify-center gap-4 mt-2">
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-600 dark:text-gray-400">View:</span>
+              <button
+                @click="toggleBuySellView"
+                :class="[
+                  'px-3 py-1 text-sm font-medium rounded-lg transition-colors',
+                  isBuyView
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600',
+                ]"
+              >
+                {{ isBuyView ? 'Buy Offers' : 'Sell Offers' }}
+              </button>
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">
+              {{ isBuyView ? 'Shows offers where you can buy' : 'Shows offers where you can sell' }}
+            </div>
+          </div>
+
           <!-- Active Filters -->
           <div v-if="hasActiveSharedFilters" class="space-y-2 mt-2">
             <div
@@ -109,7 +130,7 @@
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300',
               ]"
             >
-              Offer Book
+              Order Book
             </button>
             <button
               @click="activeTradingView = 'chart'"
@@ -156,6 +177,7 @@
               :filters="sharedFilters"
               :search-value="sharedSearchValue"
               :filtered-suggestions="sharedFilteredSuggestions"
+              :is-buy-view="isBuyView"
               @load-more="loadOrderBookData"
               @fill-from-order-book="fillFromOrderBook"
               @use-as-template="useAsTemplate"
@@ -321,6 +343,8 @@
     timestamp: string
     offeringUsdValue: number
     receivingUsdValue: number
+    offeringXchValue: number
+    receivingXchValue: number
     pricePerUnit: number
     status: number
     date_found: string
@@ -370,6 +394,7 @@
   const activeTradingView = ref<'orderbook' | 'chart' | 'depth' | 'trades'>('orderbook')
   const activeTab = ref<'maker' | 'taker'>('maker')
   const priceAdjustment = ref(0)
+  const isBuyView = ref(true) // true = buy offers, false = sell offers
 
   // Asset management
   const makerAssets = ref<AssetItem[]>([
@@ -412,7 +437,7 @@
 
   // Mock USD prices for assets (in a real app, this would come from an API)
   const usdPrices: Record<string, number> = {
-    XCH: 30,
+    TXCH: 30,
     BTC: 122013,
     ETH: 3500,
     USDT: 1,
@@ -800,6 +825,10 @@
     saveFilterState()
   }
 
+  const toggleBuySellView = () => {
+    isBuyView.value = !isBuyView.value
+  }
+
   // Order book methods
   const loadOrderBookData = async () => {
     if (orderBookLoading.value || !orderBookHasMore.value) return
@@ -888,6 +917,21 @@
       0
     )
 
+    const offeringXchValue = safeOffered.reduce((sum: number, item: DexieAssetItem) => {
+      if (item.code === 'TXCH') {
+        return sum + item.amount
+      } else {
+        return sum + (item.amount * (usdPrices[item.code] || 0)) / usdPrices.TXCH
+      }
+    }, 0)
+    const receivingXchValue = safeRequested.reduce((sum: number, item: DexieAssetItem) => {
+      if (item.code === 'TXCH') {
+        return sum + item.amount
+      } else {
+        return sum + (item.amount * (usdPrices[item.code] || 0)) / usdPrices.TXCH
+      }
+    }, 0)
+
     return {
       id: dexieOffer.id,
       offering: safeOffered,
@@ -896,6 +940,8 @@
       timestamp: new Date(dexieOffer.date_found).toLocaleTimeString(),
       offeringUsdValue,
       receivingUsdValue,
+      offeringXchValue,
+      receivingXchValue,
       pricePerUnit: receivingUsdValue / offeringUsdValue,
       status: dexieOffer.status,
       date_found: dexieOffer.date_found,
@@ -986,8 +1032,8 @@
   }
 
   const setDefaultFilter = () => {
-    // Set default XCH TBYC filter (buy XCH, sell TBYC)
-    sharedFilters.buyAsset = ['XCH']
+    // Set default TXCH TBYC filter (buy TXCH, sell TBYC)
+    sharedFilters.buyAsset = ['TXCH']
     sharedFilters.sellAsset = ['TBYC']
     saveFilterState()
   }
