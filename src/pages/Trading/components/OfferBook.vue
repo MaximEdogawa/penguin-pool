@@ -8,14 +8,13 @@
     >
       <!-- Header -->
       <div
-        class="grid grid-cols-15 gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-medium text-gray-700 dark:text-gray-300"
+        class="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-medium text-gray-700 dark:text-gray-300"
       >
         <div class="col-span-2 text-right">Count</div>
         <div class="col-span-3 text-right">Receive</div>
         <div class="col-span-3 text-right">Request</div>
         <div class="col-span-2 text-right">Total (USD)</div>
-        <div class="col-span-3 text-right">Price (TXCH)</div>
-        <div class="col-span-2"></div>
+        <div class="col-span-2 text-right">Price (TXCH)</div>
       </div>
 
       <!-- Sell Orders (Asks) - Top Section -->
@@ -35,7 +34,8 @@
             v-for="order in filteredSellOrders"
             :key="`sell-${order.id}`"
             @click="handleOrderClick(order)"
-            @mousemove="updateTooltipPosition"
+            @mousemove="event => updateTooltipPosition(event, order, 'sell')"
+            @mouseleave="hideTooltip"
             class="w-full group relative mb-1 cursor-pointer"
           >
             <div
@@ -43,7 +43,7 @@
               :style="{ width: `${Math.min(100, (parseInt(order.id) % 8) * 15)}%`, right: 0 }"
             />
 
-            <div class="relative grid grid-cols-15 gap-2 py-2 text-sm items-center">
+            <div class="relative grid grid-cols-12 gap-2 py-2 text-sm items-center">
               <!-- Count -->
               <div class="col-span-2 text-right text-gray-500 dark:text-gray-500 font-mono text-xs">
                 {{ order.offering.length + order.receiving.length }}
@@ -86,115 +86,29 @@
               </div>
 
               <!-- Price (TXCH) -->
-              <div class="col-span-3 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
+              <div class="col-span-2 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
                 {{ calculateOrderPrice(order, 'sell') }}
               </div>
-
-              <!-- Empty space -->
-              <div class="col-span-2"></div>
-            </div>
-
-            <!-- Tooltip -->
-            <div
-              ref="tooltipRef"
-              class="fixed bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50 rounded-lg p-3 shadow-xl z-50 hidden group-hover:block min-w-[300px] pointer-events-none"
-              :style="tooltipStyle"
-            >
-              <div class="space-y-2">
-                <div class="text-sm font-semibold text-gray-900 dark:text-white">Order Details</div>
-
-                <!-- Order ID -->
-                <div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">ID:</span>
-                  <span class="text-xs font-mono text-gray-900 dark:text-white ml-1"
-                    >{{ order.id.slice(0, 16) }}...</span
-                  >
-                </div>
-
-                <!-- Offering Assets -->
-                <div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Offering:</span>
-                  <div class="mt-1 space-y-1">
-                    <div
-                      v-for="(asset, idx) in order.offering"
-                      :key="idx"
-                      class="flex items-center justify-between text-xs"
-                    >
-                      <span class="text-gray-900 dark:text-white">{{
-                        getTickerSymbol(asset.id)
-                      }}</span>
-                      <div class="flex flex-col items-end">
-                        <span class="font-mono text-gray-700 dark:text-gray-300">{{
-                          formatAmount(asset.amount || 0)
-                        }}</span>
-                        <span class="font-mono text-xs text-gray-500 dark:text-gray-400">
-                          Full: {{ (asset.amount || 0).toFixed(8) }}
-                        </span>
-                        <span class="font-mono text-xs text-green-600 dark:text-green-400">
-                          ${{ calculateAssetUsdValue(asset).toFixed(2) }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Receiving Assets -->
-                <div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Receiving:</span>
-                  <div class="mt-1 space-y-1">
-                    <div
-                      v-for="(asset, idx) in order.receiving"
-                      :key="idx"
-                      class="flex items-center justify-between text-xs"
-                    >
-                      <span class="text-gray-900 dark:text-white">{{
-                        getTickerSymbol(asset.id)
-                      }}</span>
-                      <div class="flex flex-col items-end">
-                        <span class="font-mono text-gray-700 dark:text-gray-300">{{
-                          formatAmount(asset.amount || 0)
-                        }}</span>
-                        <span class="font-mono text-xs text-gray-500 dark:text-gray-400">
-                          Full: {{ (asset.amount || 0).toFixed(8) }}
-                        </span>
-                        <span class="font-mono text-xs text-green-600 dark:text-green-400">
-                          ${{ calculateAssetUsdValue(asset).toFixed(2) }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="text-xs text-gray-500 dark:text-gray-400">
-                  Maker: {{ order.maker.slice(0, 8) }}...
-                </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ new Date(order.timestamp).toLocaleString() }}
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Market Price Separator -->
-      <div class="relative">
-        <div class="absolute inset-0 flex items-center justify-end pr-2">
-          <div class="bg-white dark:bg-gray-800 px-1 py-0.5 rounded">
-            <div class="text-xs font-mono text-gray-500 dark:text-gray-500">
-              {{ calculateAveragePrice() }}
-            </div>
-          </div>
-        </div>
-        <div class="h-0.5 bg-gray-300 dark:bg-gray-500"></div>
-      </div>
-
-      <!-- Resize Handle -->
+      <!-- Resize Handle / Market Price Separator-->
       <div
-        class="resize-handle bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 cursor-row-resize transition-colors"
+        class="resize-handle bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 cursor-row-resize transition-colors flex items-center justify-center relative"
         @mousedown="startResize"
+        title="Drag to resize sections"
       >
-        <div class="h-1 w-full"></div>
+        <div class="w-full flex items-center justify-between px-3">
+          <div class="flex items-center gap-1"></div>
+        </div>
+
+        <!-- Invisible larger hit area -->
+        <div class="absolute inset-0 w-full h-6 -top-1 pr-2"></div>
+        <div class="text-sm font-bold text-blue-700 dark:text-blue-300 font-mono pr-2 bg-gray-600">
+          {{ calculateAveragePrice() }}
+        </div>
       </div>
 
       <!-- Buy Orders (Bids) -->
@@ -208,7 +122,8 @@
             v-for="order in filteredBuyOrders"
             :key="`buy-${order.id}`"
             @click="handleOrderClick(order)"
-            @mousemove="updateTooltipPosition"
+            @mousemove="event => updateTooltipPosition(event, order, 'buy')"
+            @mouseleave="hideTooltip"
             class="w-full group relative mb-1 cursor-pointer"
           >
             <div
@@ -216,7 +131,7 @@
               :style="{ width: `${Math.min(100, (parseInt(order.id) % 8) * 15)}%`, right: 0 }"
             />
 
-            <div class="relative grid grid-cols-15 gap-2 py-2 text-sm items-center">
+            <div class="relative grid grid-cols-12 gap-2 py-2 text-sm items-center">
               <!-- Count -->
               <div class="col-span-2 text-right text-gray-500 dark:text-gray-500 font-mono text-xs">
                 {{ order.offering.length + order.receiving.length }}
@@ -259,91 +174,8 @@
               </div>
 
               <!-- Price (TXCH) -->
-              <div class="col-span-3 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
+              <div class="col-span-2 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
                 {{ calculateOrderPrice(order, 'buy') }}
-              </div>
-
-              <!-- Empty space -->
-              <div class="col-span-2"></div>
-            </div>
-
-            <!-- Tooltip -->
-            <div
-              ref="tooltipRef"
-              class="fixed bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50 rounded-lg p-3 shadow-xl z-50 hidden group-hover:block min-w-[300px] pointer-events-none"
-              :style="tooltipStyle"
-            >
-              <div class="space-y-2">
-                <div class="text-sm font-semibold text-gray-900 dark:text-white">Order Details</div>
-
-                <!-- Order ID -->
-                <div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">ID:</span>
-                  <span class="text-xs font-mono text-gray-900 dark:text-white ml-1"
-                    >{{ order.id.slice(0, 16) }}...</span
-                  >
-                </div>
-
-                <!-- Offering Assets -->
-                <div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Offering:</span>
-                  <div class="mt-1 space-y-1">
-                    <div
-                      v-for="(asset, idx) in order.offering"
-                      :key="idx"
-                      class="flex items-center justify-between text-xs"
-                    >
-                      <span class="text-gray-900 dark:text-white">{{
-                        getTickerSymbol(asset.id)
-                      }}</span>
-                      <div class="flex flex-col items-end">
-                        <span class="font-mono text-gray-700 dark:text-gray-300">{{
-                          formatAmount(asset.amount || 0)
-                        }}</span>
-                        <span class="font-mono text-xs text-gray-500 dark:text-gray-400">
-                          Full: {{ (asset.amount || 0).toFixed(8) }}
-                        </span>
-                        <span class="font-mono text-xs text-green-600 dark:text-green-400">
-                          ${{ calculateAssetUsdValue(asset).toFixed(2) }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Receiving Assets -->
-                <div>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">Receiving:</span>
-                  <div class="mt-1 space-y-1">
-                    <div
-                      v-for="(asset, idx) in order.receiving"
-                      :key="idx"
-                      class="flex items-center justify-between text-xs"
-                    >
-                      <span class="text-gray-900 dark:text-white">{{
-                        getTickerSymbol(asset.id)
-                      }}</span>
-                      <div class="flex flex-col items-end">
-                        <span class="font-mono text-gray-700 dark:text-gray-300">{{
-                          formatAmount(asset.amount || 0)
-                        }}</span>
-                        <span class="font-mono text-xs text-gray-500 dark:text-gray-400">
-                          Full: {{ (asset.amount || 0).toFixed(8) }}
-                        </span>
-                        <span class="font-mono text-xs text-green-600 dark:text-green-400">
-                          ${{ calculateAssetUsdValue(asset).toFixed(2) }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="text-xs text-gray-500 dark:text-gray-400">
-                  Maker: {{ order.maker.slice(0, 8) }}...
-                </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ new Date(order.timestamp).toLocaleString() }}
-                </div>
               </div>
             </div>
           </div>
@@ -364,10 +196,19 @@
         </div>
       </div>
     </div>
+
+    <!-- Generic Order Tooltip -->
+    <OrderTooltip
+      :order="hoveredOrder"
+      :visible="tooltipVisible"
+      :position="tooltipPosition"
+      :direction="hoveredOrder && filteredBuyOrders.includes(hoveredOrder) ? 'top' : 'bottom'"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+  import OrderTooltip from '@/components/OrderTooltip.vue'
   import { useTickerMapping } from '@/shared/composables/useTickerMapping'
   import ProgressSpinner from 'primevue/progressspinner'
   import { computed, onMounted, onUnmounted, ref } from 'vue'
@@ -417,22 +258,10 @@
   const sellSectionHeight = ref(50)
   const buySectionHeight = ref(50)
 
-  // Refs for tooltip positioning
-  const tooltipRef = ref<HTMLElement>()
-  const tooltipStyle = ref({})
-
-  // Mock USD prices
-  const usdPrices: Record<string, number> = {
-    TXCH: 30,
-    BTC: 45000,
-    ETH: 3000,
-    USDT: 1,
-    USDC: 1,
-    SOL: 120,
-    MATIC: 0.85,
-    AVAX: 35,
-    LINK: 15,
-  }
+  // Tooltip state
+  const hoveredOrder = ref<Order | null>(null)
+  const tooltipPosition = ref({ x: 0, y: 0 })
+  const tooltipVisible = ref(false)
 
   // Utility functions
   const formatAmount = (amount: number): string => {
@@ -575,18 +404,6 @@
   })
 
   // Methods
-  const calculateAssetUsdValue = (asset: {
-    id: string
-    code: string
-    name: string
-    amount: number
-  }) => {
-    if (asset.code === 'USDC') {
-      return asset.amount
-    } else {
-      return asset.amount * (usdPrices[asset.code] || 1)
-    }
-  }
 
   const isSingleAssetPair = (order: Order): boolean => {
     // Check if both offering and receiving have only one asset each
@@ -668,55 +485,28 @@
     emit('fill-from-order-book', order)
   }
 
-  const updateTooltipPosition = (event: MouseEvent) => {
-    if (!tooltipRef.value) return
+  const updateTooltipPosition = (event: MouseEvent, order: Order, _orderType: 'buy' | 'sell') => {
+    hoveredOrder.value = order
+    tooltipPosition.value = { x: event.clientX, y: event.clientY }
+    tooltipVisible.value = true
+  }
 
-    const tooltip = tooltipRef.value
-    const rect = tooltip.getBoundingClientRect()
-    const viewportWidth = window.innerWidth
-    const viewportHeight = window.innerHeight
-
-    let left = event.clientX + 10
-    let top = event.clientY + 10
-
-    // Adjust if tooltip would go off screen horizontally
-    if (left + rect.width > viewportWidth) {
-      left = event.clientX - rect.width - 10
-    }
-
-    // Adjust if tooltip would go off screen vertically
-    if (top + rect.height > viewportHeight) {
-      top = event.clientY - rect.height - 10
-    }
-
-    // Ensure tooltip doesn't go off the left edge
-    if (left < 10) {
-      left = 10
-    }
-
-    // Ensure tooltip doesn't go off the top edge
-    if (top < 10) {
-      top = 10
-    }
-
-    tooltipStyle.value = {
-      left: `${left}px`,
-      top: `${top}px`,
-    }
+  const hideTooltip = () => {
+    tooltipVisible.value = false
+    hoveredOrder.value = null
   }
 
   const startResize = (event: MouseEvent) => {
     event.preventDefault()
     const startY = event.clientY
     const startSellHeight = sellSectionHeight.value
+    const containerElement = document.querySelector('.order-book-container')
+    const containerHeight = containerElement?.clientHeight || 400
 
     const handleMouseMove = (e: MouseEvent) => {
       const deltaY = e.clientY - startY
-      const containerHeight = 100
-      const newSellHeight = Math.max(
-        20,
-        Math.min(80, startSellHeight + (deltaY / containerHeight) * 100)
-      )
+      const deltaPercent = (deltaY / containerHeight) * 100
+      const newSellHeight = Math.max(20, Math.min(80, startSellHeight + deltaPercent))
       const newBuyHeight = 100 - newSellHeight
 
       sellSectionHeight.value = newSellHeight
@@ -772,18 +562,36 @@
   }
 
   .resize-handle {
-    height: 8px;
+    height: 2px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    position: relative;
+    z-index: 10;
   }
 
   .resize-handle:hover {
     background-color: #d1d5db;
+    border-top-color: #9ca3af;
+    border-bottom-color: #9ca3af;
+  }
+
+  .dark .resize-handle {
+    border-top-color: #4b5563;
+    border-bottom-color: #4b5563;
   }
 
   .dark .resize-handle:hover {
     background-color: #4b5563;
+    border-top-color: #6b7280;
+    border-bottom-color: #6b7280;
+  }
+
+  /* Prevent hover tooltips from interfering with resize handle */
+  .resize-handle * {
+    pointer-events: none;
   }
 </style>
