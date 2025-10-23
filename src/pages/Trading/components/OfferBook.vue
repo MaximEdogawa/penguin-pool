@@ -10,12 +10,12 @@
       <div
         class="grid grid-cols-15 gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-medium text-gray-700 dark:text-gray-300"
       >
+        <div class="col-span-2 text-right">Count</div>
+        <div class="col-span-3 text-right">Receive</div>
+        <div class="col-span-3 text-right">Request</div>
+        <div class="col-span-2 text-right">Total (USD)</div>
+        <div class="col-span-3 text-right">Price (TXCH)</div>
         <div class="col-span-2"></div>
-        <div class="col-span-3 text-right">Receiving</div>
-        <div class="col-span-3 text-center">Requested</div>
-        <div class="col-span-3 text-center">Price (TBYC)</div>
-        <div class="col-span-2 text-center">Total (USD)</div>
-        <div class="col-span-2 text-center">Count</div>
       </div>
 
       <!-- Sell Orders (Asks) - Top Section -->
@@ -44,10 +44,12 @@
             />
 
             <div class="relative grid grid-cols-15 gap-2 py-2 text-sm items-center">
-              <!-- Empty space -->
-              <div class="col-span-2"></div>
+              <!-- Count -->
+              <div class="col-span-2 text-right text-gray-500 dark:text-gray-500 font-mono text-xs">
+                {{ order.offering.length + order.receiving.length }}
+              </div>
 
-              <!-- Receiving -->
+              <!-- Receive -->
               <div class="col-span-3 text-right">
                 <div class="flex flex-col gap-1">
                   <div
@@ -60,8 +62,8 @@
                 </div>
               </div>
 
-              <!-- Requested -->
-              <div class="col-span-3 text-center">
+              <!-- Request -->
+              <div class="col-span-3 text-right">
                 <div class="flex flex-col gap-1">
                   <div
                     v-for="(item, idx) in order.offering"
@@ -73,17 +75,8 @@
                 </div>
               </div>
 
-              <!-- Price (TBYC) -->
-              <div
-                class="col-span-3 text-center text-gray-600 dark:text-gray-400 font-mono text-xs"
-              >
-                {{ calculateOrderPrice(order, 'sell') }}
-              </div>
-
               <!-- Total (USD) -->
-              <div
-                class="col-span-2 text-center text-gray-600 dark:text-gray-400 font-mono text-xs"
-              >
+              <div class="col-span-2 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
                 ${{
                   order.offeringUsdValue.toLocaleString('en-US', {
                     minimumFractionDigits: 0,
@@ -92,12 +85,13 @@
                 }}
               </div>
 
-              <!-- Count -->
-              <div
-                class="col-span-2 text-center text-gray-500 dark:text-gray-500 font-mono text-xs"
-              >
-                {{ order.offering.length + order.receiving.length }}
+              <!-- Price (TXCH) -->
+              <div class="col-span-3 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
+                {{ calculateOrderPrice(order, 'sell') }}
               </div>
+
+              <!-- Empty space -->
+              <div class="col-span-2"></div>
             </div>
 
             <!-- Tooltip -->
@@ -185,7 +179,7 @@
 
       <!-- Market Price Separator -->
       <div class="relative">
-        <div class="absolute inset-0 flex items-center justify-center">
+        <div class="absolute inset-0 flex items-center justify-end pr-2">
           <div class="bg-white dark:bg-gray-800 px-1 py-0.5 rounded">
             <div class="text-xs font-mono text-gray-500 dark:text-gray-500">
               {{ calculateAveragePrice() }}
@@ -223,10 +217,12 @@
             />
 
             <div class="relative grid grid-cols-15 gap-2 py-2 text-sm items-center">
-              <!-- Empty space -->
-              <div class="col-span-2"></div>
+              <!-- Count -->
+              <div class="col-span-2 text-right text-gray-500 dark:text-gray-500 font-mono text-xs">
+                {{ order.offering.length + order.receiving.length }}
+              </div>
 
-              <!-- Receiving -->
+              <!-- Receive -->
               <div class="col-span-3 text-right">
                 <div class="flex flex-col gap-1">
                   <div
@@ -239,8 +235,8 @@
                 </div>
               </div>
 
-              <!-- Requested -->
-              <div class="col-span-3 text-center">
+              <!-- Request -->
+              <div class="col-span-3 text-right">
                 <div class="flex flex-col gap-1">
                   <div
                     v-for="(item, idx) in order.offering"
@@ -252,17 +248,8 @@
                 </div>
               </div>
 
-              <!-- Price (TBYC) -->
-              <div
-                class="col-span-3 text-center text-gray-600 dark:text-gray-400 font-mono text-xs"
-              >
-                {{ calculateOrderPrice(order, 'buy') }}
-              </div>
-
               <!-- Total (USD) -->
-              <div
-                class="col-span-2 text-center text-gray-600 dark:text-gray-400 font-mono text-xs"
-              >
+              <div class="col-span-2 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
                 ${{
                   order.offeringUsdValue.toLocaleString('en-US', {
                     minimumFractionDigits: 0,
@@ -271,12 +258,13 @@
                 }}
               </div>
 
-              <!-- Count -->
-              <div
-                class="col-span-2 text-center text-gray-500 dark:text-gray-500 font-mono text-xs"
-              >
-                {{ order.offering.length + order.receiving.length }}
+              <!-- Price (TXCH) -->
+              <div class="col-span-3 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
+                {{ calculateOrderPrice(order, 'buy') }}
               </div>
+
+              <!-- Empty space -->
+              <div class="col-span-2"></div>
             </div>
 
             <!-- Tooltip -->
@@ -362,14 +350,14 @@
 
           <div
             v-if="!hasMore && orderBookData.length > 0"
-            class="text-center py-4 text-gray-500 dark:text-gray-400 text-xs"
+            class="text-right py-4 text-gray-500 dark:text-gray-400 text-xs"
           >
             No more orders
           </div>
 
           <div
             v-if="!loading && filteredOrders.length === 0"
-            class="text-center py-8 text-gray-500 dark:text-gray-400 text-sm"
+            class="text-right py-8 text-gray-500 dark:text-gray-400 text-sm"
           >
             No orders found. Try adjusting your filters.
           </div>
@@ -614,29 +602,23 @@
         let price
 
         if (props.filters.buyAsset.length > 0 && props.filters.sellAsset.length > 0) {
-          const buyAssetSymbol = props.filters.buyAsset[0].toUpperCase()
-          const sellAssetSymbol = props.filters.sellAsset[0].toUpperCase()
-
           // Calculate price based on order type
           if (orderType === 'sell') {
             // Sell order: receiving/requested (how much you get per unit you give)
             // For TXCH/TBYC sell orders: receiving TBYC, requesting TXCH
             price = receivingAsset.amount / offeringAsset.amount
           } else {
-            // Buy order: requested/receiving (how much you need to give per unit you get)
+            // Buy order: requested/receiving (how much you need to give per unit you give)
             // For TXCH/TBYC buy orders: receiving TBYC, requesting TXCH
             price = offeringAsset.amount / receivingAsset.amount
           }
 
           // Always show as buyAsset/sellAsset (e.g., TXCH/TBYC)
-          return `${formatAmount(price)} ${buyAssetSymbol}/${sellAssetSymbol}`
+          return `${formatAmount(price)}`
         } else {
           // No filters, use alphabetical order with requested/receiving
-          const receivingSymbol = getTickerSymbol(receivingAsset.id).toUpperCase()
-          const offeringSymbol = getTickerSymbol(offeringAsset.id).toUpperCase()
-          const assets = [receivingSymbol, offeringSymbol].sort()
           price = offeringAsset.amount / receivingAsset.amount
-          return `${formatAmount(price)} ${assets[0]}/${assets[1]}`
+          return `${formatAmount(price)}`
         }
       }
     }
@@ -653,9 +635,6 @@
       return 'N/A'
     }
 
-    const buyAssetSymbol = props.filters.buyAsset[0].toUpperCase()
-    const sellAssetSymbol = props.filters.sellAsset[0].toUpperCase()
-
     // Get best sell price (lowest ask)
     const bestSellOrder = filteredSellOrders.value[0]
     const bestSellPrice = bestSellOrder
@@ -671,15 +650,15 @@
     // Calculate average if both prices exist
     if (bestSellPrice > 0 && bestBuyPrice > 0) {
       const averagePrice = (bestSellPrice + bestBuyPrice) / 2
-      return `${formatAmount(averagePrice)} ${buyAssetSymbol}/${sellAssetSymbol}`
+      return `${formatAmount(averagePrice)}`
     }
 
     // Fallback to individual prices if only one exists
     if (bestSellPrice > 0) {
-      return `${formatAmount(bestSellPrice)} ${buyAssetSymbol}/${sellAssetSymbol}`
+      return `${formatAmount(bestSellPrice)}`
     }
     if (bestBuyPrice > 0) {
-      return `${formatAmount(bestBuyPrice)} ${buyAssetSymbol}/${sellAssetSymbol}`
+      return `${formatAmount(bestBuyPrice)}`
     }
 
     return 'N/A'
