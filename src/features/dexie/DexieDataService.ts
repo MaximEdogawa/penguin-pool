@@ -1,3 +1,4 @@
+import { useTickerMapping } from '@/shared/composables/useTickerMapping'
 import { logger } from '@/shared/logger/logger'
 import {
   dexieRepository,
@@ -353,7 +354,8 @@ export function convertDexieOfferToAppOffer(dexieResponse: DexiePostOfferRespons
 }
 
 export function convertDexieAsset(dexieAsset: DexieAsset) {
-  const assetType = dexieAsset.id === 'xch' ? 'xch' : 'cat'
+  const { isXchAsset } = useTickerMapping()
+  const assetType = isXchAsset(dexieAsset.id) ? 'xch' : 'cat'
   return {
     assetId: dexieAsset.id,
     amount: dexieAsset.amount,

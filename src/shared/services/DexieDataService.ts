@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, ref } from 'vue'
+import { useTickerMapping } from '../composables/useTickerMapping'
 import {
   dexieRepository,
   type DexieOfferSearchParams,
@@ -358,7 +359,8 @@ export function convertDexieOfferToAppOffer(dexieResponse: DexiePostOfferRespons
 }
 
 export function convertDexieAsset(dexieAsset: DexieAsset) {
-  const assetType: 'xch' | 'cat' = dexieAsset.id === 'xch' ? 'xch' : 'cat'
+  const { isXchAsset } = useTickerMapping()
+  const assetType: 'xch' | 'cat' = isXchAsset(dexieAsset.id) ? 'xch' : 'cat'
   return {
     assetId: dexieAsset.id,
     amount: dexieAsset.amount,

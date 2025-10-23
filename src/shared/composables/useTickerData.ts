@@ -110,10 +110,14 @@ export function useTickerData() {
   }
 
   /**
-   * Check if asset is XCH
+   * Check if asset is XCH (including testnet TXCH)
    */
   const isXchAsset = (assetId: string): boolean => {
-    return assetId === 'xch' || assetId === 'TXCH'
+    return (
+      assetId === 'xch' ||
+      assetId === 'TXCH' ||
+      assetId === 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad'
+    )
   }
 
   /**

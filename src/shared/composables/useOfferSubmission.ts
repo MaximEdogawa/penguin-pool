@@ -1,5 +1,6 @@
 import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
 import { useOfferStorage } from '@/shared/composables/useOfferStorage'
+import { useTickerMapping } from '@/shared/composables/useTickerMapping'
 import { useDexieDataService } from '@/shared/services/DexieDataService'
 import { logger } from '@/shared/services/logger'
 import { xchToMojos } from '@/shared/utils/chia-units'
@@ -20,6 +21,7 @@ export function useOfferSubmission() {
   const walletDataService = useWalletDataService()
   const offerStorage = useOfferStorage()
   const dexieDataService = useDexieDataService()
+  const { isXchAsset } = useTickerMapping()
 
   // State
   const selectedOrderForTaking = ref<OrderBookOrder | null>(null)
@@ -57,7 +59,7 @@ export function useOfferSubmission() {
     makerAssets.value = order.offering.map(asset => ({
       assetId: asset.id,
       amount: asset.amount,
-      type: asset.id === '' ? 'xch' : 'cat',
+      type: isXchAsset(asset.id) ? 'xch' : 'cat',
       symbol: asset.code || '',
       searchQuery: asset.code || '', // Pre-fill search with ticker symbol
       showDropdown: false,
@@ -66,7 +68,7 @@ export function useOfferSubmission() {
     takerAssets.value = order.receiving.map(asset => ({
       assetId: asset.id,
       amount: asset.amount,
-      type: asset.id === '' ? 'xch' : 'cat',
+      type: isXchAsset(asset.id) ? 'xch' : 'cat',
       symbol: asset.code || '',
       searchQuery: asset.code || '', // Pre-fill search with ticker symbol
       showDropdown: false,
@@ -77,7 +79,7 @@ export function useOfferSubmission() {
     makerAssets.value = order.offering.map(asset => ({
       assetId: asset.id,
       amount: asset.amount,
-      type: asset.id === '' ? 'xch' : 'cat',
+      type: isXchAsset(asset.id) ? 'xch' : 'cat',
       symbol: asset.code || '',
       searchQuery: asset.code || '', // Pre-fill search with ticker symbol
       showDropdown: false,
@@ -85,7 +87,7 @@ export function useOfferSubmission() {
     takerAssets.value = order.receiving.map(asset => ({
       assetId: asset.id,
       amount: asset.amount,
-      type: asset.id === '' ? 'xch' : 'cat',
+      type: isXchAsset(asset.id) ? 'xch' : 'cat',
       symbol: asset.code || '',
       searchQuery: asset.code || '', // Pre-fill search with ticker symbol
       showDropdown: false,
