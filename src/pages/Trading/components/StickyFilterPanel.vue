@@ -178,28 +178,28 @@
   }
 
   .glass-panel {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.8) !important;
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
   }
 
   .glass-panel :deep(.p-panel-header) {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.6) !important;
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
-    color: rgba(255, 255, 255, 0.9) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+    color: rgba(0, 0, 0, 0.8) !important;
     padding: 0.25rem 0.75rem !important;
     min-height: 1.5rem !important;
   }
 
   .glass-panel :deep(.p-panel-content) {
-    background: rgba(255, 255, 255, 0.05) !important;
+    background: rgba(255, 255, 255, 0.4) !important;
     backdrop-filter: blur(10px);
   }
 
   .glass-panel :deep(.p-panel-header .p-panel-header-icon) {
-    color: rgba(255, 255, 255, 0.8) !important;
+    color: rgba(0, 0, 0, 0.6) !important;
     font-size: 0.625rem !important;
     width: 0.75rem !important;
     height: 0.75rem !important;
@@ -212,7 +212,7 @@
   }
 
   .glass-panel :deep(.p-panel-header .p-panel-header-icon:hover) {
-    color: rgba(255, 255, 255, 1) !important;
+    color: rgba(0, 0, 0, 0.8) !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
@@ -235,6 +235,7 @@
   }
 
   .glass-panel :deep(.p-panel-header .p-panel-title) {
+    color: rgba(0, 0, 0, 0.8) !important;
     font-size: 0.75rem !important;
     font-weight: 600 !important;
   }
@@ -255,5 +256,18 @@
 
   .dark .glass-panel :deep(.p-panel-content) {
     background: rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .dark .glass-panel :deep(.p-panel-header .p-panel-header-icon) {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+
+  .dark .glass-panel :deep(.p-panel-header .p-panel-header-icon:hover) {
+    color: rgba(255, 255, 255, 1) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .dark .glass-panel :deep(.p-panel-header .p-panel-title) {
+    color: rgba(255, 255, 255, 0.9) !important;
   }
 </style>

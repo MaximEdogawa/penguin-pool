@@ -8,12 +8,11 @@
     >
       <!-- Header -->
       <div
-        class="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-medium text-gray-700 dark:text-gray-300"
+        class="grid grid-cols-10 gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-xs font-medium text-gray-700 dark:text-gray-300"
       >
         <div class="col-span-2 text-right">Count</div>
         <div class="col-span-3 text-right">Receive</div>
         <div class="col-span-3 text-right">Request</div>
-        <div class="col-span-2 text-right">Total (USD)</div>
         <div class="col-span-2 text-right">Price ({{ getPriceHeaderTicker() }})</div>
       </div>
 
@@ -43,7 +42,7 @@
               :style="{ width: `${Math.min(100, (parseInt(order.id) % 8) * 15)}%`, right: 0 }"
             />
 
-            <div class="relative grid grid-cols-12 gap-2 py-2 text-sm items-center">
+            <div class="relative grid grid-cols-10 gap-2 py-2 text-sm items-center">
               <!-- Count -->
               <div class="col-span-2 text-right text-gray-500 dark:text-gray-500 font-mono text-xs">
                 {{ order.offering.length + order.receiving.length }}
@@ -73,16 +72,6 @@
                     {{ formatAmount(item.amount || 0) }} {{ item.code || getTickerSymbol(item.id) }}
                   </div>
                 </div>
-              </div>
-
-              <!-- Total (USD) -->
-              <div class="col-span-2 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
-                ${{
-                  order.offeringUsdValue.toLocaleString('en-US', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
-                  })
-                }}
               </div>
 
               <!-- Price (TXCH) -->
@@ -133,7 +122,7 @@
               :style="{ width: `${Math.min(100, (parseInt(order.id) % 8) * 15)}%`, right: 0 }"
             />
 
-            <div class="relative grid grid-cols-12 gap-2 py-2 text-sm items-center">
+            <div class="relative grid grid-cols-10 gap-2 py-2 text-sm items-center">
               <!-- Count -->
               <div class="col-span-2 text-right text-gray-500 dark:text-gray-500 font-mono text-xs">
                 {{ order.offering.length + order.receiving.length }}
@@ -163,16 +152,6 @@
                     {{ formatAmount(item.amount || 0) }} {{ item.code || getTickerSymbol(item.id) }}
                   </div>
                 </div>
-              </div>
-
-              <!-- Total (USD) -->
-              <div class="col-span-2 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
-                ${{
-                  order.offeringUsdValue.toLocaleString('en-US', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
-                  })
-                }}
               </div>
 
               <!-- Price (TXCH) -->
