@@ -168,6 +168,8 @@
   },
   "active": "762a427def224add",
   "lastOpenFiles": [
+    "ORDER_BOOK_PRICE_CALCULATION_SPEC.md",
+    "ORDER_BOOK_PRICE_CALCULATION.md",
     "examples/request-collections/dexie-space/collection.bru",
     "examples/request-collections/dexie-space/dexie-testnet/prices/Historical Trades/Historical Trades Data.bru",
     "examples/request-collections/dexie-space/dexie-testnet/prices/Historical Trades/folder.bru",
@@ -178,7 +180,6 @@
     "examples/request-collections/dexie-space/dexie-testnet/prices/tickers/Ticker Market Price.bru",
     "examples/request-collections/dexie-space/dexie-testnet/prices/tickers/Get all tickers.bru",
     "examples/request-collections/dexie-space/dexie-testnet/prices/tickers/folder.bru",
-    "examples/request-collections/dexie-space/dexie-testnet/prices/tickers",
     "DEXIE_API_SETUP.md",
     "CODE_STYLE_GUIDE.md",
     "PRODUCTION_DEBUGGING.md",
@@ -202,7 +203,6 @@
     "technical-info/CHIA_WALLET_CONNECT_SETUP.md",
     "implementation/TICKET-010/TICKET-010-IMPLEMENTATION.md",
     "implementation/TICKET-010/SETUP_GUIDE.md",
-    "implementation/TICKET-010/README.md",
-    "WALLET_CONNECT_SETUP.md"
+    "implementation/TICKET-010/README.md"
   ]
 }

@@ -21,6 +21,7 @@ export interface FeatureFlagsConfig {
   // App Features
   app: {
     offers: FeatureFlag
+    trading: FeatureFlag
     loans: FeatureFlag
     optionContracts: FeatureFlag
     piggyBank: FeatureFlag
@@ -87,6 +88,7 @@ function createFeatureFlag(
 export const defaultFeatureFlags: FeatureFlagsConfig = {
   app: {
     offers: createFeatureFlag('Enable/disable the Offers feature', 'app'),
+    trading: createFeatureFlag('Enable/disable the Trading feature', 'app'),
     loans: createFeatureFlag('Enable/disable the Loans feature', 'app'),
     optionContracts: createFeatureFlag('Enable/disable the Option Contracts feature', 'app'),
     piggyBank: createFeatureFlag('Enable/disable the Piggy Bank feature', 'app'),

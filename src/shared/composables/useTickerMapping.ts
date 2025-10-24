@@ -12,17 +12,6 @@ export function useTickerMapping() {
    */
   const getTickerSymbol = (assetId: string): string => {
     const tokenInfo = getCatTokenInfo(assetId)
-
-    // Fallback for common testnet tokens
-    if (tokenInfo.ticker === assetId) {
-      if (assetId === 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad') {
-        return 'TXCH'
-      }
-      if (assetId === '4eadfa450c19fa51df65eb7fbf5b61077ec80ec799a7652bb187b705bff19a90') {
-        return 'TDBX'
-      }
-    }
-
     return tokenInfo.ticker
   }
 
@@ -42,10 +31,22 @@ export function useTickerMapping() {
   }
 
   /**
-   * Check if asset is XCH
+   * Check if asset is XCH (including testnet TXCH)
    */
   const isXchAsset = (assetId: string): boolean => {
     return assetId === 'xch' || assetId === 'TXCH'
+  }
+
+  /**
+   * Check if asset is TDBX
+   */
+  const isTdbxAsset = (assetId: string): boolean => {
+    return (
+      assetId === 'TDBX' ||
+      assetId === 'tdbx' ||
+      assetId === '4eadfa450c19fa51df65eb7fbf5b61077ec80ec799a7652bb187b705bff19a90' ||
+      assetId.toLowerCase().includes('tdbx')
+    )
   }
 
   /**
@@ -61,6 +62,7 @@ export function useTickerMapping() {
     getTokenInfo,
     formatAssetWithTicker,
     isXchAsset,
+    isTdbxAsset,
     isCatAsset,
   }
 }

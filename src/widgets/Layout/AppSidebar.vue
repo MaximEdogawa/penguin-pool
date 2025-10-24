@@ -9,10 +9,25 @@
         <!-- Sidebar Header -->
 
         <div class="sidebar-header">
-          <div class="sidebar-title">
-            <span v-if="!isCollapsed && !isSmallScreen" class="sidebar-title-text">Navigation</span>
+          <div class="sidebar-logo-container">
+            <router-link to="/" class="sidebar-logo">
+              <PenguinLogo class="sidebar-logo-icon" />
+              <span v-if="!isCollapsed && !isSmallScreen" class="sidebar-logo-text"
+                >PENGUIN POOL</span
+              >
+            </router-link>
+            <PrimeButton
+              v-if="!isCollapsed && !isSmallScreen"
+              @click="$emit('toggle-collapse')"
+              :icon="collapseIcon"
+              :title="isCollapsed || isSmallScreen ? 'Expand sidebar' : 'Collapse sidebar'"
+              text
+              rounded
+              class="collapse-toggle p-button-text"
+            />
           </div>
           <PrimeButton
+            v-if="isCollapsed || isSmallScreen"
             @click="$emit('toggle-collapse')"
             :icon="collapseIcon"
             :title="isCollapsed || isSmallScreen ? 'Expand sidebar' : 'Collapse sidebar'"
@@ -131,6 +146,7 @@
 </template>
 
 <script setup lang="ts">
+  import PenguinLogo from '@/components/PenguinLogo.vue'
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useSessionDataService } from '@/features/walletConnect/services/SessionDataService'
   import {
@@ -201,6 +217,14 @@
         class: route.path === '/offers' ? 'nav-link-active' : '',
         title: 'Offers',
         featureFlag: 'offers',
+      },
+      {
+        label: !props.isCollapsed && !isSmallScreen.value ? 'Trading' : '',
+        icon: 'pi pi-chart-line',
+        command: () => navigateTo('/trading'),
+        class: route.path === '/trading' ? 'nav-link-active' : '',
+        title: 'Trading',
+        featureFlag: 'trading',
       },
       {
         label: !props.isCollapsed && !isSmallScreen.value ? 'Option Contracts' : '',
@@ -303,12 +327,53 @@
     min-height: 8vh; /* 8% of viewport height */
   }
 
-  .sidebar-title {
-    @apply flex items-center;
+  .sidebar-logo-container {
+    @apply flex items-center w-full;
+    gap: 0.5rem;
   }
 
-  .sidebar-title-text {
-    @apply text-lg font-bold text-gray-900 dark:text-white;
+  .sidebar-logo {
+    @apply inline-flex items-center text-lg font-medium text-gray-900 dark:text-white;
+    gap: 0.75rem;
+    text-decoration: none;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    border-radius: 50%;
+    transition: all 0.3s ease-in-out;
+    padding: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo:hover {
+    @apply text-primary-600 dark:text-primary-400 bg-gray-100/30 dark:bg-gray-700/30;
+  }
+
+  .sidebar-logo-icon {
+    @apply w-6 h-6 rounded-full;
+    flex-shrink: 0;
+    background-color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sidebar-logo-text {
+    @apply font-bold;
+    white-space: nowrap;
+  }
+
+  /* When sidebar is collapsed, make logo perfectly round */
+  .sidebar-collapsed .sidebar-logo {
+    @apply w-10 h-10 rounded-full;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    padding: 0.5rem;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .sidebar-collapsed .sidebar-logo-icon {
+    @apply w-5 h-5 rounded-full;
   }
 
   .collapse-toggle {
