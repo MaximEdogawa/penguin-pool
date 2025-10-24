@@ -37,7 +37,12 @@ export function useTradingFilters() {
   const handleSharedSearchChange = (orderBookData: OrderBookOrder[], displayedTrades: Trade[]) => {
     // Generate suggestions from both order book and order history data
     const suggestions: SuggestionItem[] = []
-    const lowerSearch = sharedSearchValue.value.toLowerCase()
+    let lowerSearch = sharedSearchValue.value.toLowerCase()
+
+    // Normalize XCH searches to TXCH on testnet
+    if (lowerSearch === 'xch') {
+      lowerSearch = 'txch'
+    }
 
     // Get unique assets from order book data
     const orderBookAssets = new Set<string>()

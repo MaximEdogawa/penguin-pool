@@ -14,7 +14,7 @@
         <div class="col-span-3 text-right">Receive</div>
         <div class="col-span-3 text-right">Request</div>
         <div class="col-span-2 text-right">Total (USD)</div>
-        <div class="col-span-2 text-right">Price (TXCH)</div>
+        <div class="col-span-2 text-right">Price ({{ getPriceHeaderTicker() }})</div>
       </div>
 
       <!-- Sell Orders (Asks) - Top Section -->
@@ -284,23 +284,56 @@
 
   const filteredSellOrders = computed(() => {
     const orders = filteredOrders.value
-    // Sell orders: offers where people are requesting sell-assets (what you want to sell) and receiving buy-assets (what you want to buy)
-    // For TXCH/TBYC: Show orders where maker is requesting TXCH and receiving TBYC
+    // Sell orders: offers where people are offering what you want to buy and requesting what you want to sell
+    // Show orders that match the current asset pair, but always show sell side
     return orders
       .filter(order => {
-        // Check if maker is requesting sell-assets (what you want to sell)
-        const requestingSellAsset =
-          props.filters.sellAsset.length === 0 ||
-          props.filters.sellAsset.some(filterAsset =>
-            order.receiving.some(
-              orderAsset =>
-                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
-                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-            )
+        // If no filters, show all orders
+        if (props.filters.buyAsset.length === 0 && props.filters.sellAsset.length === 0) {
+          return true
+        }
+
+        // Check if this order involves the filtered assets
+        const hasBuyAsset =
+          props.filters.buyAsset.length === 0 ||
+          props.filters.buyAsset.some(
+            filterAsset =>
+              order.offering.some(
+                orderAsset =>
+                  getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+              ) ||
+              order.receiving.some(
+                orderAsset =>
+                  getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+              )
           )
 
-        // Check if maker is offering buy-assets (what you want to buy)
+        const hasSellAsset =
+          props.filters.sellAsset.length === 0 ||
+          props.filters.sellAsset.some(
+            filterAsset =>
+              order.offering.some(
+                orderAsset =>
+                  getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+              ) ||
+              order.receiving.some(
+                orderAsset =>
+                  getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+              )
+          )
+
+        return hasBuyAsset && hasSellAsset
+      })
+      .filter(order => {
+        // This is a sell order: offering what you want to buy, requesting what you want to sell
         const offeringBuyAsset =
           props.filters.buyAsset.length === 0 ||
           props.filters.buyAsset.some(filterAsset =>
@@ -312,26 +345,9 @@
             )
           )
 
-        return requestingSellAsset && offeringBuyAsset
-      })
-      .sort((a, b) => {
-        // Sort sell orders by price (high to low - best asks first)
-        const priceA = a.receiving[0]?.amount / a.offering[0]?.amount || 0
-        const priceB = b.receiving[0]?.amount / b.offering[0]?.amount || 0
-        return priceB - priceA
-      })
-  })
-
-  const filteredBuyOrders = computed(() => {
-    const orders = filteredOrders.value
-    // Buy orders: offers where people are requesting buy-assets (what you want to buy) and receiving sell-assets (what you want to sell)
-    // For TXCH/TBYC: Show orders where maker is requesting TBYC and receiving TXCH
-    return orders
-      .filter(order => {
-        // Check if maker is requesting buy-assets (what you want to buy)
-        const requestingBuyAsset =
-          props.filters.buyAsset.length === 0 ||
-          props.filters.buyAsset.some(filterAsset =>
+        const requestingSellAsset =
+          props.filters.sellAsset.length === 0 ||
+          props.filters.sellAsset.some(filterAsset =>
             order.receiving.some(
               orderAsset =>
                 getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
@@ -340,7 +356,68 @@
             )
           )
 
-        // Check if maker is offering sell-assets (what you want to sell)
+        return offeringBuyAsset && requestingSellAsset
+      })
+      .sort((a, b) => {
+        // Sort sell orders by price (low to high - best asks first)
+        const priceA = a.receiving[0]?.amount / a.offering[0]?.amount || 0
+        const priceB = b.receiving[0]?.amount / b.offering[0]?.amount || 0
+        return priceA - priceB
+      })
+  })
+
+  const filteredBuyOrders = computed(() => {
+    const orders = filteredOrders.value
+    // Buy orders: offers where people are offering what you want to sell and requesting what you want to buy
+    // Show orders that match the current asset pair, but always show buy side
+    return orders
+      .filter(order => {
+        // If no filters, show all orders
+        if (props.filters.buyAsset.length === 0 && props.filters.sellAsset.length === 0) {
+          return true
+        }
+
+        // Check if this order involves the filtered assets
+        const hasBuyAsset =
+          props.filters.buyAsset.length === 0 ||
+          props.filters.buyAsset.some(
+            filterAsset =>
+              order.offering.some(
+                orderAsset =>
+                  getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+              ) ||
+              order.receiving.some(
+                orderAsset =>
+                  getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+              )
+          )
+
+        const hasSellAsset =
+          props.filters.sellAsset.length === 0 ||
+          props.filters.sellAsset.some(
+            filterAsset =>
+              order.offering.some(
+                orderAsset =>
+                  getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+              ) ||
+              order.receiving.some(
+                orderAsset =>
+                  getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+              )
+          )
+
+        return hasBuyAsset && hasSellAsset
+      })
+      .filter(order => {
+        // This is a buy order: offering what you want to sell, requesting what you want to buy
         const offeringSellAsset =
           props.filters.sellAsset.length === 0 ||
           props.filters.sellAsset.some(filterAsset =>
@@ -352,7 +429,18 @@
             )
           )
 
-        return requestingBuyAsset && offeringSellAsset
+        const requestingBuyAsset =
+          props.filters.buyAsset.length === 0 ||
+          props.filters.buyAsset.some(filterAsset =>
+            order.receiving.some(
+              orderAsset =>
+                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
+            )
+          )
+
+        return offeringSellAsset && requestingBuyAsset
       })
       .sort((a, b) => {
         // Sort buy orders by price (high to low - best bids first)
@@ -364,35 +452,77 @@
 
   // Methods
 
+  const getPriceHeaderTicker = (): string => {
+    // Price is expressed in terms of the sell asset (what you're giving up)
+    // If we have sell asset filters, use the first one
+    if (props.filters.sellAsset.length > 0) {
+      return props.filters.sellAsset[0]
+    }
+
+    // If we have buy asset filters, use the first one
+    if (props.filters.buyAsset.length > 0) {
+      return props.filters.buyAsset[0]
+    }
+
+    // Default fallback
+    return 'TXCH'
+  }
+
   const isSingleAssetPair = (order: Order): boolean => {
     // Check if both offering and receiving have only one asset each
     return order.offering.length === 1 && order.receiving.length === 1
   }
 
-  const calculateOrderPrice = (order: Order, orderType: 'buy' | 'sell'): string => {
+  const calculateOrderPrice = (order: Order, _orderType: 'buy' | 'sell'): string => {
     if (isSingleAssetPair(order)) {
       const receivingAsset = order.receiving[0]
       const offeringAsset = order.offering[0]
 
-      if (receivingAsset && offeringAsset && receivingAsset.amount > 0) {
+      if (
+        receivingAsset &&
+        offeringAsset &&
+        receivingAsset.amount > 0 &&
+        offeringAsset.amount > 0
+      ) {
         let price
 
         if (props.filters.buyAsset.length > 0 && props.filters.sellAsset.length > 0) {
-          // Calculate price based on order type
-          if (orderType === 'sell') {
-            // Sell order: receiving/requested (how much you get per unit you give)
-            // For TXCH/TBYC sell orders: receiving TBYC, requesting TXCH
+          // Calculate price based on what you're buying (buyAsset) vs what you're selling (sellAsset)
+          // Price should always be: sellAsset/buyAsset (how much sell asset per buy asset)
+
+          // Determine which asset is the buy asset and which is the sell asset
+          const receivingIsBuyAsset = props.filters.buyAsset.some(
+            filterAsset =>
+              getTickerSymbol(receivingAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+              receivingAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+              (receivingAsset.code &&
+                receivingAsset.code.toLowerCase() === filterAsset.toLowerCase())
+          )
+
+          const offeringIsBuyAsset = props.filters.buyAsset.some(
+            filterAsset =>
+              getTickerSymbol(offeringAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
+              offeringAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+              (offeringAsset.code && offeringAsset.code.toLowerCase() === filterAsset.toLowerCase())
+          )
+
+          if (receivingIsBuyAsset && !offeringIsBuyAsset) {
+            // Receiving buy asset, offering sell asset
+            // Price = sell asset amount / buy asset amount
+            price = offeringAsset.amount / receivingAsset.amount
+          } else if (offeringIsBuyAsset && !receivingIsBuyAsset) {
+            // Offering buy asset, receiving sell asset
+            // Price = sell asset amount / buy asset amount
             price = receivingAsset.amount / offeringAsset.amount
           } else {
-            // Buy order: requested/receiving (how much you need to give per unit you give)
-            // For TXCH/TBYC buy orders: receiving TBYC, requesting TXCH
+            // Fallback to original logic
             price = offeringAsset.amount / receivingAsset.amount
           }
 
-          // Always show as buyAsset/sellAsset (e.g., TXCH/TBYC)
+          // Format price with appropriate precision
           return `${formatAmount(price)}`
         } else {
-          // No filters, use alphabetical order with requested/receiving
+          // No filters, show price as offered/received
           price = offeringAsset.amount / receivingAsset.amount
           return `${formatAmount(price)}`
         }

@@ -122,7 +122,7 @@ export function useOrderBookQuery(filters?: Ref<OrderBookFilters>) {
   }
 
   // Helper function to build search parameters based on filters
-  const buildSearchParams = (page: number) => {
+  const buildSearchParams = (page: number, buyAsset?: string, sellAsset?: string) => {
     const params: {
       page: number
       page_size: number
@@ -135,23 +135,22 @@ export function useOrderBookQuery(filters?: Ref<OrderBookFilters>) {
       status: 0, // Only open offers
     }
 
-    // If we have filters, use server-side filtering
-    if (filters?.value) {
-      const { buyAsset, sellAsset } = filters.value
+    // Use provided parameters or fall back to filters
+    const targetBuyAsset = buyAsset || filters?.value?.buyAsset?.[0]
+    const targetSellAsset = sellAsset || filters?.value?.sellAsset?.[0]
 
-      // For buy/sell filtering, we need to determine which asset is being bought/sold
-      // If user wants to buy TXCH, they're looking for offers where TXCH is requested
-      // If user wants to sell TXCH, they're looking for offers where TXCH is offered
+    // For buy/sell filtering, we need to determine which asset is being bought/sold
+    // If user wants to buy TXCH, they're looking for offers where TXCH is requested
+    // If user wants to sell TXCH, they're looking for offers where TXCH is offered
 
-      if (buyAsset && buyAsset.length > 0) {
-        // User wants to buy these assets - they should be in the requested field
-        params.requested = buyAsset[0] // Use the actual ticker from filters
-      }
+    if (targetBuyAsset) {
+      // User wants to buy these assets - they should be in the requested field
+      params.requested = targetBuyAsset
+    }
 
-      if (sellAsset && sellAsset.length > 0) {
-        // User wants to sell these assets - they should be in the offered field
-        params.offered = sellAsset[0] // Use the actual ticker from filters
-      }
+    if (targetSellAsset) {
+      // User wants to sell these assets - they should be in the offered field
+      params.offered = targetSellAsset
     }
 
     // Debug logging
@@ -175,38 +174,74 @@ export function useOrderBookQuery(filters?: Ref<OrderBookFilters>) {
   const orderBookQuery = useQuery({
     queryKey,
     queryFn: async () => {
-      const params = buildSearchParams(0) // Start with page 0
-      const response = await dexieDataService.searchOffers(params)
+      const allOrders: OrderBookOrder[] = []
+      let totalCount = 0
 
-      if (response.success && Array.isArray(response.data)) {
-        const orders = (response.data as DexieOffer[])
-          .filter((offer: DexieOffer) => offer && offer.offered && offer.requested) // Filter out invalid offers
-          .map(convertDexieOfferToOrderBookOrder)
-          .sort((a, b) => {
-            // Sell orders: sort by price descending (high to low)
-            // Buy orders: sort by price ascending (low to high)
-            if (isSellOrder(a) && isSellOrder(b)) {
-              return b.pricePerUnit - a.pricePerUnit // High to low for sell orders
-            } else if (!isSellOrder(a) && !isSellOrder(b)) {
-              return a.pricePerUnit - b.pricePerUnit // Low to high for buy orders
-            } else {
-              // Mixed order types: sell orders first, then buy orders
-              return isSellOrder(a) ? -1 : 1
-            }
-          })
+      // If we have both buy and sell assets, fetch both directions
+      if (
+        filters?.value?.buyAsset &&
+        filters.value.buyAsset.length > 0 &&
+        filters?.value?.sellAsset &&
+        filters.value.sellAsset.length > 0
+      ) {
+        const buyAsset = filters.value.buyAsset[0]
+        const sellAsset = filters.value.sellAsset[0]
 
-        return {
-          orders,
-          hasMore: orders.length >= rowsPerPage,
-          total: response.total || orders.length,
+        // Query 1: Original direction (buyAsset/sellAsset)
+        const params1 = buildSearchParams(0, buyAsset, sellAsset)
+        const response1 = await dexieDataService.searchOffers(params1)
+
+        if (response1.success && Array.isArray(response1.data)) {
+          const orders1 = (response1.data as DexieOffer[])
+            .filter((offer: DexieOffer) => offer && offer.offered && offer.requested)
+            .map(convertDexieOfferToOrderBookOrder)
+          allOrders.push(...orders1)
+          totalCount += response1.total || orders1.length
+        }
+
+        // Query 2: Reverse direction (sellAsset/buyAsset)
+        const params2 = buildSearchParams(0, sellAsset, buyAsset)
+        const response2 = await dexieDataService.searchOffers(params2)
+
+        if (response2.success && Array.isArray(response2.data)) {
+          const orders2 = (response2.data as DexieOffer[])
+            .filter((offer: DexieOffer) => offer && offer.offered && offer.requested)
+            .map(convertDexieOfferToOrderBookOrder)
+          allOrders.push(...orders2)
+          totalCount += response2.total || orders2.length
         }
       } else {
-        logger.error('No data or unsuccessful response:', response)
-        return {
-          orders: [],
-          hasMore: false,
-          total: 0,
+        // Single query for cases without both buy/sell filters
+        const params = buildSearchParams(0)
+        const response = await dexieDataService.searchOffers(params)
+
+        if (response.success && Array.isArray(response.data)) {
+          const orders = (response.data as DexieOffer[])
+            .filter((offer: DexieOffer) => offer && offer.offered && offer.requested)
+            .map(convertDexieOfferToOrderBookOrder)
+          allOrders.push(...orders)
+          totalCount = response.total || orders.length
         }
+      }
+
+      // Sort all orders
+      allOrders.sort((a, b) => {
+        // Sell orders: sort by price descending (high to low)
+        // Buy orders: sort by price ascending (low to high)
+        if (isSellOrder(a) && isSellOrder(b)) {
+          return b.pricePerUnit - a.pricePerUnit // High to low for sell orders
+        } else if (!isSellOrder(a) && !isSellOrder(b)) {
+          return a.pricePerUnit - b.pricePerUnit // Low to high for buy orders
+        } else {
+          // Mixed order types: sell orders first, then buy orders
+          return isSellOrder(a) ? -1 : 1
+        }
+      })
+
+      return {
+        orders: allOrders,
+        hasMore: allOrders.length >= rowsPerPage,
+        total: totalCount,
       }
     },
     staleTime: 0, // Data is never considered stale - always refetch

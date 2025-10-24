@@ -100,7 +100,12 @@
   const handleSharedSearchChange = () => {
     // Generate suggestions from both order book and order history data
     const suggestions: SuggestionItem[] = []
-    const lowerSearch = sharedSearchValue.value.toLowerCase()
+    let lowerSearch = sharedSearchValue.value.toLowerCase()
+
+    // Normalize XCH searches to TXCH on testnet
+    if (lowerSearch === 'xch') {
+      lowerSearch = 'txch'
+    }
 
     // Get unique assets from order book data
     const orderBookAssets = new Map<string, string>() // assetId -> ticker
@@ -131,65 +136,81 @@
     // Combine all unique assets from current data
     const currentDataAssets = new Map([...orderBookAssets, ...orderHistoryAssets])
 
+    // Track added tickers to prevent duplicates
+    const addedTickers = new Set<string>()
+
     // Add all available CAT tokens to suggestions (like create offer component)
     availableCatTokens.value.forEach(token => {
-      if (
-        token.ticker.toLowerCase().includes(lowerSearch) ||
-        token.name.toLowerCase().includes(lowerSearch)
-      ) {
-        // Add buy suggestion if not already filtered
-        if (
-          !sharedFilters.value.buyAsset.some(
-            filter => filter.toLowerCase() === token.ticker.toLowerCase()
-          )
-        ) {
-          suggestions.push({
-            value: token.ticker,
-            column: 'buyAsset',
-            label: token.ticker,
-          })
-        }
+      const tokenTicker = token.ticker.toLowerCase()
 
-        // Add sell suggestion if not already filtered
-        if (
-          !sharedFilters.value.sellAsset.some(
-            filter => filter.toLowerCase() === token.ticker.toLowerCase()
-          )
-        ) {
-          suggestions.push({
-            value: token.ticker,
-            column: 'sellAsset',
-            label: token.ticker,
-          })
-        }
+      // Skip if already added or doesn't match search
+      if (
+        addedTickers.has(tokenTicker) ||
+        (!tokenTicker.includes(lowerSearch) && !token.name.toLowerCase().includes(lowerSearch))
+      ) {
+        return
+      }
+
+      // Mark as added
+      addedTickers.add(tokenTicker)
+
+      // Add buy suggestion if not already filtered
+      if (
+        !sharedFilters.value.buyAsset.some(
+          filter => filter.toLowerCase() === token.ticker.toLowerCase()
+        )
+      ) {
+        suggestions.push({
+          value: token.ticker,
+          column: 'buyAsset',
+          label: token.ticker,
+        })
+      }
+
+      // Add sell suggestion if not already filtered
+      if (
+        !sharedFilters.value.sellAsset.some(
+          filter => filter.toLowerCase() === token.ticker.toLowerCase()
+        )
+      ) {
+        suggestions.push({
+          value: token.ticker,
+          column: 'sellAsset',
+          label: token.ticker,
+        })
       }
     })
 
     // Also add suggestions from current order book/history data (for additional context)
+    // Only add if not already added from availableCatTokens
     currentDataAssets.forEach((ticker, _assetId) => {
-      if (ticker.toLowerCase().includes(lowerSearch)) {
-        if (
-          !sharedFilters.value.buyAsset.some(
-            filter => filter.toLowerCase() === ticker.toLowerCase()
-          )
-        ) {
-          suggestions.push({
-            value: ticker,
-            column: 'buyAsset',
-            label: ticker,
-          })
-        }
-        if (
-          !sharedFilters.value.sellAsset.some(
-            filter => filter.toLowerCase() === ticker.toLowerCase()
-          )
-        ) {
-          suggestions.push({
-            value: ticker,
-            column: 'sellAsset',
-            label: ticker,
-          })
-        }
+      const tickerLower = ticker.toLowerCase()
+
+      // Skip if already added or doesn't match search
+      if (addedTickers.has(tickerLower) || !tickerLower.includes(lowerSearch)) {
+        return
+      }
+
+      // Mark as added
+      addedTickers.add(tickerLower)
+
+      if (
+        !sharedFilters.value.buyAsset.some(filter => filter.toLowerCase() === ticker.toLowerCase())
+      ) {
+        suggestions.push({
+          value: ticker,
+          column: 'buyAsset',
+          label: ticker,
+        })
+      }
+      if (
+        !sharedFilters.value.sellAsset.some(filter => filter.toLowerCase() === ticker.toLowerCase())
+      ) {
+        suggestions.push({
+          value: ticker,
+          column: 'sellAsset',
+          label: ticker,
+        })
       }
     })
 

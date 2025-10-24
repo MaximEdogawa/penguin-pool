@@ -54,13 +54,9 @@
               >
                 {{
                   suggestion.column === 'buyAsset'
-                    ? assetsSwapped
-                      ? 'Sell'
-                      : 'Buy'
+                    ? 'Buy'
                     : suggestion.column === 'sellAsset'
-                      ? assetsSwapped
-                        ? 'Buy'
-                        : 'Sell'
+                      ? 'Sell'
                       : 'Status'
                 }}
               </span>
