@@ -27,6 +27,7 @@
           <input
             :value="sharedSearchValue"
             @input="handleSearchInput"
+            @keydown.enter="handleSearchEnter"
             placeholder="Search by asset..."
             class="search-input"
           />
@@ -164,6 +165,17 @@
         detail: { value: target.value },
       })
     )
+  }
+
+  const handleSearchEnter = (event: KeyboardEvent) => {
+    const target = event.target as HTMLInputElement
+    const searchValue = target.value.trim()
+
+    if (searchValue && sharedFilteredSuggestions.value.length > 0) {
+      // Apply the first suggestion when Enter is pressed
+      const firstSuggestion = sharedFilteredSuggestions.value[0]
+      addSharedFilter(firstSuggestion.column, firstSuggestion.value)
+    }
   }
 
   const addSharedFilter = (column: string, value: string) => {

@@ -1,7 +1,7 @@
 import type { DexieOffer } from '@/shared/services/DexieDataService'
 import { useDexieDataService } from '@/shared/services/DexieDataService'
 import { logger } from '@/shared/services/logger'
-import { onUnmounted, ref } from 'vue'
+import { onUnmounted, ref, type Ref } from 'vue'
 
 export interface DexieAssetItem {
   id: string
@@ -40,7 +40,15 @@ export interface ToastOptions {
   group: string
 }
 
-export function useOrderBookData(toastService?: { add: (options: ToastOptions) => void }) {
+export interface OrderBookFilters {
+  buyAsset?: string[]
+  sellAsset?: string[]
+}
+
+export function useOrderBookData(
+  toastService?: { add: (options: ToastOptions) => void },
+  filters?: Ref<OrderBookFilters>
+) {
   const dexieDataService = useDexieDataService()
 
   // State
@@ -127,6 +135,44 @@ export function useOrderBookData(toastService?: { add: (options: ToastOptions) =
     return order.offering.some(asset => asset.code === 'TXCH' || asset.code === 'XCH')
   }
 
+  // Helper function to build search parameters based on filters
+  const buildSearchParams = (page: number) => {
+    const params: {
+      page: number
+      page_size: number
+      status: number
+      requested?: string
+      offered?: string
+    } = {
+      page,
+      page_size: rowsPerPage,
+      status: 0, // Only open offers
+    }
+
+    // If we have filters, use server-side filtering
+    if (filters?.value) {
+      const { buyAsset, sellAsset } = filters.value
+
+      // For buy/sell filtering, we need to determine which asset is being bought/sold
+      // If user wants to buy TXCH, they're looking for offers where TXCH is requested
+      // If user wants to sell TXCH, they're looking for offers where TXCH is offered
+
+      if (buyAsset && buyAsset.length > 0) {
+        // User wants to buy these assets - they should be in the requested field
+        params.requested = buyAsset[0] // Use the actual ticker from filters
+      }
+
+      if (sellAsset && sellAsset.length > 0) {
+        // User wants to sell these assets - they should be in the offered field
+        params.offered = sellAsset[0] // Use the actual ticker from filters
+      }
+    }
+
+    // Debug logging
+    logger.info('Building search params:', params)
+    return params
+  }
+
   // Methods
   const refreshOrderBookData = async () => {
     orderBookLoading.value = true
@@ -135,11 +181,7 @@ export function useOrderBookData(toastService?: { add: (options: ToastOptions) =
     orderBookData.value = []
 
     try {
-      const response = await dexieDataService.searchOffers({
-        page: orderBookPage.value,
-        page_size: rowsPerPage,
-        status: 0, // Only open offers
-      })
+      const response = await dexieDataService.searchOffers(buildSearchParams(orderBookPage.value))
 
       if (response.success && Array.isArray(response.data)) {
         const newOrders = (response.data as DexieOffer[])
@@ -180,11 +222,7 @@ export function useOrderBookData(toastService?: { add: (options: ToastOptions) =
 
     orderBookLoading.value = true
     try {
-      const response = await dexieDataService.searchOffers({
-        page: orderBookPage.value,
-        page_size: rowsPerPage,
-        status: 0, // Only open offers
-      })
+      const response = await dexieDataService.searchOffers(buildSearchParams(orderBookPage.value))
 
       if (response.success && Array.isArray(response.data)) {
         const newOrders = (response.data as DexieOffer[])

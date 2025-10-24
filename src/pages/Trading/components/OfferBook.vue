@@ -278,51 +278,8 @@
 
   // Computed
   const filteredOrders = computed(() => {
-    return props.orderBookData.filter(order => {
-      // Show offers that involve BOTH the buy and sell assets (AND logic)
-      // This means the offer must contain both types of assets
-
-      // Check if the order involves any of the buy assets
-      const buyAssetMatch =
-        props.filters.buyAsset.length === 0 ||
-        props.filters.buyAsset.some(
-          filterAsset =>
-            order.offering.some(
-              orderAsset =>
-                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
-                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-            ) ||
-            order.receiving.some(
-              orderAsset =>
-                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
-                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-            )
-        )
-
-      // Check if the order involves any of the sell assets
-      const sellAssetMatch =
-        props.filters.sellAsset.length === 0 ||
-        props.filters.sellAsset.some(
-          filterAsset =>
-            order.offering.some(
-              orderAsset =>
-                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
-                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-            ) ||
-            order.receiving.some(
-              orderAsset =>
-                getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
-                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-            )
-        )
-
-      // Show orders that involve BOTH types of assets (AND logic)
-      return buyAssetMatch && sellAssetMatch
-    })
+    // Since we're using server-side filtering, return the data as-is
+    return props.orderBookData
   })
 
   const filteredSellOrders = computed(() => {

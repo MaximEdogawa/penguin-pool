@@ -44,6 +44,7 @@
   import { useOfferSubmission } from '@/shared/composables/useOfferSubmission'
   import { useOrderBookData } from '@/shared/composables/useOrderBookData'
   import { useOrderHistoryData } from '@/shared/composables/useOrderHistoryData'
+  import { useTickerData } from '@/shared/composables/useTickerData'
   import { useTickerMapping } from '@/shared/composables/useTickerMapping'
   import { globalFilterStore } from '@/shared/stores/globalFilterStore'
   import { useToast } from 'primevue/usetoast'
@@ -61,6 +62,9 @@
   // Use ticker mapping service
   const { getTickerSymbol } = useTickerMapping()
 
+  // Use ticker data service for comprehensive ticker list
+  const { availableCatTokens } = useTickerData()
+
   // Toast service
   const toast = useToast()
 
@@ -71,7 +75,7 @@
     loadOrderBookData,
     refreshOrderBookData,
     startRefreshInterval,
-  } = useOrderBookData(toast)
+  } = useOrderBookData(toast, sharedFilters)
 
   const { displayedTrades, loading, hasMore, loadData } = useOrderHistoryData()
 
@@ -122,11 +126,45 @@
       })
     })
 
-    // Combine all unique assets
-    const allAssets = new Map([...orderBookAssets, ...orderHistoryAssets])
+    // Combine all unique assets from current data
+    const currentDataAssets = new Map([...orderBookAssets, ...orderHistoryAssets])
 
-    // Generate suggestions using ticker symbols
-    allAssets.forEach((ticker, _assetId) => {
+    // Add all available CAT tokens to suggestions (like create offer component)
+    availableCatTokens.value.forEach(token => {
+      if (
+        token.ticker.toLowerCase().includes(lowerSearch) ||
+        token.name.toLowerCase().includes(lowerSearch)
+      ) {
+        // Add buy suggestion if not already filtered
+        if (
+          !sharedFilters.value.buyAsset.some(
+            filter => filter.toLowerCase() === token.ticker.toLowerCase()
+          )
+        ) {
+          suggestions.push({
+            value: token.ticker,
+            column: 'buyAsset',
+            label: `Buy ${token.ticker}`,
+          })
+        }
+
+        // Add sell suggestion if not already filtered
+        if (
+          !sharedFilters.value.sellAsset.some(
+            filter => filter.toLowerCase() === token.ticker.toLowerCase()
+          )
+        ) {
+          suggestions.push({
+            value: token.ticker,
+            column: 'sellAsset',
+            label: `Sell ${token.ticker}`,
+          })
+        }
+      }
+    })
+
+    // Also add suggestions from current order book/history data (for additional context)
+    currentDataAssets.forEach((ticker, _assetId) => {
       if (ticker.toLowerCase().includes(lowerSearch)) {
         if (
           !sharedFilters.value.buyAsset.some(
@@ -255,7 +293,8 @@
     })
 
     window.addEventListener('global-filter-added', (_event: Event) => {
-      handleSharedSearchChange()
+      // Filter was added, refresh order book data
+      refreshOrderBookData()
     })
 
     window.addEventListener('global-assets-swapped', () => {
@@ -276,6 +315,21 @@
       loadOrderBookData()
     }
   })
+
+  // Watch for search value changes to update suggestions
+  watch(sharedSearchValue, () => {
+    handleSharedSearchChange()
+  })
+
+  // Watch for filter changes to refresh order book data
+  watch(
+    sharedFilters,
+    () => {
+      // Only refresh order book data when filters actually change
+      refreshOrderBookData()
+    },
+    { deep: true }
+  )
 </script>
 
 <style scoped>
