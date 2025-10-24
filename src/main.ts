@@ -41,7 +41,7 @@ app.use(PrimeVue, {
   theme: {
     preset: Aura,
     options: {
-      darkModeSelector: '.penguin-pool-dark',
+      darkModeSelector: '.dark',
     },
   },
 })
