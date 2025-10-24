@@ -134,14 +134,14 @@
             <td class="py-3 px-4">
               <div class="flex items-center space-x-2">
                 <button
-                  @click="$emit('view-offer', offer)"
+                  @click="viewOffer(offer)"
                   class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm"
                 >
                   View
                 </button>
                 <button
                   v-if="offer.status === 'active'"
-                  @click="$emit('cancel-offer', offer)"
+                  @click="cancelOffer(offer)"
                   class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm"
                 >
                   Cancel
@@ -227,14 +227,14 @@
           </span>
           <div class="flex items-center space-x-2">
             <button
-              @click="$emit('view-offer', offer)"
+              @click="viewOffer(offer)"
               class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-xs"
             >
               View
             </button>
             <button
               v-if="offer.status === 'active'"
-              @click="$emit('cancel-offer', offer)"
+              @click="cancelOffer(offer)"
               class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs"
             >
               Cancel
@@ -257,17 +257,40 @@
       </button>
     </div>
   </div>
+
+  <!-- Offer Details Modal -->
+  <OfferDetailsModal
+    v-if="selectedOffer"
+    :offer="selectedOffer"
+    @close="selectedOffer = null"
+    @offer-cancelled="handleOfferCancelled"
+    @offer-deleted="handleOfferDeleted"
+    @offer-updated="handleOfferUpdated"
+  />
+
+  <!-- Cancel Confirmation Dialog -->
+  <ConfirmationDialog
+    v-if="showCancelConfirmation && offerToCancel"
+    title="Cancel Offer"
+    message="Are you sure you want to cancel this offer? This action cannot be undone."
+    :details="`Offer ID: ${offerToCancel.tradeId}`"
+    :error-message="cancelError"
+    confirm-text="Cancel Offer"
+    cancel-text="Keep Offer"
+    :is-loading="isCancelling"
+    @close="handleCancelDialogClose"
+    @confirm="confirmCancelOffer"
+  />
 </template>
 
 <script setup lang="ts">
+  import OfferDetailsModal from '@/components/Offers/OfferDetailsModal.vue'
+  import ConfirmationDialog from '@/components/Shared/ConfirmationDialog.vue'
   import { useMyOffers } from '@/shared/composables/useMyOffers'
-  import type { OfferDetails } from '@/types/offer.types'
   import { onMounted } from 'vue'
 
-  // Define emits
+  // Define emits - only create-offer is needed now
   defineEmits<{
-    'view-offer': [offer: OfferDetails]
-    'cancel-offer': [offer: OfferDetails]
     'create-offer': []
   }>()
 
@@ -276,6 +299,11 @@
     offers,
     filters,
     filteredOffers,
+    selectedOffer,
+    showCancelConfirmation,
+    offerToCancel,
+    isCancelling,
+    cancelError,
     isCopied,
     getStatusClass,
     formatDate,
@@ -283,6 +311,13 @@
     getTickerSymbol,
     formatAssetAmount,
     refreshOffers,
+    viewOffer,
+    cancelOffer,
+    confirmCancelOffer,
+    handleCancelDialogClose,
+    handleOfferCancelled,
+    handleOfferDeleted,
+    handleOfferUpdated,
   } = useMyOffers()
 
   // Load offers when component mounts

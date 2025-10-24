@@ -34,6 +34,7 @@
         @load-more="loadData"
         @fill-from-order-book="fillFromOrderBook"
         @use-as-template="useAsTemplate"
+        @update:active-view="updateActiveView"
       />
     </div>
   </div>
@@ -82,7 +83,7 @@
   const offerTabs: OfferTab[] = [
     { key: 'take', label: 'Take Offer' },
     { key: 'create', label: 'Create Offer' },
-    { key: 'history', label: 'Offer History' },
+    { key: 'history', label: 'My Offers' },
   ]
 
   const handleOfferSubmit = (data: OfferSubmitData) => {
@@ -99,5 +100,9 @@
 
   const useAsTemplate = (order: OrderBookOrder) => {
     emit('useAsTemplate', order)
+  }
+
+  const updateActiveView = (value: 'create' | 'take' | 'history') => {
+    emit('update:activeView', value)
   }
 </script>

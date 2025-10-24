@@ -21,24 +21,15 @@
     />
   </div>
 
-  <!-- Offer History View -->
+  <!-- My Offers View -->
   <div v-if="activeView === 'history'">
-    <OrderHistory
-      :trades="displayedTrades"
-      :loading="loading"
-      :has-more="hasMore"
-      :filters="sharedFilters"
-      :search-value="sharedSearchValue"
-      :filtered-suggestions="sharedFilteredSuggestions"
-      @load-more="loadData"
-      @fill-from-order-book="fillFromOrderBook"
-      @use-as-template="useAsTemplate"
-    />
+    <MyOffers @create-offer="handleCreateOffer" />
   </div>
 </template>
 
 <script setup lang="ts">
   import CreateOffer from '@/components/Offers/CreateOffer.vue'
+  import MyOffers from '@/components/Offers/MyOffers.vue'
   import type {
     AssetItem,
     FilterState,
@@ -47,7 +38,6 @@
     SuggestionItem,
     Trade,
   } from '@/pages/Trading/types'
-  import OrderHistory from './OrderHistory.vue'
 
   interface Props {
     activeView: 'create' | 'take' | 'history'
@@ -67,6 +57,7 @@
     (e: 'loadData'): void
     (e: 'fillFromOrderBook', order: OrderBookOrder): void
     (e: 'useAsTemplate', order: OrderBookOrder): void
+    (e: 'update:activeView', value: 'create' | 'take' | 'history'): void
   }
 
   defineProps<Props>()
@@ -76,15 +67,8 @@
     emit('submit', data)
   }
 
-  const loadData = () => {
-    emit('loadData')
-  }
-
-  const fillFromOrderBook = (order: OrderBookOrder) => {
-    emit('fillFromOrderBook', order)
-  }
-
-  const useAsTemplate = (order: OrderBookOrder) => {
-    emit('useAsTemplate', order)
+  const handleCreateOffer = () => {
+    // Switch to create offer view
+    emit('update:activeView', 'create')
   }
 </script>
