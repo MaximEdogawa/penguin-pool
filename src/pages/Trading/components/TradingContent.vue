@@ -8,7 +8,7 @@
       :filters="sharedFilters"
       :search-value="sharedSearchValue"
       :filtered-suggestions="sharedFilteredSuggestions"
-      @load-more="loadOrderBookData"
+      @refresh-order-book="refreshOrderBook"
       @fill-from-order-book="fillFromOrderBook"
       @use-as-template="useAsTemplate"
     />
@@ -56,7 +56,7 @@
   }
 
   interface Emits {
-    (e: 'loadOrderBookData'): void
+    (e: 'refreshOrderBook'): void
     (e: 'fillFromOrderBook', order: OrderBookOrder): void
     (e: 'useAsTemplate', order: OrderBookOrder): void
   }
@@ -64,8 +64,8 @@
   defineProps<Props>()
   const emit = defineEmits<Emits>()
 
-  const loadOrderBookData = () => {
-    emit('loadOrderBookData')
+  const refreshOrderBook = () => {
+    emit('refreshOrderBook')
   }
 
   const fillFromOrderBook = (order: OrderBookOrder) => {

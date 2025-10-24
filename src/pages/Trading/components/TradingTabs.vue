@@ -27,7 +27,7 @@
         :shared-filters="sharedFilters"
         :shared-search-value="sharedSearchValue"
         :shared-filtered-suggestions="sharedFilteredSuggestions"
-        @load-more="loadOrderBookData"
+        @refresh-order-book="refreshOrderBook"
         @fill-from-order-book="fillFromOrderBook"
         @use-as-template="useAsTemplate"
       />
@@ -57,7 +57,7 @@
 
   interface Emits {
     (e: 'update:activeTradingView', value: 'orderbook' | 'chart' | 'depth' | 'trades'): void
-    (e: 'loadOrderBookData'): void
+    (e: 'refreshOrderBook'): void
     (e: 'fillFromOrderBook', order: OrderBookOrder): void
     (e: 'useAsTemplate', order: OrderBookOrder): void
   }
@@ -94,8 +94,8 @@
     return isMobile.value ? allTradingTabs.filter(tab => tab.key === 'orderbook') : allTradingTabs
   })
 
-  const loadOrderBookData = () => {
-    emit('loadOrderBookData')
+  const refreshOrderBook = () => {
+    emit('refreshOrderBook')
   }
 
   const fillFromOrderBook = (order: OrderBookOrder) => {

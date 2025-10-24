@@ -8,6 +8,8 @@
         :order-book-data="orderBookData"
         :order-book-loading="orderBookLoading"
         :order-book-has-more="orderBookHasMore"
+        :order-book-error="orderBookError"
+        :order-book-total="orderBookTotal"
         :maker-assets="makerAssets"
         :taker-assets="takerAssets"
         :price-adjustment="priceAdjustment"
@@ -19,7 +21,7 @@
         :shared-filtered-suggestions="sharedFilteredSuggestions"
         @update:active-trading-view="activeTradingView = $event"
         @update:active-view="activeView = $event"
-        @load-order-book-data="loadOrderBookData"
+        @refresh-order-book="refreshOrderBook"
         @load-data="loadData"
         @submit="handleOfferSubmitWithView"
         @fill-from-order-book="fillFromOrderBook"
@@ -42,7 +44,7 @@
 <script setup lang="ts">
   import type { OfferSubmitData, SuggestionItem } from '@/pages/Trading/types'
   import { useOfferSubmission } from '@/shared/composables/useOfferSubmission'
-  import { useOrderBookData } from '@/shared/composables/useOrderBookData'
+  import { useOrderBookQuery } from '@/shared/composables/useOrderBookQuery'
   import { useOrderHistoryData } from '@/shared/composables/useOrderHistoryData'
   import { useTickerData } from '@/shared/composables/useTickerData'
   import { useTickerMapping } from '@/shared/composables/useTickerMapping'
@@ -72,10 +74,10 @@
     orderBookData,
     orderBookLoading,
     orderBookHasMore,
-    loadOrderBookData,
-    refreshOrderBookData,
-    startRefreshInterval,
-  } = useOrderBookData(toast, sharedFilters)
+    orderBookError,
+    orderBookTotal,
+    refreshOrderBook,
+  } = useOrderBookQuery(sharedFilters)
 
   const { displayedTrades, loading, hasMore, loadData } = useOrderHistoryData()
 
@@ -281,11 +283,8 @@
   onMounted(() => {
     // Load order book data if it's empty
     if (orderBookData.value.length === 0) {
-      loadOrderBookData()
+      refreshOrderBook()
     }
-
-    // Start the refresh interval
-    startRefreshInterval()
 
     // Listen for global filter events
     window.addEventListener('global-search-change', (_event: Event) => {
@@ -294,7 +293,7 @@
 
     window.addEventListener('global-filter-added', (_event: Event) => {
       // Filter was added, refresh order book data
-      refreshOrderBookData()
+      refreshOrderBook()
     })
 
     window.addEventListener('global-assets-swapped', () => {
@@ -326,7 +325,7 @@
     sharedFilters,
     () => {
       // Only refresh order book data when filters actually change
-      refreshOrderBookData()
+      refreshOrderBook()
     },
     { deep: true }
   )

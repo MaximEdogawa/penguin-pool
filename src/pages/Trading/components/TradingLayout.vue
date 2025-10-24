@@ -12,7 +12,7 @@
         :shared-search-value="sharedSearchValue"
         :shared-filtered-suggestions="sharedFilteredSuggestions"
         @update:active-trading-view="updateActiveTradingView"
-        @load-order-book-data="loadOrderBookData"
+        @refresh-order-book="refreshOrderBook"
         @fill-from-order-book="fillFromOrderBook"
         @use-as-template="useAsTemplate"
       />
@@ -76,6 +76,8 @@
     orderBookData: OrderBookOrder[]
     orderBookLoading: boolean
     orderBookHasMore: boolean
+    orderBookError?: unknown
+    orderBookTotal?: number
     makerAssets: AssetItem[]
     takerAssets: AssetItem[]
     priceAdjustment: number
@@ -90,7 +92,7 @@
   interface Emits {
     (e: 'update:activeTradingView', value: 'orderbook' | 'chart' | 'depth' | 'trades'): void
     (e: 'update:activeView', value: 'create' | 'take' | 'history'): void
-    (e: 'loadOrderBookData'): void
+    (e: 'refreshOrderBook'): void
     (e: 'loadData'): void
     (e: 'submit', data: OfferSubmitData): void
     (e: 'fillFromOrderBook', order: OrderBookOrder): void
@@ -129,8 +131,8 @@
     emit('update:activeView', value)
   }
 
-  const loadOrderBookData = () => {
-    emit('loadOrderBookData')
+  const refreshOrderBook = () => {
+    emit('refreshOrderBook')
   }
 
   const loadData = () => {

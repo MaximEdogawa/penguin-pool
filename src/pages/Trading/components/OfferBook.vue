@@ -247,7 +247,7 @@
   const props = defineProps<Props>()
 
   const emit = defineEmits<{
-    'load-more': []
+    'refresh-order-book': []
     'fill-from-order-book': [order: Order]
     'use-as-template': [order: Order]
   }>()
