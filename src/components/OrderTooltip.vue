@@ -24,7 +24,9 @@
             :key="idx"
             class="flex items-center justify-between text-xs"
           >
-            <span class="text-gray-900 dark:text-white">{{ getTickerSymbol(asset.id) }}</span>
+            <span class="text-gray-900 dark:text-white">{{
+              asset.code || getTickerSymbol(asset.id)
+            }}</span>
             <div class="flex flex-col items-end">
               <span class="font-mono text-gray-700 dark:text-gray-300">{{
                 formatAmount(asset.amount || 0)
@@ -49,7 +51,9 @@
             :key="idx"
             class="flex items-center justify-between text-xs"
           >
-            <span class="text-gray-900 dark:text-white">{{ getTickerSymbol(asset.id) }}</span>
+            <span class="text-gray-900 dark:text-white">{{
+              asset.code || getTickerSymbol(asset.id)
+            }}</span>
             <div class="flex flex-col items-end">
               <span class="font-mono text-gray-700 dark:text-gray-300">{{
                 formatAmount(asset.amount || 0)

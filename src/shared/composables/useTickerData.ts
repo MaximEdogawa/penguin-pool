@@ -27,10 +27,35 @@ export function useTickerData() {
 
   // CAT token map for human-readable names
   const catTokenMap = computed(() => {
+    let map = new Map<string, CatTokenInfo>()
+
+    // Add API data if available
     if (tickersQuery.data.value?.success && tickersQuery.data.value.data) {
-      return createCatTokenMap(tickersQuery.data.value.data)
+      map = createCatTokenMap(tickersQuery.data.value.data)
     }
-    return new Map<string, CatTokenInfo>()
+
+    // Always add essential fallback tokens (TXCH and TDBX) for testing
+    const fallbackTokens: CatTokenInfo[] = [
+      {
+        assetId: 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad',
+        ticker: 'TXCH',
+        name: 'TXCH',
+        symbol: 'TXCH',
+      },
+      {
+        assetId: '4eadfa450c19fa51df65eb7fbf5b61077ec80ec799a7652bb187b705bff19a90',
+        ticker: 'TDBX',
+        name: 'TDBX',
+        symbol: 'TDBX',
+      },
+    ]
+
+    // Add fallback tokens to the map
+    fallbackTokens.forEach(token => {
+      map.set(token.assetId, token)
+    })
+
+    return map
   })
 
   // Available CAT tokens list

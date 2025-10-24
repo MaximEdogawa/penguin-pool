@@ -21,7 +21,7 @@ export function useOfferSubmission() {
   const walletDataService = useWalletDataService()
   const offerStorage = useOfferStorage()
   const dexieDataService = useDexieDataService()
-  const { isXchAsset } = useTickerMapping()
+  const { isXchAsset, getTickerSymbol } = useTickerMapping()
 
   // State
   const selectedOrderForTaking = ref<OrderBookOrder | null>(null)
@@ -56,42 +56,67 @@ export function useOfferSubmission() {
     }
 
     // Convert order data to the format expected by the component
-    makerAssets.value = order.offering.map(asset => ({
-      assetId: asset.id,
-      amount: asset.amount,
-      type: isXchAsset(asset.id) ? 'xch' : 'cat',
-      symbol: asset.code || '',
-      searchQuery: asset.code || '', // Pre-fill search with ticker symbol
-      showDropdown: false,
-    }))
+    makerAssets.value = order.offering.map(asset => {
+      const ticker = asset.code || getTickerSymbol(asset.id)
+      return {
+        assetId: asset.id,
+        amount: asset.amount,
+        type: isXchAsset(asset.id) ? 'xch' : 'cat',
+        symbol: ticker,
+        searchQuery: ticker, // Pre-fill search with ticker symbol
+        showDropdown: false,
+      }
+    })
 
-    takerAssets.value = order.receiving.map(asset => ({
-      assetId: asset.id,
-      amount: asset.amount,
-      type: isXchAsset(asset.id) ? 'xch' : 'cat',
-      symbol: asset.code || '',
-      searchQuery: asset.code || '', // Pre-fill search with ticker symbol
-      showDropdown: false,
-    }))
+    takerAssets.value = order.receiving.map(asset => {
+      const ticker = asset.code || getTickerSymbol(asset.id)
+      return {
+        assetId: asset.id,
+        amount: asset.amount,
+        type: isXchAsset(asset.id) ? 'xch' : 'cat',
+        symbol: ticker,
+        searchQuery: ticker, // Pre-fill search with ticker symbol
+        showDropdown: false,
+      }
+    })
+
+    takerAssets.value = order.receiving.map(asset => {
+      const ticker = asset.code || getTickerSymbol(asset.id)
+
+      return {
+        assetId: asset.id,
+        amount: asset.amount,
+        type: isXchAsset(asset.id) ? 'xch' : 'cat',
+        symbol: ticker,
+        searchQuery: ticker, // Pre-fill search with ticker symbol
+        showDropdown: false,
+      }
+    })
   }
 
   const useAsTemplate = (order: OrderBookOrder) => {
-    makerAssets.value = order.offering.map(asset => ({
-      assetId: asset.id,
-      amount: asset.amount,
-      type: isXchAsset(asset.id) ? 'xch' : 'cat',
-      symbol: asset.code || '',
-      searchQuery: asset.code || '', // Pre-fill search with ticker symbol
-      showDropdown: false,
-    }))
-    takerAssets.value = order.receiving.map(asset => ({
-      assetId: asset.id,
-      amount: asset.amount,
-      type: isXchAsset(asset.id) ? 'xch' : 'cat',
-      symbol: asset.code || '',
-      searchQuery: asset.code || '', // Pre-fill search with ticker symbol
-      showDropdown: false,
-    }))
+    makerAssets.value = order.offering.map(asset => {
+      const ticker = asset.code || getTickerSymbol(asset.id)
+      return {
+        assetId: asset.id,
+        amount: asset.amount,
+        type: isXchAsset(asset.id) ? 'xch' : 'cat',
+        symbol: ticker,
+        searchQuery: ticker, // Pre-fill search with ticker symbol
+        showDropdown: false,
+      }
+    })
+    takerAssets.value = order.receiving.map(asset => {
+      const ticker = asset.code || getTickerSymbol(asset.id)
+      return {
+        assetId: asset.id,
+        amount: asset.amount,
+        type: isXchAsset(asset.id) ? 'xch' : 'cat',
+        symbol: ticker,
+        searchQuery: ticker, // Pre-fill search with ticker symbol
+        showDropdown: false,
+      }
+    })
   }
 
   const handleOfferSubmit = async (

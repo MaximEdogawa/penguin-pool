@@ -57,7 +57,7 @@
                     :key="idx"
                     class="text-red-600 dark:text-red-400 font-mono text-xs"
                   >
-                    {{ formatAmount(item.amount || 0) }} {{ getTickerSymbol(item.id) }}
+                    {{ formatAmount(item.amount || 0) }} {{ item.code || getTickerSymbol(item.id) }}
                   </div>
                 </div>
               </div>
@@ -70,7 +70,7 @@
                     :key="idx"
                     class="text-xs font-mono text-gray-700 dark:text-gray-300"
                   >
-                    {{ formatAmount(item.amount || 0) }} {{ getTickerSymbol(item.id) }}
+                    {{ formatAmount(item.amount || 0) }} {{ item.code || getTickerSymbol(item.id) }}
                   </div>
                 </div>
               </div>
@@ -147,7 +147,7 @@
                     :key="idx"
                     class="text-green-600 dark:text-green-400 font-mono text-xs"
                   >
-                    {{ formatAmount(item.amount || 0) }} {{ getTickerSymbol(item.id) }}
+                    {{ formatAmount(item.amount || 0) }} {{ item.code || getTickerSymbol(item.id) }}
                   </div>
                 </div>
               </div>
@@ -160,7 +160,7 @@
                     :key="idx"
                     class="text-xs font-mono text-gray-700 dark:text-gray-300"
                   >
-                    {{ formatAmount(item.amount || 0) }} {{ getTickerSymbol(item.id) }}
+                    {{ formatAmount(item.amount || 0) }} {{ item.code || getTickerSymbol(item.id) }}
                   </div>
                 </div>
               </div>
