@@ -87,7 +87,7 @@ export function useTradingFilters() {
           suggestions.push({
             value: tickerSymbol,
             column: 'buyAsset',
-            label: `Buy ${tickerSymbol}`,
+            label: tickerSymbol,
           })
         }
         if (
@@ -98,7 +98,7 @@ export function useTradingFilters() {
           suggestions.push({
             value: tickerSymbol,
             column: 'sellAsset',
-            label: `Sell ${tickerSymbol}`,
+            label: tickerSymbol,
           })
         }
       }

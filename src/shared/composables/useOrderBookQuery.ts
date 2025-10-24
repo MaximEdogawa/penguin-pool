@@ -209,8 +209,8 @@ export function useOrderBookQuery(filters?: Ref<OrderBookFilters>) {
         }
       }
     },
-    staleTime: 30 * 1000, // 30 seconds - data is considered fresh for 30 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache for 5 minutes
+    staleTime: 0, // Data is never considered stale - always refetch
+    gcTime: 30 * 1000, // Keep in cache for only 30 seconds
     refetchInterval: 30 * 1000, // Refetch every 30 seconds for real-time updates
     refetchIntervalInBackground: true, // Continue refetching even when tab is not active
   })
@@ -224,6 +224,7 @@ export function useOrderBookQuery(filters?: Ref<OrderBookFilters>) {
 
   // Manual refresh function
   const refreshOrderBook = () => {
+    // Invalidate and refetch to ensure fresh data
     orderBookQuery.refetch()
   }
 

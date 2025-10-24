@@ -146,7 +146,7 @@
           suggestions.push({
             value: token.ticker,
             column: 'buyAsset',
-            label: `Buy ${token.ticker}`,
+            label: token.ticker,
           })
         }
 
@@ -159,7 +159,7 @@
           suggestions.push({
             value: token.ticker,
             column: 'sellAsset',
-            label: `Sell ${token.ticker}`,
+            label: token.ticker,
           })
         }
       }
@@ -176,7 +176,7 @@
           suggestions.push({
             value: ticker,
             column: 'buyAsset',
-            label: `Buy ${ticker}`,
+            label: ticker,
           })
         }
         if (
@@ -187,7 +187,7 @@
           suggestions.push({
             value: ticker,
             column: 'sellAsset',
-            label: `Sell ${ticker}`,
+            label: ticker,
           })
         }
       }
@@ -243,7 +243,7 @@
         })
 
         // Refresh order book to show the new offer
-        await refreshOrderBookData()
+        await refreshOrderBook()
 
         // Show order book refresh toast
         toast.add({
@@ -311,7 +311,7 @@
     if (newView === 'history' && displayedTrades.value.length === 0) {
       loadData()
     } else if ((newView === 'create' || newView === 'take') && orderBookData.value.length === 0) {
-      loadOrderBookData()
+      refreshOrderBook()
     }
   })
 

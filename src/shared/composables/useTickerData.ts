@@ -40,25 +40,34 @@ export function useTickerData() {
       tokens.push(tokenInfo)
     })
 
-    // If no tokens from API, show some sample tokens for testing
+    // Always include essential fallback tokens (TXCH and TDBX) for testing
+    const fallbackTokens: CatTokenInfo[] = [
+      {
+        assetId: 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad',
+        ticker: 'TXCH',
+        name: 'TXCH',
+        symbol: 'TXCH',
+      },
+      {
+        assetId: '4eadfa450c19fa51df65eb7fbf5b61077ec80ec799a7652bb187b705bff19a90',
+        ticker: 'TDBX',
+        name: 'TDBX',
+        symbol: 'TDBX',
+      },
+    ]
+
+    // If no tokens from API, return only fallback tokens
     if (tokens.length === 0 && !tickersQuery.isLoading.value) {
-      return [
-        {
-          assetId: 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad',
-          ticker: 'TXCH',
-          name: 'TXCH',
-          symbol: 'TXCH',
-        },
-        {
-          assetId: '4eadfa450c19fa51df65eb7fbf5b61077ec80ec799a7652bb187b705bff19a90',
-          ticker: 'TDBX',
-          name: 'TDBX',
-          symbol: 'TDBX',
-        },
-      ]
+      return fallbackTokens
     }
 
-    return tokens.sort((a, b) => a.ticker.localeCompare(b.ticker))
+    // If API has tokens, merge with fallback tokens and remove duplicates
+    const allTokens = [...tokens, ...fallbackTokens]
+    const uniqueTokens = allTokens.filter(
+      (token, index, self) => index === self.findIndex(t => t.ticker === token.ticker)
+    )
+
+    return uniqueTokens.sort((a, b) => a.ticker.localeCompare(b.ticker))
   })
 
   /**
