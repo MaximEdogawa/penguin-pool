@@ -4,14 +4,21 @@ interface PenguinLogoProps {
   size?: number
   className?: string
   fill?: boolean
+  priority?: boolean
 }
 
-export default function PenguinLogo({ size = 48, className = '', fill = false }: PenguinLogoProps) {
+export default function PenguinLogo({
+  size = 48,
+  className = '',
+  fill = false,
+  priority = false,
+}: PenguinLogoProps) {
   if (fill) {
     return (
       <Image
         src="/penguin-pool.svg"
         fill
+        priority={priority}
         alt="Penguin Pool Logo"
         className={`${className} object-contain`}
       />
@@ -23,6 +30,7 @@ export default function PenguinLogo({ size = 48, className = '', fill = false }:
       src="/penguin-pool.svg"
       width={size}
       height={size}
+      priority={priority}
       alt="Penguin Pool Logo"
       className={className}
     />

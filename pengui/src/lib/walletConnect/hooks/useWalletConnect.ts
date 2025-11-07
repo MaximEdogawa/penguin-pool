@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 import SignClient from '@walletconnect/sign-client'
 import { WalletConnectModal } from '@walletconnect/modal'
 import type { SessionTypes } from '@walletconnect/types'
-import { SIGN_CLIENT_CONFIG, MODAL_CONFIG, CHIA_CHAIN_ID } from '../constants'
+import { SIGN_CLIENT_CONFIG, MODAL_CONFIG, CHIA_CHAIN_ID, REQUIRED_NAMESPACES } from '../constants'
 import { CustomWalletConnectStorage } from '../storage'
 
 const STORAGE_PREFIX = 'chia-wc-data'
@@ -16,6 +16,21 @@ interface WalletConnectInstance {
 }
 
 const initializeSignClient = async (): Promise<WalletConnectInstance> => {
+  const projectId = SIGN_CLIENT_CONFIG.projectId?.trim() || ''
+
+  if (!projectId) {
+    throw new Error(
+      'WalletConnect Project ID is missing. Please set WALLET_CONNECT_PROJECT_ID in your .env.local file.'
+    )
+  }
+
+  // Verify project ID is not the default empty string
+  if (projectId === '' || projectId.length < 10) {
+    throw new Error(
+      `Invalid WalletConnect Project ID. Current value: "${projectId}". Please check your .env.local file.`
+    )
+  }
+
   const signClient = await SignClient.init({
     ...SIGN_CLIENT_CONFIG,
     storage: new CustomWalletConnectStorage(STORAGE_PREFIX),
@@ -42,6 +57,10 @@ export function useWalletConnect() {
 
   const connectMutation = useMutation({
     mutationFn: async () => {
+      if (instanceQuery.error) {
+        throw instanceQuery.error
+      }
+
       if (!instanceQuery.data) {
         throw new Error('SignClient is not initialized')
       }
@@ -60,31 +79,75 @@ export function useWalletConnect() {
         }
       }
 
-      const { uri: connectionUri, approval } = await signClient.connect({
-        requiredNamespaces: {
-          chia: {
-            methods: [
-              'chia_getCurrentAddress',
-              'chia_createOfferForIds',
-              'chia_getWallets',
-              'chia_addCATToken',
-            ],
-            chains: [CHIA_CHAIN_ID],
-            events: [],
-          },
-        },
-      })
+      try {
+        const { uri: connectionUri, approval } = await signClient.connect({
+          requiredNamespaces: REQUIRED_NAMESPACES,
+        })
 
-      if (connectionUri) {
-        setUri(connectionUri)
-        modal.openModal({ uri: connectionUri })
-        const newSession = await approval()
-        setSession(newSession)
+        if (connectionUri) {
+          setUri(connectionUri)
+          modal.openModal({ uri: connectionUri })
+
+          try {
+            const newSession = await approval()
+            setSession(newSession)
+            setUri(null)
+            modal.closeModal()
+            return newSession
+          } catch (approvalError) {
+            // Close modal on approval error
+            modal.closeModal()
+            setUri(null)
+
+            // Handle approval-specific errors
+            if (approvalError instanceof Error) {
+              if (
+                approvalError.message.includes('User rejected') ||
+                approvalError.message.includes('rejected')
+              ) {
+                throw new Error(
+                  'Connection rejected. Please try again and approve the connection in your wallet.'
+                )
+              }
+              if (
+                approvalError.message.includes('timeout') ||
+                approvalError.message.includes('expired')
+              ) {
+                throw new Error('Connection timeout. Please try again.')
+              }
+            }
+            throw approvalError
+          }
+        }
+
+        throw new Error('Failed to get connection URI')
+      } catch (error) {
+        // Close modal on any error
+        if (instanceQuery.data) {
+          instanceQuery.data.modal.closeModal()
+        }
         setUri(null)
-        return newSession
-      }
 
-      throw new Error('Failed to get connection URI')
+        // Handle WalletConnect specific errors
+        if (error instanceof Error) {
+          if (error.message.includes('Unauthorized') || error.message.includes('invalid key')) {
+            throw new Error(
+              'WalletConnect authentication failed. Please check your Project ID configuration.'
+            )
+          }
+          if (error.message.includes('socket') || error.message.includes('WebSocket')) {
+            throw new Error(
+              'Connection error. Please check your internet connection and try again.'
+            )
+          }
+          if (error.message.includes('User rejected') || error.message.includes('rejected')) {
+            throw new Error(
+              'Connection rejected. Please try again and approve the connection in your wallet.'
+            )
+          }
+        }
+        throw error
+      }
     },
   })
 
@@ -95,22 +158,20 @@ export function useWalletConnect() {
       }
 
       const { signClient } = instanceQuery.data
-      const fingerprint = session.namespaces.chia.accounts[0].split(':').pop()
 
       const result = await signClient.request({
         topic: session.topic,
         chainId: CHIA_CHAIN_ID,
         request: {
-          method: 'chia_getCurrentAddress',
+          method: 'chia_getAddress',
           params: {
-            fingerprint,
-            wallet_id: 0,
-            new_address: false,
+            walletId: 1,
+            newAddress: false,
           },
         },
       })
 
-      return (result as { data?: string })?.data
+      return (result as { address?: string })?.address
     },
   })
 
@@ -179,7 +240,11 @@ export function useWalletConnect() {
     uri,
     session,
     address: getAddressMutation.data,
-    error: connectMutation.error || getAddressMutation.error || disconnectMutation.error,
+    error:
+      instanceQuery.error ||
+      connectMutation.error ||
+      getAddressMutation.error ||
+      disconnectMutation.error,
     connect,
     disconnect,
     getAddress,

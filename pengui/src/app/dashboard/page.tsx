@@ -1,21 +1,27 @@
 'use client'
 
-import { useWalletConnect } from '@/lib/walletConnect/hooks/useWalletConnect'
+import { useWallet } from '@/features/walletConnect'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { LogOut } from 'lucide-react'
+import { useEffect } from 'react'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { address, disconnect, isConnected } = useWalletConnect()
+  const { address, disconnect, isConnected } = useWallet()
 
-  const handleDisconnect = () => {
-    disconnect()
+  const handleDisconnect = async () => {
+    await disconnect()
     router.push('/login')
   }
 
+  useEffect(() => {
+    if (!isConnected) {
+      router.push('/login')
+    }
+  }, [isConnected, router])
+
   if (!isConnected) {
-    router.push('/login')
     return null
   }
 

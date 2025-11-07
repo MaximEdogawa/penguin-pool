@@ -1,7 +1,7 @@
 'use client'
 
 import PenguinLogo from '@/components/PenguinLogo'
-import { useWalletConnect } from '@/lib/walletConnect/hooks/useWalletConnect'
+import { useWallet } from '@/features/walletConnect'
 import { ArrowRight, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -10,8 +10,8 @@ import { toast } from 'sonner'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { isInitializing, isConnecting, isConnected, address, error, connect, getAddress } =
-    useWalletConnect()
+  const { isConnecting, isConnected, address, connectWallet } = useWallet()
+  const isInitializing = false // WalletContext handles initialization internally
   const [selectedNetwork, setSelectedNetwork] = useState('chia:testnet')
   const previousErrorRef = useRef<unknown>(null)
 
@@ -21,26 +21,20 @@ export default function LoginPage() {
     }
   }, [isConnected, address, router])
 
-  useEffect(() => {
-    if (isConnected && !address) {
-      getAddress()
-    }
-  }, [isConnected, address, getAddress])
-
-  useEffect(() => {
-    if (error && error !== previousErrorRef.current) {
-      previousErrorRef.current = error
-      const errorMessage = error instanceof Error ? error.message : String(error) || 'Unknown error'
-      toast.error(`Connection failed: ${errorMessage}`)
-    }
-  }, [error])
+  // Address is automatically fetched when connected via WalletContext
 
   const handleConnect = async () => {
+    // Reset previous error when starting a new connection attempt
+    previousErrorRef.current = null
     try {
-      connect()
+      await connectWallet('chiawalletconnect', false)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err) || 'Unknown error'
-      toast.error(`Connection failed: ${errorMessage}`)
+      // Only show toast once per error
+      if (err !== previousErrorRef.current) {
+        previousErrorRef.current = err
+        const errorMessage = err instanceof Error ? err.message : String(err) || 'Unknown error'
+        toast.error(`Connection failed: ${errorMessage}`)
+      }
     }
   }
 
@@ -66,7 +60,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center gap-3 sm:gap-4 w-full">
           <div className="relative group">
             <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-500/25 via-purple-500/25 to-pink-500/25 backdrop-blur-lg border-2 border-white/40 shadow-xl sm:shadow-2xl shadow-purple-500/20 group-hover:border-white/60 group-hover:shadow-purple-500/30 transition-all duration-300 overflow-hidden p-2 sm:p-2.5">
-              <PenguinLogo fill className="drop-shadow-xl sm:drop-shadow-2xl" />
+              <PenguinLogo fill priority className="drop-shadow-xl sm:drop-shadow-2xl" />
             </div>
           </div>
           <div className="flex flex-col gap-2 sm:gap-2.5 w-full">
