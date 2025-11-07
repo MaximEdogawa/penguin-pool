@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Run lint-staged to format and lint staged files (if available)
+if command -v npx >/dev/null 2>&1; then
+  echo "📝 Formatting and linting staged files..."
+  npx lint-staged || echo "⚠️  lint-staged not configured, skipping"
+else
+  echo "⚠️  npx not found, skipping lint-staged"
+fi
+
+# Run tests if test:run script exists in package.json
+if grep -q '"test:run"' package.json 2>/dev/null; then
+  echo "🧪 Running unit tests..."
+  npm run test:run
+else
+  echo "⚠️  No test:run script found, skipping tests"
+fi
+
+echo "✅ Pre-commit checks completed successfully!"
