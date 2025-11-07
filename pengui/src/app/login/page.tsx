@@ -59,7 +59,7 @@ export default function LoginPage() {
         {/* Logo and Title Section */}
         <div className="flex flex-col items-center gap-3 sm:gap-4 w-full">
           <div className="relative group">
-            <div className="relative h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-500/25 via-purple-500/25 to-pink-500/25 backdrop-blur-lg border-2 border-white/40 shadow-xl sm:shadow-2xl shadow-purple-500/20 group-hover:border-white/60 group-hover:shadow-purple-500/30 transition-all duration-300 overflow-hidden p-2 sm:p-2.5">
+            <div className="relative h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 lg:h-24 lg:w-24 rounded-xl sm:rounded-2xl md:rounded-3xl bg-gradient-to-br from-blue-500/25 via-purple-500/25 to-pink-500/25 backdrop-blur-lg border-2 border-white/40 shadow-xl sm:shadow-2xl shadow-purple-500/20 group-hover:border-white/60 group-hover:shadow-purple-500/30 transition-all duration-300 overflow-hidden p-2.5 sm:p-3 md:p-2.5">
               <PenguinLogo fill priority className="drop-shadow-xl sm:drop-shadow-2xl" />
             </div>
           </div>
