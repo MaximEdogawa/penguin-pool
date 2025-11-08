@@ -1,6 +1,7 @@
 'use client'
 
 import { logger } from '@/lib/logger'
+import { isIOS } from '@/lib/utils/device'
 import { CustomWalletConnectStorage } from '@/lib/walletConnect/storage'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { WalletConnectModal } from '@walletconnect/modal'
@@ -15,6 +16,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { IOSWalletModal } from './components/IOSWalletModal'
 import {
   CHIA_CHAIN_ID,
   MODAL_CONFIG,
@@ -87,6 +89,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<SessionTypes.Struct | null>(null)
   const [address, setAddress] = useState<string | null>(null)
   const [isManuallyCancelled, setIsManuallyCancelled] = useState(false)
+  const [showIOSModal, setShowIOSModal] = useState(false)
   const hasAttemptedAddressFetch = useRef(false)
   const approvalCancelledRef = useRef(false)
 
@@ -151,7 +154,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         if (connectionUri) {
           setUri(connectionUri)
           approvalCancelledRef.current = false
-          modal.openModal({ uri: connectionUri })
+
+          // Use iOS modal on iOS devices, otherwise use native WalletConnect modal
+          if (isIOS()) {
+            setShowIOSModal(true)
+          } else {
+            modal.openModal({ uri: connectionUri })
+          }
 
           try {
             // Race approval promise with cancellation check
@@ -171,16 +180,28 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
             // Check if approval was cancelled while waiting
             if (approvalCancelledRef.current || newSession === null) {
-              modal.closeModal()
+              if (isIOS()) {
+                setShowIOSModal(false)
+              } else {
+                modal.closeModal()
+              }
               setUri(null)
               return null
             }
             setSession(newSession)
             setUri(null)
-            modal.closeModal()
+            if (isIOS()) {
+              setShowIOSModal(false)
+            } else {
+              modal.closeModal()
+            }
             return newSession
           } catch (approvalError) {
-            modal.closeModal()
+            if (isIOS()) {
+              setShowIOSModal(false)
+            } else {
+              modal.closeModal()
+            }
             setUri(null)
 
             // If approval was cancelled (modal closed), don't throw error
@@ -221,7 +242,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         throw new Error('Failed to get connection URI')
       } catch (error) {
         if (instanceQuery.data) {
-          instanceQuery.data.modal.closeModal()
+          if (isIOS()) {
+            setShowIOSModal(false)
+          } else {
+            instanceQuery.data.modal.closeModal()
+          }
         }
         setUri(null)
 
@@ -379,7 +404,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, [session, address])
 
   useEffect(() => {
-    if (instanceQuery.data && uri && !connectMutation.isPending) {
+    // Only open native WalletConnect modal on non-iOS devices
+    // On iOS, we use the custom IOSWalletModal instead
+    if (instanceQuery.data && uri && !connectMutation.isPending && !isIOS()) {
       instanceQuery.data.modal.openModal({ uri })
     }
   }, [uri, instanceQuery.data, connectMutation.isPending])
@@ -402,23 +429,26 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     let previousModalOpen = false
 
     const unsubscribe = modal.subscribeModal((state) => {
-      // Detect when modal transitions from open to closed
-      if (previousModalOpen && !state.open && !state.loading && isSubscribed) {
-        // Modal was closed - always reset state if no connection was established
-        // Check if we have a session AND address to determine if connection was successful
-        const hasSuccessfulConnection = session && address
+      // Only handle native WalletConnect modal (not iOS modal)
+      if (!isIOS()) {
+        // Detect when modal transitions from open to closed
+        if (previousModalOpen && !state.open && !state.loading && isSubscribed) {
+          // Modal was closed - always reset state if no connection was established
+          // Check if we have a session AND address to determine if connection was successful
+          const hasSuccessfulConnection = session && address
 
-        if (!hasSuccessfulConnection) {
-          // No connection established - always reset everything
-          approvalCancelledRef.current = true
-          setIsManuallyCancelled(true) // Immediately set flag to override isPending
-          setUri(null)
-          // Reset mutation state immediately so button becomes clickable again
-          // This will make isPending false even if the approval promise is still pending
-          connectMutation.reset()
+          if (!hasSuccessfulConnection) {
+            // No connection established - always reset everything
+            approvalCancelledRef.current = true
+            setIsManuallyCancelled(true) // Immediately set flag to override isPending
+            setUri(null)
+            // Reset mutation state immediately so button becomes clickable again
+            // This will make isPending false even if the approval promise is still pending
+            connectMutation.reset()
+          }
         }
+        previousModalOpen = state.open
       }
-      previousModalOpen = state.open
     })
 
     return () => {
@@ -426,6 +456,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       unsubscribe()
     }
   }, [instanceQuery.data, session, address, connectMutation])
+
+  // Handle iOS modal close
+  useEffect(() => {
+    if (isIOS() && !showIOSModal && uri && !session) {
+      // iOS modal was closed - reset state
+      approvalCancelledRef.current = true
+      setIsManuallyCancelled(true)
+      setUri(null)
+      connectMutation.reset()
+    }
+  }, [showIOSModal, uri, session, connectMutation])
 
   return (
     <WalletContext.Provider
@@ -445,6 +486,19 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
+      {isIOS() && uri && (
+        <IOSWalletModal
+          uri={uri}
+          isOpen={showIOSModal}
+          onClose={() => {
+            setShowIOSModal(false)
+            approvalCancelledRef.current = true
+            setIsManuallyCancelled(true)
+            setUri(null)
+            connectMutation.reset()
+          }}
+        />
+      )}
     </WalletContext.Provider>
   )
 }
