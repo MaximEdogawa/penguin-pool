@@ -9,6 +9,7 @@
     "lint": "ESLINT_USE_FLAT_CONFIG=true bun run eslint ."
   },
   "dependencies": {
+    "@chia/wallet-connect": "file:../../chia-wallet-connect",
     "@headlessui/react": "^1.7.18",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-avatar": "^1.0.4",
@@ -37,6 +38,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-qr-code": "^2.0.12",
+    "react-redux": "^9.2.0",
+    "redux-persist": "^6.0.0",
     "sonner": "^1.4.41",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
@@ -44,21 +47,21 @@
     "wagmi": "^2.5.19"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@types/node": "^20",
     "@types/pako": "^2.0.3",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/react-timeago": "^4.1.7",
-    "autoprefixer": "^10.0.1",
-    "copy-webpack-plugin": "^12.0.2",
-    "@eslint/js": "^9.0.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "autoprefixer": "^10.0.1",
+    "copy-webpack-plugin": "^12.0.2",
     "eslint": "^8",
     "eslint-config-next": "^14.2.3",
-    "typescript-eslint": "^7.0.0",
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "typescript-eslint": "^7.0.0"
   }
 }

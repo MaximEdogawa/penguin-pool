@@ -1,58 +1,59 @@
+'use client'
+
 import { Analytics } from '@vercel/analytics/react'
-import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import Script from 'next/script'
+import { useEffect } from 'react'
+import { Provider } from 'react-redux'
+import { PersistGate } from 'redux-persist/integration/react'
+import { store, persistor, WalletManager } from '@chia/wallet-connect'
+import '@chia/wallet-connect/styles'
 import './globals.css'
 import ReactQueryProvider from '@/components/ReactQueryProvider'
-import { WalletProvider } from '@/features/walletConnect'
 import { cn } from '@/lib/utils'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
-export const metadata: Metadata = {
-  title: 'Penguin Pool | Decentralized Lending Platform',
-  description: 'Penguin Pool is a decentralized lending platform on Chia Network.',
-  manifest: '/manifest.json',
-  themeColor: '#1e40af',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Penguin Pool',
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    viewportFit: 'cover',
-  },
-  icons: {
-    icon: [
-      { url: '/icons/icon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/icons/icon-32x32.png', sizes: '32x32', type: 'image/png' },
-    ],
-    apple: [
-      { url: '/icons/icon-152x152.png', sizes: '152x152', type: 'image/png' },
-      { url: '/icons/icon-192x192.png', sizes: '180x180', type: 'image/png' },
-      { url: '/icons/icon-192x192.png', sizes: '167x167', type: 'image/png' },
-    ],
-  },
-  other: {
-    'application-name': 'Penguin Pool',
-    'apple-mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-status-bar-style': 'default',
-    'apple-mobile-web-app-title': 'Penguin Pool',
-    'format-detection': 'telephone=no',
-    'mobile-web-app-capable': 'yes',
-    'msapplication-TileColor': '#1e40af',
-    'msapplication-tap-highlight': 'no',
-    'msapplication-navbutton-color': '#1e40af',
-  },
-}
-
 export default function UILayout({ children }: { children: React.ReactNode }) {
+  // On page reload, wallet event listeners need to be re-established
+  // (i.e. if user disconnects from their wallet, the UI will update)
+  useEffect(() => {
+    // Initialize WalletManager with pengui icon
+    const penguiIcon =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/penguin-pool.svg`
+        : '/penguin-pool.svg'
+
+    const walletManager = new WalletManager(penguiIcon, {
+      name: 'Pengui',
+      description: 'Penguin Pool - Decentralized lending platform on Chia Network',
+      url: typeof window !== 'undefined' ? window.location.origin : 'https://penguin.pool',
+      icons: [penguiIcon],
+    })
+    walletManager.detectEvents()
+  }, [])
   return (
     <html lang="en" className="dark font-extralight">
+      <head>
+        <title>Penguin Pool | Decentralized Lending Platform</title>
+        <meta
+          name="description"
+          content="Penguin Pool is a decentralized lending platform on Chia Network."
+        />
+        <meta name="theme-color" content="#1e40af" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Penguin Pool" />
+        <meta
+          name="viewport"
+          content="width=device-width, initialScale=1, maximumScale=1, userScalable=no, viewportFit=cover"
+        />
+      </head>
       <body className={cn(inter.className, 'max-w-screen overflow-x-hidden')}>
         <Script
           id="disable-lit-dev-mode"
@@ -65,9 +66,11 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
             `,
           }}
         />
-        <ReactQueryProvider>
-          <WalletProvider>{children}</WalletProvider>
-        </ReactQueryProvider>
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            <ReactQueryProvider>{children}</ReactQueryProvider>
+          </PersistGate>
+        </Provider>
         <Analytics />
       </body>
     </html>

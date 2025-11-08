@@ -1,6 +1,6 @@
 'use client'
 
-import { useWallet } from '@/features/walletConnect'
+import { useAppSelector, WalletManager } from '@chia/wallet-connect'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { LogOut } from 'lucide-react'
@@ -8,10 +8,21 @@ import { useEffect } from 'react'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { address, disconnect, isConnected } = useWallet()
+  const connectedWallet = useAppSelector((state) => state.wallet.connectedWallet)
+  const address = useAppSelector((state) => state.wallet.address)
+  const selectedSession = useAppSelector((state) => state.walletConnect.selectedSession)
+
+  // Check if wallet is actually connected (for WalletConnect, need a session)
+  const isConnected =
+    connectedWallet === 'WalletConnect'
+      ? Boolean(connectedWallet === 'WalletConnect' && selectedSession)
+      : Boolean(connectedWallet)
 
   const handleDisconnect = async () => {
-    await disconnect()
+    const walletManager = new WalletManager()
+    if (connectedWallet) {
+      await walletManager.disconnect(connectedWallet)
+    }
     router.push('/login')
   }
 

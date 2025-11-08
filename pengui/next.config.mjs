@@ -31,6 +31,7 @@ const loadEnvLocal = () => {
 const envLocal = loadEnvLocal()
 
 const nextConfig = {
+  transpilePackages: ['@chia/wallet-connect'],
   env: {
     // Expose WALLET_CONNECT_PROJECT_ID as NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID for client-side access
     NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID:
