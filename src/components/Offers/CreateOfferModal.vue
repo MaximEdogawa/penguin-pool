@@ -88,12 +88,13 @@
                 </div>
                 <div class="flex-1">
                   <input
-                    v-model.number="asset.amount"
-                    type="number"
-                    step="0.000001"
-                    min="0"
+                    v-model="asset.amount"
+                    type="text"
+                    inputmode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     placeholder="Amount"
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    @paste="handleAmountPaste($event, index, 'offering')"
                   />
                 </div>
                 <div class="flex-1">
@@ -201,12 +202,13 @@
                 </div>
                 <div class="flex-1">
                   <input
-                    v-model.number="asset.amount"
-                    type="number"
-                    step="0.000001"
-                    min="0"
+                    v-model="asset.amount"
+                    type="text"
+                    inputmode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     placeholder="Amount"
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    @paste="handleAmountPaste($event, index, 'requested')"
                   />
                 </div>
                 <div class="flex-1">
@@ -483,6 +485,29 @@
     asset.symbol = ''
     asset.searchQuery = ''
     asset.showDropdown = false
+  }
+
+  // Handle paste events for amount fields
+  const handleAmountPaste = (
+    event: ClipboardEvent,
+    index: number,
+    type: 'offering' | 'requested'
+  ) => {
+    event.preventDefault()
+    const pastedText = event.clipboardData?.getData('text') || ''
+
+    // Clean the pasted text to only allow numbers and decimal points
+    const cleanedText = pastedText.replace(/[^0-9.]/g, '')
+
+    // Ensure only one decimal point
+    const parts = cleanedText.split('.')
+    const finalText = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : cleanedText
+
+    if (type === 'offering') {
+      form.assetsOffered[index].amount = parseFloat(finalText) || 0
+    } else {
+      form.assetsRequested[index].amount = parseFloat(finalText) || 0
+    }
   }
 
   const handleSubmit = async () => {

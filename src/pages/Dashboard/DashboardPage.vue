@@ -232,6 +232,16 @@
         </div>
       </div>
     </div>
+
+    <!-- Sticky Filter Panel -->
+    <StickyFilterPanel
+      v-show="showFilterPane"
+      ref="stickyFilterPanelRef"
+      :has-active-filters="hasActiveSharedFilters"
+      :shared-filters="sharedFilters"
+      @remove-shared-filter="removeFilter"
+      @clear-all-shared-filters="clearAllFilters"
+    />
   </div>
 </template>
 
@@ -239,13 +249,19 @@
   import { useUserStore } from '@/entities/user/store/userStore'
   import { useSessionDataService } from '@/features/walletConnect/services/SessionDataService'
   import { useWalletDataService } from '@/features/walletConnect/services/WalletDataService'
+  import { useGlobalFilters } from '@/shared/composables/useGlobalFilters'
   import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
+  import StickyFilterPanel from '../Trading/components/StickyFilterPanel.vue'
 
   const userStore = ref<ReturnType<typeof useUserStore> | null>(null)
   const walletDataService = useWalletDataService()
   const session = useSessionDataService()
   const router = useRouter()
+
+  // Global filters
+  const { sharedFilters, hasActiveSharedFilters, showFilterPane, removeFilter, clearAllFilters } =
+    useGlobalFilters()
 
   const walletBalance = computed(() => walletDataService.balance.data.value || null)
   const isBalanceLoading = computed(() => walletDataService.balance.isRefetching.value)

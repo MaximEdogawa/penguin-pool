@@ -27,10 +27,14 @@
       class="layout-mask animate-fadein"
       @click="closeMobileMenu"
     ></div>
+
+    <!-- Toast Notifications -->
+    <Toast />
   </div>
 </template>
 
 <script setup lang="ts">
+  import Toast from 'primevue/toast'
   import { computed, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import AppSidebar from './AppSidebar.vue'

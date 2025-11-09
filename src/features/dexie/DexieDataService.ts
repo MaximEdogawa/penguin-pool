@@ -1,3 +1,4 @@
+import { useTickerMapping } from '@/shared/composables/useTickerMapping'
 import { logger } from '@/shared/logger/logger'
 import {
   dexieRepository,
@@ -353,7 +354,8 @@ export function convertDexieOfferToAppOffer(dexieResponse: DexiePostOfferRespons
 }
 
 export function convertDexieAsset(dexieAsset: DexieAsset) {
-  const assetType = dexieAsset.id === 'xch' ? 'xch' : 'cat'
+  const { isXchAsset } = useTickerMapping()
+  const assetType = isXchAsset(dexieAsset.id) ? 'xch' : 'cat'
   return {
     assetId: dexieAsset.id,
     amount: dexieAsset.amount,
@@ -413,7 +415,18 @@ export function createCatTokenMap(tickers: DexieTicker[]): Map<string, CatTokenI
   const catMap = new Map<string, CatTokenInfo>()
 
   tickers.forEach(ticker => {
-    if (ticker.target_currency === 'xch' && ticker.base_currency !== 'xch') {
+    // Include both XCH and TXCH as valid target currencies
+    const isXchTarget =
+      ticker.target_currency === 'xch' ||
+      ticker.target_currency === 'TXCH' ||
+      ticker.target_currency === 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad'
+
+    const isNotXchBase =
+      ticker.base_currency !== 'xch' &&
+      ticker.base_currency !== 'TXCH' &&
+      ticker.base_currency !== 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad'
+
+    if (isXchTarget && isNotXchBase) {
       catMap.set(ticker.base_currency, {
         assetId: ticker.base_currency,
         ticker: ticker.base_code,

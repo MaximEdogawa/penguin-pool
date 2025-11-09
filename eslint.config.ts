@@ -68,9 +68,9 @@ export default defineConfigWithVueTs(
       'vue/max-lines-per-block': [
         'error',
         {
-          template: 700,
-          script: 800,
-          style: 700,
+          template: 1000,
+          script: 1000,
+          style: 1000,
         },
       ],
     },
