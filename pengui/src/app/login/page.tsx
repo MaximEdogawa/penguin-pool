@@ -1,28 +1,9 @@
 'use client'
 
 import PenguinLogo from '@/components/PenguinLogo'
-import { ConnectButton, useAppSelector } from '@chia/wallet-connect'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { ConnectButton } from '@chia/wallet-connect'
 
 export default function LoginPage() {
-  const router = useRouter()
-  const connectedWallet = useAppSelector((state) => state.wallet.connectedWallet)
-  const address = useAppSelector((state) => state.wallet.address)
-  const selectedSession = useAppSelector((state) => state.walletConnect.selectedSession)
-
-  // Check if wallet is actually connected (for WalletConnect, need a session)
-  const isConnected =
-    connectedWallet === 'WalletConnect'
-      ? Boolean(connectedWallet === 'WalletConnect' && selectedSession)
-      : Boolean(connectedWallet)
-
-  useEffect(() => {
-    if (isConnected && address) {
-      router.push('/dashboard')
-    }
-  }, [isConnected, address, router])
-
   return (
     <div
       className="min-h-screen flex items-center justify-center px-3 py-8 sm:px-4 sm:py-12 md:px-6 md:py-16 lg:px-20 xl:px-80 backdrop-blur-3xl bg-cover bg-center bg-no-repeat relative overflow-hidden"
