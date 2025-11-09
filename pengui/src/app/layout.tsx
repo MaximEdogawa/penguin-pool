@@ -1,11 +1,11 @@
 'use client'
 
-import { Analytics } from '@vercel/analytics/react'
 import { Inter } from 'next/font/google'
 import Script from 'next/script'
 import { useEffect } from 'react'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
+import { ThemeProvider } from 'next-themes'
 import { store, persistor, WalletManager } from '@chia/wallet-connect'
 import '@chia/wallet-connect/styles'
 import './globals.css'
@@ -33,7 +33,7 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
     walletManager.detectEvents()
   }, [])
   return (
-    <html lang="en" className="dark font-extralight">
+    <html lang="en" className="font-extralight" suppressHydrationWarning>
       <head>
         <title>Penguin Pool | Decentralized Lending Platform</title>
         <meta
@@ -66,12 +66,13 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
             `,
           }}
         />
-        <Provider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
-            <ReactQueryProvider>{children}</ReactQueryProvider>
-          </PersistGate>
-        </Provider>
-        <Analytics />
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <Provider store={store}>
+            <PersistGate loading={null} persistor={persistor}>
+              <ReactQueryProvider>{children}</ReactQueryProvider>
+            </PersistGate>
+          </Provider>
+        </ThemeProvider>
       </body>
     </html>
   )
