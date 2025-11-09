@@ -1,33 +1,26 @@
-import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
-import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
-import pluginVue from 'eslint-plugin-vue'
-import { globalIgnores } from 'eslint/config'
+import eslint from '@eslint/js'
+import tseslint from 'typescript-eslint'
 
-export default defineConfigWithVueTs(
+export default tseslint.config(
   {
-    name: 'app/files-to-lint',
-    files: ['src/**/*.{ts,mts,tsx,vue}', 'backend/src/**/*.{ts,mts,tsx}'],
+    ignores: [
+      '**/dist/**',
+      '**/.next/**',
+      '**/node_modules/**',
+      '**/*.d.ts',
+      '**/coverage/**',
+      '**/*.config.{js,mjs,cjs}',
+      '**/next.config.*',
+      '**/postcss.config.*',
+      '**/tailwind.config.*',
+    ],
   },
-
-  globalIgnores([
-    '**/dist/**',
-    '**/dist-ssr/**',
-    '**/coverage/**',
-    '**/tests/**',
-    '**/playwright.component.config.ts',
-    '**/node_modules/**',
-    '**/*.d.ts',
-    '**/.next/**',
-    '**/pengui/.next/**',
-    '**/examples/**',
-  ]),
-
-  pluginVue.configs['flat/essential'],
-  vueTsConfigs.recommended,
-  skipFormatting,
-
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
   {
-    name: 'app/style-guide-rules',
+    files: ['**/*.{ts,tsx}'],
+  },
+  {
     rules: {
       'max-lines': ['error', { max: 1000, skipBlankLines: true, skipComments: true }],
       'no-console': 'error',
@@ -65,14 +58,6 @@ export default defineConfigWithVueTs(
           args: 'none',
         },
       ],
-      'vue/max-lines-per-block': [
-        'error',
-        {
-          template: 1000,
-          script: 1000,
-          style: 1000,
-        },
-      ],
     },
-  }
+  },
 )

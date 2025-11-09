@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "implementation/IMPLEMENTATION_ROADMAP.md",
+                "file": "VUE_TO_REACT_NATIVE_CONVERSION.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "IMPLEMENTATION_ROADMAP"
+              "title": "VUE_TO_REACT_NATIVE_CONVERSION"
             }
           }
         ]
@@ -201,6 +201,17 @@
     "technical-info/KURRENTDB_SETUP.md",
     "technical-info/KURRENTDB_COMPLETE_SETUP.md",
     "technical-info/CHIA_WALLET_CONNECT_SETUP.md",
+    "technical-info",
+    "implementation/TICKET-002/SIDEBAR_COLLAPSE/SIDEBAR_COLLAPSE_UPDATE.md",
+    "implementation/TICKET-002/SIDEBAR_COLLAPSE/SIDEBAR_COLLAPSE_FIXES.md",
+    "implementation/TICKET-002/SIDEBAR_COLLAPSE/README.md",
+    "implementation/TICKET-002/WALLET_CONNECT_UI/WALLET_CONNECT_UI_UPDATE.md",
+    "implementation/TICKET-002/WALLET_CONNECT_UI/README.md",
+    "implementation/TICKET-002/HEADER_SIDEBAR/README.md",
+    "implementation/TICKET-002/HEADER_SIDEBAR/HEADER_SIDEBAR_UPDATE.md",
+    "implementation/TICKET-008/TICKET-008-NESTJS-IMPLEMENTATION.md",
+    "implementation/TICKET-008/TICKET-008-IMPLEMENTATION.md",
+    "implementation/TICKET-008/README.md",
     "implementation/TICKET-010/TICKET-010-IMPLEMENTATION.md",
     "implementation/TICKET-010/SETUP_GUIDE.md",
     "implementation/TICKET-010/README.md"
