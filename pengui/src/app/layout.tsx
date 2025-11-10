@@ -6,11 +6,13 @@ import { useEffect } from 'react'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
 import { ThemeProvider } from 'next-themes'
+import { usePathname } from 'next/navigation'
 import { store, persistor, WalletManager } from '@chia/wallet-connect'
 import '@chia/wallet-connect/styles'
 import './globals.css'
 import ReactQueryProvider from '@/components/ReactQueryProvider'
 import WalletConnectionGuard from '@/components/WalletConnectionGuard'
+import DashboardLayout from '@/components/DashboardLayout'
 import { cn } from '@/lib/utils'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -71,7 +73,9 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
           <Provider store={store}>
             <PersistGate loading={null} persistor={persistor}>
               <WalletConnectionGuard>
-                <ReactQueryProvider>{children}</ReactQueryProvider>
+                <ReactQueryProvider>
+                  <DashboardLayoutWrapper>{children}</DashboardLayoutWrapper>
+                </ReactQueryProvider>
               </WalletConnectionGuard>
             </PersistGate>
           </Provider>
@@ -79,4 +83,15 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
       </body>
     </html>
   )
+}
+
+function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const isLoginPage = pathname === '/login' || pathname === '/'
+
+  if (isLoginPage) {
+    return <>{children}</>
+  }
+
+  return <DashboardLayout>{children}</DashboardLayout>
 }

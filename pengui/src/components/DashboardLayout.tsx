@@ -4,19 +4,23 @@ import { useWalletConnection } from '@/hooks/useWalletConnection'
 import { getThemeClasses } from '@/lib/theme'
 import { ConnectButton } from '@chia/wallet-connect'
 import {
-  BarChart,
   Bell,
   Home,
-  Layers,
   Menu,
   Moon,
   Search,
-  Settings,
   Sun,
   User,
-  Zap,
+  Wallet,
+  FileText,
+  Handshake,
+  TrendingUp,
+  FileCheck,
+  PiggyBank,
+  UserCircle,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import PenguinLogo from './PenguinLogo'
 
@@ -27,10 +31,11 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [activeItem, setActiveItem] = useState('dashboard')
   const [mounted, setMounted] = useState(false)
   const { theme: currentTheme, systemTheme, setTheme } = useTheme()
   const { isConnected } = useWalletConnection()
+  const pathname = usePathname()
+  const router = useRouter()
 
   const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
   const t = getThemeClasses(isDark)
@@ -44,12 +49,31 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [])
 
   const menuItems = [
-    { id: 'dashboard', icon: Home, label: 'Dashboard' },
-    { id: 'analytics', icon: BarChart, label: 'Analytics' },
-    { id: 'projects', icon: Layers, label: 'Projects' },
-    { id: 'automation', icon: Zap, label: 'Automation' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
+    { id: 'dashboard', icon: Home, label: 'Dashboard', path: '/dashboard' },
+    { id: 'offers', icon: Handshake, label: 'Offers', path: '/offers' },
+    { id: 'trading', icon: TrendingUp, label: 'Trading', path: '/trading' },
+    { id: 'loans', icon: FileText, label: 'Loans', path: '/loans' },
+    {
+      id: 'option-contracts',
+      icon: FileCheck,
+      label: 'Option Contracts',
+      path: '/option-contracts',
+    },
+    { id: 'piggy-bank', icon: PiggyBank, label: 'Piggy Bank', path: '/piggy-bank' },
+    { id: 'wallet', icon: Wallet, label: 'Wallet', path: '/wallet' },
+    { id: 'profile', icon: UserCircle, label: 'Profile', path: '/profile' },
   ]
+
+  const getActiveItem = () => {
+    return menuItems.find((item) => pathname === item.path)?.id || 'dashboard'
+  }
+
+  const activeItem = getActiveItem()
+
+  const handleNavigation = (path: string) => {
+    router.push(path)
+    setSidebarOpen(false)
+  }
 
   if (!mounted) {
     return null
@@ -114,10 +138,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             return (
               <button
                 key={item.id}
-                onClick={() => {
-                  setActiveItem(item.id)
-                  setSidebarOpen(false)
-                }}
+                onClick={() => handleNavigation(item.path)}
                 className={`flex items-center ${
                   sidebarCollapsed
                     ? 'lg:w-10 lg:h-10 lg:mx-auto lg:justify-center lg:items-center lg:px-0 lg:py-0 lg:gap-0'
@@ -328,7 +349,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-auto p-4 lg:p-8">{children}</main>
+        <main className="flex-1 overflow-auto p-2 lg:p-4 pt-1 lg:pt-2">{children}</main>
       </div>
     </div>
   )
