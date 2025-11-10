@@ -4,7 +4,7 @@ import { getThemeClasses } from '@/lib/theme'
 import type { LoanOffer, SettledLoan } from '@/types/loan.types'
 import { DollarSign, TrendingUp, Percent, Briefcase } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useState, useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 
 interface LoanIncomeAnalyticsProps {
   loans?: LoanOffer[]
@@ -15,14 +15,9 @@ export default function LoanIncomeAnalytics({
   loans = [],
   settledLoans = [],
 }: LoanIncomeAnalyticsProps) {
-  const [mounted, setMounted] = useState(false)
   const { theme: currentTheme, systemTheme } = useTheme()
   const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
   const t = getThemeClasses(isDark)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   const totalIncome = useMemo(() => {
     return settledLoans.reduce((sum, loan) => sum + loan.totalInterest, 0)
@@ -48,10 +43,6 @@ export default function LoanIncomeAnalytics({
       return sum + loan.amount * monthlyRate
     }, 0)
   }, [activeLoans])
-
-  if (!mounted) {
-    return null
-  }
 
   return (
     <div className="space-y-2">

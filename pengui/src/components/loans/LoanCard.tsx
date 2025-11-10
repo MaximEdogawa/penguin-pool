@@ -14,7 +14,6 @@ import {
 import type { LoanOffer, LoanAgreement } from '@/types/loan.types'
 import { ChevronUp, Clock, Shield, DollarSign, Eye, CreditCard } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useState, useEffect } from 'react'
 
 interface LoanCardProps {
   loan: LoanOffer | LoanAgreement
@@ -31,18 +30,9 @@ export default function LoanCard({
   onTakeLoan,
   onViewDetails,
 }: LoanCardProps) {
-  const [mounted, setMounted] = useState(false)
   const { theme: currentTheme, systemTheme } = useTheme()
   const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
   const t = getThemeClasses(isDark)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return null
-  }
 
   const isAgreement = 'monthlyPayment' in loan
   const totalInterest = isAgreement

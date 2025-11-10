@@ -2,10 +2,10 @@
 
 import { getThemeClasses } from '@/lib/theme'
 import type { LoanOffer, SettledLoan } from '@/types/loan.types'
-import LoanCard from './LoanCard'
-import { Shield, TrendingUp, CheckCircle, Clock } from 'lucide-react'
+import { CheckCircle, Clock, Shield, TrendingUp } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useState, useEffect, useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import LoanCard from './LoanCard'
 
 interface MyCreatedLoansProps {
   loans?: LoanOffer[]
@@ -18,17 +18,12 @@ export default function MyCreatedLoans({
   settledLoans = [],
   onViewDetails,
 }: MyCreatedLoansProps) {
-  const [mounted, setMounted] = useState(false)
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'funded' | 'settled'>(
     'all'
   )
   const { theme: currentTheme, systemTheme } = useTheme()
   const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
   const t = getThemeClasses(isDark)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   const activeLoans = useMemo(() => loans.filter((loan) => loan.status === 'available'), [loans])
   const fundedLoans = useMemo(() => loans.filter((loan) => loan.status === 'funded'), [loans])
@@ -48,10 +43,6 @@ export default function MyCreatedLoans({
     () => settledLoans.reduce((sum, loan) => sum + loan.totalInterest, 0),
     [settledLoans]
   )
-
-  if (!mounted) {
-    return null
-  }
 
   const statusFilters = [
     { label: `All (${loans.length + settledLoans.length})`, value: 'all' as const },

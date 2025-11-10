@@ -4,14 +4,13 @@ import { getThemeClasses } from '@/lib/theme'
 import type { CreateLoanForm } from '@/types/loan.types'
 import { Calendar, Clock, DollarSign, Shield } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 interface CreateLoanFormProps {
   onSubmit?: (formData: CreateLoanForm) => void
 }
 
 export default function CreateLoanFormComponent({ onSubmit }: CreateLoanFormProps) {
-  const [mounted, setMounted] = useState(false)
   const { theme: currentTheme, systemTheme } = useTheme()
   const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
   const t = getThemeClasses(isDark)
@@ -41,14 +40,6 @@ export default function CreateLoanFormComponent({ onSubmit }: CreateLoanFormProp
   })
 
   const [interestRateValue, setInterestRateValue] = useState(8.0)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return null
-  }
 
   const currencyOptions = [
     { label: 'USDC', value: 'USDC' },
