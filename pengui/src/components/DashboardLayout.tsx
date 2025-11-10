@@ -1,19 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useWalletConnection } from '@/hooks/useWalletConnection'
+import { useWalletFingerprint } from '@/hooks/useWalletFingerprint'
+import { ConnectButton } from '@chia/wallet-connect'
 import {
+  BarChart,
+  Bell,
+  ChevronRight,
+  Home,
+  Layers,
   Menu,
   Search,
-  Bell,
-  User,
-  Home,
-  BarChart,
   Settings,
-  Layers,
+  User,
   Zap,
-  ChevronRight,
 } from 'lucide-react'
-import { ConnectButton } from '@chia/wallet-connect'
+import { useState } from 'react'
 import PenguinLogo from './PenguinLogo'
 
 interface DashboardLayoutProps {
@@ -23,6 +25,12 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeItem, setActiveItem] = useState('dashboard')
+  const { isConnected } = useWalletConnection()
+  const fingerprint = useWalletFingerprint()
+
+  const formatFingerprint = (fp: string): string => {
+    return fp.length > 10 ? `${fp.slice(0, 6)}...${fp.slice(-4)}` : fp
+  }
 
   const menuItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
@@ -138,7 +146,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {/* Wallet Connect Component */}
             <div className="flex items-center">
               <ConnectButton
-                connectText="Connect Wallet"
+                connectText={
+                  isConnected && fingerprint ? formatFingerprint(fingerprint) : 'Connect Wallet'
+                }
                 walletConnectIcon={
                   typeof window !== 'undefined'
                     ? `${window.location.origin}/penguin-pool.svg`
@@ -158,7 +168,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       : '/icons/icon-192x192.png',
                   ],
                 }}
-                className="shadow-lg"
+                className={`shadow-lg ${
+                  isConnected && fingerprint ? '!text-xs !font-normal !opacity-70 !font-mono' : ''
+                }`}
               />
             </div>
           </div>
