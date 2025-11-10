@@ -16,9 +16,10 @@ export default function LoansPageHeader({ isLender, onToggleRole }: LoansPageHea
 
   return (
     <div
-      className={`mb-2 backdrop-blur-[40px] ${t.card} rounded-2xl p-3 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
+      className={`mb-2 backdrop-blur-[40px] ${t.card} rounded-2xl p-3 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 flex-shrink-0 ${
         isDark ? 'bg-white/[0.03]' : 'bg-white/30'
       }`}
+      style={{ minHeight: '80px' }}
     >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">

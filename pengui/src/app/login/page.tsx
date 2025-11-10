@@ -6,9 +6,14 @@ import { ConnectButton } from '@chia/wallet-connect'
 export default function LoginPage() {
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-3 py-8 sm:px-4 sm:py-12 md:px-6 md:py-16 lg:px-20 xl:px-80 backdrop-blur-3xl bg-cover bg-center bg-no-repeat relative overflow-hidden"
+      className="min-h-screen flex items-center justify-center px-3 py-8 sm:px-4 sm:py-12 md:px-6 md:py-16 lg:px-20 xl:px-80 backdrop-blur-3xl bg-cover bg-center bg-no-repeat relative overflow-hidden w-full"
       style={{
         backgroundImage: "url('/signin-glass.jpg')",
+        width: '100vw',
+        maxWidth: '100vw',
+        margin: 0,
+        padding: 0,
+        borderRight: 'none',
       }}
     >
       {/* Enhanced gradient overlay */}

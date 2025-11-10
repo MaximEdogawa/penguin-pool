@@ -27,9 +27,10 @@ export default function LoansTabNavigation({
 
   return (
     <div
-      className={`mb-2 backdrop-blur-[40px] ${t.card} rounded-xl p-1 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
+      className={`mb-2 backdrop-blur-[40px] ${t.card} rounded-xl p-1 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 flex-shrink-0 ${
         isDark ? 'bg-white/[0.03]' : 'bg-white/30'
       }`}
+      style={{ minHeight: '40px' }}
     >
       <div className="flex flex-wrap gap-1">
         {tabs.map((tab) => {

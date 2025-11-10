@@ -32,6 +32,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [isScrolling, setIsScrolling] = useState(false)
   const { theme: currentTheme, systemTheme, setTheme } = useTheme()
   const { isConnected } = useWalletConnection()
   const pathname = usePathname()
@@ -47,6 +48,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Handle scroll detection for modern scrollbar
+  useEffect(() => {
+    const mainElement = document.querySelector('main')
+    if (!mainElement) return
+
+    let scrollTimeout: NodeJS.Timeout
+    const handleScroll = () => {
+      setIsScrolling(true)
+      clearTimeout(scrollTimeout)
+      scrollTimeout = setTimeout(() => {
+        setIsScrolling(false)
+      }, 1000) // Hide scrollbar 1 second after scrolling stops
+    }
+
+    mainElement.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      mainElement.removeEventListener('scroll', handleScroll)
+      clearTimeout(scrollTimeout)
+    }
+  }, [mounted])
 
   const menuItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard', path: '/dashboard' },
@@ -80,10 +102,41 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className={`flex h-screen w-full ${t.bg} overflow-hidden transition-colors duration-300`}>
+    <div
+      className={`flex h-screen w-full ${t.bg} overflow-hidden transition-colors duration-300`}
+      style={{
+        width: '100vw',
+        maxWidth: '100vw',
+        margin: 0,
+        padding: 0,
+        borderRight: 'none',
+        right: 0,
+        overflow: 'hidden',
+      }}
+    >
       {/* Subtle static background gradient */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className={`absolute inset-0 bg-gradient-to-br ${t.gradientBg}`}></div>
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          width: '100vw',
+          maxWidth: '100vw',
+          right: 0,
+          margin: 0,
+          padding: 0,
+          borderRight: 'none',
+        }}
+      >
+        <div
+          className={`absolute inset-0 bg-gradient-to-br ${t.gradientBg}`}
+          style={{
+            width: '100vw',
+            maxWidth: '100vw',
+            right: 0,
+            margin: 0,
+            padding: 0,
+            borderRight: 'none',
+          }}
+        ></div>
       </div>
 
       {/* Mobile Overlay */}
@@ -100,7 +153,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 ${
           sidebarCollapsed ? 'lg:w-14' : 'lg:w-56'
-        } w-64 transition-all duration-300 ease-in-out backdrop-blur-3xl ${t.sidebar} flex flex-col`}
+        } w-64 transition-all duration-300 ease-in-out backdrop-blur-3xl ${t.sidebar} flex flex-col overflow-hidden flex-shrink-0`}
       >
         {/* Logo */}
         <div
@@ -275,10 +328,31 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden relative z-10 w-full">
-        {/* Top Bar */}
+      <div
+        className="flex-1 flex flex-col overflow-hidden relative z-10 w-full"
+        style={{
+          width: '100%',
+          maxWidth: '100%',
+          overflow: 'hidden',
+          marginRight: 0,
+          paddingRight: 0,
+          borderRight: 'none',
+          position: 'relative',
+        }}
+      >
+        {/* Top Bar - Fixed, not scrollable, overlays scrollbar - Top layer */}
         <header
-          className={`h-12 backdrop-blur-3xl ${t.card} border-b ${t.border} flex items-center justify-between px-2 sm:px-3 lg:px-4 gap-1.5 sm:gap-2 transition-all duration-300`}
+          className={`h-12 backdrop-blur-3xl ${t.card} border-b ${t.border} flex items-center justify-between pl-2 sm:pl-3 lg:pl-4 pr-2 sm:pr-3 lg:pr-4 gap-1.5 sm:gap-2 transition-all duration-300 w-full flex-shrink-0`}
+          style={{
+            borderRight: 'none',
+            marginRight: 0,
+            paddingRight: 0,
+            overflow: 'hidden',
+            width: '100%',
+            maxWidth: '100%',
+            position: 'relative',
+            zIndex: 9999,
+          }}
         >
           <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
             <button
@@ -348,12 +422,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </header>
 
-        {/* Content Area */}
+        {/* Content Area - Only this area is scrollable, scrollbar appears under header */}
         <main
-          className="flex-1 overflow-auto pt-1 lg:pt-2 pb-2 lg:pb-4 pl-3 lg:pl-4 w-full"
-          style={{ scrollbarGutter: 'stable', paddingRight: 0 }}
+          className={`flex-1 overflow-y-auto overflow-x-hidden pt-1 lg:pt-2 pb-2 lg:pb-4 pl-2 lg:pl-3 pr-3 w-full scrollbar-modern ${isScrolling ? 'scrollbar-visible' : ''}`}
+          style={{
+            borderRight: 'none',
+            width: '100%',
+            maxWidth: '100%',
+            position: 'relative',
+            zIndex: 1,
+            minHeight: 0,
+            scrollbarGutter: 'auto',
+          }}
         >
-          <div className="w-full max-w-full">{children}</div>
+          <div className="w-full max-w-full h-full flex flex-col">{children}</div>
         </main>
       </div>
     </div>
