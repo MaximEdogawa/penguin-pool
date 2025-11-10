@@ -1,5 +1,5 @@
 /**
- * Theme configuration for Apple-style glass morphism design
+ * Theme configuration for macOS-style glass morphism design with icy blue/green tones
  */
 export const theme = {
   dark: {
@@ -15,6 +15,10 @@ export const theme = {
     sidebar: 'bg-white/5',
     sidebarBorder: 'border-white/10',
     input: 'bg-white/5 border-white/10',
+    accent: 'from-cyan-500 to-blue-500',
+    accentLight: 'from-cyan-400 to-blue-400',
+    accentHover: 'hover:from-cyan-500/20 hover:to-blue-500/20',
+    focusRing: 'focus:ring-cyan-500/50',
   },
   light: {
     bg: 'bg-gradient-to-br from-slate-300 via-slate-200 to-slate-300',
@@ -29,6 +33,10 @@ export const theme = {
     sidebar: 'bg-white/30',
     sidebarBorder: 'border-white/40',
     input: 'bg-white/50 border-white/40',
+    accent: 'from-cyan-600 to-blue-600',
+    accentLight: 'from-cyan-500 to-blue-500',
+    accentHover: 'hover:from-cyan-600/20 hover:to-blue-600/20',
+    focusRing: 'focus:ring-cyan-600/50',
   },
 }
 

@@ -6,8 +6,6 @@ import { ConnectButton } from '@chia/wallet-connect'
 import {
   BarChart,
   Bell,
-  ChevronRight,
-  Fingerprint,
   Home,
   Layers,
   Menu,
@@ -77,33 +75,37 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         className={`${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 ${
-          sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'
+          sidebarCollapsed ? 'lg:w-14' : 'lg:w-56'
         } w-64 transition-all duration-300 ease-in-out backdrop-blur-3xl ${t.sidebar} border-r ${t.sidebarBorder} flex flex-col`}
       >
         {/* Logo */}
         <div
-          className={`h-16 flex items-center justify-center border-b ${t.border} transition-all duration-300 ${
-            sidebarCollapsed ? 'lg:px-0' : 'px-6'
+          className={`h-12 flex items-center justify-center border-b ${t.border} transition-all duration-300 ${
+            sidebarCollapsed ? 'lg:px-0' : 'px-4'
           }`}
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center relative overflow-hidden flex-shrink-0 shadow-lg">
-              <PenguinLogo size={24} className="text-white" />
+          {sidebarCollapsed ? (
+            <div className="flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
+                <PenguinLogo size={24} className={`${t.text} rounded-full`} />
+              </div>
             </div>
-            <span
-              className={`font-bold ${t.text} text-xl transition-all duration-300 whitespace-nowrap ${
-                sidebarCollapsed ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden' : 'opacity-100'
-              }`}
-            >
-              Pengui
-            </span>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
+                <PenguinLogo size={20} className={`${t.text} rounded-full`} />
+              </div>
+              <span className="font-semibold text-base transition-all duration-300 whitespace-nowrap">
+                Pengui
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Menu Items */}
         <nav
-          className={`flex-1 space-y-1 transition-all duration-300 ${
-            sidebarCollapsed ? 'lg:p-2' : 'p-4'
+          className={`flex-1 space-y-0.5 transition-all duration-300 ${
+            sidebarCollapsed ? 'lg:p-1.5' : 'p-2'
           }`}
         >
           {menuItems.map((item) => {
@@ -116,32 +118,41 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   setActiveItem(item.id)
                   setSidebarOpen(false)
                 }}
-                className={`w-full flex items-center ${
+                className={`flex items-center ${
                   sidebarCollapsed
-                    ? 'lg:justify-center lg:px-0 lg:py-2.5'
-                    : 'lg:justify-start lg:px-4'
-                } justify-start gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden ${
-                  isActive ? `${t.card} ${t.text} shadow-lg` : `${t.textSecondary} ${t.cardHover}`
+                    ? 'lg:w-10 lg:h-10 lg:mx-auto lg:justify-center lg:items-center lg:px-0 lg:py-0 lg:gap-0'
+                    : 'w-full lg:justify-start lg:px-2.5'
+                } justify-start gap-2.5 px-2.5 py-2 ${
+                  sidebarCollapsed ? 'lg:rounded-full' : 'rounded-lg'
+                } transition-all duration-200 group relative overflow-hidden ${
+                  isActive ? `${t.text}` : `${t.textSecondary} ${t.cardHover}`
                 }`}
                 title={sidebarCollapsed ? item.label : undefined}
               >
+                {/* Glass highlight background for active item */}
                 {isActive && (
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-pink-500 rounded-r-full" />
+                  <>
+                    <div
+                      className={`absolute inset-0 backdrop-blur-xl bg-white/10 ${
+                        sidebarCollapsed ? 'lg:rounded-full' : 'rounded-lg'
+                      } border border-white/10`}
+                    />
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-b from-white/5 to-transparent ${
+                        sidebarCollapsed ? 'lg:rounded-full' : 'rounded-lg'
+                      }`}
+                    />
+                  </>
                 )}
                 <Icon
-                  className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${
-                    isActive ? 'scale-110' : 'group-hover:scale-110'
-                  }`}
+                  className={`w-4 h-4 flex-shrink-0 transition-all duration-200 ${
+                    sidebarCollapsed ? 'lg:absolute lg:inset-0 lg:m-auto' : 'relative'
+                  } ${isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`}
                 />
-                <span
-                  className={`font-medium text-sm transition-all duration-300 whitespace-nowrap ${
-                    sidebarCollapsed ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden' : 'opacity-100'
-                  }`}
-                >
-                  {item.label}
-                </span>
-                {isActive && !sidebarCollapsed && (
-                  <ChevronRight className="w-4 h-4 ml-auto flex-shrink-0" />
+                {!sidebarCollapsed && (
+                  <span className="relative font-normal text-xs transition-all duration-300 whitespace-nowrap">
+                    {item.label}
+                  </span>
                 )}
               </button>
             )
@@ -151,35 +162,58 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* User Profile */}
         <div
           className={`border-t ${t.border} transition-all duration-300 ${
-            sidebarCollapsed ? 'lg:p-2' : 'p-3'
+            sidebarCollapsed ? 'lg:p-1.5' : 'p-2'
           }`}
         >
           <div
             className={`flex items-center ${
-              sidebarCollapsed ? 'lg:justify-center lg:px-0' : 'lg:justify-start lg:px-3'
-            } justify-between gap-2 px-3 py-1.5 rounded-xl ${t.card} ${t.cardHover} transition-all cursor-pointer group`}
+              sidebarCollapsed
+                ? 'lg:w-10 lg:h-10 lg:mx-auto lg:justify-center lg:items-center lg:px-0 lg:py-0 lg:gap-0'
+                : 'lg:justify-start lg:px-2.5'
+            } justify-between gap-2.5 px-2.5 py-2 ${
+              sidebarCollapsed ? 'lg:rounded-full' : 'rounded-lg'
+            } transition-all cursor-pointer group relative overflow-hidden ${t.cardHover}`}
             title={sidebarCollapsed ? 'User' : undefined}
           >
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-white/20 group-hover:ring-white/30 transition-all">
-                <User className="w-4 h-4 text-white" />
+            {/* Glass effect overlay - enhanced */}
+            <div
+              className={`absolute inset-0 backdrop-blur-xl bg-white/10 ${
+                sidebarCollapsed ? 'lg:rounded-full' : 'rounded-lg'
+              } border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
+            />
+            <div
+              className={`absolute inset-0 bg-gradient-to-b from-white/5 to-transparent ${
+                sidebarCollapsed ? 'lg:rounded-full' : 'rounded-lg'
+              } opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none`}
+            />
+            {sidebarCollapsed ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div
+                  className={`w-8 h-8 rounded-lg bg-gradient-to-br ${t.accent} flex items-center justify-center flex-shrink-0 shadow-md backdrop-blur-xl`}
+                >
+                  <User className="w-4 h-4 text-white" />
+                </div>
               </div>
-              <div
-                className={`transition-all duration-300 whitespace-nowrap ${
-                  sidebarCollapsed ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden' : 'opacity-100'
-                }`}
-              >
-                <p className={`text-xs font-medium ${t.text}`}>User</p>
-                <p className={`text-[10px] ${t.textSecondary}`}>Premium</p>
+            ) : (
+              <div className="flex items-center gap-2.5 flex-1 min-w-0 relative">
+                <div
+                  className={`w-6 h-6 rounded-lg bg-gradient-to-br ${t.accent} flex items-center justify-center flex-shrink-0 shadow-md backdrop-blur-xl`}
+                >
+                  <User className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div className="transition-all duration-300 whitespace-nowrap">
+                  <p className={`text-xs font-normal ${t.text}`}>User</p>
+                  <p className={`text-[10px] ${t.textSecondary}`}>Premium</p>
+                </div>
               </div>
-            </div>
+            )}
             {/* Theme Toggle */}
             <button
               onClick={(e) => {
                 e.stopPropagation()
                 toggleTheme()
               }}
-              className={`relative inline-flex h-4 w-7 items-center rounded-full backdrop-blur-3xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500/50 overflow-hidden flex-shrink-0 ${
+              className={`relative inline-flex h-4 w-7 items-center rounded-full backdrop-blur-3xl transition-all duration-300 focus:outline-none focus:ring-2 ${t.focusRing} overflow-hidden flex-shrink-0 ${
                 sidebarCollapsed
                   ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden lg:pointer-events-none'
                   : ''
@@ -223,9 +257,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="flex-1 flex flex-col overflow-hidden relative z-10">
         {/* Top Bar */}
         <header
-          className={`h-16 backdrop-blur-3xl ${t.card} border-b ${t.border} flex items-center justify-between px-2 sm:px-4 lg:px-6 gap-1.5 sm:gap-2 lg:gap-3 transition-all duration-300`}
+          className={`h-12 backdrop-blur-3xl ${t.card} border-b ${t.border} flex items-center justify-between px-2 sm:px-3 lg:px-4 gap-1.5 sm:gap-2 transition-all duration-300`}
         >
-          <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
             <button
               onClick={() => {
                 // On mobile: toggle sidebar open/closed
@@ -236,34 +270,36 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   setSidebarOpen(!sidebarOpen)
                 }
               }}
-              className={`p-1.5 sm:p-2 rounded-xl ${t.cardHover} transition-colors ${t.textSecondary} ${t.textHover} flex-shrink-0`}
+              className={`p-1.5 rounded-lg ${t.cardHover} transition-colors ${t.textSecondary} ${t.textHover} flex-shrink-0`}
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-4 h-4" />
             </button>
 
             {/* Search Bar - Responsive design */}
-            <div className="relative flex-1 max-w-full min-w-0 mr-1 sm:mr-0">
+            <div className="relative flex-1 max-w-full min-w-0">
               <Search
-                className={`w-4 h-4 sm:w-5 sm:h-5 absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 ${t.textSecondary} pointer-events-none z-10`}
+                className={`w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 ${t.textSecondary} pointer-events-none z-10`}
               />
               <input
                 type="text"
                 placeholder="Search..."
-                className={`w-full pl-8 sm:pl-10 pr-2 sm:pr-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-xl backdrop-blur-xl ${t.input} ${t.text} placeholder:${t.textSecondary} focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all`}
+                className={`w-full pl-9 pr-3 py-1.5 text-sm rounded-lg backdrop-blur-xl ${t.input} ${t.text} placeholder:${t.textSecondary} focus:outline-none focus:ring-2 ${t.focusRing} transition-all`}
               />
             </div>
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-3 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <button
-              className={`p-1.5 sm:p-2 rounded-xl ${t.cardHover} transition-colors ${t.textSecondary} ${t.textHover} relative flex-shrink-0`}
+              className={`p-1.5 rounded-lg ${t.cardHover} transition-colors ${t.textSecondary} ${t.textHover} relative flex-shrink-0`}
             >
-              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-pink-500 rounded-full"></span>
+              <Bell className="w-4 h-4" />
+              <span
+                className={`absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-gradient-to-br ${t.accent} rounded-full`}
+              ></span>
             </button>
             {/* Wallet Connect Component */}
-            <div className="relative flex items-center flex-shrink-0">
+            <div className="relative flex items-center flex-shrink-0 scale-125">
               <ConnectButton
                 connectText={isConnected ? '' : 'Connect Wallet'}
                 walletConnectIcon={
@@ -287,9 +323,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 }}
                 className="shadow-lg"
               />
-              {isConnected && (
-                <Fingerprint className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-green-400 pointer-events-none" />
-              )}
             </div>
           </div>
         </header>
