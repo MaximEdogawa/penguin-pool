@@ -5,19 +5,19 @@ import { getThemeClasses } from '@/lib/theme'
 import { ConnectButton } from '@chia/wallet-connect'
 import {
   Bell,
+  FileCheck,
+  FileText,
+  Handshake,
   Home,
   Menu,
   Moon,
+  PiggyBank,
   Search,
   Sun,
-  User,
-  Wallet,
-  FileText,
-  Handshake,
   TrendingUp,
-  FileCheck,
-  PiggyBank,
+  User,
   UserCircle,
+  Wallet,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { usePathname, useRouter } from 'next/navigation'
@@ -80,7 +80,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className={`flex h-screen ${t.bg} overflow-hidden transition-colors duration-300`}>
+    <div className={`flex h-screen w-full ${t.bg} overflow-hidden transition-colors duration-300`}>
       {/* Subtle static background gradient */}
       <div className="fixed inset-0 pointer-events-none">
         <div className={`absolute inset-0 bg-gradient-to-br ${t.gradientBg}`}></div>
@@ -100,7 +100,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 ${
           sidebarCollapsed ? 'lg:w-14' : 'lg:w-56'
-        } w-64 transition-all duration-300 ease-in-out backdrop-blur-3xl ${t.sidebar} border-r ${t.sidebarBorder} flex flex-col`}
+        } w-64 transition-all duration-300 ease-in-out backdrop-blur-3xl ${t.sidebar} flex flex-col`}
       >
         {/* Logo */}
         <div
@@ -275,7 +275,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
+      <div className="flex-1 flex flex-col overflow-hidden relative z-10 w-full">
         {/* Top Bar */}
         <header
           className={`h-12 backdrop-blur-3xl ${t.card} border-b ${t.border} flex items-center justify-between px-2 sm:px-3 lg:px-4 gap-1.5 sm:gap-2 transition-all duration-300`}
@@ -349,7 +349,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-auto p-2 lg:p-4 pt-1 lg:pt-2">{children}</main>
+        <main
+          className="flex-1 overflow-auto pt-1 lg:pt-2 pb-2 lg:pb-4 pl-3 lg:pl-4 w-full"
+          style={{ scrollbarGutter: 'stable', paddingRight: 0 }}
+        >
+          <div className="w-full max-w-full">{children}</div>
+        </main>
       </div>
     </div>
   )

@@ -66,11 +66,11 @@ export default function ProfilePage() {
 
       {/* Tabs */}
       <div
-        className={`mb-2 backdrop-blur-[40px] ${t.card} rounded-2xl p-1.5 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
+        className={`mb-2 backdrop-blur-[40px] ${t.card} rounded-xl p-0.5 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
           isDark ? 'bg-white/[0.03]' : 'bg-white/30'
         }`}
       >
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-0.5 min-h-[28px] items-center">
           {tabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -78,11 +78,11 @@ export default function ProfilePage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 font-medium text-xs relative overflow-hidden ${
+                className={`flex items-center justify-center gap-1 px-2 py-0.5 rounded-lg transition-opacity duration-200 font-medium text-[11px] relative overflow-hidden flex-shrink-0 h-6 ${
                   isActive
                     ? isDark
-                      ? 'bg-white/10 text-white backdrop-blur-xl border border-white/10'
-                      : 'bg-white/50 text-slate-800 backdrop-blur-xl border border-white/60'
+                      ? 'bg-white/10 text-white backdrop-blur-xl'
+                      : 'bg-white/50 text-slate-800 backdrop-blur-xl'
                     : `${t.textSecondary} ${t.cardHover}`
                 }`}
               >
@@ -91,21 +91,21 @@ export default function ProfilePage() {
                     <div
                       className={`absolute inset-0 backdrop-blur-xl ${
                         isDark ? 'bg-white/10' : 'bg-white/30'
-                      } rounded-xl`}
+                      } rounded-lg`}
                     />
                     <div
                       className={`absolute inset-0 bg-gradient-to-b ${
                         isDark ? 'from-white/5' : 'from-white/20'
-                      } to-transparent rounded-xl`}
+                      } to-transparent rounded-lg`}
                     />
                   </>
                 )}
                 <Icon
-                  size={14}
+                  size={12}
                   strokeWidth={2.5}
-                  className={`relative ${isActive ? 'opacity-100' : 'opacity-70'}`}
+                  className={`relative flex-shrink-0 ${isActive ? 'opacity-100' : 'opacity-70'}`}
                 />
-                <span className="relative">{tab.label}</span>
+                <span className="relative whitespace-nowrap">{tab.label}</span>
               </button>
             )
           })}
@@ -114,7 +114,7 @@ export default function ProfilePage() {
 
       {/* Tab Content */}
       <div
-        className={`backdrop-blur-[40px] ${t.card} rounded-2xl p-4 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
+        className={`backdrop-blur-[40px] ${t.card} rounded-2xl p-4 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 min-h-[400px] ${
           isDark ? 'bg-white/[0.03]' : 'bg-white/30'
         }`}
       >

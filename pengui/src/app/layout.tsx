@@ -57,7 +57,7 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
       </head>
-      <body className={cn(inter.className, 'max-w-screen overflow-x-hidden')}>
+      <body className={cn(inter.className, 'w-full overflow-x-hidden')}>
         <Script
           id="disable-lit-dev-mode"
           strategy="beforeInteractive"
