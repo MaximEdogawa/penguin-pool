@@ -7,7 +7,7 @@ import { filterLoans } from '@/hooks/useLoanFilters'
 import { useLoansData } from '@/hooks/useLoansData'
 import LoansPageHeader from '@/components/loans/LoansPageHeader'
 import LoansTabNavigation from '@/components/loans/LoansTabNavigation'
-import LoanFilters from '@/components/loans/LoanFilters'
+import LoanFiltersComponent from '@/components/loans/LoanFilters'
 import AvailableLoansList from '@/components/loans/AvailableLoansList'
 import MyTakenLoansList from '@/components/loans/MyTakenLoansList'
 import CreateLoanFormComponent from '@/components/loans/CreateLoanForm'
@@ -70,7 +70,7 @@ export default function LoansPage() {
       <LoansTabNavigation tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
       {activeTab === 'available' && userRole === 'taker' && (
-        <LoanFilters
+        <LoanFiltersComponent
           filters={filters}
           amountFilter={amountFilter}
           onFiltersChange={setFilters}

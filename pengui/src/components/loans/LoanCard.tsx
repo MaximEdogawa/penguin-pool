@@ -46,7 +46,7 @@ export default function LoanCard({
     : calculateMonthlyPayment(loan.amount, loan.interestRate, loan.duration)
 
   const assetTypeColors = {
-    ERC20: isDark
+    CAT: isDark
       ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
       : 'bg-blue-100 text-blue-800 border-blue-300',
     NFT: isDark
@@ -154,7 +154,7 @@ export default function LoanCard({
           <span className={`text-xl font-bold ${t.text}`}>{loan.collateralRatio}%</span>
           <span
             className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-              loan.collateralAssetType === 'ERC20'
+              loan.collateralAssetType === 'CAT' || loan.collateralAssetType === 'XCH'
                 ? isDark
                   ? 'bg-orange-500/20 text-orange-300'
                   : 'bg-orange-100 text-orange-800'

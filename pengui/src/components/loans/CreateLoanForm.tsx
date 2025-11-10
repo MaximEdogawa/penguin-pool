@@ -16,53 +16,47 @@ export default function CreateLoanFormComponent({ onSubmit }: CreateLoanFormProp
   const t = getThemeClasses(isDark)
 
   const [formData, setFormData] = useState<CreateLoanForm>({
-    assetType: 'ERC20',
+    assetType: 'CAT',
     amount: '',
-    currency: 'USDC',
+    currency: 'b.USDC',
     interestRate: '8.0',
     duration: '12',
-    collateralAssetType: 'ERC20',
-    collateralType: 'ETH',
+    collateralAssetType: 'XCH',
+    collateralType: 'XCH',
     collateralRatio: '150',
     optionType: 'Call',
     strikePrice: '',
     validUntil: '',
     nftCollection: '',
     nftTokenId: '',
-    optionUnderlying: 'ETH',
+    optionUnderlying: 'XCH',
     optionContractType: 'Call',
     optionStrike: '',
     optionQuantity: '',
     collateralNftCollection: '',
     collateralNftFloor: '',
-    collateralOptionUnderlying: 'ETH',
+    collateralOptionUnderlying: 'XCH',
     collateralOptionType: 'Call',
   })
 
+  // Keep interest rate as number for slider (needs number type), sync with formData.interestRate (string)
   const [interestRateValue, setInterestRateValue] = useState(8.0)
 
   const currencyOptions = [
-    { label: 'USDC', value: 'USDC' },
-    { label: 'USDT', value: 'USDT' },
-    { label: 'DAI', value: 'DAI' },
+    { label: 'b.USDC', value: 'b.USDC' },
+    { label: 'b.USDT', value: 'b.USDT' },
+    { label: 'XCH', value: 'XCH' },
   ]
 
-  const collateralAssets = [
-    { label: 'ETH', value: 'ETH' },
-    { label: 'BTC', value: 'BTC' },
-    { label: 'SOL', value: 'SOL' },
-  ]
+  const collateralAssets = [{ label: 'XCH', value: 'XCH' }]
 
   const nftCollections = [
-    { label: 'BAYC', value: 'BAYC' },
-    { label: 'CryptoPunks', value: 'CryptoPunks' },
-    { label: 'Azuki', value: 'Azuki' },
+    { label: 'ChiaPunks', value: 'ChiaPunks' },
+    { label: 'ChiaArt', value: 'ChiaArt' },
+    { label: 'ChiaCollectibles', value: 'ChiaCollectibles' },
   ]
 
-  const optionUnderlyings = [
-    { label: 'ETH', value: 'ETH' },
-    { label: 'BTC', value: 'BTC' },
-  ]
+  const optionUnderlyings = [{ label: 'XCH', value: 'XCH' }]
 
   const optionTypes = [
     { label: 'Call', value: 'Call' },
@@ -118,7 +112,7 @@ export default function CreateLoanFormComponent({ onSubmit }: CreateLoanFormProp
               Asset Type
             </label>
             <div className="grid grid-cols-3 gap-1.5">
-              {(['ERC20', 'NFT', 'Options'] as const).map((type) => (
+              {(['CAT', 'NFT', 'Options'] as const).map((type) => (
                 <button
                   key={type}
                   type="button"
@@ -139,8 +133,8 @@ export default function CreateLoanFormComponent({ onSubmit }: CreateLoanFormProp
             </div>
           </div>
 
-          {/* ERC20 Fields */}
-          {formData.assetType === 'ERC20' && (
+          {/* CAT Fields */}
+          {formData.assetType === 'CAT' && (
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className={`${t.textSecondary} text-[10px] font-medium mb-1 block`}>
@@ -395,8 +389,10 @@ export default function CreateLoanFormComponent({ onSubmit }: CreateLoanFormProp
                   value={interestRateValue}
                   onChange={(e) => {
                     const value = parseFloat(e.target.value)
-                    setInterestRateValue(value)
-                    setFormData({ ...formData, interestRate: value.toFixed(1) })
+                    if (!Number.isNaN(value)) {
+                      setInterestRateValue(value)
+                      setFormData({ ...formData, interestRate: value.toFixed(1) })
+                    }
                   }}
                   className="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-200 dark:bg-gray-700"
                 />
@@ -482,7 +478,7 @@ export default function CreateLoanFormComponent({ onSubmit }: CreateLoanFormProp
                 Collateral Type
               </label>
               <div className="grid grid-cols-3 gap-1.5">
-                {(['ERC20', 'NFT', 'Options'] as const).map((type) => (
+                {(['CAT', 'NFT', 'Options'] as const).map((type) => (
                   <button
                     key={type}
                     type="button"
@@ -503,7 +499,7 @@ export default function CreateLoanFormComponent({ onSubmit }: CreateLoanFormProp
               </div>
             </div>
 
-            {formData.collateralAssetType === 'ERC20' && (
+            {formData.collateralAssetType === 'CAT' && (
               <div>
                 <label className={`${t.textSecondary} text-[10px] font-medium mb-1 block`}>
                   Asset
@@ -557,7 +553,7 @@ export default function CreateLoanFormComponent({ onSubmit }: CreateLoanFormProp
                 </div>
                 <div>
                   <label className={`${t.textSecondary} text-[10px] font-medium mb-1 block`}>
-                    Floor Price (ETH)
+                    Floor Price (XCH)
                   </label>
                   <input
                     type="number"

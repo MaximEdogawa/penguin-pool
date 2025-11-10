@@ -4,26 +4,25 @@ export function detectChipType(query: string): FilterChip {
   const q = query.toUpperCase().trim()
 
   // Currency detection
-  if (['USDC', 'DAI', 'USDT'].includes(q)) {
+  if (['B.USDC', 'B.USDT', 'USDC', 'USDT', 'XCH'].includes(q) || q.startsWith('B.')) {
+    const currency = q.startsWith('B.') ? q : q === 'USDC' ? 'b.USDC' : q === 'USDT' ? 'b.USDT' : q
     return {
-      value: q,
-      label: q,
+      value: currency,
+      label: currency,
       type: 'Currency Filter',
-      description: `Show only loans in ${q}`,
+      description: `Show only loans in ${currency}`,
       colorClass: 'bg-blue-600 text-white',
       category: 'currency',
     }
   }
 
   // Collateral detection
-  if (['ETH', 'BTC', 'SOL', 'ETHEREUM', 'BITCOIN', 'SOLANA'].includes(q)) {
-    const collateral =
-      q === 'ETHEREUM' ? 'ETH' : q === 'BITCOIN' ? 'BTC' : q === 'SOLANA' ? 'SOL' : q
+  if (['XCH', 'CHIA'].includes(q)) {
     return {
-      value: collateral,
-      label: `${collateral} Collateral`,
+      value: 'XCH',
+      label: 'XCH Collateral',
       type: 'Collateral Filter',
-      description: `Show only loans with ${collateral} as collateral`,
+      description: 'Show only loans with XCH as collateral',
       colorClass: 'bg-orange-600 text-white',
       category: 'collateral',
     }

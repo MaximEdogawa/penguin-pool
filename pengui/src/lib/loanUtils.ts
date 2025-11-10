@@ -1,9 +1,42 @@
 import type { LoanOffer } from '@/types/loan.types'
 
 export function formatCurrency(amount: number, currency: string = 'USD'): string {
+  // Map Chia currencies to valid ISO 4217 codes or use number formatting
+  let currencyCode = 'USD'
+  if (
+    currency === 'b.USDC' ||
+    currency === 'b.USDT' ||
+    currency === 'USDC' ||
+    currency === 'USDT'
+  ) {
+    currencyCode = 'USD'
+  } else if (currency === 'XCH' || currency === 'CHIA') {
+    // XCH doesn't have an ISO code, so we'll format as number with XCH suffix
+    return `${new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount)} XCH`
+  } else {
+    // Try to use the currency code as-is, fallback to USD if invalid
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(amount)
+    } catch {
+      // If currency code is invalid, format as number with currency suffix
+      return `${new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(amount)} ${currency}`
+    }
+  }
+
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: currency === 'USDC' || currency === 'USDT' ? 'USD' : currency,
+    currency: currencyCode,
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount)
@@ -45,6 +78,10 @@ export function calculateMonthlyPayment(
 
 export function formatDate(dateString: string): string {
   const date = new Date(dateString)
+  // Check if date is valid
+  if (Number.isNaN(date.getTime())) {
+    return 'Invalid Date'
+  }
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'short',
@@ -54,6 +91,10 @@ export function formatDate(dateString: string): string {
 
 export function getDaysUntil(dateString: string): number {
   const date = new Date(dateString)
+  // Check if date is valid
+  if (Number.isNaN(date.getTime())) {
+    return 0
+  }
   const today = new Date()
   const diffTime = date.getTime() - today.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
@@ -61,7 +102,7 @@ export function getDaysUntil(dateString: string): number {
 }
 
 export function getLoanAssetDisplay(loan: LoanOffer): string {
-  if (loan.assetType === 'ERC20') {
+  if (loan.assetType === 'CAT') {
     return `${formatCurrency(loan.amount, loan.currency)} ${loan.currency}`
   } else if (loan.assetType === 'NFT') {
     return `${loan.nftCollection || 'NFT'} ${loan.nftTokenId || ''}`
@@ -72,7 +113,7 @@ export function getLoanAssetDisplay(loan: LoanOffer): string {
 }
 
 export function getCollateralDisplay(loan: LoanOffer): string {
-  if (loan.collateralAssetType === 'ERC20') {
+  if (loan.collateralAssetType === 'CAT' || loan.collateralAssetType === 'XCH') {
     return `${loan.collateralType}`
   } else if (loan.collateralAssetType === 'NFT') {
     return `${loan.collateralNftCollection || 'NFT'} Collection`

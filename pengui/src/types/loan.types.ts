@@ -1,12 +1,12 @@
 export interface LoanOffer {
   id: number
   maker: string
-  assetType: 'ERC20' | 'NFT' | 'Options'
+  assetType: 'CAT' | 'NFT' | 'Options'
   amount: number
   currency: string
   interestRate: number
   duration: number
-  collateralAssetType: 'ERC20' | 'NFT' | 'Options'
+  collateralAssetType: 'CAT' | 'NFT' | 'Options' | 'XCH'
   collateralType: string
   collateralRatio: number
   optionType?: 'Call' | 'Put'
@@ -54,17 +54,17 @@ export interface SettledLoan {
   totalRepaid: number
   totalInterest: number
   status: 'settled'
-  assetType: 'ERC20' | 'NFT' | 'Options'
-  collateralAssetType: 'ERC20' | 'NFT' | 'Options'
+  assetType: 'CAT' | 'NFT' | 'Options'
+  collateralAssetType: 'CAT' | 'NFT' | 'Options' | 'XCH'
 }
 
 export interface CreateLoanForm {
-  assetType: 'ERC20' | 'NFT' | 'Options'
+  assetType: 'CAT' | 'NFT' | 'Options'
   amount: string
   currency: string
   interestRate: string
   duration: string
-  collateralAssetType: 'ERC20' | 'NFT' | 'Options'
+  collateralAssetType: 'CAT' | 'NFT' | 'Options' | 'XCH'
   collateralType: string
   collateralRatio: string
   optionType: 'Call' | 'Put'

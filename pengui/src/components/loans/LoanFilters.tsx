@@ -14,10 +14,9 @@ interface LoanFiltersProps {
 }
 
 const quickFilters = [
-  { query: 'USDC', label: 'USDC' },
-  { query: 'DAI', label: 'DAI' },
-  { query: 'ETH', label: 'ETH Collateral' },
-  { query: 'BTC', label: 'BTC Collateral' },
+  { query: 'b.USDC', label: 'b.USDC' },
+  { query: 'b.USDT', label: 'b.USDT' },
+  { query: 'XCH', label: 'XCH Collateral' },
   { query: 'low rate', label: 'Low Rate' },
   { query: 'short term', label: 'Short Term' },
 ]
