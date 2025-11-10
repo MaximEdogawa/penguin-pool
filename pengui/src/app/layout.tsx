@@ -10,6 +10,7 @@ import { store, persistor, WalletManager } from '@chia/wallet-connect'
 import '@chia/wallet-connect/styles'
 import './globals.css'
 import ReactQueryProvider from '@/components/ReactQueryProvider'
+import WalletConnectionGuard from '@/components/WalletConnectionGuard'
 import { cn } from '@/lib/utils'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -46,12 +47,12 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Penguin Pool" />
         <meta
           name="viewport"
-          content="width=device-width, initialScale=1, maximumScale=1, userScalable=no, viewportFit=cover"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
       </head>
       <body className={cn(inter.className, 'max-w-screen overflow-x-hidden')}>
@@ -69,7 +70,9 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <Provider store={store}>
             <PersistGate loading={null} persistor={persistor}>
-              <ReactQueryProvider>{children}</ReactQueryProvider>
+              <WalletConnectionGuard>
+                <ReactQueryProvider>{children}</ReactQueryProvider>
+              </WalletConnectionGuard>
             </PersistGate>
           </Provider>
         </ThemeProvider>
