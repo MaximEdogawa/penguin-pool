@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 /**
  * WalletConnectionGuard - Route guard that handles redirects based on wallet connection state
  * - If connected and on login page → redirect to dashboard
- * - If not connected and on dashboard → redirect to login
+ * - If not connected and not on login page → redirect to login (protects all routes)
  * Works on initial load and page refresh
  */
 export default function WalletConnectionGuard({ children }: { children: React.ReactNode }) {
@@ -27,16 +27,21 @@ export default function WalletConnectionGuard({ children }: { children: React.Re
     if (!isHydrated) return
 
     const isLoginPage = pathname === '/login'
-    const isDashboardPage = pathname.startsWith('/dashboard')
 
     // If connected and on login page → redirect to dashboard
     if (isConnected && isLoginPage) {
       router.replace('/dashboard')
+      return
     }
 
-    // If not connected and on dashboard → redirect to login
-    if (!isConnected && isDashboardPage) {
-      router.replace('/login')
+    // If not connected and not on login page → redirect to login (protect all routes)
+    if (!isConnected && !isLoginPage) {
+      // Use window.location for more forceful redirect if router doesn't work
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      } else {
+        router.replace('/login')
+      }
     }
   }, [isConnected, isHydrated, pathname, router])
 

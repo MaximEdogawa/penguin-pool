@@ -1,12 +1,12 @@
 'use client'
 
 import { useWalletConnection } from '@/hooks/useWalletConnection'
-import { useWalletFingerprint } from '@/hooks/useWalletFingerprint'
 import { ConnectButton } from '@chia/wallet-connect'
 import {
   BarChart,
   Bell,
   ChevronRight,
+  Fingerprint,
   Home,
   Layers,
   Menu,
@@ -26,11 +26,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeItem, setActiveItem] = useState('dashboard')
   const { isConnected } = useWalletConnection()
-  const fingerprint = useWalletFingerprint()
-
-  const formatFingerprint = (fp: string): string => {
-    return fp.length > 10 ? `${fp.slice(0, 6)}...${fp.slice(-4)}` : fp
-  }
 
   const menuItems = [
     { id: 'dashboard', icon: Home, label: 'Dashboard' },
@@ -112,43 +107,36 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <header className="h-16 bg-black/20 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-4 lg:px-6">
-          <div className="flex items-center gap-2 lg:gap-4">
+        <header className="h-16 bg-black/20 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-2 sm:px-4 lg:px-6 gap-1.5 sm:gap-2 lg:gap-3">
+          <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 flex-1 min-w-0">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white flex-shrink-0"
             >
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Search Bar - Hidden on mobile, visible on md+ */}
-            <div className="hidden md:block relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            {/* Search Bar - Responsive design */}
+            <div className="relative flex-1 max-w-full min-w-0 mr-1 sm:mr-0">
+              <Search className="w-4 h-4 sm:w-5 sm:h-5 absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
               <input
                 type="text"
-                placeholder="Search anything..."
-                className="w-64 lg:w-80 pl-10 pr-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
+                placeholder="Search..."
+                className="w-full pl-8 sm:pl-10 pr-2 sm:pr-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
               />
             </div>
-
-            {/* Mobile Search Button */}
-            <button className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white">
-              <Search className="w-5 h-5" />
-            </button>
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center gap-2 lg:gap-3">
-            <button className="p-2 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-pink-500 rounded-full"></span>
+          <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-3 flex-shrink-0">
+            <button className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 transition-colors text-gray-400 hover:text-white relative flex-shrink-0">
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-pink-500 rounded-full"></span>
             </button>
             {/* Wallet Connect Component */}
-            <div className="flex items-center">
+            <div className="relative flex items-center flex-shrink-0">
               <ConnectButton
-                connectText={
-                  isConnected && fingerprint ? formatFingerprint(fingerprint) : 'Connect Wallet'
-                }
+                connectText={isConnected ? '' : 'Connect Wallet'}
                 walletConnectIcon={
                   typeof window !== 'undefined'
                     ? `${window.location.origin}/penguin-pool.svg`
@@ -168,10 +156,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       : '/icons/icon-192x192.png',
                   ],
                 }}
-                className={`shadow-lg ${
-                  isConnected && fingerprint ? '!text-xs !font-normal !opacity-70 !font-mono' : ''
-                }`}
+                className="shadow-lg"
               />
+              {isConnected && (
+                <Fingerprint className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-green-400 pointer-events-none" />
+              )}
             </div>
           </div>
         </header>

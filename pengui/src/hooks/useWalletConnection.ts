@@ -13,28 +13,30 @@ export function useWalletConnection() {
   // Use Redux selector to reactively check connection
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const selectorConnected = useSelector((state: any) => {
-    if (!state) return false
+    if (!state?.walletConnect) return false
 
     const walletState = state.walletConnect
-    if (!walletState) return false
 
     // Check for selectedSession (the active/selected session indicates connection)
     const hasSelectedSession =
       walletState.selectedSession &&
       typeof walletState.selectedSession === 'object' &&
-      walletState.selectedSession !== null
+      walletState.selectedSession !== null &&
+      Object.keys(walletState.selectedSession).length > 0
 
     // Check for sessions array (if it has items, there's a connection)
     const hasSessions = Array.isArray(walletState.sessions) && walletState.sessions.length > 0
 
     // Check for selectedSession topic (primary indicator of active connection)
-    const hasSelectedSessionTopic = walletState.selectedSession?.topic || false
+    const hasSelectedSessionTopic = Boolean(walletState.selectedSession?.topic)
 
     // Check for selectedFingerprint (indicates a wallet is selected/connected)
+    // Empty object {} should not count as connected - need actual properties
     const hasSelectedFingerprint =
       walletState.selectedFingerprint &&
       typeof walletState.selectedFingerprint === 'object' &&
-      walletState.selectedFingerprint !== null
+      walletState.selectedFingerprint !== null &&
+      Object.keys(walletState.selectedFingerprint).length > 0
 
     return hasSelectedSession || hasSessions || hasSelectedSessionTopic || hasSelectedFingerprint
   })
@@ -58,19 +60,22 @@ export function useWalletConnection() {
         const hasSelectedSession =
           walletState.selectedSession &&
           typeof walletState.selectedSession === 'object' &&
-          walletState.selectedSession !== null
+          walletState.selectedSession !== null &&
+          Object.keys(walletState.selectedSession).length > 0
 
         // Check for sessions array (if it has items, there's a connection)
         const hasSessions = Array.isArray(walletState.sessions) && walletState.sessions.length > 0
 
         // Check for selectedSession topic
-        const hasSelectedSessionTopic = walletState.selectedSession?.topic || false
+        const hasSelectedSessionTopic = Boolean(walletState.selectedSession?.topic)
 
         // Check for selectedFingerprint
+        // Empty object {} should not count as connected - need actual properties
         const hasSelectedFingerprint =
           walletState.selectedFingerprint &&
           typeof walletState.selectedFingerprint === 'object' &&
-          walletState.selectedFingerprint !== null
+          walletState.selectedFingerprint !== null &&
+          Object.keys(walletState.selectedFingerprint).length > 0
 
         const hasConnection =
           hasSelectedSession || hasSessions || hasSelectedSessionTopic || hasSelectedFingerprint
