@@ -169,14 +169,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         >
           {sidebarCollapsed ? (
             <div className="flex items-center justify-center">
-              <div className="w-12 h-12 lg:w-8 lg:h-8 rounded-full overflow-hidden flex items-center justify-center">
-                <PenguinLogo size={32} className={`${t.text} rounded-full lg:!w-6 lg:!h-6`} />
+              <div className="w-12 h-12 lg:w-9 lg:h-9 rounded-full overflow-hidden flex items-center justify-center">
+                <PenguinLogo size={32} className={`${t.text} rounded-full lg:!w-7 lg:!h-7`} />
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-center lg:items-start lg:gap-2.5">
-              <div className="w-12 h-12 lg:w-8 lg:h-8 rounded-full overflow-hidden flex items-center justify-center">
-                <PenguinLogo size={32} className={`${t.text} rounded-full lg:!w-5 lg:!h-5`} />
+              <div className="w-12 h-12 lg:w-10 lg:h-10 rounded-full overflow-hidden flex items-center justify-center">
+                <PenguinLogo size={32} className={`${t.text} rounded-full lg:!w-7 lg:!h-7`} />
               </div>
               <span className="hidden lg:inline font-semibold text-lg lg:text-base transition-all duration-300 whitespace-nowrap">
                 Pengui
