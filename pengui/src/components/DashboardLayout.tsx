@@ -163,8 +163,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         {/* Logo */}
         <div
-          className={`h-12 flex items-center justify-center border-b ${t.border} transition-all duration-300 ${
-            sidebarCollapsed ? 'lg:px-0' : 'px-2 lg:px-4'
+          className={`h-12 flex items-center border-b ${t.border} transition-all duration-300 ${
+            sidebarCollapsed
+              ? 'lg:justify-center lg:px-0'
+              : 'justify-center lg:justify-start px-2 lg:px-3'
           }`}
         >
           {sidebarCollapsed ? (
@@ -174,7 +176,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center lg:items-start lg:gap-2.5">
+            <div className="flex items-center lg:items-center gap-2.5">
               <div className="w-12 h-12 lg:w-10 lg:h-10 rounded-full overflow-hidden flex items-center justify-center">
                 <PenguinLogo size={32} className={`${t.text} rounded-full lg:!w-7 lg:!h-7`} />
               </div>
@@ -201,7 +203,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 className={`flex items-center ${
                   sidebarCollapsed
                     ? 'lg:w-8 lg:h-8 lg:mx-auto lg:justify-center lg:items-center lg:px-0 lg:py-0 lg:gap-0'
-                    : 'w-full justify-center lg:justify-start lg:px-2.5'
+                    : 'w-full justify-center lg:justify-start lg:px-3'
                 } px-0 py-3 lg:py-2 lg:gap-2.5 ${
                   sidebarCollapsed ? 'lg:rounded-full' : 'rounded-lg'
                 } transition-all duration-200 group relative overflow-hidden ${
