@@ -158,27 +158,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         className={`${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 ${
-          sidebarCollapsed ? 'lg:w-14' : 'lg:w-56'
-        } w-64 transition-all duration-300 ease-in-out backdrop-blur-3xl ${t.sidebar} flex flex-col overflow-hidden flex-shrink-0`}
+          sidebarCollapsed ? 'lg:w-12' : 'lg:w-56'
+        } w-16 transition-all duration-300 ease-in-out backdrop-blur-3xl ${t.sidebar} flex flex-col overflow-hidden flex-shrink-0`}
       >
         {/* Logo */}
         <div
           className={`h-12 flex items-center justify-center border-b ${t.border} transition-all duration-300 ${
-            sidebarCollapsed ? 'lg:px-0' : 'px-4'
+            sidebarCollapsed ? 'lg:px-0' : 'px-2 lg:px-4'
           }`}
         >
           {sidebarCollapsed ? (
             <div className="flex items-center justify-center">
-              <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
-                <PenguinLogo size={24} className={`${t.text} rounded-full`} />
+              <div className="w-12 h-12 lg:w-8 lg:h-8 rounded-full overflow-hidden flex items-center justify-center">
+                <PenguinLogo size={32} className={`${t.text} rounded-full lg:!w-6 lg:!h-6`} />
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
-                <PenguinLogo size={20} className={`${t.text} rounded-full`} />
+            <div className="flex items-center justify-center lg:items-start lg:gap-2.5">
+              <div className="w-12 h-12 lg:w-8 lg:h-8 rounded-full overflow-hidden flex items-center justify-center">
+                <PenguinLogo size={32} className={`${t.text} rounded-full lg:!w-5 lg:!h-5`} />
               </div>
-              <span className="font-semibold text-base transition-all duration-300 whitespace-nowrap">
+              <span className="hidden lg:inline font-semibold text-lg lg:text-base transition-all duration-300 whitespace-nowrap">
                 Pengui
               </span>
             </div>
@@ -188,7 +188,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Menu Items */}
         <nav
           className={`flex-1 space-y-0.5 transition-all duration-300 ${
-            sidebarCollapsed ? 'lg:p-1.5' : 'p-2'
+            sidebarCollapsed ? 'lg:p-1.5' : 'p-1 lg:p-2'
           }`}
         >
           {menuItems.map((item) => {
@@ -200,14 +200,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 onClick={() => handleNavigation(item.path)}
                 className={`flex items-center ${
                   sidebarCollapsed
-                    ? 'lg:w-10 lg:h-10 lg:mx-auto lg:justify-center lg:items-center lg:px-0 lg:py-0 lg:gap-0'
-                    : 'w-full lg:justify-start lg:px-2.5'
-                } justify-start gap-2.5 px-2.5 py-2 ${
+                    ? 'lg:w-8 lg:h-8 lg:mx-auto lg:justify-center lg:items-center lg:px-0 lg:py-0 lg:gap-0'
+                    : 'w-full justify-center lg:justify-start lg:px-2.5'
+                } px-0 py-3 lg:py-2 lg:gap-2.5 ${
                   sidebarCollapsed ? 'lg:rounded-full' : 'rounded-lg'
                 } transition-all duration-200 group relative overflow-hidden ${
                   isActive ? `${t.text}` : `${t.textSecondary} ${t.cardHover}`
                 }`}
-                title={sidebarCollapsed ? item.label : undefined}
+                title={item.label}
               >
                 {/* Glass highlight background for active item */}
                 {isActive && (
@@ -225,12 +225,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   </>
                 )}
                 <Icon
-                  className={`w-4 h-4 flex-shrink-0 transition-all duration-200 ${
-                    sidebarCollapsed ? 'lg:absolute lg:inset-0 lg:m-auto' : 'relative'
+                  className={`w-6 h-6 lg:w-3.5 lg:h-3.5 flex-shrink-0 transition-all duration-200 ${
+                    sidebarCollapsed
+                      ? 'lg:absolute lg:inset-0 lg:m-auto'
+                      : 'relative mx-auto lg:mx-0'
                   } ${isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`}
                 />
                 {!sidebarCollapsed && (
-                  <span className="relative font-normal text-xs transition-all duration-300 whitespace-nowrap">
+                  <span className="hidden lg:inline relative font-normal text-sm lg:text-xs transition-all duration-300 whitespace-nowrap">
                     {item.label}
                   </span>
                 )}
@@ -242,18 +244,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* User Profile */}
         <div
           className={`border-t ${t.border} transition-all duration-300 ${
-            sidebarCollapsed ? 'lg:p-1.5' : 'p-2'
+            sidebarCollapsed ? 'lg:p-1.5' : 'p-1 lg:p-2'
           }`}
         >
           <div
             className={`flex items-center ${
               sidebarCollapsed
                 ? 'lg:w-10 lg:h-10 lg:mx-auto lg:justify-center lg:items-center lg:px-0 lg:py-0 lg:gap-0'
-                : 'lg:justify-start lg:px-2.5'
-            } justify-between gap-2.5 px-2.5 py-2 ${
+                : 'justify-center lg:justify-start lg:px-2.5'
+            } px-0 py-2 lg:gap-2.5 ${
               sidebarCollapsed ? 'lg:rounded-full' : 'rounded-lg'
             } transition-all cursor-pointer group relative overflow-hidden ${t.cardHover}`}
-            title={sidebarCollapsed ? 'User' : undefined}
+            title="User"
           >
             {/* Glass effect overlay - enhanced */}
             <div
@@ -267,7 +269,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               } opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none`}
             />
             {sidebarCollapsed ? (
-              <div className="absolute inset-0 flex items-center justify-center">
+              <div className="flex items-center justify-center">
                 <div
                   className={`w-8 h-8 rounded-lg bg-gradient-to-br ${t.accent} flex items-center justify-center flex-shrink-0 shadow-md backdrop-blur-xl`}
                 >
@@ -275,60 +277,56 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2.5 flex-1 min-w-0 relative">
+              <div className="flex flex-col lg:flex-row items-center justify-center lg:justify-start gap-2 lg:gap-2.5 flex-1 min-w-0 relative">
                 <div
-                  className={`w-6 h-6 rounded-lg bg-gradient-to-br ${t.accent} flex items-center justify-center flex-shrink-0 shadow-md backdrop-blur-xl`}
+                  className={`w-10 h-10 lg:w-6 lg:h-6 rounded-lg bg-gradient-to-br ${t.accent} flex items-center justify-center flex-shrink-0 shadow-md backdrop-blur-xl`}
                 >
-                  <User className="w-3.5 h-3.5 text-white" />
+                  <User className="w-6 h-6 lg:w-3.5 lg:h-3.5 text-white" />
                 </div>
-                <div className="transition-all duration-300 whitespace-nowrap">
-                  <p className={`text-xs font-normal ${t.text}`}>User</p>
-                  <p className={`text-[10px] ${t.textSecondary}`}>Premium</p>
+                <div className="hidden lg:block transition-all duration-300 whitespace-nowrap">
+                  <p className={`text-sm lg:text-xs font-normal ${t.text}`}>User</p>
+                  <p className={`text-xs lg:text-[10px] ${t.textSecondary}`}>Premium</p>
                 </div>
+                {/* Theme Toggle */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleTheme()
+                  }}
+                  className={`relative inline-flex h-5 w-9 lg:h-4 lg:w-7 items-center rounded-full backdrop-blur-3xl transition-all duration-300 focus:outline-none focus:ring-2 ${t.focusRing} overflow-hidden flex-shrink-0 ${
+                    isDark
+                      ? 'bg-gradient-to-r from-white/5 via-white/10 to-white/5 border border-white/10 shadow-lg shadow-amber-500/20'
+                      : 'bg-gradient-to-r from-white/20 via-white/30 to-white/20 border border-white/30 shadow-lg shadow-slate-900/20'
+                  }`}
+                  title={isDark ? 'Switch to Light' : 'Switch to Dark'}
+                  aria-label="Toggle theme"
+                >
+                  {/* Glass reflection effect */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-50 rounded-full pointer-events-none" />
+                  <span
+                    className={`relative inline-block h-3 w-3 lg:h-2.5 lg:w-2.5 transform rounded-full backdrop-blur-3xl transition-all duration-300 shadow-lg ${
+                      isDark
+                        ? 'translate-x-[20px] lg:translate-x-[16px] bg-gradient-to-br from-white/30 via-white/20 to-white/10 border border-white/40'
+                        : 'translate-x-0.5 bg-gradient-to-br from-white/50 via-white/40 to-white/30 border border-white/60'
+                    } flex items-center justify-center`}
+                  >
+                    {/* Inner glass highlight */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent rounded-full opacity-60" />
+                    {isDark ? (
+                      <Sun
+                        className="relative h-2.5 w-2.5 lg:h-2 lg:w-2 text-amber-300 drop-shadow-sm"
+                        strokeWidth={2.5}
+                      />
+                    ) : (
+                      <Moon
+                        className="relative h-2.5 w-2.5 lg:h-2 lg:w-2 text-slate-700 drop-shadow-sm"
+                        strokeWidth={2.5}
+                      />
+                    )}
+                  </span>
+                </button>
               </div>
             )}
-            {/* Theme Toggle */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                toggleTheme()
-              }}
-              className={`relative inline-flex h-4 w-7 items-center rounded-full backdrop-blur-3xl transition-all duration-300 focus:outline-none focus:ring-2 ${t.focusRing} overflow-hidden flex-shrink-0 ${
-                sidebarCollapsed
-                  ? 'lg:opacity-0 lg:w-0 lg:overflow-hidden lg:pointer-events-none'
-                  : ''
-              } ${
-                isDark
-                  ? 'bg-gradient-to-r from-white/5 via-white/10 to-white/5 border border-white/10 shadow-lg shadow-amber-500/20'
-                  : 'bg-gradient-to-r from-white/20 via-white/30 to-white/20 border border-white/30 shadow-lg shadow-slate-900/20'
-              }`}
-              title={isDark ? 'Switch to Light' : 'Switch to Dark'}
-              aria-label="Toggle theme"
-            >
-              {/* Glass reflection effect */}
-              <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-50 rounded-full pointer-events-none" />
-              <span
-                className={`relative inline-block h-2.5 w-2.5 transform rounded-full backdrop-blur-3xl transition-all duration-300 shadow-lg ${
-                  isDark
-                    ? 'translate-x-[16px] bg-gradient-to-br from-white/30 via-white/20 to-white/10 border border-white/40'
-                    : 'translate-x-0.5 bg-gradient-to-br from-white/50 via-white/40 to-white/30 border border-white/60'
-                } flex items-center justify-center`}
-              >
-                {/* Inner glass highlight */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent rounded-full opacity-60" />
-                {isDark ? (
-                  <Sun
-                    className="relative h-2 w-2 text-amber-300 drop-shadow-sm"
-                    strokeWidth={2.5}
-                  />
-                ) : (
-                  <Moon
-                    className="relative h-2 w-2 text-slate-700 drop-shadow-sm"
-                    strokeWidth={2.5}
-                  />
-                )}
-              </span>
-            </button>
           </div>
         </div>
       </aside>
@@ -373,18 +371,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               }}
               className={`p-1.5 rounded-lg ${t.cardHover} transition-colors ${t.textSecondary} ${t.textHover} flex-shrink-0`}
             >
-              <Menu className="w-4 h-4" />
+              <Menu className="w-5 h-5 lg:w-4 lg:h-4" />
             </button>
 
             {/* Search Bar - Responsive design */}
             <div className="relative flex-1 max-w-full min-w-0">
               <Search
-                className={`w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 ${t.textSecondary} pointer-events-none z-10`}
+                className={`w-5 h-5 lg:w-4 lg:h-4 absolute left-2.5 top-1/2 -translate-y-1/2 ${t.textSecondary} pointer-events-none z-10`}
               />
               <input
                 type="text"
                 placeholder="Search..."
-                className={`w-full pl-9 pr-3 py-1.5 text-sm rounded-lg backdrop-blur-xl ${t.input} ${t.text} placeholder:${t.textSecondary} focus:outline-none focus:ring-2 ${t.focusRing} transition-all`}
+                className={`w-full pl-9 pr-3 py-1.5 text-base lg:text-sm rounded-lg backdrop-blur-xl ${t.input} ${t.text} placeholder:${t.textSecondary} focus:outline-none focus:ring-2 ${t.focusRing} transition-all`}
               />
             </div>
           </div>
@@ -394,7 +392,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <button
               className={`p-1.5 rounded-lg ${t.cardHover} transition-colors ${t.textSecondary} ${t.textHover} relative flex-shrink-0`}
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="w-5 h-5 lg:w-4 lg:h-4" />
               <span
                 className={`absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-gradient-to-br ${t.accent} rounded-full`}
               ></span>
@@ -409,8 +407,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       connectText="Connect Wallet"
                       walletConnectIcon={
                         typeof window !== 'undefined'
-                          ? `${window.location.origin}/penguin-pool.svg`
-                          : '/penguin-pool.svg'
+                          ? `${window.location.origin}/pengui-logo.png`
+                          : '/pengui-logo.png'
                       }
                       walletConnectMetadata={{
                         name: 'Pengui',
@@ -422,8 +420,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                             : 'https://penguin.pool',
                         icons: [
                           typeof window !== 'undefined'
-                            ? `${window.location.origin}/penguin-pool.svg`
-                            : '/penguin-pool.svg',
+                            ? `${window.location.origin}/pengui-logo.png`
+                            : '/pengui-logo.png',
                           typeof window !== 'undefined'
                             ? `${window.location.origin}/icons/icon-192x192.png`
                             : '/icons/icon-192x192.png',
@@ -453,8 +451,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     connectText=""
                     walletConnectIcon={
                       typeof window !== 'undefined'
-                        ? `${window.location.origin}/penguin-pool.svg`
-                        : '/penguin-pool.svg'
+                        ? `${window.location.origin}/pengui-logo.png`
+                        : '/pengui-logo.png'
                     }
                     walletConnectMetadata={{
                       name: 'Pengui',
@@ -465,8 +463,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           : 'https://penguin.pool',
                       icons: [
                         typeof window !== 'undefined'
-                          ? `${window.location.origin}/penguin-pool.svg`
-                          : '/penguin-pool.svg',
+                          ? `${window.location.origin}/pengui-logo.png`
+                          : '/pengui-logo.png',
                         typeof window !== 'undefined'
                           ? `${window.location.origin}/icons/icon-192x192.png`
                           : '/icons/icon-192x192.png',

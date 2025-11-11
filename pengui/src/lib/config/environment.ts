@@ -28,7 +28,7 @@ export const environment = {
           `${getCurrentUrl()}/icons/icon-192x192.png`,
           `${getCurrentUrl()}/icons/icon-512x512.png`,
           `${getCurrentUrl()}/favicon.svg`,
-          `${getCurrentUrl()}/penguin-pool.svg`,
+          `${getCurrentUrl()}/pengui-logo.png`,
         ],
       },
       networks: {

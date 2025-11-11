@@ -78,8 +78,8 @@ export default function LoginPage() {
                     connectText="Connect Wallet"
                     walletConnectIcon={
                       typeof window !== 'undefined'
-                        ? `${window.location.origin}/penguin-pool.svg`
-                        : '/penguin-pool.svg'
+                        ? `${window.location.origin}/pengui-logo.png`
+                        : '/pengui-logo.png'
                     }
                     walletConnectMetadata={{
                       name: 'Pengui',
@@ -90,8 +90,8 @@ export default function LoginPage() {
                           : 'https://penguin.pool',
                       icons: [
                         typeof window !== 'undefined'
-                          ? `${window.location.origin}/penguin-pool.svg`
-                          : '/penguin-pool.svg',
+                          ? `${window.location.origin}/pengui-logo.png`
+                          : '/pengui-logo.png',
                         typeof window !== 'undefined'
                           ? `${window.location.origin}/icons/icon-192x192.png`
                           : '/icons/icon-192x192.png',

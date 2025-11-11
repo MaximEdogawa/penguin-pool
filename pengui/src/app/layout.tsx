@@ -24,8 +24,8 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
     // Initialize WalletManager with pengui icon
     const penguiIcon =
       typeof window !== 'undefined'
-        ? `${window.location.origin}/penguin-pool.svg`
-        : '/penguin-pool.svg'
+        ? `${window.location.origin}/pengui-logo.png`
+        : '/pengui-logo.png'
 
     const walletManager = new WalletManager(penguiIcon, {
       name: 'Pengui',

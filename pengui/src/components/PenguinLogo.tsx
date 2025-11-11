@@ -16,10 +16,10 @@ export default function PenguinLogo({
   if (fill) {
     return (
       <Image
-        src="/penguin-pool.svg"
+        src="/pengui-logo.png"
         fill
         priority={priority}
-        alt="Penguin Pool Logo"
+        alt="Pengui Logo"
         className={`${className} object-contain`}
       />
     )
@@ -27,11 +27,11 @@ export default function PenguinLogo({
 
   return (
     <Image
-      src="/penguin-pool.svg"
+      src="/pengui-logo.png"
       width={size}
       height={size}
       priority={priority}
-      alt="Penguin Pool Logo"
+      alt="Pengui Logo"
       className={className}
     />
   )
