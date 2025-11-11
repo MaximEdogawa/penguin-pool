@@ -37,29 +37,6 @@ export default function DashboardPage() {
 
   return (
     <div className="w-full relative z-10">
-      {/* Header */}
-      <div
-        className={`mb-2 backdrop-blur-[40px] ${t.card} rounded-2xl p-3 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
-          isDark ? 'bg-white/[0.03]' : 'bg-white/30'
-        }`}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">🐧</div>
-            <div>
-              <h1 className={`text-xl lg:text-2xl font-semibold ${t.text} mb-0.5`}>Pengui</h1>
-              <p className={`${t.textSecondary} text-xs font-medium`}>
-                Premium Financial Intelligence
-              </p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className={`${t.textTertiary} text-[10px] font-medium mb-0.5`}>Welcome back</p>
-            <p className={`${t.text} text-sm font-medium`}>Alex Johnson</p>
-          </div>
-        </div>
-      </div>
-
       {/* Balance Card */}
       <div
         className={`mb-2 backdrop-blur-[40px] ${t.card} rounded-2xl p-3 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${

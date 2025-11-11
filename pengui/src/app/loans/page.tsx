@@ -1,71 +1,126 @@
 'use client'
 
-import { getThemeClasses } from '@/lib/theme'
-import { FileText } from 'lucide-react'
-import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
+import { useState, useMemo } from 'react'
+import { List, Briefcase, Plus, TrendingUp } from 'lucide-react'
+import type { LoanFilters, AmountFilter } from '@/types/loan.types'
+import { filterLoans } from '@/hooks/useLoanFilters'
+import { useLoansData } from '@/hooks/useLoansData'
+import LoansPageHeader from '@/components/loans/LoansPageHeader'
+import LoansTabNavigation from '@/components/loans/LoansTabNavigation'
+import LoanFiltersComponent from '@/components/loans/LoanFilters'
+import AvailableLoansList from '@/components/loans/AvailableLoansList'
+import MyTakenLoansList from '@/components/loans/MyTakenLoansList'
+import CreateLoanFormComponent from '@/components/loans/CreateLoanForm'
+import MyCreatedLoans from '@/components/loans/MyCreatedLoans'
+import LoanIncomeAnalytics from '@/components/loans/LoanIncomeAnalytics'
+
+const TAKER_TABS = [
+  { label: 'Available Loans', value: 'available', icon: List },
+  { label: 'My Active Loans', value: 'myTaken', icon: Briefcase },
+]
+
+const MAKER_TABS = [
+  { label: 'Create Offer', value: 'create', icon: Plus },
+  { label: 'My Offers', value: 'myCreated', icon: Briefcase },
+  { label: 'Income', value: 'income', icon: TrendingUp },
+]
 
 export default function LoansPage() {
-  const [mounted, setMounted] = useState(false)
-  const { theme: currentTheme, systemTheme } = useTheme()
+  const [isLender, setIsLender] = useState(false)
+  const [activeTab, setActiveTab] = useState('available')
+  const [amountFilter, setAmountFilter] = useState<AmountFilter>({ min: 0, max: 100000 })
+  const [filters, setFilters] = useState<LoanFilters>({
+    activeChips: [],
+    searchQuery: '',
+  })
 
-  const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
-  const t = getThemeClasses(isDark)
+  const { availableLoans, myLoansTaken, myCreatedLoans } = useLoansData()
+  const userRole = isLender ? 'maker' : 'taker'
+  const tabs = userRole === 'maker' ? MAKER_TABS : TAKER_TABS
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const filteredAvailableLoans = useMemo(() => {
+    return filterLoans(availableLoans, filters, amountFilter)
+  }, [availableLoans, filters, amountFilter])
 
-  if (!mounted) {
-    return null
+  const handlePayment = (loanId: number, paymentAmount: number) => {
+    // TODO: Implement payment functionality
+    void loanId
+    void paymentAmount
+  }
+
+  const handleTakeLoan = (loanId: number) => {
+    // TODO: Implement take loan functionality
+    void loanId
+  }
+
+  const handleViewDetails = (loanId: number) => {
+    // TODO: Implement view details functionality
+    void loanId
+  }
+
+  const handleLoanCreated = (formData: unknown) => {
+    // TODO: Implement loan creation functionality
+    void formData
   }
 
   return (
-    <div className="w-full relative z-10">
-      {/* Header */}
-      <div
-        className={`mb-2 backdrop-blur-[40px] ${t.card} rounded-2xl p-3 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
-          isDark ? 'bg-white/[0.03]' : 'bg-white/30'
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className={`p-2 rounded-xl ${isDark ? 'bg-cyan-500/10' : 'bg-cyan-600/15'} backdrop-blur-sm`}
-          >
-            <FileText
-              className={`${isDark ? 'text-cyan-400' : 'text-cyan-700'}`}
-              size={18}
-              strokeWidth={2}
-            />
-          </div>
-          <div>
-            <h1 className={`text-xl lg:text-2xl font-semibold ${t.text} mb-0.5`}>Loans</h1>
-            <p className={`${t.textSecondary} text-xs font-medium`}>
-              Loan management functionality coming soon...
-            </p>
-          </div>
-        </div>
+    <div className="w-full relative z-10 flex flex-col" style={{ height: '100%', minHeight: 0 }}>
+      {/* Fixed Header */}
+      <div className="flex-shrink-0">
+        <LoansPageHeader isLender={isLender} onToggleRole={() => setIsLender(!isLender)} />
       </div>
 
-      {/* Content Card */}
+      {/* Fixed Tab Navigation */}
+      <div className="flex-shrink-0">
+        <LoansTabNavigation tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+      </div>
+
+      {/* Scrollable Content Area - Stable scrollbar, always visible, fixed height */}
       <div
-        className={`backdrop-blur-[40px] ${t.card} rounded-2xl p-4 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
-          isDark ? 'bg-white/[0.03]' : 'bg-white/30'
-        }`}
+        className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-modern scrollbar-permanent"
+        style={{
+          scrollbarGutter: 'stable',
+          minHeight: 0,
+          height: 0, // Force flex-1 to work properly
+        }}
       >
-        <div className="flex flex-col items-center justify-center py-4">
-          <div
-            className={`p-4 rounded-2xl ${isDark ? 'bg-white/5' : 'bg-white/30'} backdrop-blur-xl mb-4`}
-          >
-            <FileText
-              className={`${isDark ? 'text-slate-400' : 'text-slate-600'}`}
-              size={32}
-              strokeWidth={1.5}
+        {activeTab === 'available' && userRole === 'taker' && (
+          <LoanFiltersComponent
+            filters={filters}
+            amountFilter={amountFilter}
+            onFiltersChange={setFilters}
+            onAmountFilterChange={setAmountFilter}
+          />
+        )}
+
+        <div className="space-y-2">
+          {activeTab === 'available' && userRole === 'taker' && (
+            <AvailableLoansList
+              loans={filteredAvailableLoans}
+              onTakeLoan={handleTakeLoan}
+              onViewDetails={handleViewDetails}
             />
-          </div>
-          <p className={`${t.textSecondary} text-center text-sm max-w-md`}>
-            Loan management features will be available here soon. Check back later for updates.
-          </p>
+          )}
+
+          {activeTab === 'myTaken' && userRole === 'taker' && (
+            <MyTakenLoansList
+              loans={myLoansTaken}
+              onPayment={handlePayment}
+              onViewDetails={handleViewDetails}
+            />
+          )}
+
+          {activeTab === 'create' && userRole === 'maker' && (
+            <CreateLoanFormComponent onSubmit={handleLoanCreated} />
+          )}
+
+          {activeTab === 'myCreated' && userRole === 'maker' && (
+            <MyCreatedLoans loans={myCreatedLoans} onViewDetails={handleViewDetails} />
+          )}
+
+          {activeTab === 'income' && userRole === 'maker' && (
+            <LoanIncomeAnalytics loans={myCreatedLoans} />
+          )}
         </div>
       </div>
     </div>

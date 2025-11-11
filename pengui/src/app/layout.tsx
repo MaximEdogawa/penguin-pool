@@ -24,8 +24,8 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
     // Initialize WalletManager with pengui icon
     const penguiIcon =
       typeof window !== 'undefined'
-        ? `${window.location.origin}/penguin-pool.svg`
-        : '/penguin-pool.svg'
+        ? `${window.location.origin}/pengui-logo.png`
+        : '/pengui-logo.png'
 
     const walletManager = new WalletManager(penguiIcon, {
       name: 'Pengui',
@@ -57,7 +57,10 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
       </head>
-      <body className={cn(inter.className, 'max-w-screen overflow-x-hidden')}>
+      <body
+        className={cn(inter.className, 'w-full overflow-x-hidden')}
+        style={{ width: '100vw', maxWidth: '100vw', margin: 0, padding: 0, borderRight: 'none' }}
+      >
         <Script
           id="disable-lit-dev-mode"
           strategy="beforeInteractive"
