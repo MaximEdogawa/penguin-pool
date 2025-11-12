@@ -1,7 +1,7 @@
 {
-  "name": "Penguin Pool",
-  "short_name": "Penguin Pool",
-  "description": "Decentralized lending platform on Chia Network",
+  "name": "Pengui",
+  "short_name": "Pengui",
+  "description": "Premium Financial Intelligence - Decentralized lending platform on Chia Network",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

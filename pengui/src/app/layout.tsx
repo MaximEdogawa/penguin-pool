@@ -38,20 +38,22 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="font-extralight" suppressHydrationWarning>
       <head>
-        <title>Penguin Pool | Decentralized Lending Platform</title>
+        <title>Pengui | Premium Financial Intelligence</title>
         <meta
           name="description"
-          content="Penguin Pool is a decentralized lending platform on Chia Network."
+          content="Pengui - Premium Financial Intelligence. Decentralized lending platform on Chia Network."
         />
         <meta name="theme-color" content="#1e40af" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
+        <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-192x192.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Penguin Pool" />
+        <meta name="apple-mobile-web-app-title" content="Pengui" />
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
