@@ -157,11 +157,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 ${
           sidebarCollapsed ? 'lg:w-12' : 'lg:w-56'
-        } w-16 transition-all duration-300 ease-in-out backdrop-blur-3xl ${t.sidebar} flex flex-col overflow-hidden flex-shrink-0`}
+        } w-16 transition-all duration-300 ease-in-out backdrop-blur-3xl ${t.sidebar} flex flex-col overflow-hidden flex-shrink-0 mobile-landscape-sidebar`}
       >
-        {/* Logo */}
+        {/* Logo - Fixed at top */}
         <div
-          className={`h-12 flex items-center border-b ${t.border} transition-all duration-300 ${
+          className={`h-12 flex-shrink-0 flex items-center border-b ${t.border} transition-all duration-300 ${
             sidebarCollapsed
               ? 'lg:justify-center lg:px-0'
               : 'justify-center lg:justify-start px-2 lg:px-3'
@@ -185,9 +185,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           )}
         </div>
 
-        {/* Menu Items */}
+        {/* Menu Items - Scrollable on mobile landscape */}
         <nav
-          className={`flex-1 space-y-0.5 transition-all duration-300 ${
+          className={`flex-1 space-y-0.5 transition-all duration-300 overflow-y-auto overflow-x-hidden scrollbar-modern mobile-landscape-scrollable ${
             sidebarCollapsed ? 'lg:p-1.5' : 'p-1 lg:p-2'
           }`}
         >
@@ -241,9 +241,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           })}
         </nav>
 
-        {/* User Profile */}
+        {/* User Profile - Fixed at bottom */}
         <div
-          className={`border-t ${t.border} transition-all duration-300 mb-4 ${
+          className={`flex-shrink-0 border-t ${t.border} transition-all duration-300 mb-4 mobile-landscape-profile ${
             sidebarCollapsed ? 'lg:p-1.5' : 'p-1 lg:p-2'
           }`}
         >
