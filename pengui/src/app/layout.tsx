@@ -1,19 +1,19 @@
 'use client'
 
+import DashboardLayout from '@/components/DashboardLayout'
+import ReactQueryProvider from '@/components/ReactQueryProvider'
+import WalletConnectionGuard from '@/components/WalletConnectionGuard'
+import { cn } from '@/lib/utils'
+import { WalletManager, persistor, store } from '@chia/wallet-connect'
+import '@chia/wallet-connect/styles'
+import { ThemeProvider } from 'next-themes'
 import { Inter } from 'next/font/google'
+import { usePathname } from 'next/navigation'
 import Script from 'next/script'
 import { useEffect } from 'react'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
-import { ThemeProvider } from 'next-themes'
-import { usePathname } from 'next/navigation'
-import { store, persistor, WalletManager } from '@chia/wallet-connect'
-import '@chia/wallet-connect/styles'
 import './globals.css'
-import ReactQueryProvider from '@/components/ReactQueryProvider'
-import WalletConnectionGuard from '@/components/WalletConnectionGuard'
-import DashboardLayout from '@/components/DashboardLayout'
-import { cn } from '@/lib/utils'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
@@ -33,7 +33,52 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
       url: typeof window !== 'undefined' ? window.location.origin : 'https://penguin.pool',
       icons: [penguiIcon],
     })
+
+    // Initial event detection
     walletManager.detectEvents()
+
+    // On iOS, re-detect events when app returns to foreground
+    // This ensures connection status updates after wallet approval
+    const isIOS =
+      typeof window !== 'undefined' &&
+      (/iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase()) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
+
+    if (isIOS) {
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          // App came back to foreground - re-detect events to update connection status
+          // Use a small delay to ensure the app is fully in foreground
+          setTimeout(() => {
+            walletManager.detectEvents()
+          }, 300)
+        }
+      }
+
+      const handlePageShow = () => {
+        // iOS Safari can restore from cache - re-detect events
+        setTimeout(() => {
+          walletManager.detectEvents()
+        }, 300)
+      }
+
+      const handleFocus = () => {
+        // Window regained focus - re-detect events
+        setTimeout(() => {
+          walletManager.detectEvents()
+        }, 300)
+      }
+
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      window.addEventListener('pageshow', handlePageShow)
+      window.addEventListener('focus', handleFocus)
+
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        window.removeEventListener('pageshow', handlePageShow)
+        window.removeEventListener('focus', handleFocus)
+      }
+    }
   }, [])
   return (
     <html lang="en" className="font-extralight" suppressHydrationWarning>
