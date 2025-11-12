@@ -88,7 +88,14 @@ export default function LoginPage() {
                 >
                   <div
                     className="w-full h-full flex items-center justify-center"
-                    style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                    style={{
+                      touchAction: 'manipulation',
+                      WebkitTapHighlightColor: 'transparent',
+                      WebkitTouchCallout: 'none',
+                      userSelect: 'none',
+                      minHeight: '44px', // iOS minimum touch target
+                      width: '100%',
+                    }}
                   >
                     <ConnectButton
                       connectText="Connect Wallet"
@@ -115,14 +122,6 @@ export default function LoginPage() {
                         ],
                       }}
                       className="!bg-transparent !text-white !px-0 !py-0 !border-0 !shadow-none text-base sm:text-lg md:text-xl font-semibold drop-shadow-lg [text-shadow:0_2px_8px_rgba(0,0,0,0.6)] !cursor-pointer w-full h-full flex items-center justify-center !text-center"
-                      style={{
-                        touchAction: 'manipulation',
-                        WebkitTapHighlightColor: 'transparent',
-                        WebkitTouchCallout: 'none',
-                        userSelect: 'none',
-                        minHeight: '44px', // iOS minimum touch target
-                        width: '100%',
-                      }}
                     />
                   </div>
                 </div>
