@@ -59,19 +59,7 @@ export default function LoginPage() {
         {/* Wallet Connection Section */}
         <div className="flex flex-col items-center w-full gap-3 sm:gap-4">
           <div className="flex flex-col w-full">
-            <div
-              className="relative overflow-hidden rounded-2xl sm:rounded-3xl w-full cursor-pointer"
-              style={{ touchAction: 'manipulation' }}
-              onClick={(e) => {
-                // Find and click the ConnectButton inside
-                const button = e.currentTarget.querySelector(
-                  'button, [role="button"]'
-                ) as HTMLElement
-                if (button) {
-                  button.click()
-                }
-              }}
-            >
+            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl w-full">
               {/* Gradient border effect - simplified for iOS */}
               <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px] opacity-60 pointer-events-none">
                 <div className="h-full w-full rounded-2xl sm:rounded-3xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95" />
