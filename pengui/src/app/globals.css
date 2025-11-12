@@ -251,6 +251,24 @@
       transform: translateY(0);
     }
   }
+
+  /* iOS PWA optimizations for wallet connect button */
+  button,
+  [role='button'],
+  .wallet-connect-button,
+  .wallet-connect-button * {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+  }
+
+  /* Ensure ConnectButton is immediately clickable on iOS */
+  @supports (-webkit-touch-callout: none) {
+    button:active,
+    [role='button']:active {
+      opacity: 0.9;
+    }
+  }
 }
 
 /* Chrome, Safari and Opera */
