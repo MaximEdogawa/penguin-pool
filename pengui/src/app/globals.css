@@ -251,6 +251,42 @@
       transform: translateY(0);
     }
   }
+
+  /* iOS PWA optimizations for wallet connect button */
+  button,
+  [role='button'],
+  .wallet-connect-button,
+  .wallet-connect-button * {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+  }
+
+  /* Ensure ConnectButton is immediately clickable on iOS */
+  @supports (-webkit-touch-callout: none) {
+    button:active,
+    [role='button']:active {
+      opacity: 0.9;
+    }
+  }
+
+  /* Mobile landscape: make sidebar navigation scrollable while keeping logo fixed */
+  @media (max-width: 1023px) and (orientation: landscape) {
+    .mobile-landscape-sidebar {
+      justify-content: flex-start;
+    }
+
+    .mobile-landscape-scrollable {
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .mobile-landscape-profile {
+      margin-bottom: 0 !important;
+      margin-top: auto !important;
+    }
+  }
 }
 
 /* Chrome, Safari and Opera */

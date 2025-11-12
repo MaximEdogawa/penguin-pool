@@ -31,7 +31,7 @@ export default function LoginPage() {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="px-4 sm:px-6 md:px-8 lg:px-10 flex py-6 sm:py-8 md:py-10 flex-col items-center gap-4 sm:gap-5 w-full backdrop-blur-2xl rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/10 via-white/5 to-transparent dark:from-gray-900/10 dark:via-gray-900/5 dark:to-transparent border border-white/20 dark:border-gray-700/20 shadow-2xl shadow-black/20 max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="px-4 sm:px-6 md:px-8 lg:px-10 flex py-6 sm:py-8 md:py-10 flex-col items-center gap-4 sm:gap-5 w-full backdrop-blur-2xl rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/10 via-white/5 to-transparent dark:from-gray-900/10 dark:via-gray-900/5 dark:to-transparent border border-white/20 dark:border-gray-700/20 shadow-2xl shadow-black/20 max-w-md relative z-10 ">
         {/* Logo and Title Section */}
         <div className="flex flex-col items-center gap-3 sm:gap-4 w-full">
           <div className="relative group">
@@ -59,51 +59,74 @@ export default function LoginPage() {
         {/* Wallet Connection Section */}
         <div className="flex flex-col items-center w-full gap-3 sm:gap-4">
           <div className="flex flex-col w-full">
-            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl w-full transition-all duration-500 hover:scale-[1.02] group">
-              {/* Gradient border effect */}
-              <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px] opacity-60 group-hover:opacity-100 transition-opacity duration-500">
+            <div
+              className="relative overflow-hidden rounded-2xl sm:rounded-3xl w-full cursor-pointer"
+              style={{ touchAction: 'manipulation' }}
+              onClick={(e) => {
+                // Find and click the ConnectButton inside
+                const button = e.currentTarget.querySelector(
+                  'button, [role="button"]'
+                ) as HTMLElement
+                if (button) {
+                  button.click()
+                }
+              }}
+            >
+              {/* Gradient border effect - simplified for iOS */}
+              <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px] opacity-60 pointer-events-none">
                 <div className="h-full w-full rounded-2xl sm:rounded-3xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95" />
               </div>
 
-              {/* Main content container */}
-              <div className="relative bg-gradient-to-br from-white/10 via-white/5 to-transparent dark:from-gray-800/20 dark:via-gray-800/10 dark:to-transparent backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/20 dark:border-gray-700/30 p-2.5 sm:p-3 md:p-3.5">
-                {/* Animated gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-purple-500/0 to-pink-500/0 group-hover:from-blue-500/20 group-hover:via-purple-500/20 group-hover:to-pink-500/20 transition-all duration-700 rounded-2xl sm:rounded-3xl pointer-events-none" />
-
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-2xl sm:rounded-3xl pointer-events-none" />
-
-                <div className="relative z-10 flex items-center justify-center">
-                  <ConnectButton
-                    connectText="Connect Wallet"
-                    walletConnectIcon={
-                      typeof window !== 'undefined'
-                        ? `${window.location.origin}/pengui-logo.png`
-                        : '/pengui-logo.png'
-                    }
-                    walletConnectMetadata={{
-                      name: 'Pengui',
-                      description: 'Penguin Pool - Decentralized lending platform on Chia Network',
-                      url:
-                        typeof window !== 'undefined'
-                          ? window.location.origin
-                          : 'https://penguin.pool',
-                      icons: [
+              {/* Main content container - increased padding for larger click area */}
+              <div
+                className="relative bg-gradient-to-br from-white/10 via-white/5 to-transparent dark:from-gray-800/20 dark:via-gray-800/10 dark:to-transparent backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/20 dark:border-gray-700/30 p-4 sm:p-5 md:p-6 min-h-[60px] sm:min-h-[70px]"
+                style={{ touchAction: 'manipulation' }}
+              >
+                <div
+                  className="relative z-10 flex items-center justify-center w-full h-full"
+                  style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                >
+                  <div
+                    className="w-full h-full flex items-center justify-center"
+                    style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                  >
+                    <ConnectButton
+                      connectText="Connect Wallet"
+                      walletConnectIcon={
                         typeof window !== 'undefined'
                           ? `${window.location.origin}/pengui-logo.png`
-                          : '/pengui-logo.png',
-                        typeof window !== 'undefined'
-                          ? `${window.location.origin}/icons/icon-192x192.png`
-                          : '/icons/icon-192x192.png',
-                      ],
-                    }}
-                    className="!bg-transparent !text-white !px-0 !py-0 !border-0 !shadow-none hover:!opacity-90 text-xs sm:text-sm md:text-base font-semibold drop-shadow-lg [text-shadow:0_2px_8px_rgba(0,0,0,0.6)]"
-                  />
+                          : '/pengui-logo.png'
+                      }
+                      walletConnectMetadata={{
+                        name: 'Pengui',
+                        description:
+                          'Penguin Pool - Decentralized lending platform on Chia Network',
+                        url:
+                          typeof window !== 'undefined'
+                            ? window.location.origin
+                            : 'https://penguin.pool',
+                        icons: [
+                          typeof window !== 'undefined'
+                            ? `${window.location.origin}/pengui-logo.png`
+                            : '/pengui-logo.png',
+                          typeof window !== 'undefined'
+                            ? `${window.location.origin}/icons/icon-192x192.png`
+                            : '/icons/icon-192x192.png',
+                        ],
+                      }}
+                      className="!bg-transparent !text-white !px-0 !py-0 !border-0 !shadow-none text-base sm:text-lg md:text-xl font-semibold drop-shadow-lg [text-shadow:0_2px_8px_rgba(0,0,0,0.6)] !cursor-pointer w-full h-full flex items-center justify-center !text-center"
+                      style={{
+                        touchAction: 'manipulation',
+                        WebkitTapHighlightColor: 'transparent',
+                        WebkitTouchCallout: 'none',
+                        userSelect: 'none',
+                        minHeight: '44px', // iOS minimum touch target
+                        width: '100%',
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
-
-              {/* Glow effect on hover */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl sm:rounded-3xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 -z-10" />
             </div>
           </div>
         </div>

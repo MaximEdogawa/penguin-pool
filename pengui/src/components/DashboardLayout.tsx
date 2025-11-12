@@ -17,7 +17,6 @@ import {
   Sun,
   TrendingUp,
   User,
-  UserCircle,
   Wallet,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
@@ -84,7 +83,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     },
     { id: 'piggy-bank', icon: PiggyBank, label: 'Piggy Bank', path: '/piggy-bank' },
     { id: 'wallet', icon: Wallet, label: 'Wallet', path: '/wallet' },
-    { id: 'profile', icon: UserCircle, label: 'Profile', path: '/profile' },
   ]
 
   const getActiveItem = () => {
@@ -159,11 +157,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 ${
           sidebarCollapsed ? 'lg:w-12' : 'lg:w-56'
-        } w-16 transition-all duration-300 ease-in-out backdrop-blur-3xl ${t.sidebar} flex flex-col overflow-hidden flex-shrink-0`}
+        } w-16 transition-all duration-300 ease-in-out backdrop-blur-3xl ${t.sidebar} flex flex-col overflow-hidden flex-shrink-0 mobile-landscape-sidebar`}
       >
-        {/* Logo */}
+        {/* Logo - Fixed at top */}
         <div
-          className={`h-12 flex items-center border-b ${t.border} transition-all duration-300 ${
+          className={`h-12 flex-shrink-0 flex items-center border-b ${t.border} transition-all duration-300 ${
             sidebarCollapsed
               ? 'lg:justify-center lg:px-0'
               : 'justify-center lg:justify-start px-2 lg:px-3'
@@ -187,9 +185,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           )}
         </div>
 
-        {/* Menu Items */}
+        {/* Menu Items - Scrollable on mobile landscape */}
         <nav
-          className={`flex-1 space-y-0.5 transition-all duration-300 ${
+          className={`flex-1 space-y-0.5 transition-all duration-300 overflow-y-auto overflow-x-hidden scrollbar-modern mobile-landscape-scrollable ${
             sidebarCollapsed ? 'lg:p-1.5' : 'p-1 lg:p-2'
           }`}
         >
@@ -243,13 +241,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           })}
         </nav>
 
-        {/* User Profile */}
+        {/* User Profile - Fixed at bottom */}
         <div
-          className={`border-t ${t.border} transition-all duration-300 ${
+          className={`flex-shrink-0 border-t ${t.border} transition-all duration-300 mb-4 mobile-landscape-profile ${
             sidebarCollapsed ? 'lg:p-1.5' : 'p-1 lg:p-2'
           }`}
         >
           <div
+            onClick={() => {
+              router.push('/profile')
+              setSidebarOpen(false)
+            }}
             className={`flex items-center ${
               sidebarCollapsed
                 ? 'lg:w-10 lg:h-10 lg:mx-auto lg:justify-center lg:items-center lg:px-0 lg:py-0 lg:gap-0'
@@ -257,7 +259,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             } px-0 py-2 lg:gap-2.5 ${
               sidebarCollapsed ? 'lg:rounded-full' : 'rounded-lg'
             } transition-all cursor-pointer group relative overflow-hidden ${t.cardHover}`}
-            title="User"
+            title={sidebarCollapsed ? 'User' : 'Profile'}
           >
             {/* Glass effect overlay - enhanced */}
             <div
@@ -279,7 +281,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col lg:flex-row items-center justify-center lg:justify-start gap-2 lg:gap-2.5 flex-1 min-w-0 relative">
+              <div className="flex flex-col lg:flex-row items-center justify-center lg:justify-start gap-3 lg:gap-3 flex-1 min-w-0 relative">
                 <div
                   className={`w-10 h-10 lg:w-6 lg:h-6 rounded-lg bg-gradient-to-br ${t.accent} flex items-center justify-center flex-shrink-0 shadow-md backdrop-blur-xl`}
                 >
@@ -295,7 +297,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     e.stopPropagation()
                     toggleTheme()
                   }}
-                  className={`relative inline-flex h-5 w-9 lg:h-4 lg:w-7 items-center rounded-full backdrop-blur-3xl transition-all duration-300 focus:outline-none focus:ring-2 ${t.focusRing} overflow-hidden flex-shrink-0 ${
+                  className={`relative inline-flex h-5 w-9 lg:h-4 lg:w-7 items-center rounded-full backdrop-blur-3xl transition-all duration-300 focus:outline-none focus:ring-2 ${t.focusRing} overflow-hidden flex-shrink-0 ml-2 lg:ml-3 ${
                     isDark
                       ? 'bg-gradient-to-r from-white/5 via-white/10 to-white/5 border border-white/10 shadow-lg shadow-amber-500/20'
                       : 'bg-gradient-to-r from-white/20 via-white/30 to-white/20 border border-white/30 shadow-lg shadow-slate-900/20'
