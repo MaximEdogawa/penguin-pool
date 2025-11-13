@@ -1,7 +1,7 @@
 'use client'
 
 import PenguinLogo from '@/components/PenguinLogo'
-import { ConnectButton } from '@chia/wallet-connect'
+import { ConnectButton } from '@maximEdogawa/chia-wallet-connect-react'
 
 export default function LoginPage() {
   return (

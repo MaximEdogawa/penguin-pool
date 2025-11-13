@@ -2,7 +2,7 @@
 
 import { useWalletConnection } from '@/hooks/useWalletConnection'
 import { getThemeClasses } from '@/lib/theme'
-import { ConnectButton } from '@chia/wallet-connect'
+import { ConnectButton } from '@maximEdogawa/chia-wallet-connect-react'
 import {
   Bell,
   FileCheck,

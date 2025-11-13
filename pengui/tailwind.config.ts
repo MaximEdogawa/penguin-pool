@@ -7,10 +7,6 @@ const config = {
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
-    // Include chia-wallet-connect package source files
-    '../../chia-wallet-connect/src/**/*.{ts,tsx,js,jsx}',
-    // Also include from node_modules if installed as a package
-    './node_modules/@chia/wallet-connect/src/**/*.{ts,tsx,js,jsx}',
   ],
   prefix: '',
   theme: {

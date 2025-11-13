@@ -1,8 +1,5 @@
 import { useSelector } from 'react-redux'
 
-/**
- * Hook to get the wallet fingerprint from @chia/wallet-connect Redux store
- */
 export function useWalletFingerprint(): string | null {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fingerprint = useSelector((state: any): string | null => {

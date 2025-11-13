@@ -1,19 +1,19 @@
 'use client'
 
+import DashboardLayout from '@/components/DashboardLayout'
+import ReactQueryProvider from '@/components/ReactQueryProvider'
+import WalletConnectionGuard from '@/components/WalletConnectionGuard'
+import { cn } from '@/lib/utils'
+import { WalletManager, persistor, store } from '@maximEdogawa/chia-wallet-connect-react'
+import '@maximEdogawa/chia-wallet-connect-react/styles/globals.css'
+import { ThemeProvider } from 'next-themes'
 import { Inter } from 'next/font/google'
+import { usePathname } from 'next/navigation'
 import Script from 'next/script'
 import { useEffect } from 'react'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
-import { ThemeProvider } from 'next-themes'
-import { usePathname } from 'next/navigation'
-import { store, persistor, WalletManager } from '@chia/wallet-connect'
-import '@chia/wallet-connect/styles'
 import './globals.css'
-import ReactQueryProvider from '@/components/ReactQueryProvider'
-import WalletConnectionGuard from '@/components/WalletConnectionGuard'
-import DashboardLayout from '@/components/DashboardLayout'
-import { cn } from '@/lib/utils'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 

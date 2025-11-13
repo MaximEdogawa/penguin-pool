@@ -9,7 +9,7 @@
     "lint": "ESLINT_USE_FLAT_CONFIG=true bun eslint ."
   },
   "dependencies": {
-    "@chia/wallet-connect": "file:../../chia-wallet-connect",
+    "@maximEdogawa/chia-wallet-connect-react": "file:../../chia-wallet-connect/dist",
     "@tanstack/react-query": "^5.90.7",
     "clsx": "^2.1.1",
     "lucide-react": "^0.553.0",
@@ -31,7 +31,6 @@
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "autoprefixer": "^10.4.21",
-    "copy-webpack-plugin": "^12.0.2",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.33",
     "postcss": "^8.5.6",

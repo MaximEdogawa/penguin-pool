@@ -1,12 +1,7 @@
-import { store } from '@chia/wallet-connect'
+import { store } from '@maximEdogawa/chia-wallet-connect-react'
 import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
 
-/**
- * Hook to check if wallet is connected via @chia/wallet-connect
- * Checks Redux store for session data or connection flags
- * Uses both useSelector (reactive) and direct store check (fallback)
- */
 export function useWalletConnection() {
   const [directCheck, setDirectCheck] = useState(false)
 
