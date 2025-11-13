@@ -78,6 +78,16 @@
   * {
     @apply border-border;
   }
+
+  /* Exclude WalletConnect modal from global border styles */
+  w3m-modal,
+  w3m-modal *,
+  [data-wcm-modal],
+  [data-wcm-modal] *,
+  .wcm-modal,
+  .wcm-modal * {
+    border: revert !important;
+  }
   html {
     width: 100%;
     max-width: 100vw;

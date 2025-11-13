@@ -5,7 +5,6 @@ import ReactQueryProvider from '@/components/ReactQueryProvider'
 import WalletConnectionGuard from '@/components/WalletConnectionGuard'
 import { cn } from '@/lib/utils'
 import { WalletManager, persistor, store } from '@maximEdogawa/chia-wallet-connect-react'
-import '@maximEdogawa/chia-wallet-connect-react/styles/globals.css'
 import { ThemeProvider } from 'next-themes'
 import { Inter } from 'next/font/google'
 import { usePathname } from 'next/navigation'
@@ -14,6 +13,9 @@ import { useEffect } from 'react'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
 import './globals.css'
+// Package styles are now imported automatically when using the package components
+// This file only contains style overrides to prevent conflicts
+import './wallet-connect.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
@@ -77,11 +79,13 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <Provider store={store}>
             <PersistGate loading={null} persistor={persistor}>
-              <WalletConnectionGuard>
-                <ReactQueryProvider>
-                  <DashboardLayoutWrapper>{children}</DashboardLayoutWrapper>
-                </ReactQueryProvider>
-              </WalletConnectionGuard>
+              <div className="wallet-connect-scope">
+                <WalletConnectionGuard>
+                  <ReactQueryProvider>
+                    <DashboardLayoutWrapper>{children}</DashboardLayoutWrapper>
+                  </ReactQueryProvider>
+                </WalletConnectionGuard>
+              </div>
             </PersistGate>
           </Provider>
         </ThemeProvider>

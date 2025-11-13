@@ -7,11 +7,17 @@ const config = {
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
+    // Include chia-wallet-connect-react package components so their Tailwind classes are available
+    './node_modules/@maximEdogawa/chia-wallet-connect-react/dist/**/*.{js,jsx,ts,tsx}',
+    '../../chia-wallet-connect/src/**/*.{js,jsx,ts,tsx}',
   ],
   prefix: '',
   theme: {
     extend: {
       colors: {
+        // Package colors for chia-wallet-connect-react components
+        brandDark: '#526e78',
+        brandLight: '#EFF4F7',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
@@ -67,10 +73,17 @@ const config = {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
+        // Package keyframes for chia-wallet-connect-react components
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
       },
       animation: {
         gradient: 'gradient 3s ease infinite',
         shimmer: 'shimmer 2s linear infinite',
+        // Package animation for chia-wallet-connect-react components
+        fadeIn: 'fadeIn .3s ease-in-out',
       },
     },
   },
