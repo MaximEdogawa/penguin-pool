@@ -4,7 +4,12 @@ import DashboardLayout from '@/components/DashboardLayout'
 import ReactQueryProvider from '@/components/ReactQueryProvider'
 import WalletConnectionGuard from '@/components/WalletConnectionGuard'
 import { cn } from '@/lib/utils'
-import { WalletManager, persistor, store } from '@maximedogawa/chia-wallet-connect-react'
+import {
+  WalletManager,
+  persistor,
+  restoreConnectionStateImmediate,
+  store,
+} from '@maximedogawa/chia-wallet-connect-react'
 import { ThemeProvider } from 'next-themes'
 import { Inter } from 'next/font/google'
 import { usePathname } from 'next/navigation'
@@ -20,20 +25,37 @@ import './wallet-connect.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
-export default function UILayout({ children }: { children: React.ReactNode }) {
-  // Initialize WalletManager with pengui icon
-  useEffect(() => {
-    const penguiIcon =
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/pengui-logo.png`
-        : '/pengui-logo.png'
+// Wallet metadata configuration (shared between WalletManager and restoreConnectionState)
+const getWalletConnectConfig = () => {
+  if (typeof window === 'undefined') {
+    return {
+      penguiIcon: '/pengui-logo.png',
+      metadata: {
+        name: 'Pengui',
+        description: 'Penguin Pool - Decentralized lending platform on Chia Network',
+        url: 'https://penguin.pool',
+        icons: ['/pengui-logo.png'],
+      },
+    }
+  }
 
-    const walletManager = new WalletManager(penguiIcon, {
+  const penguiIcon = `${window.location.origin}/pengui-logo.png`
+  return {
+    penguiIcon,
+    metadata: {
       name: 'Pengui',
       description: 'Penguin Pool - Decentralized lending platform on Chia Network',
-      url: typeof window !== 'undefined' ? window.location.origin : 'https://penguin.pool',
+      url: window.location.origin,
       icons: [penguiIcon],
-    })
+    },
+  }
+}
+
+export default function UILayout({ children }: { children: React.ReactNode }) {
+  // Initialize WalletManager on mount
+  useEffect(() => {
+    const { penguiIcon, metadata } = getWalletConnectConfig()
+    const walletManager = new WalletManager(penguiIcon, metadata)
     walletManager.detectEvents()
   }, [])
 
@@ -78,7 +100,24 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
         />
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <Provider store={store}>
-            <PersistGate loading={null} persistor={persistor}>
+            <PersistGate
+              loading={null}
+              persistor={persistor}
+              onBeforeLift={async () => {
+                // Restore connection state after Redux Persist has rehydrated
+                // This ensures the connection is re-established after page refresh
+                const { penguiIcon, metadata } = getWalletConnectConfig()
+                await restoreConnectionStateImmediate({
+                  walletConnectIcon: penguiIcon,
+                  walletConnectMetadata: metadata,
+                })
+                // Ensure events are detected after restoration
+                // Create a new WalletManager instance to detect events
+                // (detectEvents reads from Redux store, so instance doesn't matter)
+                const walletManager = new WalletManager(penguiIcon, metadata)
+                await walletManager.detectEvents()
+              }}
+            >
               <div className="wallet-connect-scope">
                 <WalletConnectionGuard>
                   <ReactQueryProvider>
