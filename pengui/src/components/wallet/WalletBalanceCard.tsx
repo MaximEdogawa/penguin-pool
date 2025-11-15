@@ -1,52 +1,30 @@
 'use client'
 
-import { getThemeClasses } from '@/lib/theme'
+import {
+  formatConfirmedBalance,
+  formatSpendableBalance,
+} from '@/lib/walletConnect/utils/balanceUtils'
 import { useWalletBalance, useRefreshBalance } from '@/hooks'
+import { useBalanceLoading } from '@/hooks/useBalanceLoading'
+import { useThemeClasses } from '@/hooks/useThemeClasses'
 import { useWalletConnectionState } from '@maximedogawa/chia-wallet-connect-react'
 import { Wallet, RefreshCw } from 'lucide-react'
-import { useTheme } from 'next-themes'
-import { useEffect, useState, useMemo } from 'react'
+import { useMemo } from 'react'
 
 export default function WalletBalanceCard() {
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [showInitialLoading, setShowInitialLoading] = useState(false)
-
-  const { theme: currentTheme, systemTheme } = useTheme()
+  const { isDark, t } = useThemeClasses()
   const { isConnected, connectedWallet, walletName } = useWalletConnectionState()
   const { data: balance, isLoading: isLoadingBalance, error: balanceError } = useWalletBalance()
   const { refreshBalance } = useRefreshBalance()
 
-  const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
-  const t = getThemeClasses(isDark)
+  const { showSpinner, setIsRefreshing } = useBalanceLoading({
+    isConnected,
+    isLoading: isLoadingBalance,
+    hasBalance: !!balance,
+  })
 
-  // Show initial loading spinner with a small delay
-  useEffect(() => {
-    if (isConnected && isLoadingBalance) {
-      const timer = setTimeout(() => {
-        setShowInitialLoading(true)
-      }, 300)
-      return () => clearTimeout(timer)
-    } else {
-      setShowInitialLoading(false)
-    }
-  }, [isConnected, isLoadingBalance])
-
-  const showSpinner =
-    isLoadingBalance || isRefreshing || (showInitialLoading && isConnected && !balance)
-
-  const formattedBalance = useMemo(() => {
-    if (!balance?.confirmed) return '0.000000'
-    const mojos = BigInt(balance.confirmed)
-    const xch = Number(mojos) / 1_000_000_000_000
-    return xch.toFixed(6)
-  }, [balance])
-
-  const formattedSpendable = useMemo(() => {
-    if (!balance?.spendable) return '0.000000'
-    const mojos = BigInt(balance.spendable)
-    const xch = Number(mojos) / 1_000_000_000_000
-    return xch.toFixed(6)
-  }, [balance])
+  const formattedBalance = useMemo(() => formatConfirmedBalance(balance), [balance])
+  const formattedSpendable = useMemo(() => formatSpendableBalance(balance), [balance])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)

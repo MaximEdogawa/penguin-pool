@@ -1,24 +1,15 @@
 'use client'
 
-import { getThemeClasses } from '@/lib/theme'
+import { formatAddress } from '@/lib/utils/addressUtils'
+import { useThemeClasses } from '@/hooks/useThemeClasses'
 import { ConnectButton, useWalletConnectionState } from '@maximedogawa/chia-wallet-connect-react'
 import { Wallet, Copy } from 'lucide-react'
-import { useTheme } from 'next-themes'
 import { useState } from 'react'
 
 export default function WalletAddress() {
   const [isAddressCopied, setIsAddressCopied] = useState(false)
-  const { theme: currentTheme, systemTheme } = useTheme()
+  const { isDark, t } = useThemeClasses()
   const { isConnected, address } = useWalletConnectionState()
-
-  const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
-  const t = getThemeClasses(isDark)
-
-  const formatAddress = (addr: string): string => {
-    if (!addr) return ''
-    if (addr.length <= 10) return addr
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`
-  }
 
   const copyAddress = async () => {
     if (!address) return

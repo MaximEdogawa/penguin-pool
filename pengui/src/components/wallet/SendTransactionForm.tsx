@@ -1,23 +1,24 @@
 'use client'
 
-import { getThemeClasses } from '@/lib/theme'
 import { getMinimumFeeInXch } from '@/lib/utils/chia-units'
+import { extractTransactionId } from '@/lib/walletConnect/utils/transactionUtils'
 import { ConnectButton, useWalletConnectionState } from '@maximedogawa/chia-wallet-connect-react'
 import { useSendTransaction, useRefreshBalance } from '@/hooks'
 import { useTransactionForm } from '@/hooks/useTransactionForm'
+import { useThemeClasses } from '@/hooks/useThemeClasses'
 import { Send, RefreshCw } from 'lucide-react'
-import { useTheme } from 'next-themes'
 import { useState } from 'react'
 import TransactionStatus from './TransactionStatus'
 import { logger } from '@/lib/logger'
 import { saveTransaction } from '@/lib/walletConnect/utils/transactionStorage'
+import FormInput from './shared/FormInput'
 
 interface SendTransactionFormProps {
   availableBalance: number
 }
 
 export default function SendTransactionForm({ availableBalance }: SendTransactionFormProps) {
-  const { theme: currentTheme, systemTheme } = useTheme()
+  const { isDark, t } = useThemeClasses()
   const { isConnected, address } = useWalletConnectionState()
   const sendTransactionMutation = useSendTransaction()
   const { refreshBalance } = useRefreshBalance()
@@ -47,9 +48,6 @@ export default function SendTransactionForm({ availableBalance }: SendTransactio
     message: string
   }>({ type: null, message: '' })
 
-  const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
-  const t = getThemeClasses(isDark)
-
   const handleSendTransaction = async () => {
     setTransactionStatus({ type: null, message: '' })
 
@@ -63,37 +61,13 @@ export default function SendTransactionForm({ availableBalance }: SendTransactio
     }
 
     try {
-      const result = await sendTransactionMutation.mutateAsync(getTransactionParams())
-
-      // Extract transaction ID from various possible response structures
-      let transactionId = 'N/A'
-      if (result && typeof result === 'object') {
-        const resultObj = result as unknown as Record<string, unknown>
-
-        if (typeof resultObj.transactionId === 'string') {
-          transactionId = resultObj.transactionId
-        } else if (typeof resultObj.id === 'string') {
-          transactionId = resultObj.id
-        } else if (typeof resultObj.transaction_id === 'string') {
-          transactionId = resultObj.transaction_id
-        } else if (typeof resultObj.txId === 'string') {
-          transactionId = resultObj.txId
-        } else if (resultObj.transaction && typeof resultObj.transaction === 'object') {
-          const transaction = resultObj.transaction as Record<string, unknown>
-          if (typeof transaction.transactionId === 'string') {
-            transactionId = transaction.transactionId
-          } else if (typeof transaction.id === 'string') {
-            transactionId = transaction.id
-          }
-        } else if (typeof resultObj.transaction === 'string') {
-          transactionId = resultObj.transaction
-        }
-      }
+      const params = getTransactionParams()
+      const result = await sendTransactionMutation.mutateAsync(params)
+      const transactionId = extractTransactionId(result)
 
       logger.info('Transaction result:', result)
 
       // Save transaction to local storage
-      const params = getTransactionParams()
       saveTransaction({
         transactionId: transactionId,
         type: 'send',
@@ -139,92 +113,62 @@ export default function SendTransactionForm({ availableBalance }: SendTransactio
 
   return (
     <div className="space-y-3">
-      <div>
-        <label className={`${t.textSecondary} text-xs font-medium mb-2 block`}>
-          Recipient Address
-        </label>
-        <input
-          type="text"
-          value={recipientAddress}
-          onChange={(e) => {
-            setRecipientAddress(e.target.value)
-            if (addressError) validateAddress()
-          }}
-          onBlur={validateAddress}
-          placeholder="xch1..."
-          className={`w-full px-4 py-3 rounded-xl backdrop-blur-xl ${t.input} ${t.text} placeholder:${t.textSecondary} focus:outline-none focus:ring-2 ${
-            addressError ? 'ring-2 ring-red-500/50' : t.focusRing
-          } transition-all`}
-        />
-        {addressError && (
-          <p className={`${isDark ? 'text-red-400' : 'text-red-600'} text-xs mt-1`}>
-            {addressError}
-          </p>
-        )}
-      </div>
-      <div>
-        <label className={`${t.textSecondary} text-xs font-medium mb-2 block`}>Amount (XCH)</label>
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => {
-            setAmount(e.target.value)
-            if (amountError) validateAmount()
-          }}
-          onBlur={validateAmount}
-          placeholder="0.000000"
-          step="0.000001"
-          min="0"
-          className={`w-full px-4 py-3 rounded-xl backdrop-blur-xl ${t.input} ${t.text} placeholder:${t.textSecondary} focus:outline-none focus:ring-2 ${
-            amountError ? 'ring-2 ring-red-500/50' : t.focusRing
-          } transition-all`}
-        />
-        {amountError && (
-          <p className={`${isDark ? 'text-red-400' : 'text-red-600'} text-xs mt-1`}>
-            {amountError}
-          </p>
-        )}
-        {availableBalance > 0 && (
-          <p className={`${t.textSecondary} text-xs mt-1`}>
-            Available: {availableBalance.toFixed(6)} XCH
-          </p>
-        )}
-      </div>
-      <div>
-        <label className={`${t.textSecondary} text-xs font-medium mb-2 block`}>
-          Fee (XCH) <span className="text-[10px]">(min: {getMinimumFeeInXch()})</span>
-        </label>
-        <input
-          type="number"
-          value={fee}
-          onChange={(e) => {
-            setFee(e.target.value)
-            if (feeError) validateFee()
-          }}
-          onBlur={validateFee}
-          placeholder="0.000001"
-          step="0.000001"
-          min={getMinimumFeeInXch()}
-          className={`w-full px-4 py-3 rounded-xl backdrop-blur-xl ${t.input} ${t.text} placeholder:${t.textSecondary} focus:outline-none focus:ring-2 ${
-            feeError ? 'ring-2 ring-red-500/50' : t.focusRing
-          } transition-all`}
-        />
-        {feeError && (
-          <p className={`${isDark ? 'text-red-400' : 'text-red-600'} text-xs mt-1`}>{feeError}</p>
-        )}
-      </div>
-      <div>
-        <label className={`${t.textSecondary} text-xs font-medium mb-2 block`}>
-          Memo (Optional)
-        </label>
-        <input
-          type="text"
-          value={memo}
-          onChange={(e) => setMemo(e.target.value)}
-          placeholder="Optional memo"
-          className={`w-full px-4 py-3 rounded-xl backdrop-blur-xl ${t.input} ${t.text} placeholder:${t.textSecondary} focus:outline-none focus:ring-2 ${t.focusRing} transition-all`}
-        />
-      </div>
+      <FormInput
+        label="Recipient Address"
+        type="text"
+        value={recipientAddress}
+        onChange={(e) => {
+          setRecipientAddress(e.target.value)
+          if (addressError) validateAddress()
+        }}
+        onBlur={validateAddress}
+        placeholder="xch1..."
+        error={addressError}
+      />
+      <FormInput
+        label="Amount (XCH)"
+        type="number"
+        value={amount}
+        onChange={(e) => {
+          setAmount(e.target.value)
+          if (amountError) validateAmount()
+        }}
+        onBlur={validateAmount}
+        placeholder="0.000000"
+        step="0.000001"
+        min="0"
+        error={amountError}
+        helperText={
+          availableBalance > 0 ? (
+            <span>Available: {availableBalance.toFixed(6)} XCH</span>
+          ) : undefined
+        }
+      />
+      <FormInput
+        label={
+          <>
+            Fee (XCH) <span className="text-[10px]">(min: {getMinimumFeeInXch()})</span>
+          </>
+        }
+        type="number"
+        value={fee}
+        onChange={(e) => {
+          setFee(e.target.value)
+          if (feeError) validateFee()
+        }}
+        onBlur={validateFee}
+        placeholder="0.000001"
+        step="0.000001"
+        min={getMinimumFeeInXch()}
+        error={feeError}
+      />
+      <FormInput
+        label="Memo (Optional)"
+        type="text"
+        value={memo}
+        onChange={(e) => setMemo(e.target.value)}
+        placeholder="Optional memo"
+      />
       <TransactionStatus type={transactionStatus.type} message={transactionStatus.message} />
       <button
         onClick={handleSendTransaction}

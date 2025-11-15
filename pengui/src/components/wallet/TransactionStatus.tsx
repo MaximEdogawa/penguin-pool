@@ -1,7 +1,7 @@
 'use client'
 
 import { AlertCircle, CheckCircle2 } from 'lucide-react'
-import { useTheme } from 'next-themes'
+import { useThemeClasses } from '@/hooks/useThemeClasses'
 
 interface TransactionStatusProps {
   type: 'success' | 'error' | null
@@ -9,8 +9,7 @@ interface TransactionStatusProps {
 }
 
 export default function TransactionStatus({ type, message }: TransactionStatusProps) {
-  const { theme: currentTheme, systemTheme } = useTheme()
-  const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
+  const { isDark } = useThemeClasses()
 
   if (!type) return null
 
