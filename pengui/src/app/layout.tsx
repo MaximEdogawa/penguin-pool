@@ -84,7 +84,7 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
         />
       </head>
       <body
-        className={cn(inter.className, 'w-full overflow-x-hidden')}
+        className={cn(inter.variable, 'w-full overflow-x-hidden font-sans')}
         style={{ width: '100vw', maxWidth: '100vw', margin: 0, padding: 0, borderRight: 'none' }}
       >
         <Script

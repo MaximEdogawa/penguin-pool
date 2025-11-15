@@ -60,7 +60,7 @@ export default function WalletConnectionGuard({ children }: { children: React.Re
   useEffect(() => {
     if (!isHydrated) return
 
-    const isLoginPage = pathname === '/login'
+    const isLoginPage = pathname === '/login' || pathname === '/'
 
     // Track if connection state just changed (new connection)
     const isNewConnection = isConnected && !wasConnected
@@ -70,44 +70,52 @@ export default function WalletConnectionGuard({ children }: { children: React.Re
       setWasConnected(false)
     }
 
-    // If connected and on login page → redirect to dashboard (but wait for modal to close)
-    if (isConnected && isLoginPage) {
-      // Clear any existing timeout
-      if (redirectTimeoutRef.current) {
-        clearTimeout(redirectTimeoutRef.current)
-      }
-      if (checkModalIntervalRef.current) {
-        clearInterval(checkModalIntervalRef.current)
-      }
-
-      // If this is a new connection, wait longer to allow modal flow to complete
-      const initialDelay = isNewConnection ? 2000 : 500
-
-      // Check if modal is open, and wait for it to close before redirecting
-      const checkAndRedirect = () => {
-        if (!isModalOpen()) {
-          // Modal is closed, safe to redirect
-          router.replace('/dashboard')
-        } else {
-          // Modal is still open, check again in 500ms
-          redirectTimeoutRef.current = setTimeout(checkAndRedirect, 500)
+    // If connected → redirect to dashboard (but wait for modal to close if on login page)
+    if (isConnected) {
+      // If on login page, wait for modal to close before redirecting
+      if (isLoginPage) {
+        // Clear any existing timeout
+        if (redirectTimeoutRef.current) {
+          clearTimeout(redirectTimeoutRef.current)
         }
-      }
+        if (checkModalIntervalRef.current) {
+          clearInterval(checkModalIntervalRef.current)
+        }
 
-      // Start checking after a delay to allow modal to open/close
-      redirectTimeoutRef.current = setTimeout(checkAndRedirect, initialDelay)
+        // If this is a new connection, wait longer to allow modal flow to complete
+        const initialDelay = isNewConnection ? 2000 : 500
 
-      // Also set up an interval to check modal state (as backup)
-      checkModalIntervalRef.current = setInterval(() => {
-        if (!isModalOpen() && isConnected && pathname === '/login') {
-          if (redirectTimeoutRef.current) {
-            clearTimeout(redirectTimeoutRef.current)
+        // Check if modal is open, and wait for it to close before redirecting
+        const checkAndRedirect = () => {
+          if (!isModalOpen()) {
+            // Modal is closed, safe to redirect
+            router.replace('/dashboard')
+          } else {
+            // Modal is still open, check again in 500ms
+            redirectTimeoutRef.current = setTimeout(checkAndRedirect, 500)
           }
-          clearInterval(checkModalIntervalRef.current!)
+        }
+
+        // Start checking after a delay to allow modal to open/close
+        redirectTimeoutRef.current = setTimeout(checkAndRedirect, initialDelay)
+
+        // Also set up an interval to check modal state (as backup)
+        checkModalIntervalRef.current = setInterval(() => {
+          if (!isModalOpen() && isConnected && isLoginPage) {
+            if (redirectTimeoutRef.current) {
+              clearTimeout(redirectTimeoutRef.current)
+            }
+            clearInterval(checkModalIntervalRef.current!)
+            router.replace('/dashboard')
+          }
+        }, 500)
+      } else {
+        // Already on a different page and connected - no redirect needed
+        // Just ensure we're not on login page
+        if (pathname === '/login' || pathname === '/') {
           router.replace('/dashboard')
         }
-      }, 500)
-
+      }
       return
     }
 
