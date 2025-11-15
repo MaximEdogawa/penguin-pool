@@ -1,9 +1,8 @@
-// Phase 1: Stub implementation - wallet connection will be added in Phase 2
-import { useState } from 'react'
+// Phase 2: Use the real useWalletConnectionState hook from chia-wallet-connect-react
+import { useWalletConnectionState } from '@maximedogawa/chia-wallet-connect-react'
 
 export function useWalletConnection() {
-  // Demo mode - always return false for Phase 1
-  const [isConnected] = useState(false)
+  const { isConnected } = useWalletConnectionState()
 
   return { isConnected }
 }

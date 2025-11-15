@@ -2,16 +2,41 @@
 
 import DashboardLayout from '@/components/DashboardLayout'
 import ReactQueryProvider from '@/components/ReactQueryProvider'
+import WalletConnectionGuard from '@/components/WalletConnectionGuard'
 import { cn } from '@/lib/utils'
+import { WalletManager, persistor, store } from '@maximedogawa/chia-wallet-connect-react'
 import { ThemeProvider } from 'next-themes'
 import { Inter } from 'next/font/google'
 import { usePathname } from 'next/navigation'
 import Script from 'next/script'
+import { useEffect } from 'react'
+import { Provider } from 'react-redux'
+import { PersistGate } from 'redux-persist/integration/react'
 import './globals.css'
+// Import wallet connect package styles directly
+// Using the package export path which maps to dist/styles/globals.css
+import '@maximedogawa/chia-wallet-connect-react/styles'
+import './wallet-connect.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export default function UILayout({ children }: { children: React.ReactNode }) {
+  // Initialize WalletManager with pengui icon
+  useEffect(() => {
+    const penguiIcon =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/pengui-logo.png`
+        : '/pengui-logo.png'
+
+    const walletManager = new WalletManager(penguiIcon, {
+      name: 'Pengui',
+      description: 'Penguin Pool - Decentralized lending platform on Chia Network',
+      url: typeof window !== 'undefined' ? window.location.origin : 'https://penguin.pool',
+      icons: [penguiIcon],
+    })
+    walletManager.detectEvents()
+  }, [])
+
   return (
     <html lang="en" className="font-extralight" suppressHydrationWarning>
       <head>
@@ -52,9 +77,17 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
           }}
         />
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <ReactQueryProvider>
-            <DashboardLayoutWrapper>{children}</DashboardLayoutWrapper>
-          </ReactQueryProvider>
+          <Provider store={store}>
+            <PersistGate loading={null} persistor={persistor}>
+              <div className="wallet-connect-scope">
+                <WalletConnectionGuard>
+                  <ReactQueryProvider>
+                    <DashboardLayoutWrapper>{children}</DashboardLayoutWrapper>
+                  </ReactQueryProvider>
+                </WalletConnectionGuard>
+              </div>
+            </PersistGate>
+          </Provider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,16 +1,9 @@
 'use client'
 
 import PenguinLogo from '@/components/PenguinLogo'
-import { useRouter } from 'next/navigation'
+import { ConnectButton } from '@maximedogawa/chia-wallet-connect-react'
 
 export default function LoginPage() {
-  const router = useRouter()
-
-  const handleDemoLogin = () => {
-    // Demo mode - just redirect to dashboard
-    router.push('/dashboard')
-  }
-
   return (
     <div
       className="h-screen flex items-center justify-center px-3 py-8 sm:px-4 sm:py-12 md:px-6 md:py-16 lg:px-20 xl:px-80 backdrop-blur-3xl bg-cover bg-center bg-no-repeat relative overflow-hidden w-full"
@@ -63,14 +56,10 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Wallet Connection Section - Demo Mode */}
+        {/* Wallet Connection Section */}
         <div className="flex flex-col items-center w-full gap-3 sm:gap-4">
           <div className="flex flex-col w-full">
-            <div
-              className="relative overflow-hidden rounded-2xl sm:rounded-3xl w-full cursor-pointer"
-              style={{ touchAction: 'manipulation' }}
-              onClick={handleDemoLogin}
-            >
+            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl w-full">
               {/* Gradient border effect */}
               <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px] opacity-60 pointer-events-none">
                 <div className="h-full w-full rounded-2xl sm:rounded-3xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95" />
@@ -85,21 +74,7 @@ export default function LoginPage() {
                   className="relative z-10 flex items-center justify-center w-full h-full"
                   style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                 >
-                  <div
-                    className="w-full h-full flex items-center justify-center"
-                    style={{
-                      touchAction: 'manipulation',
-                      WebkitTapHighlightColor: 'transparent',
-                      WebkitTouchCallout: 'none',
-                      userSelect: 'none',
-                      minHeight: '44px',
-                      width: '100%',
-                    }}
-                  >
-                    <span className="text-base sm:text-lg md:text-xl font-semibold drop-shadow-lg [text-shadow:0_2px_8px_rgba(0,0,0,0.6)] text-white text-center">
-                      Enter Demo Mode
-                    </span>
-                  </div>
+                  <ConnectButton />
                 </div>
               </div>
             </div>
@@ -109,7 +84,7 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="text-center pt-1">
           <p className="text-white/55 dark:text-gray-400 text-[9px] sm:text-[10px] md:text-[11px] leading-relaxed tracking-wide">
-            Demo mode - Wallet connection will be available in Phase 2
+            Connect your wallet to get started
           </p>
         </div>
       </div>
