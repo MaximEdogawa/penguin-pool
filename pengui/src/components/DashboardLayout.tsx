@@ -1,6 +1,7 @@
 'use client'
 
 import { getThemeClasses } from '@/lib/theme'
+import { ConnectButton } from '@maximedogawa/chia-wallet-connect-react'
 import {
   Bell,
   FileCheck,
@@ -16,7 +17,6 @@ import {
   User,
   Wallet,
 } from 'lucide-react'
-import { ConnectButton, useWalletConnectionState } from '@maximedogawa/chia-wallet-connect-react'
 import { useTheme } from 'next-themes'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -34,16 +34,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { theme: currentTheme, systemTheme, setTheme } = useTheme()
   const pathname = usePathname()
   const router = useRouter()
-  const { isConnected, address } = useWalletConnectionState()
 
   const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
   const t = getThemeClasses(isDark)
-
-  const formatAddress = (addr: string | null): string => {
-    if (!addr) return ''
-    if (addr.length <= 10) return addr
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`
-  }
 
   const toggleTheme = () => {
     setTheme(isDark ? 'light' : 'dark')
@@ -407,23 +400,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </button>
             {/* Wallet Connection Status */}
             <div className="relative flex items-center flex-shrink-0">
-              {isConnected && address ? (
-                <div
-                  className={`px-3 py-1.5 rounded-lg ${t.cardHover} ${t.text} text-xs flex items-center gap-2`}
-                  title={address}
-                >
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      isDark ? 'bg-emerald-400' : 'bg-emerald-600'
-                    }`}
-                  />
-                  <span className="font-mono">{formatAddress(address)}</span>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <ConnectButton />
-                </div>
-              )}
+              <ConnectButton />
             </div>
           </div>
         </header>
