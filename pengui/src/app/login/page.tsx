@@ -1,9 +1,16 @@
 'use client'
 
 import PenguinLogo from '@/components/PenguinLogo'
-import { ConnectButton } from '@maximEdogawa/chia-wallet-connect-react'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
+  const router = useRouter()
+
+  const handleDemoLogin = () => {
+    // Demo mode - just redirect to dashboard
+    router.push('/dashboard')
+  }
+
   return (
     <div
       className="h-screen flex items-center justify-center px-3 py-8 sm:px-4 sm:py-12 md:px-6 md:py-16 lg:px-20 xl:px-80 backdrop-blur-3xl bg-cover bg-center bg-no-repeat relative overflow-hidden w-full"
@@ -56,28 +63,20 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Wallet Connection Section */}
+        {/* Wallet Connection Section - Demo Mode */}
         <div className="flex flex-col items-center w-full gap-3 sm:gap-4">
           <div className="flex flex-col w-full">
             <div
               className="relative overflow-hidden rounded-2xl sm:rounded-3xl w-full cursor-pointer"
               style={{ touchAction: 'manipulation' }}
-              onClick={(e) => {
-                // Find and click the ConnectButton inside
-                const button = e.currentTarget.querySelector(
-                  'button, [role="button"]'
-                ) as HTMLElement
-                if (button) {
-                  button.click()
-                }
-              }}
+              onClick={handleDemoLogin}
             >
-              {/* Gradient border effect - simplified for iOS */}
+              {/* Gradient border effect */}
               <div className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px] opacity-60 pointer-events-none">
                 <div className="h-full w-full rounded-2xl sm:rounded-3xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95" />
               </div>
 
-              {/* Main content container - increased padding for larger click area */}
+              {/* Main content container */}
               <div
                 className="relative bg-gradient-to-br from-white/10 via-white/5 to-transparent dark:from-gray-800/20 dark:via-gray-800/10 dark:to-transparent backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-white/20 dark:border-gray-700/30 p-4 sm:p-5 md:p-6 min-h-[60px] sm:min-h-[70px]"
                 style={{ touchAction: 'manipulation' }}
@@ -93,36 +92,13 @@ export default function LoginPage() {
                       WebkitTapHighlightColor: 'transparent',
                       WebkitTouchCallout: 'none',
                       userSelect: 'none',
-                      minHeight: '44px', // iOS minimum touch target
+                      minHeight: '44px',
                       width: '100%',
                     }}
                   >
-                    <ConnectButton
-                      connectText="Connect Wallet"
-                      walletConnectIcon={
-                        typeof window !== 'undefined'
-                          ? `${window.location.origin}/pengui-logo.png`
-                          : '/pengui-logo.png'
-                      }
-                      walletConnectMetadata={{
-                        name: 'Pengui',
-                        description:
-                          'Penguin Pool - Decentralized lending platform on Chia Network',
-                        url:
-                          typeof window !== 'undefined'
-                            ? window.location.origin
-                            : 'https://penguin.pool',
-                        icons: [
-                          typeof window !== 'undefined'
-                            ? `${window.location.origin}/pengui-logo.png`
-                            : '/pengui-logo.png',
-                          typeof window !== 'undefined'
-                            ? `${window.location.origin}/icons/icon-192x192.png`
-                            : '/icons/icon-192x192.png',
-                        ],
-                      }}
-                      className="!bg-transparent !text-white !px-0 !py-0 !border-0 !shadow-none text-base sm:text-lg md:text-xl font-semibold drop-shadow-lg [text-shadow:0_2px_8px_rgba(0,0,0,0.6)] !cursor-pointer w-full h-full flex items-center justify-center !text-center"
-                    />
+                    <span className="text-base sm:text-lg md:text-xl font-semibold drop-shadow-lg [text-shadow:0_2px_8px_rgba(0,0,0,0.6)] text-white text-center">
+                      Enter Demo Mode
+                    </span>
                   </div>
                 </div>
               </div>
@@ -133,20 +109,7 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="text-center pt-1">
           <p className="text-white/55 dark:text-gray-400 text-[9px] sm:text-[10px] md:text-[11px] leading-relaxed tracking-wide">
-            By connecting your wallet, you agree to our{' '}
-            <a
-              href="#"
-              className="text-white/80 dark:text-gray-300 hover:text-white dark:hover:text-gray-100 underline underline-offset-2 hover:underline-offset-4 transition-all font-normal"
-            >
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a
-              href="#"
-              className="text-white/80 dark:text-gray-300 hover:text-white dark:hover:text-gray-100 underline underline-offset-2 hover:underline-offset-4 transition-all font-normal"
-            >
-              Privacy Policy
-            </a>
+            Demo mode - Wallet connection will be available in Phase 2
           </p>
         </div>
       </div>

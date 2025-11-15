@@ -1,6 +1,5 @@
 'use client'
 
-import { useWalletConnection } from '@/hooks/useWalletConnection'
 import { getThemeClasses } from '@/lib/theme'
 import { Wallet, Copy, Send, History } from 'lucide-react'
 import { useTheme } from 'next-themes'
@@ -10,7 +9,8 @@ export default function WalletPage() {
   const [mounted, setMounted] = useState(false)
   const [isAddressCopied, setIsAddressCopied] = useState(false)
   const { theme: currentTheme, systemTheme } = useTheme()
-  const { isConnected } = useWalletConnection()
+  // Demo mode - wallet connection will be added in Phase 2
+  // const isConnected = false // Will be used in Phase 2
 
   const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
   const t = getThemeClasses(isDark)
@@ -86,15 +86,9 @@ export default function WalletPage() {
             </h2>
             <div className="mt-1">
               <p className={`${t.textSecondary} text-xs`}>
-                {isConnected ? (
-                  <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                    Wallet connected
-                  </span>
-                ) : (
-                  <span className={`${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
-                    Wallet not connected
-                  </span>
-                )}
+                <span className={`${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                  Demo Mode - Wallet connection in Phase 2
+                </span>
               </p>
             </div>
           </div>

@@ -7,9 +7,6 @@ const config = {
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
-    // Include chia-wallet-connect-react package components so their Tailwind classes are available
-    './node_modules/@maximEdogawa/chia-wallet-connect-react/dist/**/*.{js,jsx,ts,tsx}',
-    '../../chia-wallet-connect/src/**/*.{js,jsx,ts,tsx}',
   ],
   prefix: '',
   theme: {
