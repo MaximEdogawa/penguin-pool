@@ -1,13 +1,11 @@
 'use client'
 
-import { useWalletConnection } from '@/hooks/useWalletConnection'
 import { getThemeClasses } from '@/lib/theme'
-import { ConnectButton } from '@chia/wallet-connect'
+import { ConnectButton } from '@maximedogawa/chia-wallet-connect-react'
 import {
   Bell,
   FileCheck,
   FileText,
-  Fingerprint,
   Handshake,
   Home,
   Menu,
@@ -34,7 +32,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [mounted, setMounted] = useState(false)
   const [isScrolling, setIsScrolling] = useState(false)
   const { theme: currentTheme, systemTheme, setTheme } = useTheme()
-  const { isConnected } = useWalletConnection()
   const pathname = usePathname()
   const router = useRouter()
 
@@ -401,83 +398,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 className={`absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-gradient-to-br ${t.accent} rounded-full`}
               ></span>
             </button>
-            {/* Wallet Connect Component */}
+            {/* Wallet Connection Status */}
             <div className="relative flex items-center flex-shrink-0">
-              {!isConnected ? (
-                <div className="relative">
-                  {/* Hidden ConnectButton to handle connection */}
-                  <div className="absolute opacity-0 pointer-events-none w-0 h-0 overflow-hidden">
-                    <ConnectButton
-                      connectText="Connect Wallet"
-                      walletConnectIcon={
-                        typeof window !== 'undefined'
-                          ? `${window.location.origin}/pengui-logo.png`
-                          : '/pengui-logo.png'
-                      }
-                      walletConnectMetadata={{
-                        name: 'Pengui',
-                        description:
-                          'Penguin Pool - Decentralized lending platform on Chia Network',
-                        url:
-                          typeof window !== 'undefined'
-                            ? window.location.origin
-                            : 'https://penguin.pool',
-                        icons: [
-                          typeof window !== 'undefined'
-                            ? `${window.location.origin}/pengui-logo.png`
-                            : '/pengui-logo.png',
-                          typeof window !== 'undefined'
-                            ? `${window.location.origin}/icons/icon-192x192.png`
-                            : '/icons/icon-192x192.png',
-                        ],
-                      }}
-                    />
-                  </div>
-                  {/* Visible fingerprint icon button */}
-                  <button
-                    onClick={(e) => {
-                      // Find and click the hidden ConnectButton
-                      const container = e.currentTarget.parentElement
-                      const hiddenButton = container?.querySelector('button')
-                      if (hiddenButton) {
-                        hiddenButton.click()
-                      }
-                    }}
-                    className={`p-2 rounded-lg ${t.cardHover} transition-colors ${t.textSecondary} ${t.textHover} relative flex-shrink-0`}
-                    title="Connect Wallet"
-                  >
-                    <Fingerprint className="w-5 h-5" />
-                  </button>
-                </div>
-              ) : (
-                <div className="scale-125">
-                  <ConnectButton
-                    connectText=""
-                    walletConnectIcon={
-                      typeof window !== 'undefined'
-                        ? `${window.location.origin}/pengui-logo.png`
-                        : '/pengui-logo.png'
-                    }
-                    walletConnectMetadata={{
-                      name: 'Pengui',
-                      description: 'Penguin Pool - Decentralized lending platform on Chia Network',
-                      url:
-                        typeof window !== 'undefined'
-                          ? window.location.origin
-                          : 'https://penguin.pool',
-                      icons: [
-                        typeof window !== 'undefined'
-                          ? `${window.location.origin}/pengui-logo.png`
-                          : '/pengui-logo.png',
-                        typeof window !== 'undefined'
-                          ? `${window.location.origin}/icons/icon-192x192.png`
-                          : '/icons/icon-192x192.png',
-                      ],
-                    }}
-                    className="shadow-lg"
-                  />
-                </div>
-              )}
+              <ConnectButton />
             </div>
           </div>
         </header>

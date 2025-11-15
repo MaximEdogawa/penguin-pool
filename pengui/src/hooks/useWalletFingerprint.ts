@@ -1,40 +1,34 @@
-import { useSelector } from 'react-redux'
+// Phase 2: Get fingerprint from wallet connection state
+'use client'
+
+import { useAppSelector } from '@maximedogawa/chia-wallet-connect-react'
 
 /**
- * Hook to get the wallet fingerprint from @chia/wallet-connect Redux store
+ * Hook to get the wallet fingerprint from the Redux store
+ * The fingerprint is stored in walletConnect.selectedFingerprint as an object
+ * with topic keys, or can be extracted from the WalletConnect session
  */
 export function useWalletFingerprint(): string | null {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const fingerprint = useSelector((state: any): string | null => {
-    if (!state?.walletConnect) return null
+  // Get the selected session topic
+  const selectedSession = useAppSelector((state) => state.walletConnect?.selectedSession)
 
-    const walletState = state.walletConnect
+  // Get the fingerprint map (topic -> fingerprint)
+  const fingerprintMap = useAppSelector((state) => state.walletConnect?.selectedFingerprint)
 
-    // Try to get from selectedFingerprint
-    if (
-      walletState.selectedFingerprint &&
-      typeof walletState.selectedFingerprint === 'object' &&
-      Object.keys(walletState.selectedFingerprint).length > 0
-    ) {
-      const value =
-        walletState.selectedFingerprint.fingerprint ||
-        walletState.selectedFingerprint.value ||
-        Object.values(walletState.selectedFingerprint)[0]
+  // If we have a selected session and fingerprint map, get the fingerprint for that topic
+  if (selectedSession?.topic && fingerprintMap?.[selectedSession.topic]) {
+    return String(fingerprintMap[selectedSession.topic])
+  }
 
-      if (value && (typeof value === 'string' || typeof value === 'number')) {
-        return String(value)
-      }
+  // Try to extract fingerprint from session accounts if available
+  if (selectedSession?.namespaces?.chia?.accounts?.[0]) {
+    const account = selectedSession.namespaces.chia.accounts[0]
+    // Account format: "chia:chainId:fingerprint"
+    const parts = account.split(':')
+    if (parts.length >= 3) {
+      return parts[2]
     }
+  }
 
-    // Fallback: get from selectedSession accounts
-    const account = walletState.selectedSession?.namespaces?.chia?.accounts?.[0]
-    if (account) {
-      const parts = account.split(':')
-      if (parts.length >= 3) return parts[2]
-    }
-
-    return null
-  })
-
-  return fingerprint
+  return null
 }

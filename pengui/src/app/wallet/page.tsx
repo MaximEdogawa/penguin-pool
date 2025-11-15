@@ -1,7 +1,7 @@
 'use client'
 
-import { useWalletConnection } from '@/hooks/useWalletConnection'
 import { getThemeClasses } from '@/lib/theme'
+import { ConnectButton, useWalletConnectionState } from '@maximedogawa/chia-wallet-connect-react'
 import { Wallet, Copy, Send, History } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
@@ -10,7 +10,7 @@ export default function WalletPage() {
   const [mounted, setMounted] = useState(false)
   const [isAddressCopied, setIsAddressCopied] = useState(false)
   const { theme: currentTheme, systemTheme } = useTheme()
-  const { isConnected } = useWalletConnection()
+  const { isConnected, address, connectedWallet, walletName } = useWalletConnectionState()
 
   const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
   const t = getThemeClasses(isDark)
@@ -26,8 +26,7 @@ export default function WalletPage() {
   }
 
   const copyAddress = async () => {
-    // Placeholder - would use actual wallet address
-    const address = 'xch1example1234567890abcdefghijklmnopqrstuvwxyz'
+    if (!address) return
     try {
       await navigator.clipboard.writeText(address)
       setIsAddressCopied(true)
@@ -82,20 +81,20 @@ export default function WalletPage() {
               Wallet Balance
             </p>
             <h2 className={`text-2xl lg:text-3xl font-semibold ${t.text} tracking-tight`}>
-              0.000000 XCH
+              {isConnected ? '0.000000 XCH' : '-- XCH'}
             </h2>
             <div className="mt-1">
-              <p className={`${t.textSecondary} text-xs`}>
-                {isConnected ? (
-                  <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                    Wallet connected
-                  </span>
-                ) : (
+              {isConnected ? (
+                <p className={`${t.textSecondary} text-xs`}>
+                  {walletName || connectedWallet || 'Wallet Connected'}
+                </p>
+              ) : (
+                <p className={`${t.textSecondary} text-xs`}>
                   <span className={`${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
-                    Wallet not connected
+                    Not connected
                   </span>
-                )}
-              </p>
+                </p>
+              )}
             </div>
           </div>
           <div
@@ -110,42 +109,52 @@ export default function WalletPage() {
         </div>
 
         {/* Address Section */}
-        <div
-          className={`backdrop-blur-xl ${
-            isDark ? 'bg-white/[0.03] border-white/5' : 'bg-white/50 border-cyan-200/30'
-          } rounded-xl p-3 border transition-all duration-200`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div
-                className={`p-2 rounded-xl ${isDark ? 'bg-white/5' : 'bg-white/30'} backdrop-blur-sm`}
-              >
-                <Wallet className={`${t.textSecondary}`} size={16} strokeWidth={2} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className={`${t.textSecondary} text-xs font-medium mb-1`}>Wallet Address</p>
-                <p
-                  className={`${t.text} text-sm font-mono truncate`}
-                  title="xch1example1234567890abcdefghijklmnopqrstuvwxyz"
+        {isConnected && address ? (
+          <div
+            className={`backdrop-blur-xl ${
+              isDark ? 'bg-white/[0.03] border-white/5' : 'bg-white/50 border-cyan-200/30'
+            } rounded-xl p-3 border transition-all duration-200`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div
+                  className={`p-2 rounded-xl ${isDark ? 'bg-white/5' : 'bg-white/30'} backdrop-blur-sm`}
                 >
-                  {formatAddress('xch1example1234567890abcdefghijklmnopqrstuvwxyz')}
-                </p>
+                  <Wallet className={`${t.textSecondary}`} size={16} strokeWidth={2} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`${t.textSecondary} text-xs font-medium mb-1`}>Wallet Address</p>
+                  <p className={`${t.text} text-sm font-mono truncate`} title={address}>
+                    {formatAddress(address)}
+                  </p>
+                </div>
               </div>
+              <button
+                onClick={copyAddress}
+                className={`p-2 rounded-lg ${t.cardHover} transition-colors ${t.textSecondary} ${t.textHover} flex-shrink-0`}
+                title="Copy address"
+              >
+                <Copy size={18} strokeWidth={2} />
+              </button>
             </div>
-            <button
-              onClick={copyAddress}
-              className={`p-2 rounded-lg ${t.cardHover} transition-colors ${t.textSecondary} ${t.textHover} flex-shrink-0`}
-              title="Copy address"
-            >
-              <Copy size={18} strokeWidth={2} />
-            </button>
+            {isAddressCopied && (
+              <p className={`${isDark ? 'text-emerald-400' : 'text-emerald-600'} text-xs mt-2`}>
+                Address copied!
+              </p>
+            )}
           </div>
-          {isAddressCopied && (
-            <p className={`${isDark ? 'text-emerald-400' : 'text-emerald-600'} text-xs mt-2`}>
-              Address copied!
+        ) : (
+          <div
+            className={`backdrop-blur-xl ${
+              isDark ? 'bg-white/[0.03] border-white/5' : 'bg-white/50 border-cyan-200/30'
+            } rounded-xl p-3 border transition-all duration-200 flex flex-col items-center justify-center py-6`}
+          >
+            <p className={`${t.textSecondary} text-sm mb-4 text-center`}>
+              Connect your wallet to view your address
             </p>
-          )}
-        </div>
+            <ConnectButton />
+          </div>
+        )}
       </div>
 
       {/* Send Transaction Section */}
