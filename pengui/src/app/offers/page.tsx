@@ -3,6 +3,7 @@
 import CreateOfferModal from '@/components/offers/CreateOfferModal'
 import OfferDetailsModal from '@/components/offers/OfferDetailsModal'
 import OfferHistory from '@/components/offers/OfferHistory'
+import TakeOfferModal from '@/components/offers/TakeOfferModal'
 import Button from '@/components/shared/Button'
 import Modal from '@/components/shared/Modal'
 import { useMyOffers } from '@/hooks/useMyOffers'
@@ -32,6 +33,7 @@ export default function OffersPage() {
   } = useMyOffers()
 
   const [showCreateOffer, setShowCreateOffer] = useState(false)
+  const [showTakeOffer, setShowTakeOffer] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -105,6 +107,7 @@ export default function OffersPage() {
               Create Offer
             </button>
             <button
+              onClick={() => setShowTakeOffer(true)}
               className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg backdrop-blur-xl ${
                 isDark
                   ? 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
@@ -152,6 +155,17 @@ export default function OffersPage() {
         <CreateOfferModal
           onClose={() => setShowCreateOffer(false)}
           onOfferCreated={handleOfferCreatedWrapper}
+        />
+      )}
+
+      {/* Take Offer Modal */}
+      {showTakeOffer && (
+        <TakeOfferModal
+          onClose={() => setShowTakeOffer(false)}
+          onOfferTaken={() => {
+            // Offer was taken successfully, modal will close automatically
+            setShowTakeOffer(false)
+          }}
         />
       )}
 
