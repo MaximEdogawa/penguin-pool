@@ -1,6 +1,12 @@
 'use client'
 
-import { getMinimumFeeInXch } from '@/lib/utils/chia-units'
+import {
+  formatXchAmount,
+  getAmountPlaceholder,
+  getMinimumFeeInXch,
+  isValidAmountInput,
+  parseAmountInput,
+} from '@/lib/utils/chia-units'
 import { extractTransactionId } from '@/lib/walletConnect/utils/transactionUtils'
 import { ConnectButton, useWalletConnectionState } from '@maximedogawa/chia-wallet-connect-react'
 import { useSendTransaction, useRefreshBalance } from '@/hooks'
@@ -42,6 +48,10 @@ export default function SendTransactionForm({ availableBalance }: SendTransactio
     resetForm,
     getTransactionParams,
   } = useTransactionForm({ availableBalance })
+
+  // Local state for formatted inputs (undefined means use formatted value from hook)
+  const [amountInput, setAmountInput] = useState<string | undefined>(undefined)
+  const [feeInput, setFeeInput] = useState<string | undefined>(undefined)
 
   const [transactionStatus, setTransactionStatus] = useState<{
     type: 'success' | 'error' | null
@@ -127,39 +137,72 @@ export default function SendTransactionForm({ availableBalance }: SendTransactio
       />
       <FormInput
         label="Amount (XCH)"
-        type="number"
-        value={amount}
+        type="text"
+        inputMode="decimal"
+        pattern="[0-9]*\.?[0-9]*"
+        value={
+          amountInput !== undefined
+            ? amountInput
+            : amount && parseFloat(amount) > 0
+              ? formatXchAmount(parseFloat(amount))
+              : ''
+        }
         onChange={(e) => {
-          setAmount(e.target.value)
-          if (amountError) validateAmount()
+          const inputValue = e.target.value
+          if (isValidAmountInput(inputValue)) {
+            setAmountInput(inputValue)
+            const parsed = parseAmountInput(inputValue)
+            setAmount(parsed > 0 ? parsed.toString() : '')
+            if (amountError) validateAmount()
+          }
         }}
-        onBlur={validateAmount}
-        placeholder="0.000000"
-        step="0.000001"
-        min="0"
+        onBlur={() => {
+          const parsed = parseAmountInput(amountInput !== undefined ? amountInput : amount || '')
+          setAmount(parsed > 0 ? parsed.toString() : '')
+          setAmountInput(undefined)
+          validateAmount()
+        }}
+        placeholder={getAmountPlaceholder('xch')}
         error={amountError}
         helperText={
           availableBalance > 0 ? (
-            <span>Available: {availableBalance.toFixed(6)} XCH</span>
+            <span>Available: {formatXchAmount(availableBalance)} XCH</span>
           ) : undefined
         }
       />
       <FormInput
         label={
           <>
-            Fee (XCH) <span className="text-[10px]">(min: {getMinimumFeeInXch()})</span>
+            Fee (XCH){' '}
+            <span className="text-[10px]">(min: {formatXchAmount(getMinimumFeeInXch())})</span>
           </>
         }
-        type="number"
-        value={fee}
+        type="text"
+        inputMode="decimal"
+        pattern="[0-9]*\.?[0-9]*"
+        value={
+          feeInput !== undefined
+            ? feeInput
+            : fee && parseFloat(fee) > 0
+              ? formatXchAmount(parseFloat(fee))
+              : ''
+        }
         onChange={(e) => {
-          setFee(e.target.value)
-          if (feeError) validateFee()
+          const inputValue = e.target.value
+          if (isValidAmountInput(inputValue)) {
+            setFeeInput(inputValue)
+            const parsed = parseAmountInput(inputValue)
+            setFee(parsed > 0 ? parsed.toString() : '')
+            if (feeError) validateFee()
+          }
         }}
-        onBlur={validateFee}
-        placeholder="0.000001"
-        step="0.000001"
-        min={getMinimumFeeInXch()}
+        onBlur={() => {
+          const parsed = parseAmountInput(feeInput !== undefined ? feeInput : fee || '')
+          setFee(parsed > 0 ? parsed.toString() : '')
+          setFeeInput(undefined)
+          validateFee()
+        }}
+        placeholder={getAmountPlaceholder('xch')}
         error={feeError}
       />
       <FormInput

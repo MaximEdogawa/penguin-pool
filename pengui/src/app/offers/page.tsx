@@ -1,27 +1,65 @@
 'use client'
 
-import { getThemeClasses } from '@/lib/theme'
-import { Handshake, Plus, ShoppingCart, RefreshCw } from 'lucide-react'
-import { useTheme } from 'next-themes'
+import CreateOfferModal from '@/components/offers/CreateOfferModal'
+import OfferDetailsModal from '@/components/offers/OfferDetailsModal'
+import OfferHistory from '@/components/offers/OfferHistory'
+import Button from '@/components/shared/Button'
+import Modal from '@/components/shared/Modal'
+import { useMyOffers } from '@/hooks/useMyOffers'
+import { useThemeClasses } from '@/hooks/useThemeClasses'
+import type { OfferDetails } from '@/types/offer.types'
+import { Handshake, Loader2, Plus, RefreshCw, ShoppingCart, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 export default function OffersPage() {
-  const [mounted, setMounted] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const { theme: currentTheme, systemTheme } = useTheme()
+  const { isDark, t } = useThemeClasses()
+  const {
+    selectedOffer,
+    isLoading,
+    refreshOffers,
+    viewOffer,
+    handleOfferCreated,
+    handleOfferCancelled,
+    handleOfferDeleted,
+    handleOfferUpdated,
+    showCancelConfirmation,
+    offerToCancel,
+    confirmCancelOffer,
+    handleCancelDialogClose,
+    isCancelling,
+    cancelError,
+    cancelOffer,
+  } = useMyOffers()
 
-  const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
-  const t = getThemeClasses(isDark)
+  const [showCreateOffer, setShowCreateOffer] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
     setMounted(true)
+    // Don't call refreshOffers here - OfferHistory handles it on mount
   }, [])
 
   const handleRefresh = async () => {
-    setIsLoading(true)
-    // Simulate refresh
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
+    setIsRefreshing(true)
+    try {
+      await refreshOffers()
+      // Add a small delay to show the refresh animation
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    } catch {
+      // Error handled by refreshOffers
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+  const handleOfferCreatedWrapper = async (offer: OfferDetails) => {
+    await handleOfferCreated(offer)
+    setShowCreateOffer(false)
+  }
+
+  const handleViewOffer = (offer: OfferDetails) => {
+    viewOffer(offer)
   }
 
   if (!mounted) {
@@ -29,7 +67,7 @@ export default function OffersPage() {
   }
 
   return (
-    <div className="w-full relative z-10">
+    <div className="w-full relative z-10 min-h-full">
       {/* Header */}
       <div
         className={`mb-2 backdrop-blur-[40px] ${t.card} rounded-2xl p-3 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
@@ -56,6 +94,7 @@ export default function OffersPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <button
+              onClick={() => setShowCreateOffer(true)}
               className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg backdrop-blur-xl ${
                 isDark
                   ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 text-cyan-400 hover:from-cyan-500/30 hover:to-blue-500/30'
@@ -77,14 +116,18 @@ export default function OffersPage() {
             </button>
             <button
               onClick={handleRefresh}
-              disabled={isLoading}
+              disabled={isLoading || isRefreshing}
               className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg backdrop-blur-xl ${
                 isDark
                   ? 'bg-white/5 border border-white/10 text-white hover:bg-white/10 disabled:opacity-50'
                   : 'bg-white/40 border border-white/60 text-slate-800 hover:bg-white/50 disabled:opacity-50'
               } transition-all duration-200 font-medium text-xs`}
             >
-              <RefreshCw size={14} strokeWidth={2.5} className={isLoading ? 'animate-spin' : ''} />
+              <RefreshCw
+                size={14}
+                strokeWidth={2.5}
+                className={isLoading || isRefreshing ? 'animate-spin' : ''}
+              />
               Refresh
             </button>
           </div>
@@ -97,21 +140,74 @@ export default function OffersPage() {
           isDark ? 'bg-white/[0.03]' : 'bg-white/30'
         }`}
       >
-        <div className="flex flex-col items-center justify-center py-4">
-          <div
-            className={`p-4 rounded-2xl ${isDark ? 'bg-white/5' : 'bg-white/30'} backdrop-blur-xl mb-4`}
-          >
-            <Handshake
-              className={`${isDark ? 'text-slate-400' : 'text-slate-600'}`}
-              size={32}
-              strokeWidth={1.5}
-            />
-          </div>
-          <p className={`${t.textSecondary} text-center text-sm max-w-md`}>
-            Your offers will be displayed here. Use the buttons above to create or take offers.
-          </p>
-        </div>
+        <OfferHistory
+          onCreateOffer={() => setShowCreateOffer(true)}
+          onViewOffer={handleViewOffer}
+          onCancelOffer={cancelOffer}
+        />
       </div>
+
+      {/* Create Offer Modal */}
+      {showCreateOffer && (
+        <CreateOfferModal
+          onClose={() => setShowCreateOffer(false)}
+          onOfferCreated={handleOfferCreatedWrapper}
+        />
+      )}
+
+      {/* Offer Details Modal */}
+      {selectedOffer && (
+        <OfferDetailsModal
+          offer={selectedOffer}
+          onClose={() => viewOffer(null)}
+          onOfferCancelled={handleOfferCancelled}
+          onOfferDeleted={handleOfferDeleted}
+          onOfferUpdated={handleOfferUpdated}
+        />
+      )}
+
+      {/* Cancel Offer Confirmation Modal */}
+      {showCancelConfirmation && offerToCancel && (
+        <Modal onClose={handleCancelDialogClose} maxWidth="max-w-md" closeOnOverlayClick={false}>
+          <div className="p-6">
+            <h3 className={`text-lg font-semibold ${t.text} mb-2`}>Cancel Offer</h3>
+            <p className={`${t.textSecondary} mb-4`}>
+              Are you sure you want to cancel this offer? This action cannot be undone.
+            </p>
+            <p className={`text-xs ${t.textSecondary} mb-4 font-mono break-all`}>
+              Offer ID:{' '}
+              {offerToCancel.tradeId
+                ? `${offerToCancel.tradeId.slice(0, 12)}...${offerToCancel.tradeId.slice(-8)}`
+                : 'Unknown'}
+            </p>
+            {cancelError && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                <p className="text-sm text-red-700 dark:text-red-300">{cancelError}</p>
+              </div>
+            )}
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button onClick={handleCancelDialogClose} variant="secondary">
+                Keep Offer
+              </Button>
+              <Button
+                onClick={confirmCancelOffer}
+                disabled={isCancelling}
+                variant="danger"
+                icon={isCancelling ? undefined : X}
+              >
+                {isCancelling ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  'Cancel Offer'
+                )}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

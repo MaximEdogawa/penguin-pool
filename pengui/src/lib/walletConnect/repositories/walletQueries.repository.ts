@@ -59,14 +59,72 @@ export async function makeWalletRequest<T>(
     const result = (await Promise.race([walletRequestPromise, timeoutPromise])) as
       | T
       | { error: Record<string, unknown> }
+      | { error: string }
 
     if (result && typeof result === 'object' && 'error' in result) {
-      return { success: false, error: 'Wallet returned an error' }
+      const errorObj = result.error
+      const errorMessage =
+        typeof errorObj === 'string'
+          ? errorObj
+          : typeof errorObj === 'object' && errorObj !== null && 'message' in errorObj
+            ? String(errorObj.message)
+            : 'Wallet returned an error'
+      logger.warn(`Wallet returned an error for ${method}:`, errorMessage)
+      return { success: false, error: errorMessage }
     }
     logger.info(`Wallet request for ${method}:`, result)
     return { success: true, data: result as T }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    // Extract error message from various error formats
+    let errorMessage = 'Unknown error'
+    let errorCode: number | undefined
+
+    if (error && typeof error === 'object') {
+      // Handle WalletConnect error format: {code: number, message: string}
+      if ('message' in error && typeof error.message === 'string') {
+        errorMessage = error.message
+      }
+      if ('code' in error && typeof error.code === 'number') {
+        errorCode = error.code
+      }
+    } else if (error instanceof Error) {
+      errorMessage = error.message
+    } else if (typeof error === 'string') {
+      errorMessage = error
+    }
+
+    // Handle specific error codes
+    if (errorCode === 4001) {
+      // Error code 4001 can mean user rejection OR request failure
+      if (
+        errorMessage.toLowerCase().includes('rejected') ||
+        errorMessage.toLowerCase().includes('denied') ||
+        errorMessage.toLowerCase().includes('cancelled')
+      ) {
+        logger.info('User rejected the wallet request (code 4001)')
+        return { success: false, error: 'Request was cancelled in wallet' }
+      } else {
+        // Request failed for another reason (offer not found, already cancelled, etc.)
+        logger.warn(`Wallet request failed (code 4001): ${errorMessage}`)
+        return {
+          success: false,
+          error:
+            errorMessage ||
+            'The wallet could not process the cancel request. The offer may not exist or may already be cancelled.',
+        }
+      }
+    }
+
+    // Handle user rejection by message
+    if (
+      errorMessage.includes('User rejected') ||
+      errorMessage.includes('User denied') ||
+      errorMessage.includes('rejected') ||
+      errorMessage.includes('denied')
+    ) {
+      logger.info('User rejected the wallet request')
+      return { success: false, error: 'Request was cancelled in wallet' }
+    }
 
     // Handle relay message errors (often non-critical)
     if (
@@ -79,8 +137,24 @@ export async function makeWalletRequest<T>(
       return { success: false, error: 'Relay communication error. Please try again.' }
     }
 
+    // Handle session_ping errors (non-critical WalletConnect internal warnings)
+    if (errorMessage.includes('session_ping') || errorMessage.includes('without any listeners')) {
+      logger.warn('⚠️ WalletConnect session_ping warning (non-critical):', errorMessage)
+      // This is an internal SDK warning, check if we got a response anyway
+      // If the request actually failed, it will be caught by the timeout or other error handling
+    }
+
     if (errorMessage.includes('Missing or invalid') || errorMessage.includes('recently deleted')) {
       logger.warn('🗑️ Session was deleted')
+      return { success: false, error: 'Wallet session expired. Please reconnect your wallet.' }
+    }
+
+    // Log the full error for debugging
+    logger.error(`Error in wallet request for ${method}:`, error)
+
+    // Return user-friendly error message
+    if (errorCode !== undefined) {
+      return { success: false, error: errorMessage || `Wallet error (code ${errorCode})` }
     }
 
     return { success: false, error: errorMessage }

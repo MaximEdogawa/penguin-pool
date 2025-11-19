@@ -44,6 +44,19 @@ export const environment = {
       relayUrl: process.env.NEXT_PUBLIC_WALLET_CONNECT_RELAY_URL || 'wss://relay.walletconnect.com',
     },
   },
+
+  // Dexie API configuration
+  dexie: {
+    apiBaseUrl: process.env.NEXT_PUBLIC_DEXIE_API_URL || 'https://api-testnet.dexie.space',
+  },
+
+  // Database configuration
+  database: {
+    indexedDB: {
+      name: 'pengui-db',
+      version: 1,
+    },
+  },
 } as const
 
 export type Environment = typeof environment

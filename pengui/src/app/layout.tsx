@@ -58,11 +58,20 @@ const getWalletConnectConfig = () => {
 }
 
 export default function UILayout({ children }: { children: React.ReactNode }) {
-  // Initialize WalletManager on mount
+  // Initialize WalletManager and database on mount
   useEffect(() => {
     const { penguiIcon, metadata } = getWalletConnectConfig()
     const walletManager = new WalletManager(penguiIcon, metadata)
     walletManager.detectEvents()
+
+    // Initialize IndexedDB
+    if (typeof window !== 'undefined') {
+      import('@/lib/database/indexedDB').then(({ initializeDatabase }) => {
+        initializeDatabase().catch(() => {
+          // Database initialization failed, but continue anyway
+        })
+      })
+    }
   }, [])
 
   return (
