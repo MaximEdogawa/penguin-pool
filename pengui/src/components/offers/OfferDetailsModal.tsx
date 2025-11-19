@@ -193,20 +193,23 @@ export default function OfferDetailsModal({
       if (result && result.success && result.offer) {
         // Calculate state from date fields instead of using status field
         const calculatedState = calculateOfferState(result.offer)
+        const convertedStatus = convertOfferStateToStatus(calculatedState)
 
-        // Update the offer with the latest Dexie status
+        // Update the offer with the latest Dexie status and full offer data
         await offerStorage.updateOffer(offer.id, {
           dexieStatus: calculatedState,
-          status: convertOfferStateToStatus(calculatedState),
+          status: convertedStatus,
+          dexieOfferData: result.offer, // Store full Dexie data for future reference
         })
 
-        // Emit event to update parent component
+        // Emit event to update parent component and refresh from storage
         const updatedOffer = {
           ...offer,
           dexieStatus: calculatedState,
-          status: convertOfferStateToStatus(calculatedState),
+          status: convertedStatus,
+          dexieOfferData: result.offer,
         }
-        onOfferUpdated(updatedOffer)
+        await onOfferUpdated(updatedOffer)
       } else {
         setValidationError('Failed to validate offer state')
       }

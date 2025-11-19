@@ -58,23 +58,19 @@ export function useMyOffers() {
     }
   }, [loadOffersFromStorage])
 
-  // Sync offers from storage to local state only when storage offers actually change
-  // Use a ref to track previous offers length and IDs to prevent unnecessary updates
-  const prevOffersLengthRef = useRef<number>(0)
-  const prevOffersIdsRef = useRef<string>('')
+  // Sync offers from storage to local state when storage offers change
+  // Use a ref to track previous offers to detect changes in properties (not just IDs)
+  const prevOffersRef = useRef<string>('')
 
   useEffect(() => {
-    // Create a stable string of offer IDs for comparison
-    const currentOffersIds = storageOffers
-      .map((o) => o.id)
+    // Create a hash of all offer data to detect any changes (including status, dexieStatus, etc.)
+    const currentOffersHash = storageOffers
+      .map((o) => `${o.id}:${o.status}:${o.dexieStatus || ''}:${o.dexieOfferId || ''}`)
       .sort()
-      .join(',')
+      .join('|')
 
-    // Only update if offers actually changed (different length or different IDs)
-    if (
-      prevOffersLengthRef.current !== storageOffers.length ||
-      prevOffersIdsRef.current !== currentOffersIds
-    ) {
+    // Update if offers changed (different length, IDs, or properties)
+    if (prevOffersRef.current !== currentOffersHash) {
       const loadedOffers = storageOffers.map((storedOffer) => ({
         id: storedOffer.id,
         tradeId: storedOffer.tradeId,
@@ -89,10 +85,10 @@ export function useMyOffers() {
         dexieStatus: storedOffer.dexieStatus,
         uploadedToDexie: storedOffer.uploadedToDexie,
         dexieOfferData: storedOffer.dexieOfferData,
+        expiresAt: storedOffer.expiresAt,
       }))
       setOffers(loadedOffers)
-      prevOffersLengthRef.current = storageOffers.length
-      prevOffersIdsRef.current = currentOffersIds
+      prevOffersRef.current = currentOffersHash
     }
   }, [storageOffers])
 
@@ -178,12 +174,17 @@ export function useMyOffers() {
     setSelectedOffer(null)
   }, [])
 
-  const handleOfferUpdated = useCallback((offer: OfferDetails) => {
-    setOffers((prev) => prev.map((o) => (o.id === offer.id ? { ...o, ...offer } : o)))
-    // Update the selected offer to reflect changes in the modal
-    setSelectedOffer((prev) => (prev && prev.id === offer.id ? { ...prev, ...offer } : prev))
-    // Don't close the modal - let user see the success message
-  }, [])
+  const handleOfferUpdated = useCallback(
+    async (offer: OfferDetails) => {
+      // Update local state immediately for UI responsiveness
+      setOffers((prev) => prev.map((o) => (o.id === offer.id ? { ...o, ...offer } : o)))
+      // Update the selected offer to reflect changes in the modal
+      setSelectedOffer((prev) => (prev && prev.id === offer.id ? { ...prev, ...offer } : prev))
+      // Refresh from storage to ensure all components see the updated state
+      await refreshOffers()
+    },
+    [refreshOffers]
+  )
 
   const getStatusClass = useCallback((status: string) => {
     const classes = {
