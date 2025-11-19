@@ -6,12 +6,12 @@ import { useTickerData } from '@/hooks/useTickerData'
 import { useTakeOffer } from '@/hooks/useWalletQueries'
 import type { DexiePostOfferResponse } from '@/lib/dexie/DexieRepository'
 import { calculateOfferState } from '@/lib/dexie/DexieRepository'
-import { formatAssetAmount, getMinimumFeeInXch } from '@/lib/utils/chia-units'
+import { formatAssetAmount, formatXchAmount, getMinimumFeeInXch } from '@/lib/utils/chia-units'
 import { getDexieStatusDescription, validateOfferString } from '@/lib/utils/offerUtils'
 import type { OfferAsset, OfferDetails } from '@/types/offer.types'
 import { convertOfferStateToStatus } from '@/types/offer.types'
 import { Loader2, ShoppingCart, X } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface TakeOfferModalProps {
   onClose: () => void
@@ -101,25 +101,44 @@ export default function TakeOfferModal({ onClose, onOfferTaken }: TakeOfferModal
     dexieStatus?: string
   } | null>(null)
 
+  // Refs to prevent infinite loops
+  const isParsingRef = useRef(false)
+  const lastParsedOfferRef = useRef<string>('')
+  const postOfferRef = useRef(postOffer)
+  const getCatTokenInfoRef = useRef(getCatTokenInfo)
+
+  // Update refs when functions change
+  useEffect(() => {
+    postOfferRef.current = postOffer
+    getCatTokenInfoRef.current = getCatTokenInfo
+  }, [postOffer, getCatTokenInfo])
+
   // Parse offer when string changes
   useEffect(() => {
     const parseOffer = async () => {
+      const trimmedOffer = offerString.trim()
+
+      // Skip if empty, already parsing, or same as last parsed
+      if (!trimmedOffer || isParsingRef.current || lastParsedOfferRef.current === trimmedOffer) {
+        return
+      }
+
+      if (!validateOfferString(trimmedOffer)) {
+        setParseError('Invalid offer string format')
+        setOfferPreview(null)
+        return
+      }
+
+      // Mark as parsing and update last parsed
+      isParsingRef.current = true
+      lastParsedOfferRef.current = trimmedOffer
       setParseError('')
       setOfferPreview(null)
 
-      if (!offerString.trim()) {
-        return
-      }
-
-      if (!validateOfferString(offerString)) {
-        setParseError('Invalid offer string format')
-        return
-      }
-
       // Use Dexie to inspect the offer and get real asset details
       try {
-        const postResponse = await postOffer({
-          offer: offerString.trim(),
+        const postResponse = await postOfferRef.current({
+          offer: trimmedOffer,
           drop_only: false,
           claim_rewards: false,
         })
@@ -132,7 +151,7 @@ export default function TakeOfferModal({ onClose, onOfferTaken }: TakeOfferModal
           const enrichedAssetsOffered = await Promise.all(
             appOffer.assetsOffered.map(async (asset) => {
               if (asset.assetId) {
-                const tickerInfo = await getCatTokenInfo(asset.assetId)
+                const tickerInfo = await getCatTokenInfoRef.current(asset.assetId)
                 return {
                   ...asset,
                   symbol: tickerInfo?.ticker || undefined,
@@ -145,7 +164,7 @@ export default function TakeOfferModal({ onClose, onOfferTaken }: TakeOfferModal
           const enrichedAssetsRequested = await Promise.all(
             appOffer.assetsRequested.map(async (asset) => {
               if (asset.assetId) {
-                const tickerInfo = await getCatTokenInfo(asset.assetId)
+                const tickerInfo = await getCatTokenInfoRef.current(asset.assetId)
                 return {
                   ...asset,
                   symbol: tickerInfo?.ticker || undefined,
@@ -178,6 +197,10 @@ export default function TakeOfferModal({ onClose, onOfferTaken }: TakeOfferModal
       } catch {
         setParseError('Error inspecting offer on Dexie marketplace')
         setOfferPreview(null)
+        // Reset last parsed on error so we can retry
+        lastParsedOfferRef.current = ''
+      } finally {
+        isParsingRef.current = false
       }
     }
 
@@ -186,8 +209,12 @@ export default function TakeOfferModal({ onClose, onOfferTaken }: TakeOfferModal
       parseOffer()
     }, 500)
 
-    return () => clearTimeout(timeoutId)
-  }, [offerString, postOffer, getCatTokenInfo])
+    return () => {
+      clearTimeout(timeoutId)
+      // Reset parsing flag if component unmounts or effect re-runs
+      isParsingRef.current = false
+    }
+  }, [offerString]) // Only depend on offerString, functions are accessed via refs
 
   // Handle fee input
   const handleFeeChange = useCallback((value: string) => {
@@ -337,7 +364,8 @@ export default function TakeOfferModal({ onClose, onOfferTaken }: TakeOfferModal
               disabled={isSubmitting}
             />
             <p className={`mt-1 text-xs ${t.textSecondary}`}>
-              Fee can be 0 for free transactions (minimum: {getMinimumFeeInXch()} XCH)
+              Fee can be 0 for free transactions (minimum: {formatXchAmount(getMinimumFeeInXch())}{' '}
+              XCH)
             </p>
           </div>
 
@@ -375,7 +403,7 @@ export default function TakeOfferModal({ onClose, onOfferTaken }: TakeOfferModal
                 <div className={`flex justify-between border-t ${t.border} pt-1.5 mt-1.5`}>
                   <span className={`font-medium ${t.text}`}>Fee:</span>
                   <span className={`font-medium ${t.text}`}>
-                    {offerPreview.fee !== undefined ? offerPreview.fee : fee} XCH
+                    {formatXchAmount(offerPreview.fee !== undefined ? offerPreview.fee : fee)} XCH
                   </span>
                 </div>
                 {offerPreview.dexieStatus && (
