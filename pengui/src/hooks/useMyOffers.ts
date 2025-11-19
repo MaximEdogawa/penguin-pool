@@ -169,10 +169,16 @@ export function useMyOffers() {
     setSelectedOffer(null)
   }, [])
 
-  const handleOfferDeleted = useCallback((offer: OfferDetails) => {
-    setOffers((prev) => prev.filter((o) => o.id !== offer.id))
-    setSelectedOffer(null)
-  }, [])
+  const handleOfferDeleted = useCallback(
+    async (offer: OfferDetails) => {
+      // Update local state immediately for UI responsiveness
+      setOffers((prev) => prev.filter((o) => o.id !== offer.id))
+      setSelectedOffer(null)
+      // Refresh from storage to ensure all components see the updated state
+      await refreshOffers()
+    },
+    [refreshOffers]
+  )
 
   const handleOfferUpdated = useCallback(
     async (offer: OfferDetails) => {

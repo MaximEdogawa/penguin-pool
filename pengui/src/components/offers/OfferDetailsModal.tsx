@@ -142,8 +142,8 @@ export default function OfferDetailsModal({
       // Delete from IndexedDB storage
       await offerStorage.deleteOffer(offer.id)
 
-      // Emit the delete event to update the parent component
-      onOfferDeleted(offer)
+      // Emit the delete event to update the parent component and refresh from storage
+      await onOfferDeleted(offer)
       setShowDeleteConfirmation(false)
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
