@@ -3,6 +3,7 @@
 import { useCancelOffer } from '@/hooks/useWalletQueries'
 import { useOfferStorage } from '@/hooks/useOfferStorage'
 import { useCatTokens } from '@/hooks/useTickers'
+import { logger } from '@/lib/logger'
 import { formatAssetAmount } from '@/lib/utils/chia-units'
 import type { OfferDetails, OfferFilters } from '@/types/offer.types'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -26,6 +27,12 @@ export function useMyOffers() {
   const [offerToCancel, setOfferToCancel] = useState<OfferDetails | null>(null)
   const [isCancelling, setIsCancelling] = useState(false)
   const [cancelError, setCancelError] = useState('')
+  const [showCancelAllConfirmation, setShowCancelAllConfirmation] = useState(false)
+  const [isCancellingAll, setIsCancellingAll] = useState(false)
+  const [cancelAllError, setCancelAllError] = useState('')
+  const [showDeleteAllConfirmation, setShowDeleteAllConfirmation] = useState(false)
+  const [isDeletingAll, setIsDeletingAll] = useState(false)
+  const [deleteAllError, setDeleteAllError] = useState('')
   const [filters, setFilters] = useState<OfferFilters>({
     status: '',
   })
@@ -272,6 +279,96 @@ export function useMyOffers() {
     refreshOffers()
   }, [currentPage, pageSize, filters.status, refreshOffers])
 
+  // Cancel all active offers
+  const cancelAllOffers = useCallback(() => {
+    setShowCancelAllConfirmation(true)
+    setCancelAllError('')
+  }, [])
+
+  const confirmCancelAllOffers = useCallback(async () => {
+    setIsCancellingAll(true)
+    setCancelAllError('')
+
+    try {
+      // Get all active offers
+      const activeOffers = await offerStorage.getOffersByStatus('active')
+
+      if (activeOffers.length === 0) {
+        setCancelAllError('No active offers to cancel')
+        setIsCancellingAll(false)
+        return
+      }
+
+      // Cancel each offer
+      const cancelPromises = activeOffers.map(async (offer) => {
+        try {
+          await cancelOfferMutation.mutateAsync({
+            id: offer.tradeId,
+            fee: offer.fee,
+          })
+          await offerStorage.updateOffer(offer.id, { status: 'cancelled' })
+        } catch (error) {
+          // Continue with other offers even if one fails
+          logger.error(`Failed to cancel offer ${offer.id}:`, error)
+        }
+      })
+
+      await Promise.allSettled(cancelPromises)
+      setShowCancelAllConfirmation(false)
+      await refreshOffers()
+    } catch (error) {
+      setCancelAllError(
+        `Failed to cancel all offers: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    } finally {
+      setIsCancellingAll(false)
+    }
+  }, [cancelOfferMutation, offerStorage, refreshOffers])
+
+  const handleCancelAllDialogClose = useCallback(() => {
+    setShowCancelAllConfirmation(false)
+    setCancelAllError('')
+  }, [])
+
+  // Delete all offers
+  const deleteAllOffers = useCallback(() => {
+    setShowDeleteAllConfirmation(true)
+    setDeleteAllError('')
+  }, [])
+
+  const confirmDeleteAllOffers = useCallback(async () => {
+    setIsDeletingAll(true)
+    setDeleteAllError('')
+
+    try {
+      // Clear all offers from database
+      await offerStorage.clearAllOffers()
+
+      // Clear local state immediately
+      setOffers([])
+      setTotalOffers(0)
+      setTotalPages(0)
+      setCurrentPage(1)
+
+      // Close modal
+      setShowDeleteAllConfirmation(false)
+
+      // Refresh to ensure everything is synced
+      await refreshOffers()
+    } catch (error) {
+      setDeleteAllError(
+        `Failed to delete all offers: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    } finally {
+      setIsDeletingAll(false)
+    }
+  }, [offerStorage, refreshOffers])
+
+  const handleDeleteAllDialogClose = useCallback(() => {
+    setShowDeleteAllConfirmation(false)
+    setDeleteAllError('')
+  }, [])
+
   return {
     // State
     offers,
@@ -282,6 +379,12 @@ export function useMyOffers() {
     offerToCancel,
     isCancelling,
     cancelError,
+    showCancelAllConfirmation,
+    isCancellingAll,
+    cancelAllError,
+    showDeleteAllConfirmation,
+    isDeletingAll,
+    deleteAllError,
     filters,
     setFilters,
 
@@ -302,6 +405,12 @@ export function useMyOffers() {
     cancelOffer,
     confirmCancelOffer,
     handleCancelDialogClose,
+    cancelAllOffers,
+    confirmCancelAllOffers,
+    handleCancelAllDialogClose,
+    deleteAllOffers,
+    confirmDeleteAllOffers,
+    handleDeleteAllDialogClose,
     handleOfferCreated,
     handleOfferTaken,
     handleOfferCancelled,

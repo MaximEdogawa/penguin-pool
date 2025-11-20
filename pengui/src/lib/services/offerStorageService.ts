@@ -132,7 +132,8 @@ export class OfferStorageService {
       // Remove duplicates before fetching
       await this.removeDuplicates()
 
-      let query = db.offers.orderBy('lastModified').reverse()
+      // Sort by createdAt (date) in descending order (newest first)
+      let query = db.offers.orderBy('createdAt').reverse()
 
       // Filter by status if provided
       if (options.status) {
@@ -205,7 +206,8 @@ export class OfferStorageService {
         query = query.and((offer) => offer.walletAddress === walletAddress)
       }
 
-      const offers = await query.reverse().sortBy('lastModified')
+      // Sort by createdAt (date) in descending order (newest first)
+      const offers = await query.reverse().sortBy('createdAt')
       logger.info('✅ Retrieved offers by status from IndexedDB:', { status, count: offers.length })
 
       return offers

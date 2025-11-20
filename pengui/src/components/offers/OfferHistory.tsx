@@ -1,11 +1,21 @@
 'use client'
 
+import Modal from '@/components/shared/Modal'
 import EmptyState from '@/components/wallet/shared/EmptyState'
 import { useDexieOfferPolling } from '@/hooks/useDexieOfferPolling'
 import { useMyOffers } from '@/hooks/useMyOffers'
 import { useThemeClasses } from '@/hooks/useThemeClasses'
 import { formatAssetAmount } from '@/lib/utils/chia-units'
-import { ChevronLeft, ChevronRight, Eye, Handshake, X as XIcon } from 'lucide-react'
+import {
+  Ban,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Handshake,
+  Loader2,
+  Trash2,
+  X as XIcon,
+} from 'lucide-react'
 import { useEffect } from 'react'
 
 import type { OfferDetails } from '@/types/offer.types'
@@ -55,7 +65,7 @@ export default function OfferHistory({
   goToPage: parentGoToPage,
   changePageSize: parentChangePageSize,
 }: OfferHistoryProps) {
-  const { t } = useThemeClasses()
+  const { isDark, t } = useThemeClasses()
 
   // Use parent state if provided, otherwise use hook
   const hookData = useMyOffers()
@@ -78,6 +88,18 @@ export default function OfferHistory({
     totalPages: hookTotalPages,
     goToPage: hookGoToPage,
     changePageSize: hookChangePageSize,
+    showCancelAllConfirmation,
+    isCancellingAll,
+    cancelAllError,
+    showDeleteAllConfirmation,
+    isDeletingAll,
+    deleteAllError,
+    cancelAllOffers,
+    confirmCancelAllOffers,
+    handleCancelAllDialogClose,
+    deleteAllOffers,
+    confirmDeleteAllOffers,
+    handleDeleteAllDialogClose,
   } = hookData
 
   // Use parent props if provided, otherwise use hook values
@@ -170,11 +192,15 @@ export default function OfferHistory({
     <div className={`${t.card} p-4 sm:p-6 pb-8`}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
         <h2 className={`text-lg sm:text-xl font-semibold ${t.text}`}>My Offers</h2>
-        <div className="flex items-center space-x-2 flex-wrap">
+        <div className="flex items-center space-x-2 flex-wrap gap-2">
           <select
             value={filters.status || ''}
             onChange={(e) => setFilters({ ...filters, status: e.target.value || undefined })}
-            className={`px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 ${t.text} text-base sm:text-sm`}
+            className={`px-3 py-1.5 rounded-lg backdrop-blur-xl font-medium text-xs transition-all duration-200 ${
+              isDark
+                ? 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
+                : 'bg-white/40 border border-white/60 text-slate-800 hover:bg-white/50'
+            }`}
           >
             <option value="">All Status</option>
             <option value="pending">Pending</option>
@@ -186,13 +212,43 @@ export default function OfferHistory({
           <select
             value={pageSize}
             onChange={(e) => changePageSize(Number(e.target.value))}
-            className={`px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 ${t.text} text-base sm:text-sm`}
+            className={`px-3 py-1.5 rounded-lg backdrop-blur-xl font-medium text-xs transition-all duration-200 ${
+              isDark
+                ? 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
+                : 'bg-white/40 border border-white/60 text-slate-800 hover:bg-white/50'
+            }`}
           >
             <option value={5}>5</option>
             <option value={10}>10</option>
             <option value={20}>20</option>
             <option value={50}>50</option>
           </select>
+          <button
+            onClick={cancelAllOffers}
+            disabled={isLoading || filteredOffers.length === 0}
+            className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg backdrop-blur-xl transition-all duration-200 font-medium text-xs disabled:opacity-50 disabled:cursor-not-allowed ${
+              isDark
+                ? 'bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30 disabled:hover:bg-red-600/20'
+                : 'bg-red-600/30 border border-red-600/40 text-red-700 hover:bg-red-600/40 disabled:hover:bg-red-600/30'
+            }`}
+            title="Cancel all active offers"
+          >
+            <Ban size={14} strokeWidth={2.5} />
+            Cancel All
+          </button>
+          <button
+            onClick={deleteAllOffers}
+            disabled={isLoading || filteredOffers.length === 0}
+            className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg backdrop-blur-xl transition-all duration-200 font-medium text-xs disabled:opacity-50 disabled:cursor-not-allowed ${
+              isDark
+                ? 'bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30 disabled:hover:bg-red-600/20'
+                : 'bg-red-600/30 border border-red-600/40 text-red-700 hover:bg-red-600/40 disabled:hover:bg-red-600/30'
+            }`}
+            title="Delete all offers"
+          >
+            <Trash2 size={14} strokeWidth={2.5} />
+            Delete All
+          </button>
         </div>
       </div>
 
@@ -450,6 +506,91 @@ export default function OfferHistory({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Cancel All Confirmation Modal */}
+      {showCancelAllConfirmation && (
+        <Modal onClose={handleCancelAllDialogClose} maxWidth="max-w-md" closeOnOverlayClick={false}>
+          <div className="p-6">
+            <h3 className={`text-lg font-semibold ${t.text} mb-2`}>Cancel All Active Offers</h3>
+            <p className={`${t.textSecondary} mb-4`}>
+              Are you sure you want to cancel all active offers? This action cannot be undone.
+            </p>
+            {cancelAllError && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                <p className="text-sm text-red-700 dark:text-red-300">{cancelAllError}</p>
+              </div>
+            )}
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                onClick={handleCancelAllDialogClose}
+                className={`px-4 py-2 rounded-lg border ${t.border} ${t.text} hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`}
+              >
+                Keep Offers
+              </button>
+              <button
+                onClick={confirmCancelAllOffers}
+                disabled={isCancellingAll}
+                className={`px-4 py-2 rounded-lg border border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors`}
+              >
+                {isCancellingAll ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  <>
+                    <Ban size={14} />
+                    Cancel All Offers
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Delete All Confirmation Modal */}
+      {showDeleteAllConfirmation && (
+        <Modal onClose={handleDeleteAllDialogClose} maxWidth="max-w-md" closeOnOverlayClick={false}>
+          <div className="p-6">
+            <h3 className={`text-lg font-semibold ${t.text} mb-2`}>Delete All Offers</h3>
+            <p className={`${t.textSecondary} mb-4`}>
+              Are you sure you want to delete all offers? This action cannot be undone and will
+              permanently remove all offers from your storage.
+            </p>
+            {deleteAllError && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                <p className="text-sm text-red-700 dark:text-red-300">{deleteAllError}</p>
+              </div>
+            )}
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                onClick={handleDeleteAllDialogClose}
+                className={`px-4 py-2 rounded-lg border ${t.border} ${t.text} hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`}
+              >
+                Keep Offers
+              </button>
+              <button
+                onClick={confirmDeleteAllOffers}
+                disabled={isDeletingAll}
+                className={`px-4 py-2 rounded-lg border border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors`}
+              >
+                {isDeletingAll ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={14} />
+                    Delete All Offers
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   )

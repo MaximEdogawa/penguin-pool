@@ -210,6 +210,7 @@ export function useOfferStorage() {
     try {
       await offerStorageService.clearAllOffers()
       setOffers([])
+      setPagination(null) // Reset pagination when clearing all offers
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to clear offers')
       throw err
