@@ -219,8 +219,9 @@ export function convertToSmallestUnit(amount: AssetAmount, assetType: AssetType)
     case 'xch':
       return xchToMojos(amount)
     case 'cat':
-      // CAT tokens use whole units, round to nearest integer
-      return Math.round(amount)
+      // CAT tokens need conversion to smallest unit (1 CAT = 1000 smallest units)
+      // This ensures 1:1 mapping: user inputs 1, wallet shows 1
+      return Math.round(amount * 1000)
     case 'nft':
       // NFTs are whole numbers
       return Math.floor(amount)
@@ -244,12 +245,15 @@ export function convertFromSmallestUnit(
     case 'xch':
       return mojosToXch(amount)
     case 'cat':
-      // CAT tokens use whole units
-      return typeof amount === 'string'
-        ? parseFloat(amount)
-        : typeof amount === 'bigint'
-          ? Number(amount)
-          : amount
+      // CAT tokens: convert from smallest unit (divide by 1000)
+      // This ensures 1:1 mapping: wallet shows 1, user sees 1
+      const catAmount =
+        typeof amount === 'string'
+          ? parseFloat(amount)
+          : typeof amount === 'bigint'
+            ? Number(amount)
+            : amount
+      return catAmount / 1000
     case 'nft':
       // NFTs are whole numbers
       return typeof amount === 'string'

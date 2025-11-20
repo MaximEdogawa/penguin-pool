@@ -118,10 +118,11 @@ export function useTickerData() {
       return fallbackTokens
     }
 
-    // If API has tokens, merge with fallback tokens and remove duplicates
+    // If API has tokens, merge with fallback tokens and remove duplicates by assetId
+    // Deduplicate by assetId (not ticker) to ensure correct mapping
     const allTokens = [...tokens, ...fallbackTokens]
     const uniqueTokens = allTokens.filter(
-      (token, index, self) => index === self.findIndex((t) => t.ticker === token.ticker)
+      (token, index, self) => index === self.findIndex((t) => t.assetId === token.assetId)
     )
 
     return uniqueTokens.sort((a, b) => a.ticker.localeCompare(b.ticker))

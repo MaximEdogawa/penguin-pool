@@ -48,12 +48,12 @@ export default function AssetSelector({
   )
 
   const selectCatToken = useCallback(
-    (token: { assetId: string; ticker: string }) => {
+    (token: { assetId: string; ticker: string; symbol?: string }) => {
       onUpdate({
         ...asset,
         assetId: token.assetId,
-        // Don't auto-fill symbol - let user enter it manually if needed
-        symbol: asset.symbol || '',
+        // Set symbol from token to ensure correct mapping
+        symbol: token.symbol || token.ticker,
         searchQuery: token.ticker,
         showDropdown: false,
       })

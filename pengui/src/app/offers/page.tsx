@@ -30,6 +30,14 @@ export default function OffersPage() {
     isCancelling,
     cancelError,
     cancelOffer,
+    filteredOffers,
+    filters,
+    setFilters,
+    getStatusClass,
+    formatDate,
+    copyOfferString,
+    getTickerSymbol,
+    isCopied,
   } = useMyOffers()
 
   const [showCreateOffer, setShowCreateOffer] = useState(false)
@@ -147,6 +155,16 @@ export default function OffersPage() {
           onCreateOffer={() => setShowCreateOffer(true)}
           onViewOffer={handleViewOffer}
           onCancelOffer={cancelOffer}
+          offers={filteredOffers}
+          isLoading={isLoading}
+          filters={filters}
+          setFilters={setFilters}
+          getStatusClass={getStatusClass}
+          formatDate={formatDate}
+          copyOfferString={copyOfferString}
+          getTickerSymbol={getTickerSymbol}
+          isCopied={isCopied}
+          refreshOffers={refreshOffers}
         />
       </div>
 

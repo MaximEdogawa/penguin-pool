@@ -66,12 +66,9 @@ export function useOfferStorage() {
     try {
       await offerStorageService.updateOffer(offerId, updates)
 
-      // Update local state
-      setOffers((prev) =>
-        prev.map((offer) =>
-          offer.id === offerId ? { ...offer, ...updates, lastModified: new Date() } : offer
-        )
-      )
+      // Reload from storage to ensure consistency across all components
+      const loadedOffers = await offerStorageService.getOffers({})
+      setOffers(loadedOffers)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update offer')
       throw err
@@ -90,8 +87,9 @@ export function useOfferStorage() {
     try {
       await offerStorageService.deleteOffer(offerId)
 
-      // Remove from local state
-      setOffers((prev) => prev.filter((offer) => offer.id !== offerId))
+      // Reload from storage to ensure consistency across all components
+      const loadedOffers = await offerStorageService.getOffers({})
+      setOffers(loadedOffers)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete offer')
       throw err

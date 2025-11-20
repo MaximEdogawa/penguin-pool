@@ -155,19 +155,30 @@ export function useMyOffers() {
     [refreshOffers]
   )
 
-  const handleOfferTaken = useCallback((offer: OfferDetails) => {
-    // Update the offer status if it was taken
-    setOffers((prev) =>
-      prev.map((o) => (o.id === offer.id ? { ...o, status: 'completed' as const } : o))
-    )
-  }, [])
+  const handleOfferTaken = useCallback(
+    async (offer: OfferDetails) => {
+      // Update local state immediately for UI responsiveness
+      setOffers((prev) =>
+        prev.map((o) => (o.id === offer.id ? { ...o, status: 'completed' as const } : o))
+      )
+      // Refresh from storage to ensure all components see the updated state
+      await refreshOffers()
+    },
+    [refreshOffers]
+  )
 
-  const handleOfferCancelled = useCallback((offer: OfferDetails) => {
-    setOffers((prev) =>
-      prev.map((o) => (o.id === offer.id ? { ...o, status: 'cancelled' as const } : o))
-    )
-    setSelectedOffer(null)
-  }, [])
+  const handleOfferCancelled = useCallback(
+    async (offer: OfferDetails) => {
+      // Update local state immediately for UI responsiveness
+      setOffers((prev) =>
+        prev.map((o) => (o.id === offer.id ? { ...o, status: 'cancelled' as const } : o))
+      )
+      setSelectedOffer(null)
+      // Refresh from storage to ensure all components see the updated state
+      await refreshOffers()
+    },
+    [refreshOffers]
+  )
 
   const handleOfferDeleted = useCallback(
     async (offer: OfferDetails) => {

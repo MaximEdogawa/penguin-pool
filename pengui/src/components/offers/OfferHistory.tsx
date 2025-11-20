@@ -13,36 +13,76 @@ interface OfferHistoryProps {
   onCreateOffer: () => void
   onViewOffer: (offer: OfferDetails) => void
   onCancelOffer?: (offer: OfferDetails) => void
+  // Optional props to share state from parent
+  offers?: OfferDetails[]
+  isLoading?: boolean
+  filters?: { status?: string }
+  setFilters?: (filters: { status?: string }) => void
+  getStatusClass?: (status: string) => string
+  formatDate?: (date: Date) => string
+  copyOfferString?: (offerString: string) => Promise<void>
+  getTickerSymbol?: (assetId: string) => string
+  isCopied?: string | null
+  refreshOffers?: () => Promise<void>
 }
 
 export default function OfferHistory({
   onCreateOffer,
   onViewOffer,
   onCancelOffer,
+  offers: parentOffers,
+  isLoading: parentIsLoading,
+  filters: parentFilters,
+  setFilters: parentSetFilters,
+  getStatusClass: parentGetStatusClass,
+  formatDate: parentFormatDate,
+  copyOfferString: parentCopyOfferString,
+  getTickerSymbol: parentGetTickerSymbol,
+  isCopied: parentIsCopied,
+  refreshOffers: parentRefreshOffers,
 }: OfferHistoryProps) {
   const { t } = useThemeClasses()
+
+  // Use parent state if provided, otherwise use hook
+  const hookData = useMyOffers()
   const {
-    isLoading,
-    filteredOffers,
-    filters,
-    setFilters,
-    refreshOffers,
+    isLoading: hookIsLoading,
+    filteredOffers: hookFilteredOffers,
+    filters: hookFilters,
+    setFilters: hookSetFilters,
+    refreshOffers: hookRefreshOffers,
     viewOffer,
     cancelOffer: defaultCancelOffer,
-    getStatusClass,
-    formatDate,
-    copyOfferString,
-    getTickerSymbol,
-    isCopied,
-  } = useMyOffers()
+    getStatusClass: hookGetStatusClass,
+    formatDate: hookFormatDate,
+    copyOfferString: hookCopyOfferString,
+    getTickerSymbol: hookGetTickerSymbol,
+    isCopied: hookIsCopied,
+  } = hookData
+
+  // Use parent props if provided, otherwise use hook values
+  const isLoading = parentIsLoading ?? hookIsLoading
+  // If parent provides offers, use them directly (they're already filtered by parent)
+  // Otherwise use the hook's filtered offers
+  const filteredOffers = parentOffers ?? hookFilteredOffers
+  const filters = parentFilters ?? hookFilters
+  const setFilters = parentSetFilters ?? hookSetFilters
+  const getStatusClass = parentGetStatusClass ?? hookGetStatusClass
+  const formatDate = parentFormatDate ?? hookFormatDate
+  const copyOfferString = parentCopyOfferString ?? hookCopyOfferString
+  const getTickerSymbol = parentGetTickerSymbol ?? hookGetTickerSymbol
+  const isCopied = parentIsCopied ?? hookIsCopied
+  const refreshOffers = parentRefreshOffers ?? hookRefreshOffers
 
   // Use the passed cancel handler if provided, otherwise use the default from hook
   const cancelOffer = onCancelOffer || defaultCancelOffer
 
-  // Load offers on mount only
+  // Load offers on mount only if using hook (not parent state)
   useEffect(() => {
-    refreshOffers()
-  }, [refreshOffers])
+    if (!parentOffers && refreshOffers) {
+      refreshOffers()
+    }
+  }, [parentOffers, refreshOffers])
 
   const handleViewOffer = (offer: OfferDetails) => {
     viewOffer(offer)

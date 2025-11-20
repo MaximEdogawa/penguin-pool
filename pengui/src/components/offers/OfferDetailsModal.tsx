@@ -120,7 +120,7 @@ export default function OfferDetailsModal({
       await offerStorage.updateOffer(offer.id, { status: 'cancelled' })
 
       const updatedOffer = { ...offer, status: 'cancelled' as const }
-      onOfferCancelled(updatedOffer)
+      await onOfferCancelled(updatedOffer)
       setShowCancelConfirmation(false)
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
@@ -171,7 +171,7 @@ export default function OfferDetailsModal({
         dexieStatus: result.dexieStatus,
         uploadedToDexie: true,
       }
-      onOfferUpdated(updatedOffer)
+      await onOfferUpdated(updatedOffer)
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
       setUploadError(`Failed to upload to Dexie: ${errorMsg}`)
