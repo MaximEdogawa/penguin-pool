@@ -10,21 +10,10 @@ import { logger } from '@/lib/logger'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 const DEXIE_KEY = 'dexie'
-const TICKERS_KEY = 'tickers'
 const PAIRS_KEY = 'pairs'
 
 export function useDexieDataService() {
   const queryClient = useQueryClient()
-
-  const tickersQuery = useQuery({
-    queryKey: [DEXIE_KEY, TICKERS_KEY],
-    queryFn: async () => {
-      return await dexieRepository.getAllTickers()
-    },
-    staleTime: 24 * 60 * 60 * 1000, // 24 hours
-    gcTime: 24 * 60 * 60 * 1000, // 24 hours
-    retry: 3,
-  })
 
   const pairsQuery = useQuery({
     queryKey: [DEXIE_KEY, PAIRS_KEY],
@@ -64,17 +53,7 @@ export function useDexieDataService() {
     },
   })
 
-  const getTickerMutation = useMutation({
-    mutationFn: async (tickerId: string) => {
-      return await dexieRepository.getTicker(tickerId)
-    },
-    onSuccess: () => {
-      logger.info('Ticker retrieved successfully')
-    },
-    onError: (error) => {
-      logger.error('Failed to get ticker:', error)
-    },
-  })
+  // getTickerMutation removed - use TanStack Query hooks from useTickers.ts instead
 
   const getOrderBookMutation = useMutation({
     mutationFn: async ({ tickerId, depth = 10 }: { tickerId: string; depth?: number }) => {
@@ -139,9 +118,7 @@ export function useDexieDataService() {
     return await pollOfferStatus()
   }
 
-  const refreshTickers = async () => {
-    await queryClient.invalidateQueries({ queryKey: [DEXIE_KEY, TICKERS_KEY] })
-  }
+  // refreshTickers removed - use useTickers() hook's refetch() method instead
 
   const refreshPairs = async () => {
     await queryClient.invalidateQueries({ queryKey: [DEXIE_KEY, PAIRS_KEY] })
@@ -170,32 +147,29 @@ export function useDexieDataService() {
   const isLoading =
     searchOffersMutation.isPending ||
     inspectOfferMutation.isPending ||
-    getTickerMutation.isPending ||
     getOrderBookMutation.isPending ||
     getHistoricalTradesMutation.isPending ||
     postOfferMutation.isPending
 
   return {
-    tickersQuery,
     pairsQuery,
     searchOffers: searchOffersMutation.mutateAsync,
     inspectOffer: async (dexieId: string) => {
       return await inspectOfferMutation.mutateAsync(dexieId)
     },
-    getTicker: getTickerMutation.mutateAsync,
+    // getTicker removed - use TanStack Query hooks from useTickers.ts instead
     getOrderBook: ({ tickerId, depth }: { tickerId: string; depth?: number }) =>
       getOrderBookMutation.mutateAsync({ tickerId, depth }),
     getHistoricalTrades: ({ tickerId, limit }: { tickerId: string; limit?: number }) =>
       getHistoricalTradesMutation.mutateAsync({ tickerId, limit }),
     inspectOfferWithPolling,
     postOffer: postOfferMutation.mutateAsync,
-    refreshTickers,
     refreshPairs,
     refreshOffers,
     validateOfferString,
     searchOffersMutation,
     inspectOfferMutation,
-    getTickerMutation,
+    // getTickerMutation removed
     getOrderBookMutation,
     getHistoricalTradesMutation,
     postOfferMutation,
@@ -207,7 +181,7 @@ export function useDexieDataService() {
     isSearching: searchOffersMutation.isPending,
     isInspecting: inspectOfferMutation.isPending,
     isPosting: postOfferMutation.isPending,
-    isGettingTicker: getTickerMutation.isPending,
+    // isGettingTicker removed
     isGettingOrderBook: getOrderBookMutation.isPending,
     isGettingTrades: getHistoricalTradesMutation.isPending,
   }

@@ -23,6 +23,7 @@
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
+    "@tanstack/react-query-devtools": "^5.90.2",
     "@types/node": "^20.19.24",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

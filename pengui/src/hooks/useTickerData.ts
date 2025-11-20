@@ -1,145 +1,47 @@
 'use client'
 
-import type { DexieTicker } from '@/lib/dexie/DexieRepository'
 import { useDexieDataService } from '@/hooks/useDexieDataService'
-import { useMemo } from 'react'
-
-export interface CatTokenInfo {
-  assetId: string
-  ticker: string
-  name: string
-  symbol: string
-}
-
-export function createCatTokenMap(tickers: DexieTicker[]): Map<string, CatTokenInfo> {
-  const catMap = new Map<string, CatTokenInfo>()
-
-  tickers.forEach((ticker) => {
-    // Include both XCH and TXCH as valid target currencies
-    const isXchTarget =
-      ticker.target_currency === 'xch' ||
-      ticker.target_currency === 'TXCH' ||
-      ticker.target_currency === 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad'
-
-    const isNotXchBase =
-      ticker.base_currency !== 'xch' &&
-      ticker.base_currency !== 'TXCH' &&
-      ticker.base_currency !== 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad'
-
-    if (isXchTarget && isNotXchBase) {
-      catMap.set(ticker.base_currency, {
-        assetId: ticker.base_currency,
-        ticker: ticker.base_code,
-        name: ticker.base_name,
-        symbol: ticker.base_code,
-      })
-    }
-  })
-
-  return catMap
-}
-
-export function getCatTokenInfo(assetId: string, catMap: Map<string, CatTokenInfo>): CatTokenInfo {
-  return (
-    catMap.get(assetId) || {
-      assetId,
-      ticker: assetId,
-      name: assetId,
-      symbol: assetId,
-    }
-  )
-}
+import { useCatTokens, getCatTokenInfoSync, type CatTokenInfo } from '@/hooks/useTickers'
 
 /**
  * Hook for ticker data and CAT token management
  * Provides human-readable CAT token information
+ *
+ * @deprecated This hook is being refactored. Use useCatTokens() and useCatTokenInfo() directly.
+ * This wrapper is kept for backward compatibility during migration.
  */
 export function useTickerData() {
+  const { catTokenMap, availableCatTokens, isLoading, isError, error, refetch } = useCatTokens()
   const dexieDataService = useDexieDataService()
-
-  // CAT token map for human-readable names
-  const catTokenMap = useMemo(() => {
-    let map = new Map<string, CatTokenInfo>()
-
-    // Add API data if available
-    if (dexieDataService.tickersQuery.data?.success && dexieDataService.tickersQuery.data.data) {
-      map = createCatTokenMap(dexieDataService.tickersQuery.data.data)
-    }
-
-    // Always add essential fallback tokens (TXCH and TDBX) for testing
-    const fallbackTokens: CatTokenInfo[] = [
-      {
-        assetId: 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad',
-        ticker: 'TXCH',
-        name: 'TXCH',
-        symbol: 'TXCH',
-      },
-      {
-        assetId: '4eadfa450c19fa51df65eb7fbf5b61077ec80ec799a7652bb187b705bff19a90',
-        ticker: 'TDBX',
-        name: 'TDBX',
-        symbol: 'TDBX',
-      },
-    ]
-
-    // Add fallback tokens to the map
-    fallbackTokens.forEach((token) => {
-      map.set(token.assetId, token)
-    })
-
-    return map
-  }, [dexieDataService.tickersQuery.data])
-
-  // Available CAT tokens list
-  const availableCatTokens = useMemo(() => {
-    const tokens: CatTokenInfo[] = []
-    catTokenMap.forEach((tokenInfo) => {
-      tokens.push(tokenInfo)
-    })
-
-    // Always include essential fallback tokens (TXCH and TDBX) for testing
-    const fallbackTokens: CatTokenInfo[] = [
-      {
-        assetId: 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad',
-        ticker: 'TXCH',
-        name: 'TXCH',
-        symbol: 'TXCH',
-      },
-      {
-        assetId: '4eadfa450c19fa51df65eb7fbf5b61077ec80ec799a7652bb187b705bff19a90',
-        ticker: 'TDBX',
-        name: 'TDBX',
-        symbol: 'TDBX',
-      },
-    ]
-
-    // If no tokens from API, return only fallback tokens
-    if (tokens.length === 0 && !dexieDataService.tickersQuery.isLoading) {
-      return fallbackTokens
-    }
-
-    // If API has tokens, merge with fallback tokens and remove duplicates by assetId
-    // Deduplicate by assetId (not ticker) to ensure correct mapping
-    const allTokens = [...tokens, ...fallbackTokens]
-    const uniqueTokens = allTokens.filter(
-      (token, index, self) => index === self.findIndex((t) => t.assetId === token.assetId)
-    )
-
-    return uniqueTokens.sort((a, b) => a.ticker.localeCompare(b.ticker))
-  }, [catTokenMap, dexieDataService.tickersQuery.isLoading])
 
   /**
    * Get human-readable CAT token info
    */
   const getCatTokenInfoForAsset = (assetId: string): CatTokenInfo => {
-    return getCatTokenInfo(assetId, catTokenMap)
+    return getCatTokenInfoSync(assetId, catTokenMap)
   }
 
   /**
    * Get ticker for a specific asset
+   * @deprecated Use useCatTokens().getCatTokenInfo() instead - ticker data comes from TanStack Query
    */
   const getTickerForAsset = async (assetId: string) => {
-    return await dexieDataService.getTicker(assetId)
+    // Return token info from the cached ticker data
+    const tokenInfo = getCatTokenInfoForAsset(assetId)
+    return {
+      success: true,
+      data: [
+        {
+          ticker_id: `${assetId}_xch`,
+          base_currency: assetId,
+          target_currency: 'xch',
+          base_code: tokenInfo.ticker,
+          target_code: 'XCH',
+          base_name: tokenInfo.name,
+          target_name: 'Chia',
+        },
+      ],
+    }
   }
 
   /**
@@ -184,14 +86,14 @@ export function useTickerData() {
 
   return {
     // Data
-    tickers: dexieDataService.tickersQuery.data?.data || [],
+    tickers: [], // Deprecated - use useTickers() directly
     catTokenMap,
     availableCatTokens,
 
     // Loading states
-    isLoading: dexieDataService.tickersQuery.isLoading,
-    isError: dexieDataService.tickersQuery.isError,
-    error: dexieDataService.tickersQuery.error,
+    isLoading,
+    isError,
+    error,
 
     // Methods
     getCatTokenInfo: getCatTokenInfoForAsset,
@@ -203,6 +105,9 @@ export function useTickerData() {
     isCatAsset,
 
     // Query for manual refresh
-    refetchTickers: dexieDataService.tickersQuery.refetch,
+    refetchTickers: refetch,
   }
 }
+
+// Re-export types for backward compatibility
+export type { CatTokenInfo } from '@/hooks/useTickers'

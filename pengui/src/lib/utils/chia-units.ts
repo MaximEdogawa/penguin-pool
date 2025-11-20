@@ -244,9 +244,7 @@ export function convertFromSmallestUnit(
   switch (assetType.toLowerCase()) {
     case 'xch':
       return mojosToXch(amount)
-    case 'cat':
-      // CAT tokens: convert from smallest unit (divide by 1000)
-      // This ensures 1:1 mapping: wallet shows 1, user sees 1
+    case 'cat': {
       const catAmount =
         typeof amount === 'string'
           ? parseFloat(amount)
@@ -254,8 +252,8 @@ export function convertFromSmallestUnit(
             ? Number(amount)
             : amount
       return catAmount / 1000
+    }
     case 'nft':
-      // NFTs are whole numbers
       return typeof amount === 'string'
         ? parseFloat(amount)
         : typeof amount === 'bigint'

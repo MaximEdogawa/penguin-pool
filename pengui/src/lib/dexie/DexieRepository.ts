@@ -220,56 +220,7 @@ export class DexieRepository {
     this.baseUrl = baseUrl
   }
 
-  /**
-   * Get all tickers (invalidates once per day)
-   */
-  async getAllTickers(): Promise<DexieTickerResponse> {
-    try {
-      const response = await fetch(`${this.baseUrl}/v3/prices/tickers`)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      const tickersArray = Array.isArray(data.tickers)
-        ? data.tickers
-        : Array.isArray(data.data)
-          ? data.data
-          : Array.isArray(data)
-            ? data
-            : []
-      return {
-        success: true,
-        data: tickersArray,
-      }
-    } catch (error) {
-      logger.error('Failed to fetch all tickers:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Get specific ticker by ticker_id
-   */
-  async getTicker(tickerId: string): Promise<DexieTickerResponse> {
-    try {
-      const response = await fetch(`${this.baseUrl}/v3/prices/tickers?ticker_id=${tickerId}`)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      return {
-        success: true,
-        data: Array.isArray(data.data) ? data.data : [data.data],
-      }
-    } catch (error) {
-      logger.error('Failed to fetch ticker:', error)
-      throw error
-    }
-  }
+  // getAllTickers and getTicker removed - use TanStack Query hooks from useTickers.ts instead
 
   /**
    * Get all trading pairs
