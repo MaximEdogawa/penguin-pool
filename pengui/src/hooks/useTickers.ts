@@ -2,7 +2,7 @@
 
 import { environment } from '@/lib/config/environment'
 import { CHIA_ASSET_IDS, XCH_BASE_CURRENCIES } from '@/lib/constants/chia-assets'
-import type { DexieTicker } from '@/lib/dexie/DexieRepository'
+import type { DexieTicker } from '@/lib/dexie/dexieTypes'
 import type { Asset, Ticker } from '@/types/asset.types'
 import { tickerToAsset } from '@/types/asset.types'
 import { useQuery } from '@tanstack/react-query'

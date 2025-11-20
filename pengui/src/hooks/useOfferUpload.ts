@@ -1,6 +1,6 @@
 'use client'
 
-import { calculateOfferState } from '@/lib/dexie/DexieRepository'
+import { calculateOfferState } from '@/lib/dexie/dexieUtils'
 import { useOfferInspection } from '@/hooks/useOfferInspection'
 import { useOfferStorage } from '@/hooks/useOfferStorage'
 import { useState } from 'react'

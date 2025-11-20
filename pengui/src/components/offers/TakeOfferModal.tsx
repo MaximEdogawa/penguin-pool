@@ -2,10 +2,10 @@ import Button from '@/components/shared/Button'
 import Modal from '@/components/shared/Modal'
 import { useOfferInspection } from '@/hooks/useOfferInspection'
 import { useThemeClasses } from '@/hooks/useThemeClasses'
-import { useTickerData } from '@/hooks/useTickerData'
+import { useCatTokens } from '@/hooks/useTickers'
 import { useTakeOffer } from '@/hooks/useWalletQueries'
-import type { DexiePostOfferResponse } from '@/lib/dexie/DexieRepository'
-import { calculateOfferState } from '@/lib/dexie/DexieRepository'
+import type { DexiePostOfferResponse } from '@/lib/dexie/dexieTypes'
+import { calculateOfferState } from '@/lib/dexie/dexieUtils'
 import { formatAssetAmount, formatXchAmount, getMinimumFeeInXch } from '@/lib/utils/chia-units'
 import { getDexieStatusDescription, validateOfferString } from '@/lib/utils/offerUtils'
 import type { OfferAsset, OfferDetails } from '@/types/offer.types'
@@ -80,7 +80,7 @@ export default function TakeOfferModal({ onClose, onOfferTaken }: TakeOfferModal
   const { t } = useThemeClasses()
   const { postOffer, isPosting } = useOfferInspection()
   const takeOfferMutation = useTakeOffer()
-  const { getCatTokenInfo } = useTickerData()
+  const { getCatTokenInfo } = useCatTokens()
 
   // Form state
   const [offerString, setOfferString] = useState('')

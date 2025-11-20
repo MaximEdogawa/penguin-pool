@@ -1,7 +1,7 @@
 'use client'
 
 import { useDexieDataService } from '@/hooks/useDexieDataService'
-import type { DexieOfferSearchParams, DexiePostOfferParams } from '@/lib/dexie/DexieRepository'
+import type { DexieOfferSearchParams, DexiePostOfferParams } from '@/lib/dexie/dexieTypes'
 
 export type ValidatedOfferString = string & { readonly __validated: true }
 

@@ -1,11 +1,11 @@
-import { calculateOfferState } from '@/lib/dexie/DexieRepository'
-import type { DexieOffer } from '@/lib/dexie/DexieRepository'
+import { calculateOfferState } from '@/lib/dexie/dexieUtils'
+import type { DexieOffer } from '@/lib/dexie/dexieTypes'
 import type { OfferState, OfferStatus } from '@/types/offer.types'
 import { convertOfferStateToStatus, convertStatusToOfferState } from '@/types/offer.types'
 
 /**
  * Calculate offer state from Dexie offer data
- * Re-export from DexieRepository for convenience
+ * Re-export from dexieUtils for convenience
  */
 export { calculateOfferState }
 

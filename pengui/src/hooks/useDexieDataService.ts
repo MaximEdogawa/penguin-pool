@@ -1,32 +1,94 @@
 'use client'
 
-import {
-  dexieRepository,
-  type DexieOfferSearchParams,
-  type DexiePostOfferParams,
-  type DexiePostOfferResponse,
-} from '@/lib/dexie/DexieRepository'
+import { environment } from '@/lib/config/environment'
+import type {
+  DexieOfferSearchParams,
+  DexieOfferSearchResponse,
+  DexieOrderBookResponse,
+  DexiePairsResponse,
+  DexiePostOfferParams,
+  DexiePostOfferResponse,
+  DexieHistoricalTradesResponse,
+} from '@/lib/dexie/dexieTypes'
 import { logger } from '@/lib/logger'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 const DEXIE_KEY = 'dexie'
 const PAIRS_KEY = 'pairs'
+const DEXIE_API_BASE_URL = environment.dexie.apiBaseUrl
 
 export function useDexieDataService() {
   const queryClient = useQueryClient()
 
   const pairsQuery = useQuery({
     queryKey: [DEXIE_KEY, PAIRS_KEY],
-    queryFn: async () => {
-      return await dexieRepository.getAllPairs()
+    queryFn: async (): Promise<DexiePairsResponse> => {
+      try {
+        const response = await fetch(`${DEXIE_API_BASE_URL}/v3/prices/pairs`)
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        return {
+          success: true,
+          data: data.data || data,
+        }
+      } catch (error) {
+        logger.error('Failed to fetch all pairs:', error)
+        throw error
+      }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 3,
   })
 
   const searchOffersMutation = useMutation({
-    mutationFn: async (params: DexieOfferSearchParams = {}) => {
-      return await dexieRepository.searchOffers(params)
+    mutationFn: async (params: DexieOfferSearchParams = {}): Promise<DexieOfferSearchResponse> => {
+      try {
+        const queryParams = new URLSearchParams()
+
+        if (params.requested) queryParams.append('requested', params.requested)
+        if (params.offered) queryParams.append('offered', params.offered)
+        if (params.maker) queryParams.append('maker', params.maker)
+        if (params.page_size) queryParams.append('page_size', params.page_size.toString())
+        if (params.page) queryParams.append('page', params.page.toString())
+        if (params.status !== undefined) queryParams.append('status', params.status.toString())
+
+        const response = await fetch(`${DEXIE_API_BASE_URL}/v1/offers?${queryParams.toString()}`)
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        // Handle different response structures
+        let offersData: unknown[] = []
+        if (Array.isArray(data)) {
+          offersData = data
+        } else if (data && typeof data === 'object') {
+          if (Array.isArray(data.data)) {
+            offersData = data.data
+          } else if (Array.isArray(data.offers)) {
+            offersData = data.offers
+          } else if (Array.isArray(data.results)) {
+            offersData = data.results
+          }
+        }
+
+        return {
+          success: true,
+          data: offersData,
+          total: data.total || offersData.length,
+          page: data.page || 1,
+          page_size: data.page_size || 10,
+        }
+      } catch (error) {
+        logger.error('Failed to search offers:', error)
+        throw error
+      }
     },
     onSuccess: () => {
       logger.info('Offers searched successfully')
@@ -37,9 +99,37 @@ export function useDexieDataService() {
   })
 
   const inspectOfferMutation = useMutation({
-    mutationFn: async (dexieId: string) => {
-      logger.info('Inspecting offer with ID:', dexieId)
-      return await dexieRepository.inspectOfferById(dexieId)
+    mutationFn: async (dexieId: string): Promise<DexiePostOfferResponse> => {
+      try {
+        logger.info(`Fetching offer by ID: ${dexieId}`)
+        const response = await fetch(`${DEXIE_API_BASE_URL}/v1/offers/${dexieId}`)
+
+        const result = await response.json()
+        logger.info(`Response status: ${response.status}, Result:`, result)
+
+        if (!response.ok) {
+          logger.warn(`Offer not found or expired for ID ${dexieId}:`, result)
+          return {
+            success: false,
+            id: dexieId,
+            known: false,
+            offer: null,
+            error_message: result.error_message || `HTTP error! status: ${response.status}`,
+          }
+        }
+
+        const responseData = {
+          success: result.success,
+          id: result.offer?.id || dexieId,
+          known: true,
+          offer: result.offer,
+        }
+        logger.info(`Returning successful response:`, responseData)
+        return responseData
+      } catch (error) {
+        logger.error('Failed to fetch offer by ID:', error)
+        throw error
+      }
     },
     gcTime: 0, // Don't cache mutations
     onSuccess: (data) => {
@@ -53,11 +143,32 @@ export function useDexieDataService() {
     },
   })
 
-  // getTickerMutation removed - use TanStack Query hooks from useTickers.ts instead
-
   const getOrderBookMutation = useMutation({
-    mutationFn: async ({ tickerId, depth = 10 }: { tickerId: string; depth?: number }) => {
-      return await dexieRepository.getOrderBook(tickerId, depth)
+    mutationFn: async ({
+      tickerId,
+      depth = 10,
+    }: {
+      tickerId: string
+      depth?: number
+    }): Promise<DexieOrderBookResponse> => {
+      try {
+        const response = await fetch(
+          `${DEXIE_API_BASE_URL}/v3/prices/orderbook?ticker_id=${tickerId}&depth=${depth}`
+        )
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        return {
+          success: true,
+          data: data.data || data,
+        }
+      } catch (error) {
+        logger.error('Failed to fetch order book:', error)
+        throw error
+      }
     },
     onSuccess: () => {
       logger.info('Order book retrieved successfully')
@@ -68,8 +179,31 @@ export function useDexieDataService() {
   })
 
   const getHistoricalTradesMutation = useMutation({
-    mutationFn: async ({ tickerId, limit = 100 }: { tickerId: string; limit?: number }) => {
-      return await dexieRepository.getHistoricalTrades(tickerId, limit)
+    mutationFn: async ({
+      tickerId,
+      limit = 100,
+    }: {
+      tickerId: string
+      limit?: number
+    }): Promise<DexieHistoricalTradesResponse> => {
+      try {
+        const response = await fetch(
+          `${DEXIE_API_BASE_URL}/v3/prices/trades?ticker_id=${tickerId}&limit=${limit}`
+        )
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        return {
+          success: true,
+          data: data.data || data,
+        }
+      } catch (error) {
+        logger.error('Failed to fetch historical trades:', error)
+        throw error
+      }
     },
     onSuccess: () => {
       logger.info('Historical trades retrieved successfully')
@@ -81,7 +215,31 @@ export function useDexieDataService() {
 
   const postOfferMutation = useMutation({
     mutationFn: async (params: DexiePostOfferParams): Promise<DexiePostOfferResponse> => {
-      return await dexieRepository.postOffer(params)
+      try {
+        const response = await fetch(`${DEXIE_API_BASE_URL}/v1/offers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(params),
+        })
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Dexie API error: ${response.status} ${errorText}`)
+        }
+
+        const data = await response.json()
+        return {
+          success: data.success,
+          id: data.id,
+          known: data.known,
+          offer: data.offer,
+        }
+      } catch (error) {
+        logger.error('Failed to post offer:', error)
+        throw error
+      }
     },
     onSuccess: (data) => {
       logger.info('Offer posted successfully:', data)
@@ -117,8 +275,6 @@ export function useDexieDataService() {
 
     return await pollOfferStatus()
   }
-
-  // refreshTickers removed - use useTickers() hook's refetch() method instead
 
   const refreshPairs = async () => {
     await queryClient.invalidateQueries({ queryKey: [DEXIE_KEY, PAIRS_KEY] })
@@ -157,7 +313,6 @@ export function useDexieDataService() {
     inspectOffer: async (dexieId: string) => {
       return await inspectOfferMutation.mutateAsync(dexieId)
     },
-    // getTicker removed - use TanStack Query hooks from useTickers.ts instead
     getOrderBook: ({ tickerId, depth }: { tickerId: string; depth?: number }) =>
       getOrderBookMutation.mutateAsync({ tickerId, depth }),
     getHistoricalTrades: ({ tickerId, limit }: { tickerId: string; limit?: number }) =>
@@ -169,7 +324,6 @@ export function useDexieDataService() {
     validateOfferString,
     searchOffersMutation,
     inspectOfferMutation,
-    // getTickerMutation removed
     getOrderBookMutation,
     getHistoricalTradesMutation,
     postOfferMutation,
@@ -181,7 +335,6 @@ export function useDexieDataService() {
     isSearching: searchOffersMutation.isPending,
     isInspecting: inspectOfferMutation.isPending,
     isPosting: postOfferMutation.isPending,
-    // isGettingTicker removed
     isGettingOrderBook: getOrderBookMutation.isPending,
     isGettingTrades: getHistoricalTradesMutation.isPending,
   }

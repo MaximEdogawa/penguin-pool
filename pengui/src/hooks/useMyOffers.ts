@@ -2,7 +2,7 @@
 
 import { useCancelOffer } from '@/hooks/useWalletQueries'
 import { useOfferStorage } from '@/hooks/useOfferStorage'
-import { useTickerData } from '@/hooks/useTickerData'
+import { useCatTokens } from '@/hooks/useTickers'
 import { formatAssetAmount } from '@/lib/utils/chia-units'
 import type { OfferDetails, OfferFilters } from '@/types/offer.types'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -15,7 +15,7 @@ export function useMyOffers() {
   // Services
   const cancelOfferMutation = useCancelOffer()
   const offerStorage = useOfferStorage()
-  const { getCatTokenInfo } = useTickerData()
+  const { getCatTokenInfo } = useCatTokens()
 
   // State
   const [offers, setOffers] = useState<OfferDetails[]>([])

@@ -7,9 +7,9 @@ import { useOfferInspection } from '@/hooks/useOfferInspection'
 import { useOfferStorage } from '@/hooks/useOfferStorage'
 import { useOfferUpload } from '@/hooks/useOfferUpload'
 import { useThemeClasses } from '@/hooks/useThemeClasses'
-import { useTickerData } from '@/hooks/useTickerData'
+import { useCatTokens } from '@/hooks/useTickers'
 import { useCancelOffer } from '@/hooks/useWalletQueries'
-import { calculateOfferState } from '@/lib/dexie/DexieRepository'
+import { calculateOfferState } from '@/lib/dexie/dexieUtils'
 import { formatAssetAmount, getMinimumFeeInXch } from '@/lib/utils/chia-units'
 import { getDexieStatusDescription } from '@/lib/utils/offerUtils'
 import type { OfferDetails } from '@/types/offer.types'
@@ -47,7 +47,7 @@ export default function OfferDetailsModal({
   const offerStorage = useOfferStorage()
   const { uploadOfferToDexie, isUploading } = useOfferUpload()
   const { inspectOffer } = useOfferInspection()
-  const { getCatTokenInfo } = useTickerData()
+  const { getCatTokenInfo } = useCatTokens()
   const { getStatusClass, formatDate } = useMyOffers()
 
   // State
