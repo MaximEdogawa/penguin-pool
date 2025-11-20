@@ -29,34 +29,43 @@ export function useMyOffers() {
   const [filters, setFilters] = useState<OfferFilters>({
     status: '',
   })
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [totalOffers, setTotalOffers] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
-  // Computed
-  const filteredOffers = useMemo(() => {
-    let filtered = offers
-
-    if (filters.status) {
-      filtered = filtered.filter((offer) => offer.status === filters.status)
-    }
-
-    return filtered
-  }, [offers, filters.status])
+  // Computed - offers are already filtered by status in the query
+  const filteredOffers = useMemo(() => offers, [offers])
 
   // Extract stable references - these are stable because they're from useCallback/useState
   const loadOffersFromStorage = offerStorage.loadOffers
   const storageOffers = offerStorage.offers
+  const pagination = offerStorage.pagination
 
   // Methods
   const refreshOffers = useCallback(async () => {
     setIsLoading(true)
     try {
-      // Load offers from IndexedDB
-      await loadOffersFromStorage()
+      // Load offers from IndexedDB with pagination and status filter
+      await loadOffersFromStorage({
+        page: currentPage,
+        pageSize,
+        status: filters.status || undefined,
+      })
     } catch {
       // Failed to refresh offers
     } finally {
       setIsLoading(false)
     }
-  }, [loadOffersFromStorage])
+  }, [loadOffersFromStorage, currentPage, pageSize, filters.status])
+
+  // Update pagination state when storage pagination changes
+  useEffect(() => {
+    if (pagination) {
+      setTotalOffers(pagination.total)
+      setTotalPages(pagination.totalPages)
+    }
+  }, [pagination])
 
   // Sync offers from storage to local state when storage offers change
   // Use a ref to track previous offers to detect changes in properties (not just IDs)
@@ -240,6 +249,29 @@ export function useMyOffers() {
     [getCatTokenInfo]
   )
 
+  // Pagination handlers
+  const goToPage = useCallback(
+    (page: number) => {
+      setCurrentPage(Math.max(1, Math.min(page, totalPages || 1)))
+    },
+    [totalPages]
+  )
+
+  const changePageSize = useCallback((newPageSize: number) => {
+    setPageSize(newPageSize)
+    setCurrentPage(1) // Reset to first page when changing page size
+  }, [])
+
+  // Update page when filters change and refresh
+  useEffect(() => {
+    setCurrentPage(1) // Reset to first page when filters change
+  }, [filters.status])
+
+  // Refresh offers when page, pageSize, or filters change
+  useEffect(() => {
+    refreshOffers()
+  }, [currentPage, pageSize, filters.status, refreshOffers])
+
   return {
     // State
     offers,
@@ -252,6 +284,14 @@ export function useMyOffers() {
     cancelError,
     filters,
     setFilters,
+
+    // Pagination
+    currentPage,
+    pageSize,
+    totalOffers,
+    totalPages,
+    goToPage,
+    changePageSize,
 
     // Computed
     filteredOffers,

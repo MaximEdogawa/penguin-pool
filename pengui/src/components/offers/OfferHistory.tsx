@@ -1,10 +1,11 @@
 'use client'
 
 import EmptyState from '@/components/wallet/shared/EmptyState'
+import { useDexieOfferPolling } from '@/hooks/useDexieOfferPolling'
 import { useMyOffers } from '@/hooks/useMyOffers'
 import { useThemeClasses } from '@/hooks/useThemeClasses'
 import { formatAssetAmount } from '@/lib/utils/chia-units'
-import { Eye, Handshake, X as XIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Handshake, X as XIcon } from 'lucide-react'
 import { useEffect } from 'react'
 
 import type { OfferDetails } from '@/types/offer.types'
@@ -24,6 +25,13 @@ interface OfferHistoryProps {
   getTickerSymbol?: (assetId: string) => string
   isCopied?: string | null
   refreshOffers?: () => Promise<void>
+  // Pagination props
+  currentPage?: number
+  pageSize?: number
+  totalOffers?: number
+  totalPages?: number
+  goToPage?: (page: number) => void
+  changePageSize?: (pageSize: number) => void
 }
 
 export default function OfferHistory({
@@ -40,6 +48,12 @@ export default function OfferHistory({
   getTickerSymbol: parentGetTickerSymbol,
   isCopied: parentIsCopied,
   refreshOffers: parentRefreshOffers,
+  currentPage: parentCurrentPage,
+  pageSize: parentPageSize,
+  totalOffers: parentTotalOffers,
+  totalPages: parentTotalPages,
+  goToPage: parentGoToPage,
+  changePageSize: parentChangePageSize,
 }: OfferHistoryProps) {
   const { t } = useThemeClasses()
 
@@ -58,6 +72,12 @@ export default function OfferHistory({
     copyOfferString: hookCopyOfferString,
     getTickerSymbol: hookGetTickerSymbol,
     isCopied: hookIsCopied,
+    currentPage: hookCurrentPage,
+    pageSize: hookPageSize,
+    totalOffers: hookTotalOffers,
+    totalPages: hookTotalPages,
+    goToPage: hookGoToPage,
+    changePageSize: hookChangePageSize,
   } = hookData
 
   // Use parent props if provided, otherwise use hook values
@@ -73,9 +93,18 @@ export default function OfferHistory({
   const getTickerSymbol = parentGetTickerSymbol ?? hookGetTickerSymbol
   const isCopied = parentIsCopied ?? hookIsCopied
   const refreshOffers = parentRefreshOffers ?? hookRefreshOffers
+  const currentPage = parentCurrentPage ?? hookCurrentPage
+  const pageSize = parentPageSize ?? hookPageSize
+  const totalOffers = parentTotalOffers ?? hookTotalOffers
+  const totalPages = parentTotalPages ?? hookTotalPages
+  const goToPage = parentGoToPage ?? hookGoToPage
+  const changePageSize = parentChangePageSize ?? hookChangePageSize
 
   // Use the passed cancel handler if provided, otherwise use the default from hook
   const cancelOffer = onCancelOffer || defaultCancelOffer
+
+  // Poll Dexie offer status for offers on current page
+  useDexieOfferPolling(filteredOffers)
 
   // Load offers on mount only if using hook (not parent state)
   useEffect(() => {
@@ -89,11 +118,59 @@ export default function OfferHistory({
     onViewOffer(offer)
   }
 
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = []
+    const maxPagesToShow = 5
+
+    if (totalPages <= maxPagesToShow) {
+      // Show all pages if total is less than max
+      pages.push(...Array.from({ length: totalPages }, (_, i) => i + 1))
+    } else {
+      // Show first page
+      pages.push(1)
+
+      // Calculate start and end
+      let start = Math.max(2, currentPage - 1)
+      let end = Math.min(totalPages - 1, currentPage + 1)
+
+      // Adjust if we're near the start
+      if (currentPage <= 3) {
+        end = Math.min(4, totalPages - 1)
+      }
+
+      // Adjust if we're near the end
+      if (currentPage >= totalPages - 2) {
+        start = Math.max(2, totalPages - 3)
+      }
+
+      // Add ellipsis if needed
+      if (start > 2) {
+        pages.push('...')
+      }
+
+      // Add page numbers
+      pages.push(...Array.from({ length: end - start + 1 }, (_, i) => start + i))
+
+      // Add ellipsis if needed
+      if (end < totalPages - 1) {
+        pages.push('...')
+      }
+
+      // Show last page
+      if (totalPages > 1) {
+        pages.push(totalPages)
+      }
+    }
+
+    return pages
+  }
+
   return (
     <div className={`${t.card} p-4 sm:p-6 pb-8`}>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
         <h2 className={`text-lg sm:text-xl font-semibold ${t.text}`}>My Offers</h2>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 flex-wrap">
           <select
             value={filters.status || ''}
             onChange={(e) => setFilters({ ...filters, status: e.target.value || undefined })}
@@ -105,6 +182,16 @@ export default function OfferHistory({
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
             <option value="expired">Expired</option>
+          </select>
+          <select
+            value={pageSize}
+            onChange={(e) => changePageSize(Number(e.target.value))}
+            className={`px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 ${t.text} text-base sm:text-sm`}
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
           </select>
         </div>
       </div>
@@ -313,6 +400,56 @@ export default function OfferHistory({
           icon={Handshake}
           message="No offers found. Create your first offer to start trading."
         />
+      )}
+
+      {/* Pagination Controls */}
+      {filteredOffers.length > 0 && totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 gap-4">
+          <div className={`text-sm ${t.textSecondary}`}>
+            Showing {Math.min((currentPage - 1) * pageSize + 1, totalOffers)} to{' '}
+            {Math.min(currentPage * pageSize, totalOffers)} of {totalOffers} offers
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`px-3 py-2 rounded-lg border ${
+                currentPage === 1
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'
+              } ${t.border} ${t.text}`}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            {getPageNumbers().map((page, idx) => (
+              <button
+                key={idx}
+                onClick={() => typeof page === 'number' && goToPage(page)}
+                disabled={typeof page !== 'number'}
+                className={`px-3 py-2 rounded-lg border min-w-[40px] ${
+                  page === currentPage
+                    ? `${t.card} ${t.border} font-semibold`
+                    : typeof page === 'number'
+                      ? `hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer ${t.border} ${t.text}`
+                      : 'border-transparent cursor-default'
+                } ${t.text}`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`px-3 py-2 rounded-lg border ${
+                currentPage === totalPages
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'
+              } ${t.border} ${t.text}`}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )

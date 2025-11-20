@@ -1,6 +1,10 @@
 'use client'
 
-import { offerStorageService, type OfferStorageOptions } from '@/lib/services/offerStorageService'
+import {
+  offerStorageService,
+  type OfferStorageOptions,
+  type PaginatedOffersResult,
+} from '@/lib/services/offerStorageService'
 import type { StoredOffer } from '@/lib/database/indexedDB'
 import type { OfferDetails } from '@/types/offer.types'
 import { useCallback, useMemo, useState } from 'react'
@@ -9,6 +13,12 @@ export function useOfferStorage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [offers, setOffers] = useState<StoredOffer[]>([])
+  const [pagination, setPagination] = useState<{
+    total: number
+    page: number
+    pageSize: number
+    totalPages: number
+  } | null>(null)
 
   // Computed properties
   const localOffers = useMemo(() => offers.filter((offer) => offer.isLocal), [offers])
@@ -27,8 +37,24 @@ export function useOfferStorage() {
     setError(null)
 
     try {
-      const loadedOffers = await offerStorageService.getOffers(options)
-      setOffers(loadedOffers)
+      const result = await offerStorageService.getOffers(options)
+
+      // Handle paginated result
+      if (result && typeof result === 'object' && 'offers' in result) {
+        const paginatedResult = result as PaginatedOffersResult
+        setOffers(paginatedResult.offers)
+        setPagination({
+          total: paginatedResult.total,
+          page: paginatedResult.page,
+          pageSize: paginatedResult.pageSize,
+          totalPages: paginatedResult.totalPages,
+        })
+      } else {
+        // Handle non-paginated result (array)
+        const offersArray = result as StoredOffer[]
+        setOffers(offersArray)
+        setPagination(null)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load offers')
     } finally {
@@ -67,8 +93,12 @@ export function useOfferStorage() {
       await offerStorageService.updateOffer(offerId, updates)
 
       // Reload from storage to ensure consistency across all components
-      const loadedOffers = await offerStorageService.getOffers({})
-      setOffers(loadedOffers)
+      const result = await offerStorageService.getOffers({})
+      if (result && typeof result === 'object' && 'offers' in result) {
+        setOffers((result as PaginatedOffersResult).offers)
+      } else {
+        setOffers(result as StoredOffer[])
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update offer')
       throw err
@@ -88,8 +118,12 @@ export function useOfferStorage() {
       await offerStorageService.deleteOffer(offerId)
 
       // Reload from storage to ensure consistency across all components
-      const loadedOffers = await offerStorageService.getOffers({})
-      setOffers(loadedOffers)
+      const result = await offerStorageService.getOffers({})
+      if (result && typeof result === 'object' && 'offers' in result) {
+        setOffers((result as PaginatedOffersResult).offers)
+      } else {
+        setOffers(result as StoredOffer[])
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete offer')
       throw err
@@ -196,6 +230,7 @@ export function useOfferStorage() {
     isLoading,
     error,
     offers,
+    pagination,
 
     // Computed
     localOffers,

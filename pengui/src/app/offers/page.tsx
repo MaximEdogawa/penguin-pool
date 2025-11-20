@@ -38,6 +38,12 @@ export default function OffersPage() {
     copyOfferString,
     getTickerSymbol,
     isCopied,
+    currentPage,
+    pageSize,
+    totalOffers,
+    totalPages,
+    goToPage,
+    changePageSize,
   } = useMyOffers()
 
   const [showCreateOffer, setShowCreateOffer] = useState(false)
@@ -165,6 +171,12 @@ export default function OffersPage() {
           getTickerSymbol={getTickerSymbol}
           isCopied={isCopied}
           refreshOffers={refreshOffers}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalOffers={totalOffers}
+          totalPages={totalPages}
+          goToPage={goToPage}
+          changePageSize={changePageSize}
         />
       </div>
 

@@ -6,6 +6,17 @@ export interface OfferStorageOptions {
   walletAddress?: string
   includeLocal?: boolean
   includeSynced?: boolean
+  status?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface PaginatedOffersResult {
+  offers: StoredOffer[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
 }
 
 export class OfferStorageService {
@@ -112,14 +123,21 @@ export class OfferStorageService {
   }
 
   /**
-   * Get all offers with optional filtering
+   * Get all offers with optional filtering and pagination
    */
-  async getOffers(options: OfferStorageOptions = {}): Promise<StoredOffer[]> {
+  async getOffers(
+    options: OfferStorageOptions = {}
+  ): Promise<StoredOffer[] | PaginatedOffersResult> {
     try {
       // Remove duplicates before fetching
       await this.removeDuplicates()
 
       let query = db.offers.orderBy('lastModified').reverse()
+
+      // Filter by status if provided
+      if (options.status) {
+        query = query.filter((offer) => offer.status === options.status)
+      }
 
       // Filter by wallet address if provided
       if (options.walletAddress) {
@@ -134,6 +152,38 @@ export class OfferStorageService {
         query = query.filter((offer) => offer.isLocal)
       }
 
+      // If pagination is requested, return paginated result
+      if (options.page !== undefined && options.pageSize !== undefined) {
+        const page = Math.max(1, options.page)
+        const pageSize = Math.max(1, options.pageSize)
+        const offset = (page - 1) * pageSize
+
+        // Get total count first (need to apply filters)
+        const allOffers = await query.toArray()
+        const total = allOffers.length
+        const totalPages = Math.ceil(total / pageSize)
+
+        // Get paginated offers
+        const offers = await query.offset(offset).limit(pageSize).toArray()
+
+        logger.info('✅ Retrieved paginated offers from IndexedDB:', {
+          count: offers.length,
+          page,
+          pageSize,
+          total,
+          totalPages,
+        })
+
+        return {
+          offers,
+          total,
+          page,
+          pageSize,
+          totalPages,
+        }
+      }
+
+      // No pagination - return all offers
       const offers = await query.toArray()
       logger.info('✅ Retrieved offers from IndexedDB:', { count: offers.length })
 
