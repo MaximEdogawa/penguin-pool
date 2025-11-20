@@ -1,7 +1,8 @@
 'use client'
 
 import { useDexieDataService } from '@/hooks/useDexieDataService'
-import { useCatTokens, getCatTokenInfoSync, type CatTokenInfo } from '@/hooks/useTickers'
+import { getCatTokenInfoSync, useCatTokens, type CatTokenInfo } from '@/hooks/useTickers'
+import { isChiaNativeToken } from '@/lib/constants/chia-assets'
 
 /**
  * Hook for ticker data and CAT token management
@@ -70,11 +71,7 @@ export function useTickerData() {
    * Check if asset is XCH (including testnet TXCH)
    */
   const isXchAsset = (assetId: string): boolean => {
-    return (
-      assetId === 'xch' ||
-      assetId === 'TXCH' ||
-      assetId === 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad'
-    )
+    return isChiaNativeToken(assetId)
   }
 
   /**

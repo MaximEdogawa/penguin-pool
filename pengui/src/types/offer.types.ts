@@ -2,7 +2,7 @@
 
 // Import shared asset types
 export type AssetAmount = number // Always use float numbers for precision
-export type AssetType = 'xch' | 'cat' | 'nft'
+export type AssetType = 'xch' | 'cat' | 'nft' | 'option'
 
 // Base asset interface
 export interface BaseAsset {

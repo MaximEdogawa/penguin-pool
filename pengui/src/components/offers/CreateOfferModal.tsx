@@ -8,6 +8,7 @@ import { useThemeClasses } from '@/hooks/useThemeClasses'
 import { useCreateOffer, useWalletAddress } from '@/hooks/useWalletQueries'
 import { convertToSmallestUnit } from '@/lib/utils/chia-units'
 import type { AssetAmount, OfferDetails } from '@/types/offer.types'
+import { toWalletAssets } from '@/types/asset.types'
 import { Loader2, Plus, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import AssetSelector, { type ExtendedOfferAsset } from './AssetSelector'
@@ -172,16 +173,22 @@ export default function CreateOfferModal({ onClose, onOfferCreated }: CreateOffe
 
       try {
         // Convert form assets to the format expected by the wallet
-        // Ensure all amounts are numbers before conversion
-        const offerAssets = form.assetsOffered.map((asset) => ({
-          assetId: asset.type === 'xch' ? '' : asset.assetId,
-          amount: convertToSmallestUnit(Number(asset.amount) || 0, asset.type),
-        }))
+        // Use utility function to ensure proper asset ID mapping
+        const offerAssets = toWalletAssets(
+          form.assetsOffered.map((asset) => ({
+            ...asset,
+            amount: Number(asset.amount) || 0,
+          })),
+          convertToSmallestUnit
+        )
 
-        const requestAssets = form.assetsRequested.map((asset) => ({
-          assetId: asset.type === 'xch' ? '' : asset.assetId,
-          amount: convertToSmallestUnit(Number(asset.amount) || 0, asset.type),
-        }))
+        const requestAssets = toWalletAssets(
+          form.assetsRequested.map((asset) => ({
+            ...asset,
+            amount: Number(asset.amount) || 0,
+          })),
+          convertToSmallestUnit
+        )
 
         const result = await createOfferMutation.mutateAsync({
           walletId: 1,

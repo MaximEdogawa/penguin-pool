@@ -1,7 +1,10 @@
 'use client'
 
 import { environment } from '@/lib/config/environment'
+import { CHIA_ASSET_IDS, XCH_BASE_CURRENCIES } from '@/lib/constants/chia-assets'
 import type { DexieTicker } from '@/lib/dexie/DexieRepository'
+import type { Asset, Ticker } from '@/types/asset.types'
+import { tickerToAsset } from '@/types/asset.types'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
@@ -9,6 +12,10 @@ const DEXIE_KEY = 'dexie'
 const TICKERS_KEY = 'tickers'
 const DEXIE_API_BASE_URL = environment.dexie.apiBaseUrl
 
+/**
+ * @deprecated Use Asset type from @/types/asset.types instead
+ * Kept for backward compatibility
+ */
 export interface CatTokenInfo {
   assetId: string
   ticker: string
@@ -17,57 +24,90 @@ export interface CatTokenInfo {
 }
 
 /**
- * Fallback tokens that should always be available
+ * Convert DexieTicker to Ticker format
  */
-const FALLBACK_TOKENS: CatTokenInfo[] = [
-  {
-    assetId: 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad',
-    ticker: 'TXCH',
-    name: 'TXCH',
-    symbol: 'TXCH',
-  },
-  {
-    assetId: '4eadfa450c19fa51df65eb7fbf5b61077ec80ec799a7652bb187b705bff19a90',
-    ticker: 'TDBX',
-    name: 'TDBX',
-    symbol: 'TDBX',
-  },
-]
+export function dexieTickerToTicker(dexieTicker: DexieTicker): Ticker {
+  return {
+    tickerId: dexieTicker.ticker_id,
+    baseCurrency: dexieTicker.base_currency,
+    targetCurrency: dexieTicker.target_currency,
+    baseCode: dexieTicker.base_code,
+    targetCode: dexieTicker.target_code,
+    baseName: dexieTicker.base_name,
+    targetName: dexieTicker.target_name,
+    lastPrice: dexieTicker.last_price,
+    currentAvgPrice: dexieTicker.current_avg_price,
+    baseVolume: dexieTicker.base_volume,
+    targetVolume: dexieTicker.target_volume,
+    poolId: dexieTicker.pool_id,
+    bid: dexieTicker.bid,
+    ask: dexieTicker.ask,
+    high: dexieTicker.high,
+    low: dexieTicker.low,
+  }
+}
 
 /**
  * Create a map of CAT tokens from ticker data
+ * Maps asset IDs to Asset information
+ * Includes ALL tickers dynamically (not just those paired with XCH)
  */
 export function createCatTokenMap(tickers: DexieTicker[]): Map<string, CatTokenInfo> {
   const catMap = new Map<string, CatTokenInfo>()
 
-  tickers.forEach((ticker) => {
-    // Include both XCH and TXCH as valid target currencies
-    const isXchTarget =
-      ticker.target_currency === 'xch' ||
-      ticker.target_currency === 'TXCH' ||
-      ticker.target_currency === 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad'
+  // Only exclude pure XCH (not tokens that use XCH asset ID like TDBX)
+  // We exclude base_currency that is exactly 'xch' or 'TXCH' (string match)
+  // But we include tokens like TDBX that use the TXCH asset ID as their base_currency
+  const xchBaseCurrencies = XCH_BASE_CURRENCIES
 
-    const isNotXchBase =
-      ticker.base_currency !== 'xch' &&
-      ticker.base_currency !== 'TXCH' &&
-      ticker.base_currency !== 'd82dd03f8a9ad2f84353cd953c4de6b21dbaaf7de3ba3f4ddd9abe31ecba80ad'
+  tickers.forEach((dexieTicker) => {
+    // Include ALL tickers where base_currency is not exactly 'xch' or 'TXCH'
+    // This includes tokens like TDBX that use the TXCH asset ID
+    const isNotXchBase = !xchBaseCurrencies.has(dexieTicker.base_currency)
 
-    if (isXchTarget && isNotXchBase) {
-      catMap.set(ticker.base_currency, {
-        assetId: ticker.base_currency,
-        ticker: ticker.base_code,
-        name: ticker.base_name,
-        symbol: ticker.base_code,
+    if (isNotXchBase && dexieTicker.base_currency) {
+      // Map asset ID (base_currency) to asset information
+      // Use the most recent ticker data if duplicate asset IDs exist
+      catMap.set(dexieTicker.base_currency, {
+        assetId: dexieTicker.base_currency, // This is the actual asset ID
+        ticker: dexieTicker.base_code,
+        name: dexieTicker.base_name,
+        symbol: dexieTicker.base_code,
       })
     }
   })
 
-  // Add fallback tokens
-  FALLBACK_TOKENS.forEach((token) => {
-    catMap.set(token.assetId, token)
+  return catMap
+}
+
+/**
+ * Create a map of assets from ticker data
+ * Returns Map<assetId, Asset> for easy lookup
+ * Includes ALL tickers dynamically (not just those paired with XCH)
+ */
+export function createAssetMap(tickers: DexieTicker[]): Map<string, Asset> {
+  const assetMap = new Map<string, Asset>()
+
+  // Only exclude pure XCH (not tokens that use XCH asset ID like TDBX)
+  // We exclude base_currency that is exactly 'xch' or 'TXCH' (string match)
+  // But we include tokens like TDBX that use the TXCH asset ID as their base_currency
+  const xchBaseCurrencies = XCH_BASE_CURRENCIES
+
+  tickers.forEach((dexieTicker) => {
+    // Include ALL tickers where base_currency is not exactly 'xch' or 'TXCH'
+    // This includes tokens like TDBX that use the TXCH asset ID
+    const isNotXchBase = !xchBaseCurrencies.has(dexieTicker.base_currency)
+
+    if (isNotXchBase && dexieTicker.base_currency) {
+      const ticker = dexieTickerToTicker(dexieTicker)
+      const asset = tickerToAsset(ticker)
+      // Map asset ID (base_currency) to Asset
+      // Use the most recent ticker data if duplicate asset IDs exist
+      assetMap.set(dexieTicker.base_currency, asset)
+    }
   })
 
-  return catMap
+  return assetMap
 }
 
 /**
@@ -123,10 +163,12 @@ export function useTickers() {
 
 /**
  * Hook to get processed CAT token data from tickers
+ * Returns both legacy CatTokenInfo format and new Asset format
  */
 export function useCatTokens() {
   const tickersQuery = useTickers()
 
+  // Legacy map for backward compatibility
   const catTokenMap = useMemo(() => {
     const map = new Map<string, CatTokenInfo>()
 
@@ -136,30 +178,88 @@ export function useCatTokens() {
       processedMap.forEach((value, key) => {
         map.set(key, value)
       })
-    } else {
-      // Use fallback tokens if no data
-      FALLBACK_TOKENS.forEach((token) => {
-        map.set(token.assetId, token)
+    }
+
+    return map
+  }, [tickersQuery.data])
+
+  // New asset map using proper types
+  const assetMap = useMemo(() => {
+    const map = new Map<string, Asset>()
+
+    // Process tickers if available
+    if (tickersQuery.data?.success && tickersQuery.data.data) {
+      const processedMap = createAssetMap(tickersQuery.data.data)
+      processedMap.forEach((value, key) => {
+        map.set(key, value)
       })
     }
 
     return map
   }, [tickersQuery.data])
 
-  // Create available tokens list
+  // Create available tokens list (legacy format for backward compatibility)
+  // Include XCH in the list
   const availableCatTokens = useMemo(() => {
-    return Array.from(catTokenMap.values()).sort((a, b) => a.ticker.localeCompare(b.ticker))
+    const tokens = Array.from(catTokenMap.values())
+    // Add XCH to the list
+    tokens.unshift({
+      assetId: CHIA_ASSET_IDS.XCH, // Empty string for XCH (as per wallet requirements)
+      ticker: 'XCH',
+      name: 'Chia',
+      symbol: 'XCH',
+    })
+    return tokens.sort((a, b) => {
+      // XCH always first
+      if (a.ticker === 'XCH') return -1
+      if (b.ticker === 'XCH') return 1
+      return a.ticker.localeCompare(b.ticker)
+    })
   }, [catTokenMap])
 
+  // Create available assets list (new format)
+  // Include XCH in the list
+  const availableAssets = useMemo(() => {
+    const assets = Array.from(assetMap.values())
+    // Add XCH to the list
+    assets.unshift({
+      assetId: CHIA_ASSET_IDS.XCH, // Empty string for XCH (as per wallet requirements)
+      ticker: 'XCH',
+      name: 'Chia',
+      symbol: 'XCH',
+      type: 'xch',
+    })
+    return assets.sort((a, b) => {
+      // XCH always first
+      if (a.ticker === 'XCH') return -1
+      if (b.ticker === 'XCH') return 1
+      return a.ticker.localeCompare(b.ticker)
+    })
+  }, [assetMap])
+
   return {
+    // Legacy format (backward compatibility)
     catTokenMap,
     availableCatTokens,
+
+    // New format (recommended)
+    assetMap,
+    availableAssets,
+
+    // Raw tickers data
+    tickers: tickersQuery.data?.data || [],
+
+    // Loading states
     isLoading: tickersQuery.isLoading,
     isError: tickersQuery.isError,
     error: tickersQuery.error,
     refetch: tickersQuery.refetch,
-    // Helper to get token info synchronously
+
+    // Helper to get token info synchronously (legacy)
     getCatTokenInfo: (assetId: string) => getCatTokenInfo(assetId, catTokenMap),
+
+    // Helper to get asset info synchronously (new)
+    getAsset: (assetId: string): Asset | undefined => assetMap.get(assetId),
   }
 }
 

@@ -80,8 +80,14 @@ export function useWalletConnectEventListeners(signClient: SignClient | undefine
             })
           }
           logger.debug('🏓 WalletConnect session ping received and acknowledged')
-        } catch {
-          logger.debug('🏓 WalletConnect session ping received (no response needed)')
+        } catch (error) {
+          // Suppress "No matching key" errors - these are non-critical and happen during session cleanup
+          const errorMessage = error instanceof Error ? error.message : String(error)
+          if (errorMessage.includes('No matching key')) {
+            logger.debug('🏓 WalletConnect session ping received (session already cleaned up)')
+          } else {
+            logger.debug('🏓 WalletConnect session ping received (no response needed)', error)
+          }
         }
       },
     }
@@ -105,15 +111,25 @@ export function useWalletConnectEventListeners(signClient: SignClient | undefine
           try {
             await signClient.ping({ topic: session.topic })
             logger.info(`✅ Session ${session.topic} is active`)
-          } catch {
-            logger.info(`❌ Session ${session.topic} is not responding`)
+          } catch (error) {
+            // Suppress "No matching key" errors - these are non-critical
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            if (errorMessage.includes('No matching key')) {
+              logger.debug(`🔍 Session ${session.topic} record not found (likely cleaned up)`)
+            } else {
+              logger.info(`❌ Session ${session.topic} is not responding`)
+            }
           }
         }
       } catch (error) {
-        logger.warn(
-          '⚠️ Error handling pending session requests:',
-          error instanceof Error ? error : undefined
-        )
+        // Suppress "No matching key" errors in the outer catch as well
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        if (!errorMessage.includes('No matching key')) {
+          logger.warn(
+            '⚠️ Error handling pending session requests:',
+            error instanceof Error ? error : undefined
+          )
+        }
       }
     }
 

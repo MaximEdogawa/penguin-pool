@@ -37,8 +37,19 @@ export function suppressRelayErrors() {
       )
     })
 
-    if (hasWalletConnectWarning) {
+    // Check for "No matching key" warnings
+    const hasNoMatchingKeyError = args.some((arg) => {
+      const argStr = typeof arg === 'string' ? arg : String(arg)
+      return (
+        argStr.includes('No matching key') ||
+        (argStr.includes('No matching key') && argStr.includes('history:')) ||
+        /No matching key.*history:\s*\d+/.test(argStr)
+      )
+    })
+
+    if (hasWalletConnectWarning || hasNoMatchingKeyError) {
       // Suppress these warnings - listeners are registered, this is just a timing issue
+      // "No matching key" errors occur when WalletConnect tries to access cleaned up session records
       return
     }
 
@@ -65,8 +76,19 @@ export function suppressRelayErrors() {
       )
     })
 
-    if (hasWalletConnectWarning) {
+    // Check for "No matching key" errors - these occur when WalletConnect tries to access session records that have been cleaned up
+    const hasNoMatchingKeyError = args.some((arg) => {
+      const argStr = typeof arg === 'string' ? arg : String(arg)
+      return (
+        argStr.includes('No matching key') ||
+        (argStr.includes('No matching key') && argStr.includes('history:')) ||
+        /No matching key.*history:\s*\d+/.test(argStr)
+      )
+    })
+
+    if (hasWalletConnectWarning || hasNoMatchingKeyError) {
       // Suppress these warnings - listeners are registered, this is just a timing issue
+      // "No matching key" errors occur when WalletConnect tries to access cleaned up session records
       return
     }
 
