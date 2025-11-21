@@ -1,6 +1,6 @@
 'use client'
 
-import { getThemeClasses } from '@/lib/theme'
+import { getThemeClasses } from '@/shared/lib/theme'
 import { PiggyBank } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'

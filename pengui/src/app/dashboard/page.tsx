@@ -11,7 +11,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from 'lucide-react'
-import { getThemeClasses } from '@/lib/theme'
+import { getThemeClasses } from '@/shared/lib/theme'
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false)

@@ -1,10 +1,10 @@
 'use client'
 
-import DashboardLayout from '@/components/DashboardLayout'
-import ReactQueryProvider from '@/components/ReactQueryProvider'
-import WalletConnectionGuard from '@/components/WalletConnectionGuard'
-import { cn } from '@/lib/utils'
-import { suppressRelayErrors } from '@/lib/walletConnect/utils/suppressRelayErrors'
+import { cn } from '@/shared/lib/utils/index'
+import { suppressRelayErrors } from '@/shared/lib/walletConnect/utils/suppressRelayErrors'
+import ReactQueryProvider from '@/shared/providers/ReactQueryProvider'
+import DashboardLayout from '@/shared/ui/DashboardLayout'
+import WalletConnectionGuard from '@/shared/ui/WalletConnectionGuard'
 import {
   WalletManager,
   persistor,
@@ -21,6 +21,7 @@ import { PersistGate } from 'redux-persist/integration/react'
 import './globals.css'
 // Import wallet connect package styles directly
 // Using the package export path which maps to dist/styles/globals.css
+import { logger } from '@/shared/lib/logger'
 import '@maximedogawa/chia-wallet-connect-react/styles'
 import './wallet-connect.css'
 
@@ -58,11 +59,20 @@ const getWalletConnectConfig = () => {
 }
 
 export default function UILayout({ children }: { children: React.ReactNode }) {
-  // Initialize WalletManager on mount
+  // Initialize WalletManager and database on mount
   useEffect(() => {
     const { penguiIcon, metadata } = getWalletConnectConfig()
     const walletManager = new WalletManager(penguiIcon, metadata)
     walletManager.detectEvents()
+
+    // Initialize IndexedDB
+    if (typeof window !== 'undefined') {
+      import('@/shared/lib/database/indexedDB').then(({ initializeDatabase }) => {
+        initializeDatabase().catch(() => {
+          logger.error('IndexedDB initialization failed. Offers may not persist.')
+        })
+      })
+    }
   }, [])
 
   return (
@@ -104,74 +114,7 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
             `,
           }}
         />
-        <Script
-          id="suppress-walletconnect-warnings"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                if (typeof window === 'undefined' || typeof console === 'undefined') return;
 
-                const originalWarn = console.warn.bind(console);
-                const originalError = console.error.bind(console);
-
-                const shouldSuppress = function(...args) {
-                  // Combine all string arguments to check the full message
-                  const fullMessage = args.map(arg => typeof arg === 'string' ? arg : String(arg)).join(' ');
-
-                  // Check individual arguments too
-                  for (let i = 0; i < args.length; i++) {
-                    const arg = args[i];
-                    const argStr = typeof arg === 'string' ? arg : String(arg);
-
-                    // Match various patterns including numbers at the end
-                    if (
-                      argStr.includes('emitting session_ping') ||
-                      argStr.includes('emitting session_request') ||
-                      argStr.includes('without any listeners') ||
-                      (argStr.includes('emitting') && argStr.includes('without')) ||
-                      /emitting\\s+session_(ping|request)[:\\d\\s]+without/.test(argStr) ||
-                      /emitting.*session_(ping|request).*without/.test(argStr) ||
-                      // Match pattern with numbers: "emitting session_ping:1763247731881895 without any listeners 2176"
-                      /emitting\\s+session_(ping|request):\\d+\\s+without/.test(argStr)
-                    ) {
-                      return true;
-                    }
-                  }
-
-                  // Check the combined message
-                  if (
-                    fullMessage.includes('emitting session_ping') ||
-                    fullMessage.includes('emitting session_request') ||
-                    fullMessage.includes('without any listeners') ||
-                    (fullMessage.includes('emitting') && fullMessage.includes('without')) ||
-                    /emitting\\s+session_(ping|request)[:\\d\\s]+without/.test(fullMessage) ||
-                    /emitting.*session_(ping|request).*without/.test(fullMessage) ||
-                    /emitting\\s+session_(ping|request):\\d+\\s+without/.test(fullMessage)
-                  ) {
-                    return true;
-                  }
-
-                  return false;
-                };
-
-                console.warn = function(...args) {
-                  if (shouldSuppress(...args)) {
-                    return; // Suppress WalletConnect warnings
-                  }
-                  originalWarn.apply(console, args);
-                };
-
-                console.error = function(...args) {
-                  if (shouldSuppress(...args)) {
-                    return; // Suppress WalletConnect warnings
-                  }
-                  originalError.apply(console, args);
-                };
-              })();
-            `,
-          }}
-        />
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <Provider store={store}>
             <PersistGate

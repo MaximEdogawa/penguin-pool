@@ -12,6 +12,7 @@
     "@maximedogawa/chia-wallet-connect-react": "^0.0.2",
     "@tanstack/react-query": "^5.90.7",
     "clsx": "^2.1.1",
+    "dexie": "^4.0.1",
     "lucide-react": "^0.553.0",
     "next": "^16.0.0",
     "next-themes": "^0.3.0",
@@ -22,6 +23,7 @@
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
+    "@tanstack/react-query-devtools": "^5.90.2",
     "@types/node": "^20.19.24",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
