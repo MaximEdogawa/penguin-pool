@@ -1,5 +1,6 @@
 'use client'
 
+import type { AssetType } from '@/entities/offer'
 import { useThemeClasses } from '@/shared/hooks'
 import {
   formatAssetAmount,
@@ -7,7 +8,6 @@ import {
   isValidAmountInput,
   parseAmountInput,
 } from '@/shared/lib/utils/chia-units'
-import type { AssetType } from '@/entities/offer'
 
 interface AmountInputProps {
   value: number | undefined

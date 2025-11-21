@@ -246,7 +246,8 @@ export function useMyOffers() {
   const getTickerSymbol = useCallback(
     (assetId: string): string => {
       const tokenInfo = getCatTokenInfo(assetId)
-      return tokenInfo.ticker
+      // Guard against undefined tokenInfo and return safe fallback
+      return tokenInfo?.ticker || assetId || 'Unknown'
     },
     [getCatTokenInfo]
   )

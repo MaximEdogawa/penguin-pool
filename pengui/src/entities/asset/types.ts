@@ -89,10 +89,12 @@ export function fromWalletAsset(
   convertFromSmallestUnit: (amount: number, type: AssetType) => number,
   assetType: AssetType = 'cat' // Default to CAT if not specified
 ): BaseAsset {
+  const resolvedType: AssetType = walletAsset.assetId === '' ? 'xch' : assetType
+
   return {
     assetId: walletAsset.assetId || '',
-    amount: convertFromSmallestUnit(walletAsset.amount, assetType),
-    type: walletAsset.assetId === '' ? 'xch' : assetType,
+    amount: convertFromSmallestUnit(walletAsset.amount, resolvedType),
+    type: resolvedType,
   }
 }
 

@@ -1,8 +1,8 @@
 'use client'
 
-import { useThemeClasses, useCatTokens } from '@/shared/hooks'
-import { parseAmountInput } from '@/shared/lib/utils/chia-units'
 import type { AssetType, BaseAsset } from '@/entities/offer'
+import { useCatTokens, useThemeClasses } from '@/shared/hooks'
+import { parseAmountInput } from '@/shared/lib/utils/chia-units'
 import { useCallback, useRef, useState } from 'react'
 import AmountInput from './AssetSelector/AmountInput'
 import AssetIdInput from './AssetSelector/AssetIdInput'
@@ -96,30 +96,23 @@ export default function AssetSelector({
     [asset, onUpdate]
   )
 
-  const clearAssetSelection = useCallback(() => {
-    onUpdate({
-      ...asset,
-      assetId: '',
-      symbol: '',
-      searchQuery: '',
-      showDropdown: false,
-    })
-  }, [asset, onUpdate])
-
   const handleTypeChange = useCallback(
     (newType: AssetType) => {
-      clearAssetSelection()
-      // When "Token" is selected, default to 'cat' type but allow XCH in search
-      // The actual type will be determined when a token is selected
-      // For NFT and Option, set amount to 1 automatically
+      // Merge clear behavior into a single onUpdate call to avoid reintroducing stale data
+      // Explicitly clear assetId, symbol, searchQuery, and showDropdown
+      // Then set type and amount based on the new type
       const updatedAsset = {
         ...asset,
+        assetId: '',
+        symbol: '',
+        searchQuery: '',
+        showDropdown: false,
         type: newType === 'xch' ? 'cat' : newType, // Map 'xch' to 'cat' for unified token search
         amount: newType === 'nft' || newType === 'option' ? 1 : asset.amount,
       }
       onUpdate(updatedAsset)
     },
-    [asset, onUpdate, clearAssetSelection]
+    [asset, onUpdate]
   )
 
   const handleSearchFocus = useCallback(() => {
@@ -208,7 +201,6 @@ export default function AssetSelector({
               }
               onUpdate(updatedAsset)
             }}
-            type={asset.type}
             placeholder={getAssetTypePlaceholder(asset.type)}
           />
         )}

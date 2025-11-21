@@ -1,10 +1,10 @@
 'use client'
 
-import DashboardLayout from '@/shared/ui/DashboardLayout'
-import ReactQueryProvider from '@/shared/providers/ReactQueryProvider'
-import WalletConnectionGuard from '@/shared/ui/WalletConnectionGuard'
 import { cn } from '@/shared/lib/utils/index'
 import { suppressRelayErrors } from '@/shared/lib/walletConnect/utils/suppressRelayErrors'
+import ReactQueryProvider from '@/shared/providers/ReactQueryProvider'
+import DashboardLayout from '@/shared/ui/DashboardLayout'
+import WalletConnectionGuard from '@/shared/ui/WalletConnectionGuard'
 import {
   WalletManager,
   persistor,
@@ -21,6 +21,7 @@ import { PersistGate } from 'redux-persist/integration/react'
 import './globals.css'
 // Import wallet connect package styles directly
 // Using the package export path which maps to dist/styles/globals.css
+import { logger } from '@/shared/lib/logger'
 import '@maximedogawa/chia-wallet-connect-react/styles'
 import './wallet-connect.css'
 
@@ -68,7 +69,7 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       import('@/shared/lib/database/indexedDB').then(({ initializeDatabase }) => {
         initializeDatabase().catch(() => {
-          // Database initialization failed, but continue anyway
+          logger.error('IndexedDB initialization failed. Offers may not persist.')
         })
       })
     }

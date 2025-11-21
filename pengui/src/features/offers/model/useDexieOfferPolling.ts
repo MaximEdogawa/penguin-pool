@@ -86,8 +86,20 @@ export function useDexieOfferPolling(offers: OfferDetails[]) {
     const updatePromises = pollResults.data.map(async ({ offerId, result }) => {
       if (!result.success || !result.offer) return
 
+      // Extract date fields from Dexie offer (needed for both updateKey and needsUpdate check)
+      const dateFound = result.offer.date_found
+      const dateCompleted = result.offer.date_completed
+      const datePending = result.offer.date_pending
+      const dateExpiry = result.offer.date_expiry
+      const blockExpiry = result.offer.block_expiry
+      const spentBlockIndex = result.offer.spent_block_index
+      const knownTaker = result.offer.known_taker
+
       // Create a unique key for this update to prevent duplicate processing
-      const updateKey = `${offerId}-${result.offer.date_found || ''}-${result.offer.date_completed || ''}-${result.offer.date_pending || ''}`
+      // Must include ALL fields that are checked in needsUpdate and updated in the database
+      // This ensures changes to any tracked field (date_expiry, block_expiry, spent_block_index, known_taker)
+      // are properly detected and not short-circuited by processedUpdatesRef
+      const updateKey = `${offerId}-${dateFound || ''}-${dateCompleted || ''}-${datePending || ''}-${dateExpiry || ''}-${blockExpiry || ''}-${spentBlockIndex || ''}-${knownTaker !== null && knownTaker !== undefined ? String(knownTaker) : ''}`
 
       // Skip if we've already processed this exact update
       if (processedUpdatesRef.current.has(updateKey)) {
@@ -100,15 +112,6 @@ export function useDexieOfferPolling(offers: OfferDetails[]) {
 
       // Calculate the offer state from date fields
       const calculatedState = calculateOfferState(result.offer)
-
-      // Extract date fields from Dexie offer
-      const dateFound = result.offer.date_found
-      const dateCompleted = result.offer.date_completed
-      const datePending = result.offer.date_pending
-      const dateExpiry = result.offer.date_expiry
-      const blockExpiry = result.offer.block_expiry
-      const spentBlockIndex = result.offer.spent_block_index
-      const knownTaker = result.offer.known_taker
 
       // Map calculated state to legacy status
       let newStatus = currentOffer.status

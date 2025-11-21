@@ -1,16 +1,14 @@
 'use client'
 
 import { useThemeClasses } from '@/shared/hooks'
-import type { AssetType } from '@/entities/offer'
 
 interface AssetIdInputProps {
   value: string
   onChange: (value: string) => void
-  type: AssetType
   placeholder: string
 }
 
-export default function AssetIdInput({ value, onChange, type, placeholder }: AssetIdInputProps) {
+export default function AssetIdInput({ value, onChange, placeholder }: AssetIdInputProps) {
   const { t, isDark } = useThemeClasses()
 
   return (
