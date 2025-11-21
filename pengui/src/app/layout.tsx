@@ -1,10 +1,10 @@
 'use client'
 
-import DashboardLayout from '@/components/DashboardLayout'
-import ReactQueryProvider from '@/components/ReactQueryProvider'
-import WalletConnectionGuard from '@/components/WalletConnectionGuard'
-import { cn } from '@/lib/utils'
-import { suppressRelayErrors } from '@/lib/walletConnect/utils/suppressRelayErrors'
+import DashboardLayout from '@/shared/ui/DashboardLayout'
+import ReactQueryProvider from '@/shared/providers/ReactQueryProvider'
+import WalletConnectionGuard from '@/shared/ui/WalletConnectionGuard'
+import { cn } from '@/shared/lib/utils/index'
+import { suppressRelayErrors } from '@/shared/lib/walletConnect/utils/suppressRelayErrors'
 import {
   WalletManager,
   persistor,
@@ -66,7 +66,7 @@ export default function UILayout({ children }: { children: React.ReactNode }) {
 
     // Initialize IndexedDB
     if (typeof window !== 'undefined') {
-      import('@/lib/database/indexedDB').then(({ initializeDatabase }) => {
+      import('@/shared/lib/database/indexedDB').then(({ initializeDatabase }) => {
         initializeDatabase().catch(() => {
           // Database initialization failed, but continue anyway
         })

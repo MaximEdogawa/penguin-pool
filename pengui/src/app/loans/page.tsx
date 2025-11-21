@@ -2,17 +2,19 @@
 
 import { useState, useMemo } from 'react'
 import { List, Briefcase, Plus, TrendingUp } from 'lucide-react'
-import type { LoanFilters, AmountFilter } from '@/types/loan.types'
-import { filterLoans } from '@/hooks/useLoanFilters'
-import { useLoansData } from '@/hooks/useLoansData'
-import LoansPageHeader from '@/components/loans/LoansPageHeader'
-import LoansTabNavigation from '@/components/loans/LoansTabNavigation'
-import LoanFiltersComponent from '@/components/loans/LoanFilters'
-import AvailableLoansList from '@/components/loans/AvailableLoansList'
-import MyTakenLoansList from '@/components/loans/MyTakenLoansList'
-import CreateLoanFormComponent from '@/components/loans/CreateLoanForm'
-import MyCreatedLoans from '@/components/loans/MyCreatedLoans'
-import LoanIncomeAnalytics from '@/components/loans/LoanIncomeAnalytics'
+import type { LoanFilters, AmountFilter } from '@/entities/loan'
+import { useLoansData } from '@/features/loans'
+import { filterLoans } from '@/features/loans/model/useLoanFilters'
+import {
+  LoansPageHeader,
+  LoansTabNavigation,
+  LoanFilters as LoanFiltersComponent,
+  AvailableLoansList,
+  MyTakenLoansList,
+  CreateLoanForm as CreateLoanFormComponent,
+  MyCreatedLoans,
+  LoanIncomeAnalytics,
+} from '@/features/loans'
 
 const TAKER_TABS = [
   { label: 'Available Loans', value: 'available', icon: List },

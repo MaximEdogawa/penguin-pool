@@ -1,14 +1,16 @@
 'use client'
 
-import CreateOfferModal from '@/components/offers/CreateOfferModal'
-import OfferDetailsModal from '@/components/offers/OfferDetailsModal'
-import OfferHistory from '@/components/offers/OfferHistory'
-import TakeOfferModal from '@/components/offers/TakeOfferModal'
-import Button from '@/components/shared/Button'
-import Modal from '@/components/shared/Modal'
-import { useMyOffers } from '@/hooks/useMyOffers'
-import { useThemeClasses } from '@/hooks/useThemeClasses'
-import type { OfferDetails } from '@/types/offer.types'
+import type { OfferDetails } from '@/entities/offer'
+import {
+  CreateOfferModal,
+  OfferDetailsModal,
+  OfferHistory,
+  TakeOfferModal,
+  useMyOffers,
+} from '@/features/offers'
+import { useThemeClasses } from '@/shared/hooks'
+import Button from '@/shared/ui/Button'
+import Modal from '@/shared/ui/Modal'
 import { Handshake, Loader2, Plus, RefreshCw, ShoppingCart, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 

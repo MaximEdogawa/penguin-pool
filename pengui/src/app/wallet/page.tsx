@@ -1,15 +1,17 @@
 'use client'
 
-import { useWalletBalance } from '@/hooks'
-import { mojosToXch } from '@/lib/utils/chia-units'
+import {
+  useWalletBalance,
+  WalletPageHeader,
+  WalletBalanceCard,
+  WalletAddress,
+  SendTransactionForm,
+  RecentTransactions,
+} from '@/features/wallet'
+import { mojosToXch } from '@/shared/lib/utils/chia-units'
 import { useMemo, useEffect, useState } from 'react'
-import WalletPageHeader from '@/components/wallet/WalletPageHeader'
-import WalletBalanceCard from '@/components/wallet/WalletBalanceCard'
-import WalletAddress from '@/components/wallet/WalletAddress'
-import SendTransactionForm from '@/components/wallet/SendTransactionForm'
-import RecentTransactions from '@/components/wallet/RecentTransactions'
-import Card from '@/components/wallet/shared/Card'
-import SectionHeader from '@/components/wallet/shared/SectionHeader'
+import Card from '@/features/wallet/ui/shared/Card'
+import SectionHeader from '@/features/wallet/ui/shared/SectionHeader'
 import { Send } from 'lucide-react'
 
 export default function WalletPage() {
