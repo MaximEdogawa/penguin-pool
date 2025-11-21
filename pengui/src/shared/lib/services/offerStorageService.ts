@@ -1,4 +1,10 @@
-import { db, type StoredOffer } from '@/shared/lib/database/indexedDB'
+import {
+  db,
+  type StoredOffer,
+  ensureDatabaseReady,
+  isDatabaseReady,
+  withTimeout,
+} from '@/shared/lib/database/indexedDB'
 import type { OfferDetails } from '@/entities/offer'
 import { logger } from '@/shared/lib/logger'
 
@@ -29,8 +35,18 @@ export class OfferStorageService {
     walletAddress?: string
   ): Promise<StoredOffer> {
     try {
+      await ensureDatabaseReady()
+
+      if (!isDatabaseReady()) {
+        throw new Error('Database is not ready')
+      }
+
       // Check if offer already exists
-      const existingOffer = await db.offers.where('id').equals(offer.id).first()
+      const existingOffer = await withTimeout(
+        db.offers.where('id').equals(offer.id).first(),
+        5000,
+        'saveOffer (check existing)'
+      )
 
       if (existingOffer) {
         logger.info('⚠️ Offer already exists, updating instead of creating:', { offerId: offer.id })
@@ -47,7 +63,7 @@ export class OfferStorageService {
         syncedAt: isLocal ? undefined : new Date(),
       }
 
-      await db.offers.add(storedOffer)
+      await withTimeout(db.offers.add(storedOffer), 5000, 'saveOffer (add)')
       logger.info('✅ Offer saved to IndexedDB:', { offerId: offer.id, tradeId: offer.tradeId })
 
       // Return the stored offer with the original offer ID
@@ -63,13 +79,23 @@ export class OfferStorageService {
    */
   async updateOffer(offerId: string, updates: Partial<OfferDetails>): Promise<void> {
     try {
+      await ensureDatabaseReady()
+
+      if (!isDatabaseReady()) {
+        throw new Error('Database is not ready')
+      }
+
       const updateData: Partial<StoredOffer> = {
         ...updates,
         lastModified: new Date(),
       }
 
       // Update by the offerId field (not the auto-generated primary key)
-      const updatedCount = await db.offers.where('id').equals(offerId).modify(updateData)
+      const updatedCount = await withTimeout(
+        db.offers.where('id').equals(offerId).modify(updateData),
+        5000,
+        'updateOffer'
+      )
 
       if (updatedCount === 0) {
         throw new Error(`No offer found with ID: ${offerId}`)
@@ -84,10 +110,17 @@ export class OfferStorageService {
 
   /**
    * Remove duplicate offers (keep the most recent one)
+   * Note: This is now a manual operation and not called automatically
    */
   async removeDuplicates(): Promise<void> {
     try {
-      const allOffers = await db.offers.toArray()
+      await ensureDatabaseReady()
+
+      if (!isDatabaseReady()) {
+        throw new Error('Database is not ready')
+      }
+
+      const allOffers = await withTimeout(db.offers.toArray(), 10000, 'removeDuplicates')
       const offerGroups = new Map<string, StoredOffer[]>()
 
       // Group offers by their ID
@@ -108,9 +141,13 @@ export class OfferStorageService {
           // Remove duplicates
           for (const duplicate of duplicatesToRemove) {
             // Dexie uses the primary key (++id) for deletion, but we need to find it by tradeId
-            const storedOffer = await db.offers.where('tradeId').equals(duplicate.tradeId).first()
+            const storedOffer = await withTimeout(
+              db.offers.where('tradeId').equals(duplicate.tradeId).first(),
+              5000,
+              'removeDuplicates (find duplicate)'
+            )
             if (storedOffer && typeof storedOffer.id === 'number') {
-              await db.offers.delete(storedOffer.id)
+              await withTimeout(db.offers.delete(storedOffer.id), 5000, 'removeDuplicates (delete)')
               logger.info('🗑️ Removed duplicate offer:', { offerId, duplicateId: duplicate.id })
             }
           }
@@ -129,8 +166,11 @@ export class OfferStorageService {
     options: OfferStorageOptions = {}
   ): Promise<StoredOffer[] | PaginatedOffersResult> {
     try {
-      // Remove duplicates before fetching
-      await this.removeDuplicates()
+      await ensureDatabaseReady()
+
+      if (!isDatabaseReady()) {
+        throw new Error('Database is not ready')
+      }
 
       // Sort by createdAt (date) in descending order (newest first)
       let query = db.offers.orderBy('createdAt').reverse()
@@ -160,12 +200,16 @@ export class OfferStorageService {
         const offset = (page - 1) * pageSize
 
         // Get total count first (need to apply filters)
-        const allOffers = await query.toArray()
+        const allOffers = await withTimeout(query.toArray(), 5000, 'getOffers (count)')
         const total = allOffers.length
         const totalPages = Math.ceil(total / pageSize)
 
         // Get paginated offers
-        const offers = await query.offset(offset).limit(pageSize).toArray()
+        const offers = await withTimeout(
+          query.offset(offset).limit(pageSize).toArray(),
+          5000,
+          'getOffers (paginated)'
+        )
 
         logger.info('✅ Retrieved paginated offers from IndexedDB:', {
           count: offers.length,
@@ -185,13 +229,23 @@ export class OfferStorageService {
       }
 
       // No pagination - return all offers
-      const offers = await query.toArray()
+      const offers = await withTimeout(query.toArray(), 5000, 'getOffers')
       logger.info('✅ Retrieved offers from IndexedDB:', { count: offers.length })
 
       return offers
     } catch (error) {
       logger.error('❌ Failed to get offers from IndexedDB:', error)
-      throw error
+      // Return empty result instead of throwing to prevent UI crashes
+      if (options.page !== undefined && options.pageSize !== undefined) {
+        return {
+          offers: [],
+          total: 0,
+          page: options.page || 1,
+          pageSize: options.pageSize || 10,
+          totalPages: 0,
+        }
+      }
+      return []
     }
   }
 
@@ -200,6 +254,12 @@ export class OfferStorageService {
    */
   async getOffersByStatus(status: string, walletAddress?: string): Promise<StoredOffer[]> {
     try {
+      await ensureDatabaseReady()
+
+      if (!isDatabaseReady()) {
+        return []
+      }
+
       let query = db.offers.where('status').equals(status)
 
       if (walletAddress) {
@@ -207,13 +267,17 @@ export class OfferStorageService {
       }
 
       // Sort by createdAt (date) in descending order (newest first)
-      const offers = await query.reverse().sortBy('createdAt')
+      const offers = await withTimeout(
+        query.reverse().sortBy('createdAt'),
+        5000,
+        'getOffersByStatus'
+      )
       logger.info('✅ Retrieved offers by status from IndexedDB:', { status, count: offers.length })
 
       return offers
     } catch (error) {
       logger.error('❌ Failed to get offers by status from IndexedDB:', error)
-      throw error
+      return [] // Return empty array instead of throwing
     }
   }
 
@@ -222,13 +286,23 @@ export class OfferStorageService {
    */
   async getOfferByTradeId(tradeId: string): Promise<StoredOffer | undefined> {
     try {
-      const offer = await db.offers.where('tradeId').equals(tradeId).first()
+      await ensureDatabaseReady()
+
+      if (!isDatabaseReady()) {
+        return undefined
+      }
+
+      const offer = await withTimeout(
+        db.offers.where('tradeId').equals(tradeId).first(),
+        5000,
+        'getOfferByTradeId'
+      )
       logger.info('✅ Retrieved offer by trade ID from IndexedDB:', { tradeId, found: !!offer })
 
       return offer
     } catch (error) {
       logger.error('❌ Failed to get offer by trade ID from IndexedDB:', error)
-      throw error
+      return undefined // Return undefined instead of throwing
     }
   }
 
@@ -237,7 +311,17 @@ export class OfferStorageService {
    */
   async deleteOffer(offerId: string): Promise<void> {
     try {
-      const deletedCount = await db.offers.where('id').equals(offerId).delete()
+      await ensureDatabaseReady()
+
+      if (!isDatabaseReady()) {
+        throw new Error('Database is not ready')
+      }
+
+      const deletedCount = await withTimeout(
+        db.offers.where('id').equals(offerId).delete(),
+        5000,
+        'deleteOffer'
+      )
 
       if (deletedCount === 0) {
         throw new Error(`No offer found with ID: ${offerId}`)
@@ -255,12 +339,22 @@ export class OfferStorageService {
    */
   async markOffersAsSynced(offerIds: string[]): Promise<void> {
     try {
+      await ensureDatabaseReady()
+
+      if (!isDatabaseReady()) {
+        throw new Error('Database is not ready')
+      }
+
       for (const id of offerIds) {
-        await db.offers.where('id').equals(id).modify({
-          isLocal: false,
-          syncedAt: new Date(),
-          lastModified: new Date(),
-        })
+        await withTimeout(
+          db.offers.where('id').equals(id).modify({
+            isLocal: false,
+            syncedAt: new Date(),
+            lastModified: new Date(),
+          }),
+          5000,
+          'markOffersAsSynced'
+        )
       }
       logger.info('✅ Offers marked as synced in IndexedDB:', { count: offerIds.length })
     } catch (error) {
@@ -274,13 +368,23 @@ export class OfferStorageService {
    */
   async getUnsyncedOffers(): Promise<StoredOffer[]> {
     try {
-      const offers = await db.offers.filter((offer) => offer.isLocal).toArray()
+      await ensureDatabaseReady()
+
+      if (!isDatabaseReady()) {
+        return []
+      }
+
+      const offers = await withTimeout(
+        db.offers.filter((offer) => offer.isLocal).toArray(),
+        5000,
+        'getUnsyncedOffers'
+      )
       logger.info('✅ Retrieved unsynced offers from IndexedDB:', { count: offers.length })
 
       return offers
     } catch (error) {
       logger.error('❌ Failed to get unsynced offers from IndexedDB:', error)
-      throw error
+      return [] // Return empty array instead of throwing
     }
   }
 
@@ -289,7 +393,13 @@ export class OfferStorageService {
    */
   async clearAllOffers(): Promise<void> {
     try {
-      await db.offers.clear()
+      await ensureDatabaseReady()
+
+      if (!isDatabaseReady()) {
+        throw new Error('Database is not ready')
+      }
+
+      await withTimeout(db.offers.clear(), 10000, 'clearAllOffers')
       logger.info('✅ All offers cleared from IndexedDB')
     } catch (error) {
       logger.error('❌ Failed to clear offers from IndexedDB:', error)
@@ -307,7 +417,18 @@ export class OfferStorageService {
     statusBreakdown: Record<string, number>
   }> {
     try {
-      const allOffers = await db.offers.toArray()
+      await ensureDatabaseReady()
+
+      if (!isDatabaseReady()) {
+        return {
+          totalOffers: 0,
+          localOffers: 0,
+          syncedOffers: 0,
+          statusBreakdown: {},
+        }
+      }
+
+      const allOffers = await withTimeout(db.offers.toArray(), 5000, 'getStats')
 
       const stats = {
         totalOffers: allOffers.length,
@@ -326,7 +447,13 @@ export class OfferStorageService {
       return stats
     } catch (error) {
       logger.error('❌ Failed to get database stats:', error)
-      throw error
+      // Return empty stats instead of throwing
+      return {
+        totalOffers: 0,
+        localOffers: 0,
+        syncedOffers: 0,
+        statusBreakdown: {},
+      }
     }
   }
 

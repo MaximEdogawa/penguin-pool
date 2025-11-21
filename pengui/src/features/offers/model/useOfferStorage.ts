@@ -2,6 +2,7 @@
 
 import type { OfferDetails } from '@/entities/offer'
 import type { StoredOffer } from '@/shared/lib/database/indexedDB'
+import { logger } from '@/shared/lib/logger'
 import {
   offerStorageService,
   type OfferStorageOptions,
@@ -222,11 +223,17 @@ export function useOfferStorage() {
 
     try {
       await offerStorageService.clearAllOffers()
+      // Always update state, even if there's an error, to prevent UI from hanging
       setOffers([])
       setPagination(null) // Reset pagination when clearing all offers
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to clear offers')
-      throw err
+      const errorMsg = err instanceof Error ? err.message : 'Failed to clear offers'
+      setError(errorMsg)
+      // Still clear local state to prevent UI from showing stale data
+      setOffers([])
+      setPagination(null)
+      // Don't throw - let the UI handle the error state
+      logger.error('Failed to clear all offers:', err)
     } finally {
       setIsLoading(false)
     }
