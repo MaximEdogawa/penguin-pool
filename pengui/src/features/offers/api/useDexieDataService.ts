@@ -59,7 +59,26 @@ export function useDexieDataService() {
         const response = await fetch(`${DEXIE_API_BASE_URL}/v1/offers?${queryParams.toString()}`)
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
+          // Try to get error details from response
+          let errorMessage = `HTTP error! status: ${response.status}`
+          try {
+            const errorData = await response.json()
+            if (errorData.message || errorData.error) {
+              errorMessage = `${errorMessage}: ${errorData.message || errorData.error}`
+            }
+          } catch {
+            // If response is not JSON, use default error message
+            const text = await response.text()
+            if (text) {
+              errorMessage = `${errorMessage}: ${text}`
+            }
+          }
+          logger.error('Dexie API error:', {
+            status: response.status,
+            url: `${DEXIE_API_BASE_URL}/v1/offers?${queryParams.toString()}`,
+            error: errorMessage,
+          })
+          throw new Error(errorMessage)
         }
 
         const data = await response.json()
