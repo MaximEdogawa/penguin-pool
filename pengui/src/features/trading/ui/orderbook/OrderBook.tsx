@@ -226,12 +226,12 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
       >
         {/* Header */}
         <div
-          className={`grid grid-cols-10 gap-2 px-3 py-2 ${t.card} border-b ${t.border} text-xs font-medium ${t.textSecondary}`}
+          className={`grid grid-cols-12 gap-2 px-3 py-2 ${t.card} border-b ${t.border} text-xs font-medium ${t.textSecondary}`}
         >
-          <div className="col-span-2 text-right">Count</div>
+          <div className="col-span-1 text-left">Count</div>
           <div className="col-span-3 text-right">Receive</div>
           <div className="col-span-3 text-right">Request</div>
-          <div className="col-span-2 text-right">Price ({getPriceHeaderTicker()})</div>
+          <div className="col-span-5 text-right">Price ({getPriceHeaderTicker()})</div>
         </div>
 
         {/* Sell Orders (Asks) - Top Section */}

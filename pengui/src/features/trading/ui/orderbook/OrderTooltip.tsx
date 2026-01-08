@@ -4,6 +4,7 @@ import { useCatTokens } from '@/shared/hooks/useTickers'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
 import { useMemo } from 'react'
 import { getNativeTokenTicker } from '@/shared/lib/config/environment'
+import { formatAmountForTooltip } from '../../lib/formatAmount'
 
 interface OrderTooltipProps {
   order: OrderBookOrder | null
@@ -24,16 +25,6 @@ const USD_PRICES: Record<string, number> = {
   MATIC: 0.85,
   AVAX: 35,
   LINK: 15,
-}
-
-const formatAmount = (amount: number): string => {
-  if (amount === 0) return '0'
-  if (amount < 0.000001) return amount.toExponential(2)
-  if (amount < 0.01) return amount.toFixed(6)
-  if (amount < 1) return amount.toFixed(4)
-  if (amount < 100) return amount.toFixed(2)
-  if (amount < 10000) return amount.toFixed(1)
-  return amount.toFixed(0)
 }
 
 const calculateAssetUsdValue = (asset: { code: string; amount: number }): number => {
@@ -110,7 +101,7 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
 
   return (
     <div
-      className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50 rounded-lg p-3 shadow-xl min-w-[300px] pointer-events-none"
+      className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50 rounded-lg p-3 shadow-xl min-w-[300px] max-w-[500px] pointer-events-none"
       style={tooltipStyle}
     >
       <div className="space-y-2">
@@ -119,8 +110,8 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
         {/* Order ID */}
         <div>
           <span className="text-xs text-gray-500 dark:text-gray-400">ID:</span>
-          <span className="text-xs font-mono text-gray-900 dark:text-white ml-1">
-            {order.id.slice(0, 16)}...
+          <span className="text-xs font-mono text-gray-900 dark:text-white ml-1 break-all">
+            {order.id}
           </span>
         </div>
 
@@ -135,10 +126,7 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
                 </span>
                 <div className="flex flex-col items-end">
                   <span className="font-mono text-gray-700 dark:text-gray-300">
-                    {formatAmount(asset.amount || 0)}
-                  </span>
-                  <span className="font-mono text-xs text-gray-500 dark:text-gray-400">
-                    Full: {(asset.amount || 0).toFixed(8)}
+                    {formatAmountForTooltip(asset.amount || 0)}
                   </span>
                   <span className="font-mono text-xs text-green-600 dark:text-green-400">
                     ${calculateAssetUsdValue(asset).toFixed(2)}
@@ -160,10 +148,7 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
                 </span>
                 <div className="flex flex-col items-end">
                   <span className="font-mono text-gray-700 dark:text-gray-300">
-                    {formatAmount(asset.amount || 0)}
-                  </span>
-                  <span className="font-mono text-xs text-gray-500 dark:text-gray-400">
-                    Full: {(asset.amount || 0).toFixed(8)}
+                    {formatAmountForTooltip(asset.amount || 0)}
                   </span>
                   <span className="font-mono text-xs text-green-600 dark:text-green-400">
                     ${calculateAssetUsdValue(asset).toFixed(2)}
@@ -175,7 +160,8 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
         </div>
 
         <div className="text-xs text-gray-500 dark:text-gray-400">
-          Maker: {order.maker.slice(0, 8)}...
+          <span>Maker: </span>
+          <span className="font-mono break-all">{order.maker}</span>
         </div>
         <div className="text-xs text-gray-500 dark:text-gray-400">
           {new Date(order.timestamp).toLocaleString()}

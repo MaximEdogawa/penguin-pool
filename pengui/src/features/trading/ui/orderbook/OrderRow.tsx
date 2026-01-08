@@ -1,9 +1,14 @@
 'use client'
 
 import { useCatTokens } from '@/shared/hooks/useTickers'
-import type { OrderBookOrder } from '../../lib/orderBookTypes'
-import { useCallback, useMemo } from 'react'
 import { getNativeTokenTicker } from '@/shared/lib/config/environment'
+import { useCallback, useMemo } from 'react'
+import {
+  formatAmountForDisplay,
+  formatAmountForTooltip,
+  formatPriceForDisplay,
+} from '../../lib/formatAmount'
+import type { OrderBookOrder } from '../../lib/orderBookTypes'
 
 interface OrderRowProps {
   order: OrderBookOrder
@@ -15,16 +20,6 @@ interface OrderRowProps {
   onClick: (order: OrderBookOrder) => void
   onHover: (event: React.MouseEvent, order: OrderBookOrder, orderType: 'buy' | 'sell') => void
   onMouseLeave: () => void
-}
-
-const formatAmount = (amount: number): string => {
-  if (amount === 0) return '0'
-  if (amount < 0.000001) return amount.toExponential(2)
-  if (amount < 0.01) return amount.toFixed(6)
-  if (amount < 1) return amount.toFixed(4)
-  if (amount < 100) return amount.toFixed(2)
-  if (amount < 10000) return amount.toFixed(1)
-  return amount.toFixed(0)
 }
 
 const isSingleAssetPair = (order: OrderBookOrder): boolean => {
@@ -104,12 +99,12 @@ export default function OrderRow({
             price = offeringAsset.amount / receivingAsset.amount
           }
 
-          // Format price with appropriate precision
-          return `${formatAmount(price)}`
+          // Format price (cut decimals, no truncation indicator)
+          return formatPriceForDisplay(price)
         } else {
           // No filters, show price as offered/received
           price = offeringAsset.amount / receivingAsset.amount
-          return `${formatAmount(price)}`
+          return formatPriceForDisplay(price)
         }
       }
     }
@@ -146,36 +141,47 @@ export default function OrderRow({
         style={{ width: depthWidth, right: 0 }}
       />
 
-      <div className="relative grid grid-cols-10 gap-2 py-2 text-sm items-center">
-        {/* Count */}
-        <div className="col-span-2 text-right text-gray-500 dark:text-gray-500 font-mono text-xs">
+      <div className="relative grid grid-cols-12 gap-2 py-2 text-sm items-center">
+        {/* Count - smallest, left aligned */}
+        <div className="col-span-1 text-left text-gray-500 dark:text-gray-500 font-mono text-xs">
           {order.offering.length + order.receiving.length}
         </div>
 
         {/* Receive */}
-        <div className="col-span-3 text-right">
+        <div className="col-span-3 text-right min-w-0">
           <div className="flex flex-col gap-1">
             {order.receiving.map((item, idx) => (
-              <div key={idx} className={`${textColorClass} font-mono text-xs`}>
-                {formatAmount(item.amount || 0)} {item.code || getTickerSymbol(item.id)}
+              <div
+                key={idx}
+                className={`${textColorClass} font-mono text-xs truncate`}
+                title={`${formatAmountForTooltip(item.amount || 0)} ${item.code || getTickerSymbol(item.id)}`}
+              >
+                {formatAmountForDisplay(item.amount || 0)} {item.code || getTickerSymbol(item.id)}
               </div>
             ))}
           </div>
         </div>
 
         {/* Request */}
-        <div className="col-span-3 text-right">
+        <div className="col-span-3 text-right min-w-0">
           <div className="flex flex-col gap-1">
             {order.offering.map((item, idx) => (
-              <div key={idx} className="text-xs font-mono text-gray-700 dark:text-gray-300">
-                {formatAmount(item.amount || 0)} {item.code || getTickerSymbol(item.id)}
+              <div
+                key={idx}
+                className="text-xs font-mono text-gray-700 dark:text-gray-300 truncate"
+                title={`${formatAmountForTooltip(item.amount || 0)} ${item.code || getTickerSymbol(item.id)}`}
+              >
+                {formatAmountForDisplay(item.amount || 0)} {item.code || getTickerSymbol(item.id)}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Price */}
-        <div className="col-span-2 text-right text-gray-600 dark:text-gray-400 font-mono text-xs">
+        {/* Price - biggest, right aligned */}
+        <div
+          className="col-span-5 text-right text-gray-600 dark:text-gray-400 font-mono text-xs truncate min-w-0"
+          title={calculateOrderPrice()}
+        >
           {calculateOrderPrice()}
         </div>
       </div>
