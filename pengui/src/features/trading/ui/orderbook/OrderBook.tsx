@@ -81,10 +81,6 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
     return getNativeTokenTicker()
   }, [filters])
 
-  // Filter orders based on filter context
-  // Example: buy TXCH, sell TDBX
-  // - Sell side: orders buying TDBX (receiving sellAsset) and selling TXCH (offering buyAsset) - opposite of filter
-  // - Buy side: orders buying TXCH (receiving buyAsset) and selling TDBX (offering sellAsset) - same as filter
   const filteredBuyOrders = useMemo(() => {
     if (
       !filters?.buyAsset ||
@@ -95,7 +91,6 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
       return []
     }
 
-    // Sell side: orders where receiving contains sellAsset (buying TDBX) and offering contains buyAsset (selling TXCH)
     return orderBookData
       .filter((order) => {
         const isReceivingSellAsset = order.receiving.some((asset) =>
@@ -121,7 +116,6 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
       return []
     }
 
-    // Buy side: orders where receiving contains buyAsset (buying TXCH) and offering contains sellAsset (selling TDBX)
     return orderBookData
       .filter((order) => {
         const isReceivingBuyAsset = order.receiving.some((asset) =>
@@ -133,7 +127,7 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
         return isReceivingBuyAsset && isOfferingSellAsset
       })
       .sort((a, b) => {
-        return b.pricePerUnit - a.pricePerUnit
+        return a.pricePerUnit - b.pricePerUnit
       })
   }, [orderBookData, filters, assetMatchesFilter])
 
