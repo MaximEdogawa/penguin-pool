@@ -37,7 +37,7 @@ export const calculateAssetUsdValue = (asset: { code: string; amount: number }):
 }
 
 export const isSingleAssetPair = (order: OrderBookOrder): boolean => {
-  return order.offering.length === 1 && order.receiving.length === 1
+  return order.offering.length === 1 && order.requesting.length === 1
 }
 
 /**
@@ -53,7 +53,7 @@ export const calculateOrderPrice = (
   getTickerSymbol?: (assetId: string, code?: string) => string
 ): string => {
   if (isSingleAssetPair(order)) {
-    const receivingAsset = order.receiving[0]
+    const receivingAsset = order.requesting[0]
     const offeringAsset = order.offering[0]
 
     if (receivingAsset && offeringAsset && receivingAsset.amount > 0 && offeringAsset.amount > 0) {
@@ -125,12 +125,12 @@ export const calculateAveragePrice = (
 ): string => {
   // Get best sell price (lowest ask)
   const bestSellPrice = bestSellOrder
-    ? bestSellOrder.receiving[0]?.amount / bestSellOrder.offering[0]?.amount
+    ? bestSellOrder.requesting[0]?.amount / bestSellOrder.offering[0]?.amount
     : 0
 
   // Get best buy price (highest bid)
   const bestBuyPrice = bestBuyOrder
-    ? bestBuyOrder.offering[0]?.amount / bestBuyOrder.receiving[0]?.amount
+    ? bestBuyOrder.offering[0]?.amount / bestBuyOrder.requesting[0]?.amount
     : 0
 
   // Calculate average if both prices exist

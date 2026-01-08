@@ -13,7 +13,7 @@ export interface DexieAssetItem {
 export interface OrderBookOrder {
   id: string
   offering: DexieAssetItem[]
-  receiving: DexieAssetItem[]
+  requesting: DexieAssetItem[]
   maker: string
   timestamp: string
   offeringUsdValue: number

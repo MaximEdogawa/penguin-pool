@@ -114,7 +114,7 @@
         const ticker = getTickerSymbol(asset.id)
         orderBookAssets.set(asset.id, ticker)
       })
-      order.receiving.forEach(asset => {
+      order.requesting.forEach(asset => {
         const ticker = getTickerSymbol(asset.id)
         orderBookAssets.set(asset.id, ticker)
       })

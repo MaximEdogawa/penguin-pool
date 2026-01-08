@@ -68,7 +68,7 @@ export function useOfferSubmission() {
       }
     })
 
-    takerAssets.value = order.receiving.map(asset => {
+    takerAssets.value = order.requesting.map(asset => {
       const ticker = asset.code || getTickerSymbol(asset.id)
       return {
         assetId: asset.id,
@@ -80,7 +80,7 @@ export function useOfferSubmission() {
       }
     })
 
-    takerAssets.value = order.receiving.map(asset => {
+    takerAssets.value = order.requesting.map(asset => {
       const ticker = asset.code || getTickerSymbol(asset.id)
 
       return {
@@ -106,7 +106,7 @@ export function useOfferSubmission() {
         showDropdown: false,
       }
     })
-    takerAssets.value = order.receiving.map(asset => {
+    takerAssets.value = order.requesting.map(asset => {
       const ticker = asset.code || getTickerSymbol(asset.id)
       return {
         assetId: asset.id,

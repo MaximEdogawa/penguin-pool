@@ -45,14 +45,14 @@
             <div class="relative grid grid-cols-10 gap-2 py-2 text-sm items-center">
               <!-- Count -->
               <div class="col-span-2 text-right text-gray-500 dark:text-gray-500 font-mono text-xs">
-                {{ order.offering.length + order.receiving.length }}
+                {{ order.offering.length + order.requesting.length }}
               </div>
 
               <!-- Receive -->
               <div class="col-span-3 text-right">
                 <div class="flex flex-col gap-1">
                   <div
-                    v-for="(item, idx) in order.receiving"
+                    v-for="(item, idx) in order.requesting"
                     :key="idx"
                     class="text-red-600 dark:text-red-400 font-mono text-xs"
                   >
@@ -125,14 +125,14 @@
             <div class="relative grid grid-cols-10 gap-2 py-2 text-sm items-center">
               <!-- Count -->
               <div class="col-span-2 text-right text-gray-500 dark:text-gray-500 font-mono text-xs">
-                {{ order.offering.length + order.receiving.length }}
+                {{ order.offering.length + order.requesting.length }}
               </div>
 
               <!-- Receive -->
               <div class="col-span-3 text-right">
                 <div class="flex flex-col gap-1">
                   <div
-                    v-for="(item, idx) in order.receiving"
+                    v-for="(item, idx) in order.requesting"
                     :key="idx"
                     class="text-green-600 dark:text-green-400 font-mono text-xs"
                   >
@@ -283,7 +283,7 @@
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
                   (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
               ) ||
-              order.receiving.some(
+              order.requesting.some(
                 orderAsset =>
                   getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
@@ -301,7 +301,7 @@
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
                   (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
               ) ||
-              order.receiving.some(
+              order.requesting.some(
                 orderAsset =>
                   getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
@@ -327,7 +327,7 @@
         const requestingSellAsset =
           props.filters.sellAsset.length === 0 ||
           props.filters.sellAsset.some(filterAsset =>
-            order.receiving.some(
+            order.requesting.some(
               orderAsset =>
                 getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
                 orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
@@ -367,7 +367,7 @@
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
                   (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
               ) ||
-              order.receiving.some(
+              order.requesting.some(
                 orderAsset =>
                   getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
@@ -385,7 +385,7 @@
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
                   (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
               ) ||
-              order.receiving.some(
+              order.requesting.some(
                 orderAsset =>
                   getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
@@ -411,7 +411,7 @@
         const requestingBuyAsset =
           props.filters.buyAsset.length === 0 ||
           props.filters.buyAsset.some(filterAsset =>
-            order.receiving.some(
+            order.requesting.some(
               orderAsset =>
                 getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
                 orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
@@ -449,12 +449,12 @@
 
   const isSingleAssetPair = (order: Order): boolean => {
     // Check if both offering and receiving have only one asset each
-    return order.offering.length === 1 && order.receiving.length === 1
+    return order.offering.length === 1 && order.requesting.length === 1
   }
 
   const calculateOrderPrice = (order: Order, _orderType: 'buy' | 'sell'): string => {
     if (isSingleAssetPair(order)) {
-      const receivingAsset = order.receiving[0]
+      const receivingAsset = order.requesting[0]
       const offeringAsset = order.offering[0]
 
       if (
@@ -523,13 +523,13 @@
     // Get best sell price (lowest ask)
     const bestSellOrder = filteredSellOrders.value[0]
     const bestSellPrice = bestSellOrder
-      ? bestSellOrder.receiving[0]?.amount / bestSellOrder.offering[0]?.amount
+      ? bestSellorder.requesting[0]?.amount / bestSellOrder.offering[0]?.amount
       : 0
 
     // Get best buy price (highest bid)
     const bestBuyOrder = filteredBuyOrders.value[0]
     const bestBuyPrice = bestBuyOrder
-      ? bestBuyOrder.offering[0]?.amount / bestBuyOrder.receiving[0]?.amount
+      ? bestBuyOrder.offering[0]?.amount / bestBuyorder.requesting[0]?.amount
       : 0
 
     // Calculate average if both prices exist

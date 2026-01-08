@@ -75,7 +75,7 @@ export function useOrderBook(filters?: OrderBookFilters) {
     return {
       id: dexieOffer.id,
       offering: safeOffered,
-      receiving: safeRequested,
+      requesting: safeRequested,
       maker: `0x${dexieOffer.id.substring(0, 8)}...${dexieOffer.id.substring(dexieOffer.id.length - 8)}`,
       timestamp: new Date(dexieOffer.date_found).toLocaleTimeString(),
       offeringUsdValue,

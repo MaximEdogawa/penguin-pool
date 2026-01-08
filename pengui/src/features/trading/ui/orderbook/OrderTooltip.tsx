@@ -141,7 +141,7 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
         <div>
           <span className="text-xs text-gray-500 dark:text-gray-400">Requested:</span>
           <div className="mt-1 space-y-1">
-            {order.receiving.map((asset, idx) => (
+            {order.requesting.map((asset, idx) => (
               <div key={idx} className="flex items-center justify-between text-xs">
                 <span className="text-gray-900 dark:text-white">
                   {asset.code || getTickerSymbol(asset.id)}

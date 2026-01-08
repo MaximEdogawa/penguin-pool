@@ -1,11 +1,11 @@
 'use client'
 
 import { useDexieDataService } from '@/features/offers/api/useDexieDataService'
-import type { OrderBookOrder } from '../lib/orderBookTypes'
 import { useCatTokens } from '@/shared/hooks/useTickers'
+import { getNativeTokenTicker } from '@/shared/lib/config/environment'
 import { logger } from '@/shared/lib/logger'
 import { useCallback, useState } from 'react'
-import { getNativeTokenTicker } from '@/shared/lib/config/environment'
+import type { OrderBookOrder } from '../lib/orderBookTypes'
 
 interface AssetItem {
   assetId: string
@@ -85,7 +85,7 @@ export function useOrderBookOfferSubmission() {
         }
       })
 
-      const newTakerAssets: AssetItem[] = order.receiving.map((asset) => {
+      const newTakerAssets: AssetItem[] = order.requesting.map((asset) => {
         const ticker = asset.code || getTickerSymbol(asset.id)
         return {
           assetId: asset.id,
@@ -123,7 +123,7 @@ export function useOrderBookOfferSubmission() {
         }
       })
 
-      const newTakerAssets: AssetItem[] = order.receiving.map((asset) => {
+      const newTakerAssets: AssetItem[] = order.requesting.map((asset) => {
         const ticker = asset.code || getTickerSymbol(asset.id)
         return {
           assetId: asset.id,

@@ -5,6 +5,7 @@ import { useCatTokens } from '@/shared/hooks/useTickers'
 import { getNativeTokenTicker } from '@/shared/lib/config/environment'
 import { Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { formatPriceForDisplay } from '../../lib/formatAmount'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
 import { useOrderBook } from '../../model/useOrderBook'
 import OrderRow from './OrderRow'
@@ -81,89 +82,143 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
     return getNativeTokenTicker()
   }, [filters])
 
-  const filteredBuyOrders = useMemo(() => {
-    if (
-      !filters?.buyAsset ||
-      filters.buyAsset.length === 0 ||
-      !filters?.sellAsset ||
-      filters.sellAsset.length === 0
-    ) {
-      return []
-    }
+  // Helper function to calculate price for sorting: buyAsset/sellAsset
+  // This ensures consistent price calculation for both buy and sell orders
+  const calculateOrderPriceForSorting = useCallback(
+    (order: OrderBookOrder): number => {
+      if (
+        !filters?.buyAsset ||
+        filters.buyAsset.length === 0 ||
+        !filters?.sellAsset ||
+        filters.sellAsset.length === 0
+      ) {
+        return order.pricePerUnit
+      }
 
-    return orderBookData
-      .filter((order) => {
-        const isReceivingSellAsset = order.receiving.some((asset) =>
-          assetMatchesFilter(asset, filters.sellAsset || [])
-        )
-        const isOfferingBuyAsset = order.offering.some((asset) =>
-          assetMatchesFilter(asset, filters.buyAsset || [])
-        )
-        return isReceivingSellAsset && isOfferingBuyAsset
+      // For single asset pairs, calculate price as buyAsset/sellAsset
+      if (order.offering.length === 1 && order.requesting.length === 1) {
+        const requestingAsset = order.requesting[0]
+        const offeringAsset = order.offering[0]
+
+        if (
+          requestingAsset &&
+          offeringAsset &&
+          requestingAsset.amount > 0 &&
+          offeringAsset.amount > 0
+        ) {
+          // Determine which asset is the buy asset and which is the sell asset
+          const requestingIsBuyAsset = filters.buyAsset.some(
+            (filterAsset) =>
+              getTickerSymbol(requestingAsset.id, requestingAsset.code).toLowerCase() ===
+                filterAsset.toLowerCase() ||
+              requestingAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+              (requestingAsset.code &&
+                requestingAsset.code.toLowerCase() === filterAsset.toLowerCase())
+          )
+
+          const offeringIsBuyAsset = filters.buyAsset.some(
+            (filterAsset) =>
+              getTickerSymbol(offeringAsset.id, offeringAsset.code).toLowerCase() ===
+                filterAsset.toLowerCase() ||
+              offeringAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+              (offeringAsset.code && offeringAsset.code.toLowerCase() === filterAsset.toLowerCase())
+          )
+
+          // Calculate price from buy side: buyAsset amount / sellAsset amount
+          if (requestingIsBuyAsset && !offeringIsBuyAsset) {
+            // requesting buy asset, offering sell asset
+            return requestingAsset.amount / offeringAsset.amount
+          } else if (offeringIsBuyAsset && !requestingIsBuyAsset) {
+            // Offering buy asset, requesting sell asset
+            return offeringAsset.amount / requestingAsset.amount
+          }
+        }
+      }
+
+      // Fallback to pricePerUnit for multi-asset pairs or when calculation fails
+      return order.pricePerUnit
+    },
+    [filters, getTickerSymbol]
+  )
+
+  // Helper function to filter and sort orders
+  const filterAndSortOrders = useCallback(
+    (
+      orderData: OrderBookOrder[],
+      filterCondition: (order: OrderBookOrder) => boolean,
+      sortAscending: boolean
+    ): OrderBookOrder[] => {
+      if (
+        !filters?.buyAsset ||
+        filters.buyAsset.length === 0 ||
+        !filters?.sellAsset ||
+        filters.sellAsset.length === 0
+      ) {
+        return []
+      }
+
+      return orderData.filter(filterCondition).sort((a, b) => {
+        const priceA = calculateOrderPriceForSorting(a)
+        const priceB = calculateOrderPriceForSorting(b)
+        return sortAscending ? priceA - priceB : priceB - priceA
       })
-      .sort((a, b) => {
-        return a.pricePerUnit - b.pricePerUnit
-      })
-  }, [orderBookData, filters, assetMatchesFilter])
+    },
+    [filters, calculateOrderPriceForSorting]
+  )
+
+  const filteredBuyOrders = useMemo(() => {
+    return filterAndSortOrders(
+      orderBookData,
+      (order) => {
+        const isOfferingBuySideAsset = order.offering.some((asset) =>
+          assetMatchesFilter(asset, filters?.buyAsset || [])
+        )
+
+        const isRequestingBuySideAsset = order.requesting.some((asset) =>
+          assetMatchesFilter(asset, filters?.sellAsset || [])
+        )
+
+        return isOfferingBuySideAsset && isRequestingBuySideAsset
+      },
+      false // Sort descending (high to low)
+    )
+  }, [orderBookData, filters, assetMatchesFilter, filterAndSortOrders])
 
   const filteredSellOrders = useMemo(() => {
-    if (
-      !filters?.buyAsset ||
-      filters.buyAsset.length === 0 ||
-      !filters?.sellAsset ||
-      filters.sellAsset.length === 0
-    ) {
-      return []
-    }
+    return filterAndSortOrders(
+      orderBookData,
+      (order) => {
+        const isOfferingSellSideAsset = order.offering.some((asset) =>
+          assetMatchesFilter(asset, filters?.sellAsset || [])
+        )
 
-    return orderBookData
-      .filter((order) => {
-        const isReceivingBuyAsset = order.receiving.some((asset) =>
-          assetMatchesFilter(asset, filters.buyAsset || [])
+        const isRequestingSellSideAsset = order.requesting.some((asset) =>
+          assetMatchesFilter(asset, filters?.buyAsset || [])
         )
-        const isOfferingSellAsset = order.offering.some((asset) =>
-          assetMatchesFilter(asset, filters.sellAsset || [])
-        )
-        return isReceivingBuyAsset && isOfferingSellAsset
-      })
-      .sort((a, b) => {
-        return a.pricePerUnit - b.pricePerUnit
-      })
-  }, [orderBookData, filters, assetMatchesFilter])
+
+        return isRequestingSellSideAsset && isOfferingSellSideAsset
+      },
+      false // Sort descending (high to low)
+    )
+  }, [orderBookData, filters, assetMatchesFilter, filterAndSortOrders])
 
   const calculateAveragePrice = useCallback((): string => {
-    if (
-      !filters ||
-      !filters.buyAsset ||
-      filters.buyAsset.length === 0 ||
-      !filters.sellAsset ||
-      filters.sellAsset.length === 0
-    ) {
+    if (!filters || (!filters.buyAsset && !filters.sellAsset)) {
       return 'N/A'
     }
 
-    // Get best sell price (lowest ask)
-    const bestSellOrder = filteredSellOrders[0]
-    const bestSellPrice = bestSellOrder
-      ? bestSellOrder.receiving[0]?.amount / bestSellOrder.offering[0]?.amount
-      : 0
+    // Get best sell price (lowest ask) - use same calculation logic as OrderRow
+    const bestSellOrder = filteredSellOrders[filteredSellOrders.length - 1]
+    const bestSellPrice = bestSellOrder ? calculateOrderPriceForSorting(bestSellOrder) : 0
 
-    // Get best buy price (highest bid)
+    // Get best buy price (highest bid) - use same calculation logic as OrderRow
     const bestBuyOrder = filteredBuyOrders[0]
-    const bestBuyPrice = bestBuyOrder
-      ? bestBuyOrder.offering[0]?.amount / bestBuyOrder.receiving[0]?.amount
-      : 0
+    const bestBuyPrice = bestBuyOrder ? calculateOrderPriceForSorting(bestBuyOrder) : 0
 
-    // Calculate average if both prices exist
+    // Calculate average (middle price) if both prices exist
     if (bestSellPrice > 0 && bestBuyPrice > 0) {
       const averagePrice = (bestSellPrice + bestBuyPrice) / 2
-      const formatAmount = (amount: number): string => {
-        if (amount < 0.01) return amount.toFixed(6)
-        if (amount < 1) return amount.toFixed(4)
-        if (amount < 100) return amount.toFixed(2)
-        return amount.toFixed(1)
-      }
-      return formatAmount(averagePrice)
+      return formatPriceForDisplay(averagePrice)
     }
 
     // Fallback to individual prices if only one exists

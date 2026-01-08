@@ -23,7 +23,7 @@ interface OrderRowProps {
 }
 
 const isSingleAssetPair = (order: OrderBookOrder): boolean => {
-  return order.offering.length === 1 && order.receiving.length === 1
+  return order.offering.length === 1 && order.requesting.length === 1
 }
 
 export default function OrderRow({
@@ -48,13 +48,13 @@ export default function OrderRow({
 
   const calculateOrderPrice = useCallback((): string => {
     if (isSingleAssetPair(order)) {
-      const receivingAsset = order.receiving[0]
+      const requestingAsset = order.requesting[0]
       const offeringAsset = order.offering[0]
 
       if (
-        receivingAsset &&
+        requestingAsset &&
         offeringAsset &&
-        receivingAsset.amount > 0 &&
+        requestingAsset.amount > 0 &&
         offeringAsset.amount > 0
       ) {
         let price
@@ -69,13 +69,13 @@ export default function OrderRow({
           // Example: buy TXCH, sell TDBX -> price = TXCH/TDBX (how much buyAsset per sellAsset)
 
           // Determine which asset is the buy asset and which is the sell asset
-          const receivingIsBuyAsset = filters.buyAsset.some(
+          const requestingIsBuyAsset = filters.buyAsset.some(
             (filterAsset) =>
-              getTickerSymbol(receivingAsset.id, receivingAsset.code).toLowerCase() ===
+              getTickerSymbol(requestingAsset.id, requestingAsset.code).toLowerCase() ===
                 filterAsset.toLowerCase() ||
-              receivingAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-              (receivingAsset.code &&
-                receivingAsset.code.toLowerCase() === filterAsset.toLowerCase())
+              requestingAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
+              (requestingAsset.code &&
+                requestingAsset.code.toLowerCase() === filterAsset.toLowerCase())
           )
 
           const offeringIsBuyAsset = filters.buyAsset.some(
@@ -87,24 +87,24 @@ export default function OrderRow({
           )
 
           // Always calculate from buy side: buyAsset amount / sellAsset amount
-          if (receivingIsBuyAsset && !offeringIsBuyAsset) {
-            // Receiving buy asset, offering sell asset
+          if (requestingIsBuyAsset && !offeringIsBuyAsset) {
+            // requesting buy asset, offering sell asset
             // Price = buy asset amount / sell asset amount (TXCH/TDBX)
-            price = receivingAsset.amount / offeringAsset.amount
-          } else if (offeringIsBuyAsset && !receivingIsBuyAsset) {
-            // Offering buy asset, receiving sell asset
+            price = requestingAsset.amount / offeringAsset.amount
+          } else if (offeringIsBuyAsset && !requestingIsBuyAsset) {
+            // Offering buy asset, requesting sell asset
             // Price = buy asset amount / sell asset amount (TXCH/TDBX)
-            price = offeringAsset.amount / receivingAsset.amount
+            price = offeringAsset.amount / requestingAsset.amount
           } else {
             // Fallback to original logic
-            price = offeringAsset.amount / receivingAsset.amount
+            price = offeringAsset.amount / requestingAsset.amount
           }
 
           // Format price (cut decimals, no truncation indicator)
           return formatPriceForDisplay(price)
         } else {
           // No filters, show price as offered/received
-          price = offeringAsset.amount / receivingAsset.amount
+          price = offeringAsset.amount / requestingAsset.amount
           return formatPriceForDisplay(price)
         }
       }
@@ -145,7 +145,7 @@ export default function OrderRow({
       <div className="relative grid grid-cols-12 gap-2 py-2 text-sm items-center">
         {/* Count - smallest, left aligned */}
         <div className="col-span-1 text-left text-gray-500 dark:text-gray-500 font-mono text-xs">
-          {order.offering.length + order.receiving.length}
+          {order.offering.length + order.requesting.length}
         </div>
 
         {/* Buy */}
@@ -166,7 +166,7 @@ export default function OrderRow({
         {/* Sell */}
         <div className="col-span-3 text-right min-w-0">
           <div className="flex flex-col gap-1">
-            {order.receiving.map((item, idx) => (
+            {order.requesting.map((item, idx) => (
               <div
                 key={idx}
                 className="text-xs font-mono text-gray-700 dark:text-gray-300 truncate"
