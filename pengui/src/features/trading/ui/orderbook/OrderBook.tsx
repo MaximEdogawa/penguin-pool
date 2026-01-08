@@ -1,13 +1,13 @@
 'use client'
 
-import { useOrderBook } from '../../model/useOrderBook'
-import type { OrderBookOrder } from '../../lib/orderBookTypes'
-import OrderRow from './OrderRow'
-import OrderTooltip from './OrderTooltip'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Loader2 } from 'lucide-react'
 import { useThemeClasses } from '@/shared/hooks'
 import { getNativeTokenTicker } from '@/shared/lib/config/environment'
+import { Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { OrderBookOrder } from '../../lib/orderBookTypes'
+import { useOrderBook } from '../../model/useOrderBook'
+import OrderRow from './OrderRow'
+import OrderTooltip from './OrderTooltip'
 
 interface OrderBookProps {
   filters?: {
@@ -229,8 +229,8 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
           className={`grid grid-cols-12 gap-2 px-3 py-2 ${t.card} border-b ${t.border} text-xs font-medium ${t.textSecondary}`}
         >
           <div className="col-span-1 text-left">Count</div>
-          <div className="col-span-3 text-right">Receive</div>
-          <div className="col-span-3 text-right">Request</div>
+          <div className="col-span-3 text-right">Buy</div>
+          <div className="col-span-3 text-right">Sell</div>
           <div className="col-span-5 text-right">Price ({getPriceHeaderTicker()})</div>
         </div>
 

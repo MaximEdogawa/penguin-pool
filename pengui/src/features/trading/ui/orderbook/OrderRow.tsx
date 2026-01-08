@@ -147,7 +147,7 @@ export default function OrderRow({
           {order.offering.length + order.receiving.length}
         </div>
 
-        {/* Receive */}
+        {/* Sell */}
         <div className="col-span-3 text-right min-w-0">
           <div className="flex flex-col gap-1">
             {order.receiving.map((item, idx) => (
@@ -162,7 +162,7 @@ export default function OrderRow({
           </div>
         </div>
 
-        {/* Request */}
+        {/* Buy */}
         <div className="col-span-3 text-right min-w-0">
           <div className="flex flex-col gap-1">
             {order.offering.map((item, idx) => (

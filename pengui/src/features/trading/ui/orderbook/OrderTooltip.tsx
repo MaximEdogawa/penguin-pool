@@ -115,9 +115,9 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
           </span>
         </div>
 
-        {/* Offering Assets */}
+        {/* Buy Assets */}
         <div>
-          <span className="text-xs text-gray-500 dark:text-gray-400">Offering:</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Buy:</span>
           <div className="mt-1 space-y-1">
             {order.offering.map((asset, idx) => (
               <div key={idx} className="flex items-center justify-between text-xs">
@@ -137,9 +137,9 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
           </div>
         </div>
 
-        {/* Receiving Assets */}
+        {/* Sell Assets */}
         <div>
-          <span className="text-xs text-gray-500 dark:text-gray-400">Receiving:</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Sell:</span>
           <div className="mt-1 space-y-1">
             {order.receiving.map((asset, idx) => (
               <div key={idx} className="flex items-center justify-between text-xs">
