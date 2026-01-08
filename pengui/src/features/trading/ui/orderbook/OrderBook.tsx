@@ -53,6 +53,63 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
     [getTickerSymbol]
   )
 
+  // Helper function to check if an asset is the native token (XCH/TXCH)
+  const isNativeToken = useCallback(
+    (asset: { id: string; code?: string }): boolean => {
+      const ticker = getTickerSymbol(asset.id, asset.code)
+      const nativeTicker = getNativeTokenTicker()
+      // Check if it's XCH, TXCH, or the native token for current network
+      return (
+        ticker.toUpperCase() === 'XCH' ||
+        ticker.toUpperCase() === 'TXCH' ||
+        ticker.toUpperCase() === nativeTicker.toUpperCase() ||
+        asset.id === '' ||
+        asset.id.toLowerCase() === 'xch' ||
+        asset.id.toLowerCase() === 'txch'
+      )
+    },
+    [getTickerSymbol]
+  )
+
+  // Helper function to check if the same asset appears on both sides
+  const hasSameAssetOnBothSides = useCallback(
+    (order: OrderBookOrder): boolean => {
+      return order.offering.some((offeringAsset) =>
+        order.requesting.some((requestingAsset) => {
+          const offeringTicker = getTickerSymbol(offeringAsset.id, offeringAsset.code)
+          const requestingTicker = getTickerSymbol(requestingAsset.id, requestingAsset.code)
+
+          // Check if tickers match
+          if (offeringTicker.toLowerCase() === requestingTicker.toLowerCase()) {
+            return true
+          }
+
+          // Check if asset IDs match
+          if (offeringAsset.id.toLowerCase() === requestingAsset.id.toLowerCase()) {
+            return true
+          }
+
+          // Check if codes match
+          if (
+            offeringAsset.code &&
+            requestingAsset.code &&
+            offeringAsset.code.toLowerCase() === requestingAsset.code.toLowerCase()
+          ) {
+            return true
+          }
+
+          // Special case: Check if both are native tokens (XCH/TXCH are the same)
+          if (isNativeToken(offeringAsset) && isNativeToken(requestingAsset)) {
+            return true
+          }
+
+          return false
+        })
+      )
+    },
+    [getTickerSymbol, isNativeToken]
+  )
+
   // Resize state
   const [sellSectionHeight, setSellSectionHeight] = useState(50)
   const [buySectionHeight, setBuySectionHeight] = useState(50)
@@ -148,59 +205,126 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
       filterCondition: (order: OrderBookOrder) => boolean,
       sortAscending: boolean
     ): OrderBookOrder[] => {
-      if (
-        !filters?.buyAsset ||
-        filters.buyAsset.length === 0 ||
-        !filters?.sellAsset ||
-        filters.sellAsset.length === 0
-      ) {
-        return []
-      }
-
       return orderData.filter(filterCondition).sort((a, b) => {
         const priceA = calculateOrderPriceForSorting(a)
         const priceB = calculateOrderPriceForSorting(b)
         return sortAscending ? priceA - priceB : priceB - priceA
       })
     },
-    [filters, calculateOrderPriceForSorting]
+    [calculateOrderPriceForSorting]
   )
 
   const filteredBuyOrders = useMemo(() => {
+    const hasBuyFilter = filters?.buyAsset && filters.buyAsset.length > 0
+    const hasSellFilter = filters?.sellAsset && filters.sellAsset.length > 0
+
     return filterAndSortOrders(
       orderBookData,
       (order) => {
-        const isOfferingBuySideAsset = order.offering.some((asset) =>
-          assetMatchesFilter(asset, filters?.buyAsset || [])
-        )
+        // Always exclude orders where the same asset appears on both sides (e.g., XCH on both sides)
+        if (hasSameAssetOnBothSides(order)) {
+          return false
+        }
 
-        const isRequestingBuySideAsset = order.requesting.some((asset) =>
-          assetMatchesFilter(asset, filters?.sellAsset || [])
-        )
+        // If both filters are set: buy side = offering buyAsset AND requesting sellAsset
+        // Ensure ALL assets in offering match buyAsset filter AND ALL assets in requesting match sellAsset filter
+        if (hasBuyFilter && hasSellFilter) {
+          // Check that all offering assets match buyAsset filter
+          const allOfferingMatchBuyAsset = order.offering.every((asset) =>
+            assetMatchesFilter(asset, filters.buyAsset || [])
+          )
+          // Check that all requesting assets match sellAsset filter
+          const allRequestingMatchSellAsset = order.requesting.every((asset) =>
+            assetMatchesFilter(asset, filters.sellAsset || [])
+          )
+          // Also ensure at least one asset exists in each side
+          const hasOfferingBuyAsset = order.offering.some((asset) =>
+            assetMatchesFilter(asset, filters.buyAsset || [])
+          )
+          const hasRequestingSellAsset = order.requesting.some((asset) =>
+            assetMatchesFilter(asset, filters.sellAsset || [])
+          )
+          return (
+            allOfferingMatchBuyAsset &&
+            allRequestingMatchSellAsset &&
+            hasOfferingBuyAsset &&
+            hasRequestingSellAsset
+          )
+        }
 
-        return isOfferingBuySideAsset && isRequestingBuySideAsset
+        // If only buy filter: show all orders where buyAsset is on offering side
+        if (hasBuyFilter && !hasSellFilter) {
+          return order.offering.some((asset) => assetMatchesFilter(asset, filters.buyAsset || []))
+        }
+
+        // If only sell filter: show all orders where sellAsset is on requesting side (opposite of buy)
+        if (!hasBuyFilter && hasSellFilter) {
+          return order.requesting.some((asset) =>
+            assetMatchesFilter(asset, filters.sellAsset || [])
+          )
+        }
+
+        // No filters: show all orders (will be grouped by pairs)
+        return true
       },
       false // Sort descending (high to low)
     )
-  }, [orderBookData, filters, assetMatchesFilter, filterAndSortOrders])
+  }, [orderBookData, filters, assetMatchesFilter, filterAndSortOrders, hasSameAssetOnBothSides])
 
   const filteredSellOrders = useMemo(() => {
+    const hasBuyFilter = filters?.buyAsset && filters.buyAsset.length > 0
+    const hasSellFilter = filters?.sellAsset && filters.sellAsset.length > 0
+
     return filterAndSortOrders(
       orderBookData,
       (order) => {
-        const isOfferingSellSideAsset = order.offering.some((asset) =>
-          assetMatchesFilter(asset, filters?.sellAsset || [])
-        )
+        // Always exclude orders where the same asset appears on both sides (e.g., XCH on both sides)
+        if (hasSameAssetOnBothSides(order)) {
+          return false
+        }
 
-        const isRequestingSellSideAsset = order.requesting.some((asset) =>
-          assetMatchesFilter(asset, filters?.buyAsset || [])
-        )
+        // If both filters are set: sell side = offering sellAsset AND requesting buyAsset
+        // Ensure ALL assets in offering match sellAsset filter AND ALL assets in requesting match buyAsset filter
+        if (hasBuyFilter && hasSellFilter) {
+          // Check that all offering assets match sellAsset filter
+          const allOfferingMatchSellAsset = order.offering.every((asset) =>
+            assetMatchesFilter(asset, filters.sellAsset || [])
+          )
+          // Check that all requesting assets match buyAsset filter
+          const allRequestingMatchBuyAsset = order.requesting.every((asset) =>
+            assetMatchesFilter(asset, filters.buyAsset || [])
+          )
+          // Also ensure at least one asset exists in each side
+          const hasOfferingSellAsset = order.offering.some((asset) =>
+            assetMatchesFilter(asset, filters.sellAsset || [])
+          )
+          const hasRequestingBuyAsset = order.requesting.some((asset) =>
+            assetMatchesFilter(asset, filters.buyAsset || [])
+          )
+          return (
+            allOfferingMatchSellAsset &&
+            allRequestingMatchBuyAsset &&
+            hasOfferingSellAsset &&
+            hasRequestingBuyAsset
+          )
+        }
 
-        return isRequestingSellSideAsset && isOfferingSellSideAsset
+        // If only buy filter: show all orders where buyAsset is on requesting side (opposite of buy)
+        if (hasBuyFilter && !hasSellFilter) {
+          return order.requesting.some((asset) => assetMatchesFilter(asset, filters.buyAsset || []))
+        }
+
+        // If only sell filter: show all orders where sellAsset is on offering side
+        if (!hasBuyFilter && hasSellFilter) {
+          return order.offering.some((asset) => assetMatchesFilter(asset, filters.sellAsset || []))
+        }
+
+        // No filters: show all orders (will be grouped by pairs)
+        return true
       },
       false // Sort descending (high to low)
     )
-  }, [orderBookData, filters, assetMatchesFilter, filterAndSortOrders])
+  }, [orderBookData, filters, assetMatchesFilter, filterAndSortOrders, hasSameAssetOnBothSides])
 
   const calculateAveragePrice = useCallback((): string => {
     if (!filters || (!filters.buyAsset && !filters.sellAsset)) {

@@ -112,7 +112,7 @@ export function useOrderBook(filters?: OrderBookFilters) {
   }
 
   // Helper function to build search parameters based on filters
-  const buildSearchParams = (page: number, buyAsset?: string, sellAsset?: string) => {
+  const buildSearchParams = (page: number, buyAsset?: string | null, sellAsset?: string | null) => {
     const params: {
       page: number
       page_size: number
@@ -126,8 +126,31 @@ export function useOrderBook(filters?: OrderBookFilters) {
     }
 
     // Use provided parameters or fall back to filters
-    let targetBuyAsset = buyAsset || filters?.buyAsset?.[0]
-    let targetSellAsset = sellAsset || filters?.sellAsset?.[0]
+    // If explicitly passed as null, don't use filters (treat as "don't use this parameter")
+    // If undefined, use filter if available
+    let targetBuyAsset: string | undefined
+    if (buyAsset === null) {
+      // Explicitly null: don't use this parameter
+      targetBuyAsset = undefined
+    } else if (buyAsset !== undefined) {
+      // Explicitly provided value
+      targetBuyAsset = buyAsset
+    } else {
+      // Undefined: use filter if available
+      targetBuyAsset = filters?.buyAsset?.[0]
+    }
+
+    let targetSellAsset: string | undefined
+    if (sellAsset === null) {
+      // Explicitly null: don't use this parameter
+      targetSellAsset = undefined
+    } else if (sellAsset !== undefined) {
+      // Explicitly provided value
+      targetSellAsset = sellAsset
+    } else {
+      // Undefined: use filter if available
+      targetSellAsset = filters?.sellAsset?.[0]
+    }
 
     // Normalize tickers for API (XCH -> TXCH on testnet, etc.)
     if (targetBuyAsset) {
@@ -138,16 +161,23 @@ export function useOrderBook(filters?: OrderBookFilters) {
     }
 
     // For buy/sell filtering, we need to determine which asset is being bought/sold
-    // If user wants to buy TXCH, they're looking for offers where TXCH is requested
-    // If user wants to sell TXCH, they're looking for offers where TXCH is offered
+    // If user wants to buy XCH (buyAsset), they're looking for offers where XCH is offered (buy side)
+    // If user wants to sell TDBX (sellAsset), they're looking for offers where TDBX is requested (sell side)
 
-    if (targetBuyAsset) {
-      // User wants to buy these assets - they should be in the requested field
+    // When buyAsset is passed (even as null placeholder), use offered field
+    // When sellAsset is passed (even as null placeholder), use requested field
+    // This allows us to query for an asset in either field by passing it in the appropriate position
+
+    if (targetBuyAsset && !targetSellAsset) {
+      // Only buyAsset: it should be in the offered field (buy side)
+      params.offered = targetBuyAsset
+    } else if (targetSellAsset && !targetBuyAsset) {
+      // Only sellAsset: it should be in the requested field (sell side)
+      params.requested = targetSellAsset
+    } else if (targetBuyAsset && targetSellAsset) {
+      // Both filters set: bidirectional query (handled in queryFn)
+      // For the first query: buyAsset requested, sellAsset offered
       params.requested = targetBuyAsset
-    }
-
-    if (targetSellAsset) {
-      // User wants to sell these assets - they should be in the offered field
       params.offered = targetSellAsset
     }
 
@@ -233,25 +263,68 @@ export function useOrderBook(filters?: OrderBookFilters) {
         (filters?.buyAsset && filters.buyAsset.length > 0) ||
         (filters?.sellAsset && filters.sellAsset.length > 0)
       ) {
-        // Single query for cases with only one filter (buy or sell)
+        // Single filter case: fetch orders in both directions to populate both buy and sell sides
         const buyAsset = filters?.buyAsset?.[0]
         const sellAsset = filters?.sellAsset?.[0]
-        logger.info(`Fetching orders with single filter: buy=${buyAsset}, sell=${sellAsset}`)
-        const params = buildSearchParams(0, buyAsset, sellAsset)
-        logger.info('Query params:', params)
-        const response = await dexieDataService.searchOffers(params)
-        logger.info('Query response:', {
-          success: response.success,
-          count: response.data?.length || 0,
-        })
 
-        if (response.success && Array.isArray(response.data)) {
-          const orders = (response.data as DexieOffer[])
-            .filter((offer: DexieOffer) => offer && offer.offered && offer.requested)
-            .map(convertDexieOfferToOrderBookOrder)
-          allOrders.push(...orders)
-          totalCount = response.total || orders.length
-          logger.info(`Added ${orders.length} orders`)
+        logger.info(`Fetching orders with single filter: buy=${buyAsset}, sell=${sellAsset}`)
+
+        // If only buyAsset is set: fetch orders where buyAsset is offered AND requested
+        // If only sellAsset is set: fetch orders where sellAsset is offered AND requested
+        // This ensures we get both buy and sell sides populated
+
+        if (buyAsset && !sellAsset) {
+          // Query 1: Orders where buyAsset is offered (buy side)
+          const params1 = buildSearchParams(0, buyAsset, undefined)
+          logger.info('Query 1 params (offered):', params1)
+          const response1 = await dexieDataService.searchOffers(params1)
+          if (response1.success && Array.isArray(response1.data)) {
+            const orders1 = (response1.data as DexieOffer[])
+              .filter((offer: DexieOffer) => offer && offer.offered && offer.requested)
+              .map(convertDexieOfferToOrderBookOrder)
+            allOrders.push(...orders1)
+            totalCount += response1.total || orders1.length
+            logger.info(`Query 1: Added ${orders1.length} orders`)
+          }
+
+          // Query 2: Orders where buyAsset is requested (sell side - opposite)
+          const params2 = buildSearchParams(0, null, buyAsset)
+          logger.info('Query 2 params (requested):', params2)
+          const response2 = await dexieDataService.searchOffers(params2)
+          if (response2.success && Array.isArray(response2.data)) {
+            const orders2 = (response2.data as DexieOffer[])
+              .filter((offer: DexieOffer) => offer && offer.offered && offer.requested)
+              .map(convertDexieOfferToOrderBookOrder)
+            allOrders.push(...orders2)
+            totalCount += response2.total || orders2.length
+            logger.info(`Query 2: Added ${orders2.length} orders`)
+          }
+        } else if (sellAsset && !buyAsset) {
+          // Query 1: Orders where sellAsset is requested (sell side)
+          const params1 = buildSearchParams(0, undefined, sellAsset)
+          logger.info('Query 1 params (requested):', params1)
+          const response1 = await dexieDataService.searchOffers(params1)
+          if (response1.success && Array.isArray(response1.data)) {
+            const orders1 = (response1.data as DexieOffer[])
+              .filter((offer: DexieOffer) => offer && offer.offered && offer.requested)
+              .map(convertDexieOfferToOrderBookOrder)
+            allOrders.push(...orders1)
+            totalCount += response1.total || orders1.length
+            logger.info(`Query 1: Added ${orders1.length} orders`)
+          }
+
+          // Query 2: Orders where sellAsset is offered (buy side - opposite)
+          const params2 = buildSearchParams(0, sellAsset, null)
+          logger.info('Query 2 params (offered):', params2)
+          const response2 = await dexieDataService.searchOffers(params2)
+          if (response2.success && Array.isArray(response2.data)) {
+            const orders2 = (response2.data as DexieOffer[])
+              .filter((offer: DexieOffer) => offer && offer.offered && offer.requested)
+              .map(convertDexieOfferToOrderBookOrder)
+            allOrders.push(...orders2)
+            totalCount += response2.total || orders2.length
+            logger.info(`Query 2: Added ${orders2.length} orders`)
+          }
         }
       } else {
         // No filters - fetch all orders
