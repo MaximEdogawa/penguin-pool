@@ -1,12 +1,13 @@
 'use client'
 
-import { useCatTokens } from '@/shared/hooks/useTickers'
-import { useOrderBookFilters } from '../model/useOrderBookFilters'
 import { useThemeClasses } from '@/shared/hooks'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
-import type { SuggestionItem } from '../lib/orderBookTypes'
+import { useCatTokens } from '@/shared/hooks/useTickers'
 import { getNativeTokenTicker } from '@/shared/lib/config/environment'
+import { X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { SuggestionItem } from '../../lib/orderBookTypes'
+import { useOrderBookFilters } from '../../model/useOrderBookFilters'
+import AssetSwapToggle from './AssetSwapToggle'
 
 interface OrderBookFiltersProps {
   onFiltersChange?: () => void
@@ -136,50 +137,57 @@ export default function OrderBookFilters({ onFiltersChange }: OrderBookFiltersPr
 
   return (
     <div className="space-y-3">
-      {/* Search Input */}
-      <div className="relative">
-        <input
-          ref={searchInputRef}
-          type="text"
-          value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
-          onFocus={() => {
-            if (filteredSuggestions.length > 0) {
-              setShowSuggestions(true)
-            }
-          }}
-          placeholder={`Search assets (e.g., ${getNativeTokenTicker()}, TBYC)...`}
-          className={`w-full px-3 py-2 text-sm rounded-lg border-2 ${t.border} ${t.bg} ${t.text} focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm`}
-        />
+      {/* Search Input with Swap Toggle */}
+      <div className="relative flex items-center gap-2">
+        {/* Asset Swap Toggle - on the left side */}
+        <AssetSwapToggle />
 
-        {/* Suggestions Dropdown */}
-        {showSuggestions && filteredSuggestions.length > 0 && (
-          <div
-            ref={suggestionsRef}
-            className={`absolute z-[100] w-full mt-1 backdrop-blur-[40px] ${t.card} border-2 ${t.border} rounded-lg shadow-2xl max-h-60 overflow-y-auto`}
-            style={{
-              boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+        {/* Search Input */}
+        <div className="relative flex-1">
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            onFocus={() => {
+              if (filteredSuggestions.length > 0) {
+                setShowSuggestions(true)
+              }
             }}
-          >
-            {filteredSuggestions.map((suggestion, index) => (
-              <button
-                key={`${suggestion.column}-${suggestion.value}-${index}`}
-                type="button"
-                onClick={() => handleSuggestionClick(suggestion)}
-                className={`w-full text-left px-3 py-2 text-sm ${t.cardHover} ${t.text} transition-colors border-b ${t.border} last:border-b-0`}
-              >
-                <div className="font-medium">{suggestion.label}</div>
-                <div className={`text-xs ${t.textSecondary}`}>
-                  {suggestion.column === 'buyAsset' ? 'Buy Asset' : 'Sell Asset'}
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
+            placeholder={`Search assets (e.g., ${getNativeTokenTicker()}, TBYC)...`}
+            className={`w-full px-3 py-2 text-sm rounded-lg border-2 ${t.border} ${t.bg} ${t.text} focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm`}
+          />
+
+          {/* Suggestions Dropdown */}
+          {showSuggestions && filteredSuggestions.length > 0 && (
+            <div
+              ref={suggestionsRef}
+              className={`absolute z-[100] w-full mt-1 backdrop-blur-[40px] ${t.card} border-2 ${t.border} rounded-lg shadow-2xl max-h-60 overflow-y-auto`}
+              style={{
+                boxShadow:
+                  '0 20px 40px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              {filteredSuggestions.map((suggestion, index) => (
+                <button
+                  key={`${suggestion.column}-${suggestion.value}-${index}`}
+                  type="button"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className={`w-full text-left px-3 py-2 text-sm ${t.cardHover} ${t.text} transition-colors border-b ${t.border} last:border-b-0`}
+                >
+                  <div className="font-medium">{suggestion.label}</div>
+                  <div className={`text-xs ${t.textSecondary}`}>
+                    {suggestion.column === 'buyAsset' ? 'Buy Asset' : 'Sell Asset'}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Filter Chips */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {/* Buy Asset Filters */}
         {filters.buyAsset?.map((asset) => (
           <div

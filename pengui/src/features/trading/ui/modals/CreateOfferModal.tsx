@@ -9,8 +9,8 @@ import Button from '@/shared/ui/Button'
 import Modal from '@/shared/ui/Modal'
 import { Loader2, Plus, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useOfferStorage } from '../model/useOfferStorage'
-import AssetSelector, { type ExtendedOfferAsset } from './AssetSelector'
+import { useOfferStorage } from '@/features/offers/model/useOfferStorage'
+import AssetSelector, { type ExtendedAsset as ExtendedOfferAsset } from '@/shared/ui/AssetSelector'
 
 interface CreateOfferModalProps {
   onClose: () => void

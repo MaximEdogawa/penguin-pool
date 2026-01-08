@@ -1,6 +1,6 @@
 'use client'
 
-import { useDexieDataService } from '../api/useDexieDataService'
+import { useDexieDataService } from '@/features/offers/api/useDexieDataService'
 import type { OrderBookOrder } from '../lib/orderBookTypes'
 import { useCatTokens } from '@/shared/hooks/useTickers'
 import { logger } from '@/shared/lib/logger'

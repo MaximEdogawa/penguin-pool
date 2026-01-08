@@ -1,10 +1,10 @@
 import Button from '@/shared/ui/Button'
 import Modal from '@/shared/ui/Modal'
-import { useOfferInspection } from '../model/useOfferInspection'
+import { useOfferInspection } from '@/features/offers/model/useOfferInspection'
 import { useThemeClasses, useCatTokens } from '@/shared/hooks'
 import { useTakeOffer } from '@/features/wallet'
-import type { DexiePostOfferResponse } from '../lib/dexieTypes'
-import { calculateOfferState } from '../lib/dexieUtils'
+import type { DexiePostOfferResponse } from '@/features/offers/lib/dexieTypes'
+import { calculateOfferState } from '@/features/offers/lib/dexieUtils'
 import {
   formatAssetAmount,
   formatXchAmount,

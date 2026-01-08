@@ -4,9 +4,9 @@ import { getThemeClasses } from '@/shared/lib/theme'
 import { TrendingUp, BookOpen, BarChart3, Activity } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
-import TradingLayout from '@/features/offers/ui/TradingLayout'
-import FilterPanel from '@/features/offers/ui/FilterPanel'
-import { useOrderBookFilters } from '@/features/offers/model/useOrderBookFilters'
+import TradingLayout from '@/features/trading/ui/layout/TradingLayout'
+import FilterPanel from '@/features/trading/ui/layout/FilterPanel'
+import { useOrderBookFilters } from '@/features/trading/model/useOrderBookFilters'
 
 export default function TradingPage() {
   const [mounted, setMounted] = useState(false)

@@ -1,14 +1,14 @@
 'use client'
 
 import TradingContent from './TradingContent'
-import OrderBookFilters from './OrderBookFilters'
+import OrderBookFilters from '../orderbook/OrderBookFilters'
 import MakerTakerTabs from './MakerTakerTabs'
-import CreateOfferModal from './CreateOfferModal'
-import { useOrderBookFilters } from '../model/useOrderBookFilters'
-import { useOrderBookOfferSubmission } from '../model/useOrderBookOfferSubmission'
+import CreateOfferModal from '../modals/CreateOfferModal'
+import { useOrderBookFilters } from '../../model/useOrderBookFilters'
+import { useOrderBookOfferSubmission } from '../../model/useOrderBookOfferSubmission'
 import { useThemeClasses } from '@/shared/hooks'
 import { useCallback, useState } from 'react'
-import type { OrderBookOrder } from '../lib/orderBookTypes'
+import type { OrderBookOrder } from '../../lib/orderBookTypes'
 
 interface TradingLayoutProps {
   activeTradingView?: 'orderbook' | 'chart' | 'depth' | 'trades'

@@ -1,7 +1,7 @@
 'use client'
 
-import { useDexieDataService } from '../api/useDexieDataService'
-import type { DexieOffer } from '../lib/dexieTypes'
+import { useDexieDataService } from '@/features/offers/api/useDexieDataService'
+import type { DexieOffer } from '@/features/offers/lib/dexieTypes'
 import type { OrderBookFilters, OrderBookOrder, OrderBookQueryResult } from '../lib/orderBookTypes'
 import { logger } from '@/shared/lib/logger'
 import { useQuery } from '@tanstack/react-query'
@@ -229,9 +229,33 @@ export function useOrderBook(filters?: OrderBookFilters) {
           totalCount += response2.total || orders2.length
           logger.info(`Query 2: Added ${orders2.length} orders`)
         }
+      } else if (
+        (filters?.buyAsset && filters.buyAsset.length > 0) ||
+        (filters?.sellAsset && filters.sellAsset.length > 0)
+      ) {
+        // Single query for cases with only one filter (buy or sell)
+        const buyAsset = filters?.buyAsset?.[0]
+        const sellAsset = filters?.sellAsset?.[0]
+        logger.info(`Fetching orders with single filter: buy=${buyAsset}, sell=${sellAsset}`)
+        const params = buildSearchParams(0, buyAsset, sellAsset)
+        logger.info('Query params:', params)
+        const response = await dexieDataService.searchOffers(params)
+        logger.info('Query response:', {
+          success: response.success,
+          count: response.data?.length || 0,
+        })
+
+        if (response.success && Array.isArray(response.data)) {
+          const orders = (response.data as DexieOffer[])
+            .filter((offer: DexieOffer) => offer && offer.offered && offer.requested)
+            .map(convertDexieOfferToOrderBookOrder)
+          allOrders.push(...orders)
+          totalCount = response.total || orders.length
+          logger.info(`Added ${orders.length} orders`)
+        }
       } else {
-        // Single query for cases without both buy/sell filters
-        logger.info('Fetching all orders (no specific filters)')
+        // No filters - fetch all orders
+        logger.info('Fetching all orders (no filters)')
         const params = buildSearchParams(0)
         logger.info('Query params:', params)
         const response = await dexieDataService.searchOffers(params)
@@ -276,6 +300,8 @@ export function useOrderBook(filters?: OrderBookFilters) {
     gcTime: 30 * 1000, // Keep in cache for only 30 seconds
     refetchInterval: 30 * 1000, // Refetch every 30 seconds for real-time updates
     refetchIntervalInBackground: true, // Continue refetching even when tab is not active
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   })
 
   // Computed properties for easy access

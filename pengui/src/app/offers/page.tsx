@@ -1,13 +1,8 @@
 'use client'
 
 import type { OfferDetails } from '@/entities/offer'
-import {
-  CreateOfferModal,
-  OfferDetailsModal,
-  OfferHistory,
-  TakeOfferModal,
-  useMyOffers,
-} from '@/features/offers'
+import { OfferDetailsModal, OfferHistory, useMyOffers } from '@/features/offers'
+import { CreateOfferModal, TakeOfferModal } from '@/features/trading'
 import { useThemeClasses } from '@/shared/hooks'
 import Button from '@/shared/ui/Button'
 import Modal from '@/shared/ui/Modal'

@@ -1,8 +1,8 @@
 'use client'
 
-import OrderBook from './OrderBook'
+import OrderBook from '../orderbook/OrderBook'
 import { useThemeClasses } from '@/shared/hooks'
-import type { OrderBookOrder } from '../lib/orderBookTypes'
+import type { OrderBookOrder } from '../../lib/orderBookTypes'
 
 interface TradingContentProps {
   activeView: 'orderbook' | 'chart' | 'depth' | 'trades'

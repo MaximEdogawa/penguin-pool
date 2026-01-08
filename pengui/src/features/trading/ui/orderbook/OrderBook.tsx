@@ -1,8 +1,7 @@
 'use client'
 
-import { useCatTokens } from '@/shared/hooks/useTickers'
-import { useOrderBook } from '../model/useOrderBook'
-import type { OrderBookOrder } from '../lib/orderBookTypes'
+import { useOrderBook } from '../../model/useOrderBook'
+import type { OrderBookOrder } from '../../lib/orderBookTypes'
 import OrderRow from './OrderRow'
 import OrderTooltip from './OrderTooltip'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -20,7 +19,6 @@ interface OrderBookProps {
 
 export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
   const { t } = useThemeClasses()
-  const { getCatTokenInfo } = useCatTokens()
   // Pass filters directly - useOrderBook will react to changes via query key
   const { orderBookData, orderBookLoading, orderBookHasMore, orderBookError } =
     useOrderBook(filters)
@@ -38,16 +36,6 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
   const sellScrollRef = useRef<HTMLDivElement>(null)
   const buyScrollRef = useRef<HTMLDivElement>(null)
 
-  const getTickerSymbol = useCallback(
-    (assetId: string, code?: string): string => {
-      if (code) return code
-      if (!assetId) return getNativeTokenTicker()
-      const tickerInfo = getCatTokenInfo(assetId)
-      return tickerInfo?.ticker || assetId.slice(0, 8)
-    },
-    [getCatTokenInfo]
-  )
-
   const getPriceHeaderTicker = useCallback((): string => {
     // Price is expressed in terms of the sell asset (what you're giving up)
     // If we have sell asset filters, use the first one
@@ -64,204 +52,39 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
     return getNativeTokenTicker()
   }, [filters])
 
-  // Filter orders into buy and sell
+  // Separate orders into buy and sell based on order type
+  // The API already filters by assets, so we just need to separate by order type
   const filteredSellOrders = useMemo(() => {
-    const orders = orderBookData
-    // Sell orders: offers where people are offering what you want to buy and requesting what you want to sell
-    return orders
+    // Sell orders: orders where native token (XCH/TXCH) is being offered
+    const nativeTicker = getNativeTokenTicker()
+    return orderBookData
       .filter((order) => {
-        // If no filters, show all orders
-        if (
-          !filters ||
-          ((!filters.buyAsset || filters.buyAsset.length === 0) &&
-            (!filters.sellAsset || filters.sellAsset.length === 0))
-        ) {
-          return true
-        }
-
-        // Check if this order involves the filtered assets
-        const hasBuyAsset =
-          !filters.buyAsset ||
-          filters.buyAsset.length === 0 ||
-          filters.buyAsset.some(
-            (filterAsset) =>
-              order.offering.some(
-                (orderAsset) =>
-                  getTickerSymbol(orderAsset.id, orderAsset.code).toLowerCase() ===
-                    filterAsset.toLowerCase() ||
-                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-              ) ||
-              order.receiving.some(
-                (orderAsset) =>
-                  getTickerSymbol(orderAsset.id, orderAsset.code).toLowerCase() ===
-                    filterAsset.toLowerCase() ||
-                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-              )
-          )
-
-        const hasSellAsset =
-          !filters.sellAsset ||
-          filters.sellAsset.length === 0 ||
-          filters.sellAsset.some(
-            (filterAsset) =>
-              order.offering.some(
-                (orderAsset) =>
-                  getTickerSymbol(orderAsset.id, orderAsset.code).toLowerCase() ===
-                    filterAsset.toLowerCase() ||
-                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-              ) ||
-              order.receiving.some(
-                (orderAsset) =>
-                  getTickerSymbol(orderAsset.id, orderAsset.code).toLowerCase() ===
-                    filterAsset.toLowerCase() ||
-                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-              )
-          )
-
-        return hasBuyAsset && hasSellAsset
-      })
-      .filter((order) => {
-        // This is a sell order: offering what you want to buy, requesting what you want to sell
-        const offeringBuyAsset =
-          !filters ||
-          !filters.buyAsset ||
-          filters.buyAsset.length === 0 ||
-          filters.buyAsset.some((filterAsset) =>
-            order.offering.some(
-              (orderAsset) =>
-                getTickerSymbol(orderAsset.id, orderAsset.code).toLowerCase() ===
-                  filterAsset.toLowerCase() ||
-                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-            )
-          )
-
-        const requestingSellAsset =
-          !filters ||
-          !filters.sellAsset ||
-          filters.sellAsset.length === 0 ||
-          filters.sellAsset.some((filterAsset) =>
-            order.receiving.some(
-              (orderAsset) =>
-                getTickerSymbol(orderAsset.id, orderAsset.code).toLowerCase() ===
-                  filterAsset.toLowerCase() ||
-                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-            )
-          )
-
-        return offeringBuyAsset && requestingSellAsset
+        // Check if this is a sell order (offering native token)
+        return order.offering.some(
+          (asset) => asset.code === nativeTicker || asset.code === 'XCH' || asset.code === 'TXCH'
+        )
       })
       .sort((a, b) => {
-        // Sort sell orders by price (low to high - best asks first)
-        const priceA = a.receiving[0]?.amount / a.offering[0]?.amount || 0
-        const priceB = b.receiving[0]?.amount / b.offering[0]?.amount || 0
-        return priceA - priceB
+        // Sort sell orders by price descending (high to low)
+        return b.pricePerUnit - a.pricePerUnit
       })
-  }, [orderBookData, filters, getTickerSymbol])
+  }, [orderBookData])
 
   const filteredBuyOrders = useMemo(() => {
-    const orders = orderBookData
-    // Buy orders: offers where people are offering what you want to sell and requesting what you want to buy
-    return orders
+    // Buy orders: orders where native token (XCH/TXCH) is being requested
+    const nativeTicker = getNativeTokenTicker()
+    return orderBookData
       .filter((order) => {
-        // If no filters, show all orders
-        if (
-          !filters ||
-          ((!filters.buyAsset || filters.buyAsset.length === 0) &&
-            (!filters.sellAsset || filters.sellAsset.length === 0))
-        ) {
-          return true
-        }
-
-        // Check if this order involves the filtered assets
-        const hasBuyAsset =
-          !filters.buyAsset ||
-          filters.buyAsset.length === 0 ||
-          filters.buyAsset.some(
-            (filterAsset) =>
-              order.offering.some(
-                (orderAsset) =>
-                  getTickerSymbol(orderAsset.id, orderAsset.code).toLowerCase() ===
-                    filterAsset.toLowerCase() ||
-                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-              ) ||
-              order.receiving.some(
-                (orderAsset) =>
-                  getTickerSymbol(orderAsset.id, orderAsset.code).toLowerCase() ===
-                    filterAsset.toLowerCase() ||
-                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-              )
-          )
-
-        const hasSellAsset =
-          !filters.sellAsset ||
-          filters.sellAsset.length === 0 ||
-          filters.sellAsset.some(
-            (filterAsset) =>
-              order.offering.some(
-                (orderAsset) =>
-                  getTickerSymbol(orderAsset.id, orderAsset.code).toLowerCase() ===
-                    filterAsset.toLowerCase() ||
-                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-              ) ||
-              order.receiving.some(
-                (orderAsset) =>
-                  getTickerSymbol(orderAsset.id, orderAsset.code).toLowerCase() ===
-                    filterAsset.toLowerCase() ||
-                  orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                  (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-              )
-          )
-
-        return hasBuyAsset && hasSellAsset
-      })
-      .filter((order) => {
-        // This is a buy order: offering what you want to sell, requesting what you want to buy
-        const offeringSellAsset =
-          !filters ||
-          !filters.sellAsset ||
-          filters.sellAsset.length === 0 ||
-          filters.sellAsset.some((filterAsset) =>
-            order.offering.some(
-              (orderAsset) =>
-                getTickerSymbol(orderAsset.id, orderAsset.code).toLowerCase() ===
-                  filterAsset.toLowerCase() ||
-                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-            )
-          )
-
-        const requestingBuyAsset =
-          !filters ||
-          !filters.buyAsset ||
-          filters.buyAsset.length === 0 ||
-          filters.buyAsset.some((filterAsset) =>
-            order.receiving.some(
-              (orderAsset) =>
-                getTickerSymbol(orderAsset.id, orderAsset.code).toLowerCase() ===
-                  filterAsset.toLowerCase() ||
-                orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
-                (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
-            )
-          )
-
-        return offeringSellAsset && requestingBuyAsset
+        // Check if this is a buy order (requesting native token)
+        return order.receiving.some(
+          (asset) => asset.code === nativeTicker || asset.code === 'XCH' || asset.code === 'TXCH'
+        )
       })
       .sort((a, b) => {
-        // Sort buy orders by price (high to low - best bids first)
-        const priceA = a.offering[0]?.amount / a.receiving[0]?.amount || 0
-        const priceB = b.offering[0]?.amount / b.receiving[0]?.amount || 0
-        return priceB - priceA
+        // Sort buy orders by price ascending (low to high)
+        return a.pricePerUnit - b.pricePerUnit
       })
-  }, [orderBookData, filters, getTickerSymbol])
+  }, [orderBookData])
 
   const calculateAveragePrice = useCallback((): string => {
     if (

@@ -1,8 +1,9 @@
 'use client'
 
+import { getNativeTokenTicker } from '@/shared/lib/config/environment'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { OrderBookFilters, SuggestionItem } from '../lib/orderBookTypes'
-import { getNativeTokenTicker } from '@/shared/lib/config/environment'
 
 const STORAGE_KEY = 'orderBookFilterState'
 
@@ -22,6 +23,7 @@ const defaultFilters: OrderBookFilters = {
 }
 
 export function useOrderBookFilters() {
+  const queryClient = useQueryClient()
   const [state, setState] = useState<FilterState>(() => {
     // Load from localStorage on init
     if (typeof window !== 'undefined') {
@@ -115,6 +117,24 @@ export function useOrderBookFilters() {
     }
   }, [state])
 
+  // Invalidate and refetch queries when filters change
+  // This ensures new API requests are made when filters change
+  useEffect(() => {
+    // Use a small delay to ensure state has fully updated
+    const timeoutId = setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ['orderBook'] })
+      queryClient.refetchQueries({ queryKey: ['orderBook'] })
+    }, 50)
+
+    return () => clearTimeout(timeoutId)
+  }, [
+    // Depend on the actual filter values, not the state object
+    JSON.stringify(state.filters.buyAsset || []),
+    JSON.stringify(state.filters.sellAsset || []),
+    JSON.stringify(state.filters.status || []),
+    queryClient,
+  ])
+
   const hasActiveFilters = useMemo(() => {
     return (
       (state.filters.buyAsset && state.filters.buyAsset.length > 0) ||
@@ -126,10 +146,11 @@ export function useOrderBookFilters() {
   // Return filters as a new object reference when filters change to ensure reactivity
   // This ensures useOrderBook hook detects filter changes via query key
   const filters = useMemo(() => {
+    // Create new arrays to ensure reference changes
     return {
-      buyAsset: state.filters.buyAsset,
-      sellAsset: state.filters.sellAsset,
-      status: state.filters.status,
+      buyAsset: state.filters.buyAsset ? [...state.filters.buyAsset] : [],
+      sellAsset: state.filters.sellAsset ? [...state.filters.sellAsset] : [],
+      status: state.filters.status ? [...state.filters.status] : [],
     }
   }, [
     // Use JSON.stringify for deep comparison since arrays are compared by reference
@@ -199,7 +220,7 @@ export function useOrderBookFilters() {
       const tempBuyAssets = [...(prev.filters.buyAsset || [])]
       const tempSellAssets = [...(prev.filters.sellAsset || [])]
 
-      return {
+      const newState = {
         ...prev,
         filters: {
           ...prev.filters,
@@ -208,8 +229,17 @@ export function useOrderBookFilters() {
         },
         assetsSwapped: !prev.assetsSwapped,
       }
+
+      // Invalidate and refetch order book queries after state update
+      // Use setTimeout to ensure state has updated before invalidating
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['orderBook'] })
+        queryClient.refetchQueries({ queryKey: ['orderBook'] })
+      }, 10)
+
+      return newState
     })
-  }, [])
+  }, [queryClient])
 
   const toggleFilterPane = useCallback(() => {
     setState((prev) => ({

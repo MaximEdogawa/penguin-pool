@@ -1,6 +1,6 @@
 'use client'
 
-import { useOrderBookFilters } from '../model/useOrderBookFilters'
+import { useOrderBookFilters } from '../../model/useOrderBookFilters'
 import { useThemeClasses } from '@/shared/hooks'
 import { X } from 'lucide-react'
 

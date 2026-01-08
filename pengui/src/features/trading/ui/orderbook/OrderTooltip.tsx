@@ -1,7 +1,7 @@
 'use client'
 
 import { useCatTokens } from '@/shared/hooks/useTickers'
-import type { OrderBookOrder } from '../lib/orderBookTypes'
+import type { OrderBookOrder } from '../../lib/orderBookTypes'
 import { useMemo } from 'react'
 import { getNativeTokenTicker } from '@/shared/lib/config/environment'
 
