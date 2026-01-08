@@ -3,5 +3,6 @@
  */
 
 export { useOrderBook } from './useOrderBook'
-export { useOrderBookFilters } from './useOrderBookFilters'
+export { useOrderBookFilters, OrderBookFiltersProvider } from './OrderBookFiltersProvider'
+export { useOrderBookFilters as useOrderBookFiltersImpl } from './useOrderBookFilters'
 export { useOrderBookOfferSubmission } from './useOrderBookOfferSubmission'

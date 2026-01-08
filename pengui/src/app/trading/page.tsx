@@ -1,12 +1,15 @@
 'use client'
 
 import { getThemeClasses } from '@/shared/lib/theme'
-import { TrendingUp, BookOpen, BarChart3, Activity } from 'lucide-react'
+import { TrendingUp, BookOpen, BarChart3, Activity, type LucideIcon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 import TradingLayout from '@/features/trading/ui/layout/TradingLayout'
 import FilterPanel from '@/features/trading/ui/layout/FilterPanel'
-import { useOrderBookFilters } from '@/features/trading/model/useOrderBookFilters'
+import {
+  OrderBookFiltersProvider,
+  useOrderBookFilters,
+} from '@/features/trading/model/OrderBookFiltersProvider'
 
 export default function TradingPage() {
   const [mounted, setMounted] = useState(false)
@@ -14,7 +17,6 @@ export default function TradingPage() {
     'orderbook'
   )
   const { theme: currentTheme, systemTheme } = useTheme()
-  const { refreshOrderBook } = useOrderBookFilters()
 
   const isDark = currentTheme === 'dark' || (currentTheme === 'system' && systemTheme === 'dark')
   const t = getThemeClasses(isDark)
@@ -33,6 +35,34 @@ export default function TradingPage() {
     { id: 'depth' as const, icon: Activity, label: 'Depth' },
     { id: 'trades' as const, icon: TrendingUp, label: 'Trades' },
   ]
+
+  return (
+    <OrderBookFiltersProvider>
+      <TradingPageContent
+        activeView={activeView}
+        setActiveView={setActiveView}
+        views={views}
+        isDark={isDark}
+        t={t}
+      />
+    </OrderBookFiltersProvider>
+  )
+}
+
+function TradingPageContent({
+  activeView,
+  setActiveView,
+  views,
+  isDark,
+  t,
+}: {
+  activeView: 'orderbook' | 'chart' | 'depth' | 'trades'
+  setActiveView: (view: 'orderbook' | 'chart' | 'depth' | 'trades') => void
+  views: Array<{ id: 'orderbook' | 'chart' | 'depth' | 'trades'; icon: LucideIcon; label: string }>
+  isDark: boolean
+  t: ReturnType<typeof getThemeClasses>
+}) {
+  const { refreshOrderBook } = useOrderBookFilters()
 
   return (
     <div className="w-full h-full relative z-10 flex flex-col">

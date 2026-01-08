@@ -6,8 +6,9 @@ import { getNativeTokenTicker } from '@/shared/lib/config/environment'
 import { X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SuggestionItem } from '../../lib/orderBookTypes'
-import { useOrderBookFilters } from '../../model/useOrderBookFilters'
+import { useOrderBookFilters } from '../../model/OrderBookFiltersProvider'
 import AssetSwapToggle from './AssetSwapToggle'
+import FilterButton from './FilterButton'
 
 interface OrderBookFiltersProps {
   onFiltersChange?: () => void
@@ -137,9 +138,12 @@ export default function OrderBookFilters({ onFiltersChange }: OrderBookFiltersPr
 
   return (
     <div className="space-y-3">
-      {/* Search Input with Swap Toggle */}
+      {/* Search Input with Filter and Swap Toggle */}
       <div className="relative flex items-center gap-2">
-        {/* Asset Swap Toggle - on the left side */}
+        {/* Filter Button - on the left side */}
+        <FilterButton />
+
+        {/* Asset Swap Toggle */}
         <AssetSwapToggle />
 
         {/* Search Input */}

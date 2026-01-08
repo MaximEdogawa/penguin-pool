@@ -1,8 +1,8 @@
 'use client'
 
-import { useOrderBookFilters } from '../../model/useOrderBookFilters'
 import { useThemeClasses } from '@/shared/hooks'
 import { X } from 'lucide-react'
+import { useOrderBookFilters } from '../../model/OrderBookFiltersProvider'
 
 interface FilterPanelProps {
   onFiltersChange?: () => void
@@ -21,7 +21,7 @@ export default function FilterPanel({ onFiltersChange }: FilterPanelProps) {
     }, 0)
   }
 
-  if (!showFilterPane || !hasActiveFilters) {
+  if (!showFilterPane) {
     return null
   }
 
@@ -43,35 +43,43 @@ export default function FilterPanel({ onFiltersChange }: FilterPanelProps) {
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-2">
-        {/* Buy Asset Filters */}
-        {filters.buyAsset?.map((asset) => (
-          <div
-            key={`buy-${asset}`}
-            className={`inline-flex items-center gap-1 px-2 py-1 rounded-md ${t.card} border ${t.border} text-xs`}
-          >
-            <span className={t.text}>Buy: {asset}</span>
-          </div>
-        ))}
+      {hasActiveFilters ? (
+        <>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {/* Buy Asset Filters */}
+            {filters.buyAsset?.map((asset) => (
+              <div
+                key={`buy-${asset}`}
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md ${t.card} border ${t.border} text-xs`}
+              >
+                <span className={t.text}>Buy: {asset}</span>
+              </div>
+            ))}
 
-        {/* Sell Asset Filters */}
-        {filters.sellAsset?.map((asset) => (
-          <div
-            key={`sell-${asset}`}
-            className={`inline-flex items-center gap-1 px-2 py-1 rounded-md ${t.card} border ${t.border} text-xs`}
-          >
-            <span className={t.text}>Sell: {asset}</span>
+            {/* Sell Asset Filters */}
+            {filters.sellAsset?.map((asset) => (
+              <div
+                key={`sell-${asset}`}
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md ${t.card} border ${t.border} text-xs`}
+              >
+                <span className={t.text}>Sell: {asset}</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <button
-        type="button"
-        onClick={handleClearAll}
-        className={`text-xs ${t.textSecondary} hover:${t.text} transition-colors underline`}
-      >
-        Clear all filters
-      </button>
+          <button
+            type="button"
+            onClick={handleClearAll}
+            className={`text-xs ${t.textSecondary} hover:${t.text} transition-colors underline`}
+          >
+            Clear all filters
+          </button>
+        </>
+      ) : (
+        <div className={`text-sm ${t.textSecondary} py-2`}>
+          No active filters. Use the search bar above to add filters.
+        </div>
+      )}
     </div>
   )
 }

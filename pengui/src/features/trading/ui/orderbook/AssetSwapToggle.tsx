@@ -1,7 +1,7 @@
 'use client'
 
 import { ArrowUpDown } from 'lucide-react'
-import { useOrderBookFilters } from '../../model/useOrderBookFilters'
+import { useOrderBookFilters } from '../../model/OrderBookFiltersProvider'
 import { useThemeClasses } from '@/shared/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'

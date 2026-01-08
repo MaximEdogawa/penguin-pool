@@ -5,7 +5,7 @@
 
 // Model exports
 export { useOrderBook } from './model/useOrderBook'
-export { useOrderBookFilters } from './model/useOrderBookFilters'
+export { useOrderBookFilters, OrderBookFiltersProvider } from './model/OrderBookFiltersProvider'
 export { useOrderBookOfferSubmission } from './model/useOrderBookOfferSubmission'
 
 // UI exports
