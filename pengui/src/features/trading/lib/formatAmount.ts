@@ -4,6 +4,13 @@
  */
 
 /**
+ * Add thousand separators (commas) to integer part
+ */
+function addThousandSeparators(intStr: string): string {
+  return intStr.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+/**
  * Format amount for display - preserves full precision, only truncates if decimals are excessive (>12)
  * CSS truncate class handles responsive visual truncation based on available space
  */
@@ -21,18 +28,20 @@ export function formatAmountForDisplay(amount: number): string {
     const truncated = dec.slice(0, 12)
     // Remove trailing zeros from truncated part
     const trimmedTruncated = truncated.replace(/0+$/, '')
-    return trimmedTruncated ? `${int}.${trimmedTruncated}…` : `${int}…`
+    const formattedInt = addThousandSeparators(int)
+    return trimmedTruncated ? `${formattedInt}.${trimmedTruncated}…` : `${formattedInt}…`
   }
 
   // Show full value without truncation - preserve original precision
   // Remove trailing zeros for cleaner display, but keep all significant digits
+  const formattedInt = addThousandSeparators(int)
   if (!dec) {
-    return int
+    return formattedInt
   }
 
   // Remove trailing zeros but keep all significant decimal places
   const trimmedDecimal = dec.replace(/0+$/, '')
-  return trimmedDecimal ? `${int}.${trimmedDecimal}` : int
+  return trimmedDecimal ? `${formattedInt}.${trimmedDecimal}` : formattedInt
 }
 
 /**
@@ -46,21 +55,22 @@ export function formatPriceForDisplay(price: number): string {
 
   const str = price.toString()
   const [int, dec] = str.split('.')
+  const formattedInt = addThousandSeparators(int)
 
   if (price < 1) {
     // For prices < 1: cut to 7 decimals (no rounding, no truncation indicator)
-    if (!dec) return int
+    if (!dec) return formattedInt
     const cutDecimals = dec.slice(0, 7)
     // Remove trailing zeros for cleaner display
     const trimmedDecimals = cutDecimals.replace(/0+$/, '')
-    return trimmedDecimals ? `${int}.${trimmedDecimals}` : int
+    return trimmedDecimals ? `${formattedInt}.${trimmedDecimals}` : formattedInt
   } else {
     // For prices >= 1: cut to 2 decimals (no rounding, no truncation indicator)
-    if (!dec) return int
+    if (!dec) return formattedInt
     const cutDecimals = dec.slice(0, 2)
     // Remove trailing zeros for cleaner display
     const trimmedDecimals = cutDecimals.replace(/0+$/, '')
-    return trimmedDecimals ? `${int}.${trimmedDecimals}` : int
+    return trimmedDecimals ? `${formattedInt}.${trimmedDecimals}` : formattedInt
   }
 }
 
@@ -73,12 +83,13 @@ export function formatAmountForTooltip(amount: number): string {
   // Show full precision up to 18 decimal places (typical for blockchain amounts)
   const amountStr = amount.toString()
   const [integerPart, decimalPart] = amountStr.split('.')
+  const formattedInt = addThousandSeparators(integerPart)
 
   if (!decimalPart) {
-    return integerPart
+    return formattedInt
   }
 
   // Remove trailing zeros but keep significant digits
   const trimmedDecimal = decimalPart.replace(/0+$/, '')
-  return trimmedDecimal ? `${integerPart}.${trimmedDecimal}` : integerPart
+  return trimmedDecimal ? `${formattedInt}.${trimmedDecimal}` : formattedInt
 }

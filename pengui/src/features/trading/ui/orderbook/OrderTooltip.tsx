@@ -160,10 +160,6 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
         </div>
 
         <div className="text-xs text-gray-500 dark:text-gray-400">
-          <span>Maker: </span>
-          <span className="font-mono break-all">{order.maker}</span>
-        </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400">
           {new Date(order.timestamp).toLocaleString()}
         </div>
       </div>
