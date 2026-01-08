@@ -52,36 +52,28 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
     return getNativeTokenTicker()
   }, [filters])
 
-  // Separate orders into buy and sell based on order type
-  // The API already filters by assets, so we just need to separate by order type
   const filteredSellOrders = useMemo(() => {
-    // Sell orders: orders where native token (XCH/TXCH) is being offered
     const nativeTicker = getNativeTokenTicker()
     return orderBookData
       .filter((order) => {
-        // Check if this is a sell order (offering native token)
         return order.offering.some(
           (asset) => asset.code === nativeTicker || asset.code === 'XCH' || asset.code === 'TXCH'
         )
       })
       .sort((a, b) => {
-        // Sort sell orders by price ascending (low to high) - reversed
         return a.pricePerUnit - b.pricePerUnit
       })
   }, [orderBookData])
 
   const filteredBuyOrders = useMemo(() => {
-    // Buy orders: orders where native token (XCH/TXCH) is being requested
     const nativeTicker = getNativeTokenTicker()
     return orderBookData
       .filter((order) => {
-        // Check if this is a buy order (requesting native token)
         return order.receiving.some(
           (asset) => asset.code === nativeTicker || asset.code === 'XCH' || asset.code === 'TXCH'
         )
       })
       .sort((a, b) => {
-        // Sort buy orders by price descending (high to low) - reversed
         return b.pricePerUnit - a.pricePerUnit
       })
   }, [orderBookData])
@@ -234,7 +226,58 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
           <div className="col-span-5 text-right">Price ({getPriceHeaderTicker()})</div>
         </div>
 
-        {/* Sell Orders (Asks) - Top Section */}
+        {/* Sell Orders (Asks) */}
+        <div
+          ref={buyScrollRef}
+          className="overflow-y-scroll buy-orders-section"
+          style={{ height: `${buySectionHeight}%` }}
+        >
+          <div className="px-3 py-2">
+            {filteredSellOrders.map((order) => (
+              <OrderRow
+                key={`sell-${order.id}`}
+                order={order}
+                orderType="sell"
+                filters={filters}
+                onClick={handleOrderClick}
+                onHover={updateTooltipPosition}
+                onMouseLeave={hideTooltip}
+              />
+            ))}
+
+            {!orderBookHasMore && orderBookData.length > 0 && (
+              <div className={`text-right py-4 ${t.textSecondary} text-xs`}>No more orders</div>
+            )}
+
+            {!orderBookLoading && !orderBookError && allFilteredOrders.length === 0 && (
+              <div className={`text-center py-8 ${t.textSecondary} text-sm`}>
+                {filters &&
+                ((filters.buyAsset && filters.buyAsset.length > 0) ||
+                  (filters.sellAsset && filters.sellAsset.length > 0))
+                  ? 'No orders found matching your filters. Try adjusting your filters.'
+                  : 'No orders found. Add filters to see orders.'}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Resize Handle / Market Price Separator */}
+        <div
+          className={`resize-handle ${t.card} hover:bg-gray-300 dark:hover:bg-gray-500 cursor-row-resize transition-colors flex items-center justify-center relative`}
+          onMouseDown={startResize}
+          title="Drag to resize sections"
+        >
+          <div className="w-full flex items-center justify-between px-3">
+            <div className="flex items-center gap-1"></div>
+          </div>
+
+          {/* Invisible larger hit area */}
+          <div className="absolute inset-0 w-full h-6 -top-1 pr-2"></div>
+          <div className="text-sm font-bold text-blue-700 dark:text-blue-300 font-mono pr-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg shadow-sm">
+            {calculateAveragePrice()}
+          </div>
+        </div>
+        {/* Buy Orders*/}
         <div
           ref={sellScrollRef}
           className="overflow-y-scroll sell-orders-section"
@@ -256,44 +299,6 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
               </div>
             )}
 
-            {filteredSellOrders.map((order) => (
-              <OrderRow
-                key={`sell-${order.id}`}
-                order={order}
-                orderType="sell"
-                filters={filters}
-                onClick={handleOrderClick}
-                onHover={updateTooltipPosition}
-                onMouseLeave={hideTooltip}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Resize Handle / Market Price Separator */}
-        <div
-          className={`resize-handle ${t.card} hover:bg-gray-300 dark:hover:bg-gray-500 cursor-row-resize transition-colors flex items-center justify-center relative`}
-          onMouseDown={startResize}
-          title="Drag to resize sections"
-        >
-          <div className="w-full flex items-center justify-between px-3">
-            <div className="flex items-center gap-1"></div>
-          </div>
-
-          {/* Invisible larger hit area */}
-          <div className="absolute inset-0 w-full h-6 -top-1 pr-2"></div>
-          <div className="text-sm font-bold text-blue-700 dark:text-blue-300 font-mono pr-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg shadow-sm">
-            {calculateAveragePrice()}
-          </div>
-        </div>
-
-        {/* Buy Orders (Bids) */}
-        <div
-          ref={buyScrollRef}
-          className="overflow-y-scroll buy-orders-section"
-          style={{ height: `${buySectionHeight}%` }}
-        >
-          <div className="px-3 py-2">
             {filteredBuyOrders.map((order) => (
               <OrderRow
                 key={`buy-${order.id}`}
@@ -305,20 +310,6 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
                 onMouseLeave={hideTooltip}
               />
             ))}
-
-            {!orderBookHasMore && orderBookData.length > 0 && (
-              <div className={`text-right py-4 ${t.textSecondary} text-xs`}>No more orders</div>
-            )}
-
-            {!orderBookLoading && !orderBookError && allFilteredOrders.length === 0 && (
-              <div className={`text-center py-8 ${t.textSecondary} text-sm`}>
-                {filters &&
-                ((filters.buyAsset && filters.buyAsset.length > 0) ||
-                  (filters.sellAsset && filters.sellAsset.length > 0))
-                  ? 'No orders found matching your filters. Try adjusting your filters.'
-                  : 'No orders found. Add filters to see orders.'}
-              </div>
-            )}
           </div>
         </div>
       </div>

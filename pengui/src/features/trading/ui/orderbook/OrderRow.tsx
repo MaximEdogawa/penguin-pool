@@ -65,8 +65,8 @@ export default function OrderRow({
           filters?.sellAsset &&
           filters.sellAsset.length > 0
         ) {
-          // Calculate price from buy side perspective: buyAsset/sellAsset
-          // Example: buy TXCH, sell TDBX -> price = TXCH/TDBX
+          // Calculate price based on what you're buying (buyAsset) vs what you're selling (sellAsset)
+          // Price should always be: sellAsset/buyAsset (how much sell asset per buy asset)
 
           // Determine which asset is the buy asset and which is the sell asset
           const receivingIsBuyAsset = filters.buyAsset.some(
@@ -88,12 +88,12 @@ export default function OrderRow({
 
           if (receivingIsBuyAsset && !offeringIsBuyAsset) {
             // Receiving buy asset, offering sell asset
-            // Price = buy asset amount / sell asset amount (TXCH/TDBX)
-            price = receivingAsset.amount / offeringAsset.amount
+            // Price = sell asset amount / buy asset amount
+            price = offeringAsset.amount / receivingAsset.amount
           } else if (offeringIsBuyAsset && !receivingIsBuyAsset) {
             // Offering buy asset, receiving sell asset
-            // Price = buy asset amount / sell asset amount (TXCH/TDBX)
-            price = offeringAsset.amount / receivingAsset.amount
+            // Price = sell asset amount / buy asset amount
+            price = receivingAsset.amount / offeringAsset.amount
           } else {
             // Fallback to original logic
             price = offeringAsset.amount / receivingAsset.amount
@@ -147,10 +147,10 @@ export default function OrderRow({
           {order.offering.length + order.receiving.length}
         </div>
 
-        {/* Sell */}
+        {/* Buy */}
         <div className="col-span-3 text-right min-w-0">
           <div className="flex flex-col gap-1">
-            {order.receiving.map((item, idx) => (
+            {order.offering.map((item, idx) => (
               <div
                 key={idx}
                 className={`${textColorClass} font-mono text-xs truncate`}
@@ -162,10 +162,10 @@ export default function OrderRow({
           </div>
         </div>
 
-        {/* Buy */}
+        {/* Sell */}
         <div className="col-span-3 text-right min-w-0">
           <div className="flex flex-col gap-1">
-            {order.offering.map((item, idx) => (
+            {order.receiving.map((item, idx) => (
               <div
                 key={idx}
                 className="text-xs font-mono text-gray-700 dark:text-gray-300 truncate"

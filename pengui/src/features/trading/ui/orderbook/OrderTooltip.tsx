@@ -1,10 +1,10 @@
 'use client'
 
 import { useCatTokens } from '@/shared/hooks/useTickers'
-import type { OrderBookOrder } from '../../lib/orderBookTypes'
-import { useMemo } from 'react'
 import { getNativeTokenTicker } from '@/shared/lib/config/environment'
+import { useMemo } from 'react'
 import { formatAmountForTooltip } from '../../lib/formatAmount'
+import type { OrderBookOrder } from '../../lib/orderBookTypes'
 
 interface OrderTooltipProps {
   order: OrderBookOrder | null
@@ -115,9 +115,9 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
           </span>
         </div>
 
-        {/* Buy Assets */}
+        {/* Offering Assets */}
         <div>
-          <span className="text-xs text-gray-500 dark:text-gray-400">Buy:</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Offering:</span>
           <div className="mt-1 space-y-1">
             {order.offering.map((asset, idx) => (
               <div key={idx} className="flex items-center justify-between text-xs">
@@ -137,9 +137,9 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
           </div>
         </div>
 
-        {/* Sell Assets */}
+        {/* Requested Assets */}
         <div>
-          <span className="text-xs text-gray-500 dark:text-gray-400">Sell:</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Requested:</span>
           <div className="mt-1 space-y-1">
             {order.receiving.map((asset, idx) => (
               <div key={idx} className="flex items-center justify-between text-xs">
