@@ -1,6 +1,7 @@
 'use client'
 
 import { useThemeClasses } from '@/shared/hooks'
+import { useCatTokens } from '@/shared/hooks/useTickers'
 import { getNativeTokenTicker } from '@/shared/lib/config/environment'
 import { Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -19,9 +20,37 @@ interface OrderBookProps {
 
 export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
   const { t } = useThemeClasses()
+  const { getCatTokenInfo } = useCatTokens()
   // Pass filters directly - useOrderBook will react to changes via query key
   const { orderBookData, orderBookLoading, orderBookHasMore, orderBookError } =
     useOrderBook(filters)
+
+  // Helper function to get ticker symbol for an asset
+  const getTickerSymbol = useCallback(
+    (assetId: string, code?: string): string => {
+      if (code) return code
+      if (!assetId) return getNativeTokenTicker()
+      const tickerInfo = getCatTokenInfo(assetId)
+      return tickerInfo?.ticker || assetId.slice(0, 8)
+    },
+    [getCatTokenInfo]
+  )
+
+  // Helper function to check if an asset matches a filter asset
+  const assetMatchesFilter = useCallback(
+    (asset: { id: string; code?: string }, filterAssets: string[]): boolean => {
+      if (!filterAssets || filterAssets.length === 0) return false
+      return filterAssets.some((filterAsset) => {
+        const assetTicker = getTickerSymbol(asset.id, asset.code)
+        return (
+          assetTicker.toLowerCase() === filterAsset.toLowerCase() ||
+          asset.id.toLowerCase() === filterAsset.toLowerCase() ||
+          (asset.code && asset.code.toLowerCase() === filterAsset.toLowerCase())
+        )
+      })
+    },
+    [getTickerSymbol]
+  )
 
   // Resize state
   const [sellSectionHeight, setSellSectionHeight] = useState(50)
@@ -52,31 +81,61 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
     return getNativeTokenTicker()
   }, [filters])
 
-  const filteredSellOrders = useMemo(() => {
-    const nativeTicker = getNativeTokenTicker()
+  // Filter orders based on filter context
+  // Example: buy TXCH, sell TDBX
+  // - Sell side: orders buying TDBX (receiving sellAsset) and selling TXCH (offering buyAsset) - opposite of filter
+  // - Buy side: orders buying TXCH (receiving buyAsset) and selling TDBX (offering sellAsset) - same as filter
+  const filteredBuyOrders = useMemo(() => {
+    if (
+      !filters?.buyAsset ||
+      filters.buyAsset.length === 0 ||
+      !filters?.sellAsset ||
+      filters.sellAsset.length === 0
+    ) {
+      return []
+    }
+
+    // Sell side: orders where receiving contains sellAsset (buying TDBX) and offering contains buyAsset (selling TXCH)
     return orderBookData
       .filter((order) => {
-        return order.offering.some(
-          (asset) => asset.code === nativeTicker || asset.code === 'XCH' || asset.code === 'TXCH'
+        const isReceivingSellAsset = order.receiving.some((asset) =>
+          assetMatchesFilter(asset, filters.sellAsset || [])
         )
+        const isOfferingBuyAsset = order.offering.some((asset) =>
+          assetMatchesFilter(asset, filters.buyAsset || [])
+        )
+        return isReceivingSellAsset && isOfferingBuyAsset
       })
       .sort((a, b) => {
         return a.pricePerUnit - b.pricePerUnit
       })
-  }, [orderBookData])
+  }, [orderBookData, filters, assetMatchesFilter])
 
-  const filteredBuyOrders = useMemo(() => {
-    const nativeTicker = getNativeTokenTicker()
+  const filteredSellOrders = useMemo(() => {
+    if (
+      !filters?.buyAsset ||
+      filters.buyAsset.length === 0 ||
+      !filters?.sellAsset ||
+      filters.sellAsset.length === 0
+    ) {
+      return []
+    }
+
+    // Buy side: orders where receiving contains buyAsset (buying TXCH) and offering contains sellAsset (selling TDBX)
     return orderBookData
       .filter((order) => {
-        return order.receiving.some(
-          (asset) => asset.code === nativeTicker || asset.code === 'XCH' || asset.code === 'TXCH'
+        const isReceivingBuyAsset = order.receiving.some((asset) =>
+          assetMatchesFilter(asset, filters.buyAsset || [])
         )
+        const isOfferingSellAsset = order.offering.some((asset) =>
+          assetMatchesFilter(asset, filters.sellAsset || [])
+        )
+        return isReceivingBuyAsset && isOfferingSellAsset
       })
       .sort((a, b) => {
         return b.pricePerUnit - a.pricePerUnit
       })
-  }, [orderBookData])
+  }, [orderBookData, filters, assetMatchesFilter])
 
   const calculateAveragePrice = useCallback((): string => {
     if (
@@ -226,58 +285,7 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
           <div className="col-span-5 text-right">Price ({getPriceHeaderTicker()})</div>
         </div>
 
-        {/* Sell Orders (Asks) */}
-        <div
-          ref={buyScrollRef}
-          className="overflow-y-scroll buy-orders-section"
-          style={{ height: `${buySectionHeight}%` }}
-        >
-          <div className="px-3 py-2">
-            {filteredSellOrders.map((order) => (
-              <OrderRow
-                key={`sell-${order.id}`}
-                order={order}
-                orderType="sell"
-                filters={filters}
-                onClick={handleOrderClick}
-                onHover={updateTooltipPosition}
-                onMouseLeave={hideTooltip}
-              />
-            ))}
-
-            {!orderBookHasMore && orderBookData.length > 0 && (
-              <div className={`text-right py-4 ${t.textSecondary} text-xs`}>No more orders</div>
-            )}
-
-            {!orderBookLoading && !orderBookError && allFilteredOrders.length === 0 && (
-              <div className={`text-center py-8 ${t.textSecondary} text-sm`}>
-                {filters &&
-                ((filters.buyAsset && filters.buyAsset.length > 0) ||
-                  (filters.sellAsset && filters.sellAsset.length > 0))
-                  ? 'No orders found matching your filters. Try adjusting your filters.'
-                  : 'No orders found. Add filters to see orders.'}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Resize Handle / Market Price Separator */}
-        <div
-          className={`resize-handle ${t.card} hover:bg-gray-300 dark:hover:bg-gray-500 cursor-row-resize transition-colors flex items-center justify-center relative`}
-          onMouseDown={startResize}
-          title="Drag to resize sections"
-        >
-          <div className="w-full flex items-center justify-between px-3">
-            <div className="flex items-center gap-1"></div>
-          </div>
-
-          {/* Invisible larger hit area */}
-          <div className="absolute inset-0 w-full h-6 -top-1 pr-2"></div>
-          <div className="text-sm font-bold text-blue-700 dark:text-blue-300 font-mono pr-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg shadow-sm">
-            {calculateAveragePrice()}
-          </div>
-        </div>
-        {/* Buy Orders*/}
+        {/* Sell Orders*/}
         <div
           ref={sellScrollRef}
           className="overflow-y-scroll sell-orders-section"
@@ -299,6 +307,44 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
               </div>
             )}
 
+            {filteredSellOrders.map((order) => (
+              <OrderRow
+                key={`sell-${order.id}`}
+                order={order}
+                orderType="sell"
+                filters={filters}
+                onClick={handleOrderClick}
+                onHover={updateTooltipPosition}
+                onMouseLeave={hideTooltip}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Resize Handle / Market Price Separator */}
+        <div
+          className={`resize-handle ${t.card} hover:bg-gray-300 dark:hover:bg-gray-500 cursor-row-resize transition-colors flex items-center justify-center relative`}
+          onMouseDown={startResize}
+          title="Drag to resize sections"
+        >
+          <div className="w-full flex items-center justify-between px-3">
+            <div className="flex items-center gap-1"></div>
+          </div>
+
+          {/* Invisible larger hit area */}
+          <div className="absolute inset-0 w-full h-6 -top-1 pr-2"></div>
+          <div className="text-sm font-bold text-blue-700 dark:text-blue-300 font-mono pr-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg shadow-sm">
+            {calculateAveragePrice()}
+          </div>
+        </div>
+
+        {/* Buy Orders (Bids) */}
+        <div
+          ref={buyScrollRef}
+          className="overflow-y-scroll buy-orders-section"
+          style={{ height: `${buySectionHeight}%` }}
+        >
+          <div className="px-3 py-2">
             {filteredBuyOrders.map((order) => (
               <OrderRow
                 key={`buy-${order.id}`}
@@ -310,6 +356,20 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
                 onMouseLeave={hideTooltip}
               />
             ))}
+
+            {!orderBookHasMore && orderBookData.length > 0 && (
+              <div className={`text-right py-4 ${t.textSecondary} text-xs`}>No more orders</div>
+            )}
+
+            {!orderBookLoading && !orderBookError && allFilteredOrders.length === 0 && (
+              <div className={`text-center py-8 ${t.textSecondary} text-sm`}>
+                {filters &&
+                ((filters.buyAsset && filters.buyAsset.length > 0) ||
+                  (filters.sellAsset && filters.sellAsset.length > 0))
+                  ? 'No orders found matching your filters. Try adjusting your filters.'
+                  : 'No orders found. Add filters to see orders.'}
+              </div>
+            )}
           </div>
         </div>
       </div>
