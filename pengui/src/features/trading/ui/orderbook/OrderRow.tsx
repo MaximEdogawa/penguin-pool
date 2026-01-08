@@ -65,8 +65,8 @@ export default function OrderRow({
           filters?.sellAsset &&
           filters.sellAsset.length > 0
         ) {
-          // Calculate price based on what you're buying (buyAsset) vs what you're selling (sellAsset)
-          // Price should always be: sellAsset/buyAsset (how much sell asset per buy asset)
+          // Calculate price from buy side perspective: buyAsset/sellAsset
+          // Example: buy TXCH, sell TDBX -> price = TXCH/TDBX
 
           // Determine which asset is the buy asset and which is the sell asset
           const receivingIsBuyAsset = filters.buyAsset.some(
@@ -88,12 +88,12 @@ export default function OrderRow({
 
           if (receivingIsBuyAsset && !offeringIsBuyAsset) {
             // Receiving buy asset, offering sell asset
-            // Price = sell asset amount / buy asset amount
-            price = offeringAsset.amount / receivingAsset.amount
+            // Price = buy asset amount / sell asset amount (TXCH/TDBX)
+            price = receivingAsset.amount / offeringAsset.amount
           } else if (offeringIsBuyAsset && !receivingIsBuyAsset) {
             // Offering buy asset, receiving sell asset
-            // Price = sell asset amount / buy asset amount
-            price = receivingAsset.amount / offeringAsset.amount
+            // Price = buy asset amount / sell asset amount (TXCH/TDBX)
+            price = offeringAsset.amount / receivingAsset.amount
           } else {
             // Fallback to original logic
             price = offeringAsset.amount / receivingAsset.amount

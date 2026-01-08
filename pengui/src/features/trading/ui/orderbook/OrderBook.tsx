@@ -37,15 +37,15 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
   const buyScrollRef = useRef<HTMLDivElement>(null)
 
   const getPriceHeaderTicker = useCallback((): string => {
-    // Price is expressed in terms of the sell asset (what you're giving up)
-    // If we have sell asset filters, use the first one
-    if (filters?.sellAsset && filters.sellAsset.length > 0) {
-      return filters.sellAsset[0]
-    }
-
+    // Price is expressed in terms of the buy asset (buyAsset/sellAsset)
     // If we have buy asset filters, use the first one
     if (filters?.buyAsset && filters.buyAsset.length > 0) {
       return filters.buyAsset[0]
+    }
+
+    // If we have sell asset filters, use the first one as fallback
+    if (filters?.sellAsset && filters.sellAsset.length > 0) {
+      return filters.sellAsset[0]
     }
 
     // Default fallback
@@ -65,8 +65,8 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
         )
       })
       .sort((a, b) => {
-        // Sort sell orders by price descending (high to low)
-        return b.pricePerUnit - a.pricePerUnit
+        // Sort sell orders by price ascending (low to high) - reversed
+        return a.pricePerUnit - b.pricePerUnit
       })
   }, [orderBookData])
 
@@ -81,8 +81,8 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
         )
       })
       .sort((a, b) => {
-        // Sort buy orders by price ascending (low to high)
-        return a.pricePerUnit - b.pricePerUnit
+        // Sort buy orders by price descending (high to low) - reversed
+        return b.pricePerUnit - a.pricePerUnit
       })
   }, [orderBookData])
 
