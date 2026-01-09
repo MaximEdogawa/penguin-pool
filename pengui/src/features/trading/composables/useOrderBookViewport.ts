@@ -14,8 +14,8 @@ const SCROLL_DEBOUNCE_MS = 300
 export function useOrderBookViewport(
   sellOrders: OrderBookOrder[],
   buyOrders: OrderBookOrder[],
-  sellScrollRef: React.RefObject<HTMLDivElement>,
-  buyScrollRef: React.RefObject<HTMLDivElement>
+  sellScrollRef: React.RefObject<HTMLDivElement | null>,
+  buyScrollRef: React.RefObject<HTMLDivElement | null>
 ) {
   const [visibleOrderIds, setVisibleOrderIds] = useState<Set<string>>(new Set())
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)

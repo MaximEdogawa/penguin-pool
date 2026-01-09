@@ -9,6 +9,7 @@ import type { SuggestionItem } from '../../lib/orderBookTypes'
 import { useOrderBookFilters } from '../../model/OrderBookFiltersProvider'
 import AssetSwapToggle from './AssetSwapToggle'
 import FilterButton from './FilterButton'
+import OrderBookPaginationControls from './OrderBookPaginationControls'
 
 interface OrderBookFiltersProps {
   onFiltersChange?: () => void
@@ -24,6 +25,8 @@ export default function OrderBookFilters({ onFiltersChange }: OrderBookFiltersPr
     setFilteredSuggestions,
     addFilter,
     removeFilter,
+    pagination,
+    setPagination,
   } = useOrderBookFilters()
 
   const { availableCatTokens } = useCatTokens()
@@ -95,7 +98,7 @@ export default function OrderBookFilters({ onFiltersChange }: OrderBookFiltersPr
 
   const handleSuggestionClick = useCallback(
     (suggestion: SuggestionItem) => {
-      addFilter(suggestion.column as keyof typeof filters, suggestion.value)
+      addFilter(suggestion.column as 'buyAsset' | 'sellAsset' | 'status', suggestion.value)
       setSearchValue('')
       setShowSuggestions(false)
       // Trigger callback after state update
@@ -107,7 +110,7 @@ export default function OrderBookFilters({ onFiltersChange }: OrderBookFiltersPr
   )
 
   const handleRemoveFilter = useCallback(
-    (column: keyof typeof filters, value: string) => {
+    (column: 'buyAsset' | 'sellAsset' | 'status', value: string) => {
       removeFilter(column, value)
       // Trigger callback after state update
       setTimeout(() => {
@@ -138,8 +141,8 @@ export default function OrderBookFilters({ onFiltersChange }: OrderBookFiltersPr
 
   return (
     <div className="space-y-3">
-      {/* Search Input with Filter and Swap Toggle */}
-      <div className="relative flex items-center gap-2">
+      {/* Search Input with Filter, Swap Toggle, and Pagination */}
+      <div className="relative flex items-center gap-1.5">
         {/* Filter Button - on the left side */}
         <FilterButton />
 
@@ -159,7 +162,7 @@ export default function OrderBookFilters({ onFiltersChange }: OrderBookFiltersPr
               }
             }}
             placeholder={`Search assets (e.g., ${getNativeTokenTicker()}, TBYC)...`}
-            className={`w-full px-3 py-2 text-sm rounded-lg border-2 ${t.border} ${t.bg} ${t.text} focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm`}
+            className={`w-full px-2 py-1.5 text-xs rounded-lg border-2 ${t.border} ${t.bg} ${t.text} focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm`}
           />
 
           {/* Suggestions Dropdown */}
@@ -188,6 +191,16 @@ export default function OrderBookFilters({ onFiltersChange }: OrderBookFiltersPr
             </div>
           )}
         </div>
+
+        {/* Pagination Controls - on the right side of the search bar */}
+        {pagination !== undefined && (
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="hidden md:inline text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              Orders:
+            </span>
+            <OrderBookPaginationControls value={pagination} onChange={setPagination} />
+          </div>
+        )}
       </div>
 
       {/* Filter Chips */}

@@ -58,15 +58,44 @@ export default function OrderBookPaginationControls({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${t.card} border ${t.border} ${t.cardHover} transition-colors`}
+        className={`
+          relative
+          flex items-center justify-center gap-1
+          w-12 h-8
+          rounded-md
+          transition-all duration-300
+          backdrop-blur-[20px]
+          border-2
+          ${t.border}
+          ${t.card} bg-opacity-80
+          shadow-lg
+          hover:scale-105
+          active:scale-95
+          shadow-black/10 dark:shadow-black/30
+          group
+        `}
+        style={{
+          boxShadow:
+            '0 8px 32px -4px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05) inset',
+        }}
         title="Select how many orders to fetch"
         aria-label={`Current: ${currentLabel} orders. Click to change.`}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        <span className={t.text}>{currentLabel}</span>
+        {/* Shimmer effect on hover */}
+        <div
+          className="absolute inset-0 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          style={{
+            background:
+              'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
+          }}
+        />
+
+        {/* Content */}
+        <span className={`relative z-10 text-xs font-medium ${t.text}`}>{currentLabel}</span>
         <ChevronDown
-          className={`w-3 h-3 ${t.textSecondary} transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`relative z-10 w-3 h-3 ${t.textSecondary} transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -77,7 +106,10 @@ export default function OrderBookPaginationControls({
 
           {/* Dropdown */}
           <div
-            className={`absolute right-0 top-full mt-1 z-20 min-w-[80px] ${t.card} border ${t.border} rounded-lg shadow-lg backdrop-blur-xl`}
+            className={`absolute right-0 top-full mt-1 z-20 min-w-[80px] ${t.card} border ${t.border} rounded-md shadow-lg backdrop-blur-xl`}
+            style={{
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            }}
             role="listbox"
           >
             {PAGINATION_OPTIONS.map((option) => (
@@ -85,7 +117,7 @@ export default function OrderBookPaginationControls({
                 key={String(option.value)}
                 type="button"
                 onClick={() => handleSelect(option.value)}
-                className={`w-full text-left px-3 py-2 text-xs transition-colors ${
+                className={`w-full text-left px-2.5 py-1.5 text-[10px] transition-colors ${
                   value === option.value
                     ? `${t.cardHover} font-medium ${t.text}`
                     : `${t.textSecondary} ${t.cardHover}`

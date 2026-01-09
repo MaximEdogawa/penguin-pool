@@ -179,14 +179,14 @@ export function useOrderBookFilters() {
     setState((prev) => ({ ...prev, filteredSuggestions: suggestions }))
   }, [])
 
-  const addFilter = useCallback((column: keyof OrderBookFilters, value: string) => {
+  const addFilter = useCallback((column: 'buyAsset' | 'sellAsset' | 'status', value: string) => {
     setState((prev) => {
       const newFilters = { ...prev.filters }
-      const filterArray = newFilters[column] || []
+      const filterArray = (newFilters[column] as string[]) || []
 
       // Check if value already exists (case-insensitive)
       if (!filterArray.some((filter) => filter.toLowerCase() === value.toLowerCase())) {
-        newFilters[column] = [...filterArray, value]
+        newFilters[column] = [...filterArray, value] as string[]
       }
 
       return {
@@ -200,14 +200,14 @@ export function useOrderBookFilters() {
     })
   }, [])
 
-  const removeFilter = useCallback((column: keyof OrderBookFilters, value: string) => {
+  const removeFilter = useCallback((column: 'buyAsset' | 'sellAsset' | 'status', value: string) => {
     setState((prev) => {
       const newFilters = { ...prev.filters }
-      const filterArray = newFilters[column] || []
+      const filterArray = (newFilters[column] as string[]) || []
       const index = filterArray.findIndex((filter) => filter.toLowerCase() === value.toLowerCase())
 
       if (index > -1) {
-        newFilters[column] = filterArray.filter((_, i) => i !== index)
+        newFilters[column] = filterArray.filter((_, i) => i !== index) as string[]
       }
 
       return {
@@ -287,6 +287,7 @@ export function useOrderBookFilters() {
   return {
     // State
     filters,
+    pagination: filters.pagination || DEFAULT_PAGINATION,
     searchValue: state.searchValue,
     filteredSuggestions: state.filteredSuggestions,
     assetsSwapped: state.assetsSwapped,

@@ -27,7 +27,7 @@ interface OrderBookProps {
 
 export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
   const { t } = useThemeClasses()
-  const { filters: contextFilters, setPagination } = useOrderBookFilters()
+  const { filters: contextFilters } = useOrderBookFilters()
   const { orderBookData, orderBookLoading, orderBookHasMore, orderBookError } =
     useOrderBook(contextFilters)
 
@@ -116,11 +116,7 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
         className={`${t.card} rounded-lg overflow-hidden border ${t.border} mt-1 mb-6 order-book-container flex-1 flex flex-col`}
       >
         {/* Header */}
-        <OrderBookHeader
-          filters={filters}
-          pagination={contextFilters.pagination}
-          onPaginationChange={setPagination}
-        />
+        <OrderBookHeader filters={filters} />
 
         {/* Sell Orders Section */}
         <div

@@ -169,19 +169,19 @@ export default function OrderRow({
         style={{ width: depthWidth, right: 0 }}
       />
 
-      <div className="relative grid grid-cols-12 gap-2 py-2 text-sm items-center">
+      <div className="relative grid grid-cols-12 gap-2 px-2 py-1.5 items-center">
         {/* Count - smallest, left aligned */}
-        <div className="col-span-1 text-left text-gray-500 dark:text-gray-500 font-mono text-xs">
+        <div className="col-span-1 text-left text-gray-500 dark:text-gray-500 font-mono text-[10px]">
           {order.offering.length + order.requesting.length}
         </div>
 
         {/* Buy */}
         <div className="col-span-3 text-right min-w-0">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-0.5">
             {order.offering.map((item, idx) => (
               <div
                 key={idx}
-                className={`${textColorClass} font-mono text-xs truncate`}
+                className={`${textColorClass} font-mono text-[10px] truncate`}
                 title={`${formatAmountForTooltip(item.amount || 0)} ${item.code || getTickerSymbol(item.id)}`}
               >
                 {formatAmountForDisplay(item.amount || 0)} {item.code || getTickerSymbol(item.id)}
@@ -192,11 +192,11 @@ export default function OrderRow({
 
         {/* Sell */}
         <div className="col-span-3 text-right min-w-0">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-0.5">
             {order.requesting.map((item, idx) => (
               <div
                 key={idx}
-                className="text-xs font-mono text-gray-700 dark:text-gray-300 truncate"
+                className="text-[10px] font-mono text-gray-700 dark:text-gray-300 truncate"
                 title={`${formatAmountForTooltip(item.amount || 0)} ${item.code || getTickerSymbol(item.id)}`}
               >
                 {formatAmountForDisplay(item.amount || 0)} {item.code || getTickerSymbol(item.id)}
@@ -206,7 +206,7 @@ export default function OrderRow({
         </div>
 
         {/* Price - biggest, right aligned */}
-        <div className="col-span-5 text-right text-gray-600 dark:text-gray-400 font-mono text-xs truncate min-w-0 flex items-center justify-end gap-1">
+        <div className="col-span-5 text-right text-gray-600 dark:text-gray-400 font-mono text-[10px] truncate min-w-0 flex items-center justify-end gap-1">
           {isLoadingDetails && !detailedData && (
             <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
           )}

@@ -10,6 +10,7 @@ interface OrderBookFiltersContextValue {
   assetsSwapped: ReturnType<typeof useOrderBookFiltersImpl>['assetsSwapped']
   showFilterPane: ReturnType<typeof useOrderBookFiltersImpl>['showFilterPane']
   hasActiveFilters: ReturnType<typeof useOrderBookFiltersImpl>['hasActiveFilters']
+  pagination: ReturnType<typeof useOrderBookFiltersImpl>['pagination']
   setSearchValue: ReturnType<typeof useOrderBookFiltersImpl>['setSearchValue']
   setFilteredSuggestions: ReturnType<typeof useOrderBookFiltersImpl>['setFilteredSuggestions']
   addFilter: ReturnType<typeof useOrderBookFiltersImpl>['addFilter']

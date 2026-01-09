@@ -106,7 +106,10 @@ export default function OrderDetailsSection({
               )}
             </button>
           </div>
-          <div className="text-xs font-mono text-gray-900 dark:text-white break-all bg-gray-50 dark:bg-gray-800/50 p-2 rounded max-h-32 overflow-y-auto">
+          <div
+            className="text-xs font-mono text-gray-900 dark:text-white break-all bg-gray-50 dark:bg-gray-800/50 p-2 rounded max-h-32 overflow-y-auto"
+            style={{ scrollbarGutter: 'stable' }}
+          >
             {offerString}
           </div>
         </div>

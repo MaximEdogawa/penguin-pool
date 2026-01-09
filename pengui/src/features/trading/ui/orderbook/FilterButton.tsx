@@ -16,15 +16,15 @@ export default function FilterButton() {
       className={`
         relative
         flex items-center justify-center
-        w-10 h-10
-        rounded-xl
+        w-8 h-8
+        rounded-lg
         transition-all duration-300
         backdrop-blur-[20px]
         border-2
         ${showFilterPane ? 'border-blue-400/60 dark:border-blue-500/60' : t.border}
         ${showFilterPane ? 'bg-gradient-to-br from-blue-50/80 to-blue-100/60 dark:from-blue-900/40 dark:to-blue-800/30' : `${t.card} bg-opacity-80`}
         shadow-lg
-        hover:scale-110
+        hover:scale-105
         active:scale-95
         ${showFilterPane ? 'shadow-blue-500/30 dark:shadow-blue-400/20' : 'shadow-black/10 dark:shadow-black/30'}
         group
@@ -39,7 +39,7 @@ export default function FilterButton() {
       {/* Pulsing glow effect when active */}
       {showFilterPane && (
         <div
-          className="absolute inset-0 rounded-xl bg-blue-400/20 dark:bg-blue-500/20 animate-pulse"
+          className="absolute inset-0 rounded-lg bg-blue-400/20 dark:bg-blue-500/20 animate-pulse"
           style={{
             animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
           }}
@@ -48,7 +48,7 @@ export default function FilterButton() {
 
       {/* Shimmer effect on hover */}
       <div
-        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{
           background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
         }}
@@ -58,7 +58,7 @@ export default function FilterButton() {
       <Filter
         className={`
           relative z-10
-          w-5 h-5
+          w-4 h-4
           transition-all duration-300
           ${showFilterPane ? 'text-blue-600 dark:text-blue-400' : t.text}
         `}
@@ -69,7 +69,7 @@ export default function FilterButton() {
 
       {/* Badge indicator when filters are active */}
       {hasActiveFilters && !showFilterPane && (
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 dark:bg-blue-400 rounded-full border-2 border-white dark:border-gray-800" />
+        <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-500 dark:bg-blue-400 rounded-full border-2 border-white dark:border-gray-800" />
       )}
     </button>
   )

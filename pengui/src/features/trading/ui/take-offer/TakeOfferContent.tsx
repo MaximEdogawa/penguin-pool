@@ -9,7 +9,6 @@ import { useOfferInspection } from '@/features/offers/model/useOfferInspection'
 import { useTakeOffer } from '@/features/wallet'
 import { useCatTokens, useThemeClasses } from '@/shared/hooks'
 import { logger } from '@/shared/lib/logger'
-import { useQuery } from '@tanstack/react-query'
 import {
   formatAssetAmount,
   formatXchAmount,
@@ -17,6 +16,7 @@ import {
 } from '@/shared/lib/utils/chia-units'
 import { getDexieStatusDescription, validateOfferString } from '@/shared/lib/utils/offerUtils'
 import Button from '@/shared/ui/Button'
+import { useQuery } from '@tanstack/react-query'
 import { Loader2, ShoppingCart } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
@@ -142,7 +142,7 @@ export default function TakeOfferContent({
       if (response.success && response.offer) {
         return {
           offerString: response.offer.offer || '',
-          fullMakerAddress: response.offer.maker || '',
+          fullMakerAddress: response.offer.id || '',
           offer: response.offer,
         }
       }
@@ -214,7 +214,12 @@ export default function TakeOfferContent({
         setOfferPreview(null)
 
         try {
-          const appOffer = convertDexieOfferToAppOffer({ offer: offerData })
+          const appOffer = convertDexieOfferToAppOffer({
+            success: true,
+            id: offerData.id || '',
+            known: true,
+            offer: offerData,
+          })
 
           // Enrich assets with ticker symbols
           const enrichedAssetsOffered = await Promise.all(
@@ -636,7 +641,10 @@ export default function TakeOfferContent({
             </svg>
           </button>
           {isOrderDetailsExpanded && (
-            <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+            <div
+              className="p-3 border-t border-gray-200 dark:border-gray-700"
+              style={{ scrollbarGutter: 'stable' }}
+            >
               <OrderDetailsSection
                 order={order}
                 offerString={fetchedOfferString || offerString}

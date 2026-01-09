@@ -2,23 +2,15 @@
 
 import { useThemeClasses } from '@/shared/hooks'
 import { getNativeTokenTicker } from '@/shared/lib/config/environment'
-import type { OrderBookPagination } from '../../lib/orderBookTypes'
-import OrderBookPaginationControls from './OrderBookPaginationControls'
 
 interface OrderBookHeaderProps {
   filters?: {
     buyAsset?: string[]
     sellAsset?: string[]
   }
-  pagination?: OrderBookPagination
-  onPaginationChange?: (value: OrderBookPagination) => void
 }
 
-export default function OrderBookHeader({
-  filters,
-  pagination,
-  onPaginationChange,
-}: OrderBookHeaderProps) {
+export default function OrderBookHeader({ filters }: OrderBookHeaderProps) {
   const { t } = useThemeClasses()
 
   const getPriceHeaderTicker = (): string => {
@@ -33,17 +25,24 @@ export default function OrderBookHeader({
 
   return (
     <div
-      className={`grid grid-cols-12 gap-2 px-3 py-2 ${t.card} border-b ${t.border} text-xs font-medium ${t.textSecondary}`}
+      className={`grid grid-cols-12 gap-2 px-2 py-1 backdrop-blur-xl ${t.card} border-b ${t.border} text-[10px] font-medium ${t.textSecondary} sticky top-0 z-10`}
+      style={{
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',
+      }}
     >
-      <div className="col-span-1 text-left">Count</div>
-      <div className="col-span-3 text-right">Buy</div>
-      <div className="col-span-3 text-right">Sell</div>
-      <div className="col-span-4 text-right">Price ({getPriceHeaderTicker()})</div>
-      {pagination !== undefined && onPaginationChange && (
-        <div className="col-span-1 flex items-center justify-end">
-          <OrderBookPaginationControls value={pagination} onChange={onPaginationChange} />
-        </div>
-      )}
+      {/* Count */}
+      <div className="col-span-1 text-left flex items-center">Count</div>
+
+      {/* Buy */}
+      <div className="col-span-3 text-right flex items-center justify-end">Buy</div>
+
+      {/* Sell */}
+      <div className="col-span-3 text-right flex items-center justify-end">Sell</div>
+
+      {/* Price */}
+      <div className="col-span-5 text-right flex items-center justify-end">
+        Price ({getPriceHeaderTicker()})
+      </div>
     </div>
   )
 }
