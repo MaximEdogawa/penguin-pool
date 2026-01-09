@@ -1,25 +1,25 @@
 'use client'
 
-import { useOfferInspection } from '@/features/offers/model/useOfferInspection'
-import { useThemeClasses, useCatTokens } from '@/shared/hooks'
-import { useTakeOffer } from '@/features/wallet'
+import type { OfferAsset, OfferDetails } from '@/entities/offer'
+import { convertOfferStateToStatus } from '@/entities/offer'
+import { useDexieDataService } from '@/features/offers/api/useDexieDataService'
 import type { DexiePostOfferResponse } from '@/features/offers/lib/dexieTypes'
 import { calculateOfferState } from '@/features/offers/lib/dexieUtils'
+import { useOfferInspection } from '@/features/offers/model/useOfferInspection'
+import { useTakeOffer } from '@/features/wallet'
+import { useCatTokens, useThemeClasses } from '@/shared/hooks'
+import { logger } from '@/shared/lib/logger'
 import {
   formatAssetAmount,
   formatXchAmount,
   getMinimumFeeInXch,
 } from '@/shared/lib/utils/chia-units'
 import { getDexieStatusDescription, validateOfferString } from '@/shared/lib/utils/offerUtils'
-import type { OfferAsset, OfferDetails } from '@/entities/offer'
-import { convertOfferStateToStatus } from '@/entities/offer'
-import { useDexieDataService } from '@/features/offers/api/useDexieDataService'
-import { logger } from '@/shared/lib/logger'
+import Button from '@/shared/ui/Button'
 import { Loader2, ShoppingCart } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
 import OrderDetailsSection from './OrderDetailsSection'
-import Button from '@/shared/ui/Button'
 
 interface TakeOfferContentProps {
   order?: OrderBookOrder

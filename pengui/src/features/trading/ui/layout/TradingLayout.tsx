@@ -1,17 +1,17 @@
 'use client'
 
-import TradingContent from './TradingContent'
-import OrderBookFilters from '../orderbook/OrderBookFilters'
-import MakerTakerTabs from './MakerTakerTabs'
-import CreateOfferModal from '../modals/CreateOfferModal'
-import TakeOfferModal from '../modals/TakeOfferModal'
-import TakeOfferContent from '../take-offer/TakeOfferContent'
-import { useOrderBookFilters } from '../../model/OrderBookFiltersProvider'
-import { useOrderBookOfferSubmission } from '../../model/useOrderBookOfferSubmission'
 import { useThemeClasses } from '@/shared/hooks'
 import { useResponsive } from '@/shared/hooks/useResponsive'
 import { useCallback, useState } from 'react'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
+import { useOrderBookFilters } from '../../model/OrderBookFiltersProvider'
+import { useOrderBookOfferSubmission } from '../../model/useOrderBookOfferSubmission'
+import CreateOfferModal from '../modals/CreateOfferModal'
+import TakeOfferModal from '../modals/TakeOfferModal'
+import OrderBookFilters from '../orderbook/OrderBookFilters'
+import TakeOfferContent from '../take-offer/TakeOfferContent'
+import MakerTakerTabs from './MakerTakerTabs'
+import TradingContent from './TradingContent'
 
 interface TradingLayoutProps {
   activeTradingView?: 'orderbook' | 'chart' | 'depth' | 'trades'
@@ -38,7 +38,7 @@ export default function TradingLayout({
         // Taker mode: show take offer (responsive)
         setSelectedOrderForTaking(order)
         if (isMobile) {
-          // Mobile: open modal
+          // Mobile: always open modal
           setShowTakeOfferModal(true)
         }
         // Desktop: show inline (handled in render)
@@ -81,8 +81,9 @@ export default function TradingLayout({
 
   return (
     <div className="flex h-full">
-      {/* Left Panel with Order Book - Hidden on mobile */}
-      <div className="hidden md:flex flex-col flex-1 min-w-0">
+      {/* Order Book - Full width on mobile/tablet, left panel on desktop (lg+) */}
+      <div className="flex flex-col flex-1 min-w-0">
+        {/* Order Book Filters - Show on all screens */}
         <div className="mb-2">
           <OrderBookFilters onFiltersChange={handleFiltersChange} />
         </div>
@@ -95,9 +96,9 @@ export default function TradingLayout({
         </div>
       </div>
 
-      {/* Resize Handle - Hidden on mobile */}
+      {/* Resize Handle - Hidden on mobile/tablet, visible on desktop (lg+) */}
       <div
-        className={`hidden md:flex resize-handle m-1 ${t.card} hover:bg-gray-300 dark:hover:bg-gray-500 cursor-col-resize transition-colors items-center justify-center relative`}
+        className={`hidden lg:flex resize-handle m-1 ${t.card} hover:bg-gray-300 dark:hover:bg-gray-500 cursor-col-resize transition-colors items-center justify-center relative`}
         title="Drag to resize panels"
       >
         <div className="w-full flex items-center justify-center">
@@ -107,15 +108,12 @@ export default function TradingLayout({
         <div className="absolute inset-0 w-6 h-full -left-1"></div>
       </div>
 
-      {/* Right Panel with Trading Form - Full width on mobile */}
-      <div className="flex flex-col w-full md:w-96 flex-shrink-0">
-        {/* Hide tabs on mobile/small screens */}
-        <div className="hidden md:block">
-          <MakerTakerTabs activeMode={currentMode} onModeChange={handleModeChange} />
-        </div>
+      {/* Right Panel with Trading Form - Hidden on mobile/tablet, visible on desktop (lg+) */}
+      <div className="hidden lg:flex flex-col w-96 flex-shrink-0">
+        <MakerTakerTabs activeMode={currentMode} onModeChange={handleModeChange} />
         <div className={`${t.card} p-4 rounded-lg border ${t.border} flex-1 overflow-y-auto`}>
           {/* Show inline take offer content on desktop when order is selected */}
-          {currentMode === 'taker' && selectedOrderForTaking && !isMobile ? (
+          {currentMode === 'taker' && selectedOrderForTaking ? (
             <TakeOfferContent
               order={selectedOrderForTaking}
               onOfferTaken={handleOfferTaken}
