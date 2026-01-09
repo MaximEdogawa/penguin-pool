@@ -176,41 +176,51 @@ export default function OrderRow({
         </div>
 
         {/* Buy */}
-        <div className="col-span-3 text-right min-w-0">
+        <div className="col-span-3 text-right">
           <div className="flex flex-col gap-0.5">
             {order.offering.map((item, idx) => (
               <div
                 key={idx}
-                className={`${textColorClass} font-mono text-[10px] truncate`}
+                className={`${textColorClass} font-mono text-[10px] flex items-center justify-end gap-1`}
                 title={`${formatAmountForTooltip(item.amount || 0)} ${item.code || getTickerSymbol(item.id)}`}
               >
-                {formatAmountForDisplay(item.amount || 0)} {item.code || getTickerSymbol(item.id)}
+                <span className="text-right tabular-nums">
+                  {formatAmountForDisplay(item.amount || 0)}
+                </span>
+                <span className="flex-shrink-0">{item.code || getTickerSymbol(item.id)}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Sell */}
-        <div className="col-span-3 text-right min-w-0">
+        <div className="col-span-3 text-right">
           <div className="flex flex-col gap-0.5">
             {order.requesting.map((item, idx) => (
               <div
                 key={idx}
-                className="text-[10px] font-mono text-gray-700 dark:text-gray-300 truncate"
+                className="text-[10px] font-mono text-gray-700 dark:text-gray-300 flex items-center justify-end gap-1"
                 title={`${formatAmountForTooltip(item.amount || 0)} ${item.code || getTickerSymbol(item.id)}`}
               >
-                {formatAmountForDisplay(item.amount || 0)} {item.code || getTickerSymbol(item.id)}
+                <span className="text-right tabular-nums">
+                  {formatAmountForDisplay(item.amount || 0)}
+                </span>
+                <span className="flex-shrink-0">{item.code || getTickerSymbol(item.id)}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Price - biggest, right aligned */}
-        <div className="col-span-5 text-right text-gray-600 dark:text-gray-400 font-mono text-[10px] truncate min-w-0 flex items-center justify-end gap-1">
-          {isLoadingDetails && !detailedData && (
-            <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
-          )}
-          <span title={calculateOrderPrice()}>{calculateOrderPrice()}</span>
+        <div className="col-span-5 text-right text-gray-600 dark:text-gray-400 font-mono text-[10px]">
+          <div className="flex items-center justify-end">
+            {isLoadingDetails && !detailedData && (
+              <Loader2 className="w-3 h-3 animate-spin text-gray-400 mr-1" />
+            )}
+            <span className="tabular-nums" title={calculateOrderPrice()}>
+              {calculateOrderPrice()}
+            </span>
+          </div>
         </div>
       </div>
     </div>

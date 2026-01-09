@@ -41,7 +41,10 @@ export default function OrderBookHeader({ filters }: OrderBookHeaderProps) {
 
       {/* Price */}
       <div className="col-span-5 text-right flex items-center justify-end">
-        Price ({getPriceHeaderTicker()})
+        <div className="flex items-center gap-1">
+          <span className="text-[9px] opacity-70">({getPriceHeaderTicker()})</span>
+          <span className="font-mono">Price</span>
+        </div>
       </div>
     </div>
   )
