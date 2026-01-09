@@ -10,20 +10,6 @@ import { getNativeTokenTicker } from '@/shared/lib/config/environment'
 
 const ROWS_PER_PAGE = 20
 
-// Mock USD prices for assets (in a real app, this would come from an API)
-const USD_PRICES: Record<string, number> = {
-  TXCH: 30,
-  XCH: 30,
-  BTC: 122013,
-  ETH: 3500,
-  USDT: 1,
-  USDC: 1,
-  SOL: 120,
-  MATIC: 0.85,
-  AVAX: 35,
-  LINK: 15,
-}
-
 /**
  * Hook for fetching and managing order book data from Dexie API
  * Provides caching, loading states, and automatic refetching
@@ -48,28 +34,22 @@ export function useOrderBook(filters?: OrderBookFilters) {
       amount: typeof item.amount === 'number' ? item.amount : 0,
     }))
 
-    const offeringUsdValue = safeOffered.reduce(
-      (sum: number, item) => sum + item.amount * (USD_PRICES[item.code] || 0),
-      0
-    )
-    const receivingUsdValue = safeRequested.reduce(
-      (sum: number, item) => sum + item.amount * (USD_PRICES[item.code] || 0),
-      0
-    )
+    // Calculate USD values - for now set to 0 since we don't have real prices
+    const offeringUsdValue = 0
+    const receivingUsdValue = 0
 
+    // Calculate XCH values - only count native token amounts
     const offeringXchValue = safeOffered.reduce((sum: number, item) => {
-      if (item.code === 'TXCH' || item.code === 'XCH') {
+      if (item.code === 'TXCH' || item.code === 'XCH' || !item.code) {
         return sum + item.amount
-      } else {
-        return sum + (item.amount * (USD_PRICES[item.code] || 0)) / USD_PRICES.TXCH
       }
+      return sum
     }, 0)
     const receivingXchValue = safeRequested.reduce((sum: number, item) => {
-      if (item.code === 'TXCH' || item.code === 'XCH') {
+      if (item.code === 'TXCH' || item.code === 'XCH' || !item.code) {
         return sum + item.amount
-      } else {
-        return sum + (item.amount * (USD_PRICES[item.code] || 0)) / USD_PRICES.TXCH
       }
+      return sum
     }, 0)
 
     return {

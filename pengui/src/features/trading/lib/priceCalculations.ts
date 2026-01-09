@@ -4,20 +4,6 @@
 
 import type { OrderBookOrder } from './orderBookTypes'
 
-// Mock USD prices for assets
-const USD_PRICES: Record<string, number> = {
-  TXCH: 30,
-  XCH: 30,
-  BTC: 122013,
-  ETH: 3500,
-  USDT: 1,
-  USDC: 1,
-  SOL: 120,
-  MATIC: 0.85,
-  AVAX: 35,
-  LINK: 15,
-}
-
 export const formatAmount = (amount: number): string => {
   if (amount === 0) return '0'
   if (amount < 0.000001) return amount.toExponential(2)
@@ -26,14 +12,6 @@ export const formatAmount = (amount: number): string => {
   if (amount < 100) return amount.toFixed(2)
   if (amount < 10000) return amount.toFixed(1)
   return amount.toFixed(0)
-}
-
-export const calculateAssetUsdValue = (asset: { code: string; amount: number }): number => {
-  if (asset.code === 'USDC' || asset.code === 'USDT') {
-    return asset.amount
-  } else {
-    return asset.amount * (USD_PRICES[asset.code] || 1)
-  }
 }
 
 export const isSingleAssetPair = (order: OrderBookOrder): boolean => {

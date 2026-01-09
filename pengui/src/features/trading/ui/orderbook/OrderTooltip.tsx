@@ -13,28 +13,6 @@ interface OrderTooltipProps {
   direction: 'top' | 'bottom'
 }
 
-// Mock USD prices for assets
-const USD_PRICES: Record<string, number> = {
-  TXCH: 30,
-  XCH: 30,
-  BTC: 122013,
-  ETH: 3500,
-  USDT: 1,
-  USDC: 1,
-  SOL: 120,
-  MATIC: 0.85,
-  AVAX: 35,
-  LINK: 15,
-}
-
-const calculateAssetUsdValue = (asset: { code: string; amount: number }): number => {
-  if (asset.code === 'USDC' || asset.code === 'USDT') {
-    return asset.amount
-  } else {
-    return asset.amount * (USD_PRICES[asset.code] || 1)
-  }
-}
-
 export default function OrderTooltip({ order, visible, position, direction }: OrderTooltipProps) {
   const { getCatTokenInfo } = useCatTokens()
 
@@ -124,14 +102,9 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
                 <span className="text-gray-900 dark:text-white">
                   {asset.code || getTickerSymbol(asset.id)}
                 </span>
-                <div className="flex flex-col items-end">
-                  <span className="font-mono text-gray-700 dark:text-gray-300">
-                    {formatAmountForTooltip(asset.amount || 0)}
-                  </span>
-                  <span className="font-mono text-xs text-green-600 dark:text-green-400">
-                    ${calculateAssetUsdValue(asset).toFixed(2)}
-                  </span>
-                </div>
+                <span className="font-mono text-gray-700 dark:text-gray-300">
+                  {formatAmountForTooltip(asset.amount || 0)}
+                </span>
               </div>
             ))}
           </div>
@@ -146,14 +119,9 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
                 <span className="text-gray-900 dark:text-white">
                   {asset.code || getTickerSymbol(asset.id)}
                 </span>
-                <div className="flex flex-col items-end">
-                  <span className="font-mono text-gray-700 dark:text-gray-300">
-                    {formatAmountForTooltip(asset.amount || 0)}
-                  </span>
-                  <span className="font-mono text-xs text-green-600 dark:text-green-400">
-                    ${calculateAssetUsdValue(asset).toFixed(2)}
-                  </span>
-                </div>
+                <span className="font-mono text-gray-700 dark:text-gray-300">
+                  {formatAmountForTooltip(asset.amount || 0)}
+                </span>
               </div>
             ))}
           </div>
