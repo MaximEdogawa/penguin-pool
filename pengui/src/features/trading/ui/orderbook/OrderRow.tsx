@@ -2,7 +2,8 @@
 
 import { useCatTokens } from '@/shared/hooks/useTickers'
 import { getNativeTokenTicker } from '@/shared/lib/config/environment'
-import { useCallback, useMemo } from 'react'
+import { Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   formatAmountForDisplay,
   formatAmountForTooltip,
@@ -20,6 +21,12 @@ interface OrderRowProps {
   onClick: (order: OrderBookOrder) => void
   onHover: (event: React.MouseEvent, order: OrderBookOrder, orderType: 'buy' | 'sell') => void
   onMouseLeave: () => void
+  detailedData?: {
+    offerString?: string
+    fullMakerAddress?: string
+  }
+  registerElement?: (orderId: string, element: HTMLElement | null) => void
+  isLoadingDetails?: boolean
 }
 
 const isSingleAssetPair = (order: OrderBookOrder): boolean => {
@@ -33,6 +40,9 @@ export default function OrderRow({
   onClick,
   onHover,
   onMouseLeave,
+  detailedData,
+  registerElement,
+  isLoadingDetails,
 }: OrderRowProps) {
   const { getCatTokenInfo } = useCatTokens()
 
@@ -130,8 +140,25 @@ export default function OrderRow({
   const textColorClass =
     orderType === 'sell' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
 
+  // Register element for viewport detection
+  const rowRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (registerElement && rowRef.current) {
+      registerElement(order.id, rowRef.current)
+    }
+    return () => {
+      if (registerElement) {
+        registerElement(order.id, null)
+      }
+    }
+  }, [order.id, registerElement])
+
+  // Detailed data is available via detailedData prop when loaded
+
   return (
     <div
+      ref={rowRef}
       className="w-full group relative mb-1 cursor-pointer"
       onClick={() => onClick(order)}
       onMouseMove={(e) => onHover(e, order, orderType)}
@@ -179,11 +206,11 @@ export default function OrderRow({
         </div>
 
         {/* Price - biggest, right aligned */}
-        <div
-          className="col-span-5 text-right text-gray-600 dark:text-gray-400 font-mono text-xs truncate min-w-0"
-          title={calculateOrderPrice()}
-        >
-          {calculateOrderPrice()}
+        <div className="col-span-5 text-right text-gray-600 dark:text-gray-400 font-mono text-xs truncate min-w-0 flex items-center justify-end gap-1">
+          {isLoadingDetails && !detailedData && (
+            <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
+          )}
+          <span title={calculateOrderPrice()}>{calculateOrderPrice()}</span>
         </div>
       </div>
     </div>

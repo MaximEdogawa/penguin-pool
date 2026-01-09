@@ -19,6 +19,15 @@ interface OrderBookSectionProps {
   onMouseLeave: () => void
   justifyEnd?: boolean
   emptyMessage?: string
+  detailsMap?: Map<
+    string,
+    {
+      offerString?: string
+      fullMakerAddress?: string
+    }
+  >
+  registerOrderElement?: (orderId: string, element: HTMLElement | null) => void
+  isLoadingDetails?: boolean
 }
 
 export default function OrderBookSection({
@@ -34,6 +43,9 @@ export default function OrderBookSection({
   onMouseLeave,
   justifyEnd = false,
   emptyMessage,
+  detailsMap,
+  registerOrderElement,
+  isLoadingDetails,
 }: OrderBookSectionProps) {
   const { t } = useThemeClasses()
 
@@ -62,6 +74,9 @@ export default function OrderBookSection({
             onClick={onOrderClick}
             onHover={onHover}
             onMouseLeave={onMouseLeave}
+            detailedData={detailsMap?.get(order.id)}
+            registerElement={registerOrderElement}
+            isLoadingDetails={isLoadingDetails}
           />
         ))}
 

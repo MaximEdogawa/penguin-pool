@@ -3,7 +3,7 @@
 import { getNativeTokenTicker } from '@/shared/lib/config/environment'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { OrderBookFilters, SuggestionItem } from '../lib/orderBookTypes'
+import type { OrderBookFilters, OrderBookPagination, SuggestionItem } from '../lib/orderBookTypes'
 
 const STORAGE_KEY = 'orderBookFilterState'
 
@@ -16,10 +16,13 @@ interface FilterState {
   userClearedFilters: boolean
 }
 
+const DEFAULT_PAGINATION: OrderBookPagination = 50
+
 const defaultFilters: OrderBookFilters = {
   buyAsset: [],
   sellAsset: [],
   status: [],
+  pagination: DEFAULT_PAGINATION,
 }
 
 export function useOrderBookFilters() {
@@ -46,6 +49,11 @@ export function useOrderBookFilters() {
             }
           }
 
+          // Ensure pagination is set
+          if (!loadedFilters.pagination) {
+            loadedFilters.pagination = DEFAULT_PAGINATION
+          }
+
           return {
             filters: loadedFilters,
             searchValue: parsed.searchValue || '',
@@ -68,6 +76,7 @@ export function useOrderBookFilters() {
         buyAsset: [nativeTicker],
         sellAsset: ['TBYC'],
         status: [],
+        pagination: DEFAULT_PAGINATION,
       },
       searchValue: '',
       filteredSuggestions: [],
@@ -117,7 +126,7 @@ export function useOrderBookFilters() {
     }
   }, [state])
 
-  // Invalidate and refetch queries when filters change
+  // Invalidate and refetch queries when filters or pagination change
   // This ensures new API requests are made when filters change
   useEffect(() => {
     // Use a small delay to ensure state has fully updated
@@ -132,6 +141,7 @@ export function useOrderBookFilters() {
     JSON.stringify(state.filters.buyAsset || []),
     JSON.stringify(state.filters.sellAsset || []),
     JSON.stringify(state.filters.status || []),
+    state.filters.pagination,
     queryClient,
   ])
 
@@ -151,12 +161,14 @@ export function useOrderBookFilters() {
       buyAsset: state.filters.buyAsset ? [...state.filters.buyAsset] : [],
       sellAsset: state.filters.sellAsset ? [...state.filters.sellAsset] : [],
       status: state.filters.status ? [...state.filters.status] : [],
+      pagination: state.filters.pagination || DEFAULT_PAGINATION,
     }
   }, [
     // Use JSON.stringify for deep comparison since arrays are compared by reference
     JSON.stringify(state.filters.buyAsset || []),
     JSON.stringify(state.filters.sellAsset || []),
     JSON.stringify(state.filters.status || []),
+    state.filters.pagination,
   ])
 
   const setSearchValue = useCallback((value: string) => {
@@ -255,6 +267,17 @@ export function useOrderBookFilters() {
     }))
   }, [])
 
+  // Set pagination
+  const setPagination = useCallback((pagination: OrderBookPagination) => {
+    setState((prev) => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        pagination,
+      },
+    }))
+  }, [])
+
   // Refresh function (placeholder - actual refresh handled by useOrderBook hook)
   const refreshOrderBook = useCallback(() => {
     // This is a no-op - the useOrderBook hook will automatically refetch when filters change
@@ -279,6 +302,7 @@ export function useOrderBookFilters() {
     swapBuySellAssets,
     toggleFilterPane,
     setShowFilterPane,
+    setPagination,
     refreshOrderBook,
   }
 }

@@ -18,6 +18,7 @@ interface OrderBookFiltersContextValue {
   swapBuySellAssets: ReturnType<typeof useOrderBookFiltersImpl>['swapBuySellAssets']
   toggleFilterPane: ReturnType<typeof useOrderBookFiltersImpl>['toggleFilterPane']
   setShowFilterPane: ReturnType<typeof useOrderBookFiltersImpl>['setShowFilterPane']
+  setPagination: ReturnType<typeof useOrderBookFiltersImpl>['setPagination']
   refreshOrderBook: ReturnType<typeof useOrderBookFiltersImpl>['refreshOrderBook']
 }
 

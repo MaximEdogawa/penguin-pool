@@ -5,10 +5,13 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useOrderBookFiltering } from '../../composables/useOrderBookFiltering'
 import { useOrderBookResize } from '../../composables/useOrderBookResize'
 import { useOrderBookTooltip } from '../../composables/useOrderBookTooltip'
+import { useOrderBookViewport } from '../../composables/useOrderBookViewport'
 import { formatPriceForDisplay } from '../../lib/formatAmount'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
 import { calculateAveragePrice } from '../../lib/services/priceCalculation'
+import { useOrderBookFilters } from '../../model/OrderBookFiltersProvider'
 import { useOrderBook } from '../../model/useOrderBook'
+import { useOrderBookDetails } from '../../model/useOrderBookDetails'
 import OrderBookHeader from './OrderBookHeader'
 import OrderBookResizeHandle from './OrderBookResizeHandle'
 import OrderBookSection from './OrderBookSection'
@@ -24,8 +27,9 @@ interface OrderBookProps {
 
 export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
   const { t } = useThemeClasses()
+  const { filters: contextFilters, setPagination } = useOrderBookFilters()
   const { orderBookData, orderBookLoading, orderBookHasMore, orderBookError } =
-    useOrderBook(filters)
+    useOrderBook(contextFilters)
 
   // Use composables for filtering, resize, and tooltip
   const { filteredBuyOrders, filteredSellOrders, calculatePriceFn } = useOrderBookFiltering(
@@ -41,6 +45,17 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
   // Refs for scrolling
   const sellScrollRef = useRef<HTMLDivElement>(null)
   const buyScrollRef = useRef<HTMLDivElement>(null)
+
+  // Viewport detection for lazy loading detailed data
+  const { visibleOrderIds, registerOrderElement } = useOrderBookViewport(
+    filteredSellOrders,
+    filteredBuyOrders,
+    sellScrollRef,
+    buyScrollRef
+  )
+
+  // Fetch detailed data for visible orders only
+  const { detailsMap, isLoading: isLoadingDetails } = useOrderBookDetails(visibleOrderIds)
 
   // Calculate average price
   const averagePrice = useMemo(() => {
@@ -101,7 +116,11 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
         className={`${t.card} rounded-lg overflow-hidden border ${t.border} mt-1 mb-6 order-book-container flex-1 flex flex-col`}
       >
         {/* Header */}
-        <OrderBookHeader filters={filters} />
+        <OrderBookHeader
+          filters={filters}
+          pagination={contextFilters.pagination}
+          onPaginationChange={setPagination}
+        />
 
         {/* Sell Orders Section */}
         <div
@@ -121,6 +140,9 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
             onHover={updateTooltipPosition}
             onMouseLeave={hideTooltip}
             justifyEnd
+            detailsMap={detailsMap}
+            registerOrderElement={registerOrderElement}
+            isLoadingDetails={isLoadingDetails}
           />
         </div>
 
@@ -145,6 +167,9 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
             onHover={updateTooltipPosition}
             onMouseLeave={hideTooltip}
             emptyMessage={emptyMessage}
+            detailsMap={detailsMap}
+            registerOrderElement={registerOrderElement}
+            isLoadingDetails={isLoadingDetails}
           />
         </div>
       </div>

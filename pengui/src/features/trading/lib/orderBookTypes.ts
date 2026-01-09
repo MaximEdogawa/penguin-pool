@@ -31,10 +31,13 @@ export interface OrderBookOrder {
   creatorAddress?: string
 }
 
+export type OrderBookPagination = 10 | 15 | 50 | 100 | 'all'
+
 export interface OrderBookFilters {
   buyAsset?: string[]
   sellAsset?: string[]
   status?: string[]
+  pagination?: OrderBookPagination
 }
 
 export interface SuggestionItem {

@@ -3,12 +3,13 @@
 import type { OfferAsset, OfferDetails } from '@/entities/offer'
 import { convertOfferStateToStatus } from '@/entities/offer'
 import { useDexieDataService } from '@/features/offers/api/useDexieDataService'
-import type { DexiePostOfferResponse } from '@/features/offers/lib/dexieTypes'
+import type { DexieOffer, DexiePostOfferResponse } from '@/features/offers/lib/dexieTypes'
 import { calculateOfferState } from '@/features/offers/lib/dexieUtils'
 import { useOfferInspection } from '@/features/offers/model/useOfferInspection'
 import { useTakeOffer } from '@/features/wallet'
 import { useCatTokens, useThemeClasses } from '@/shared/hooks'
 import { logger } from '@/shared/lib/logger'
+import { useQuery } from '@tanstack/react-query'
 import {
   formatAssetAmount,
   formatXchAmount,
@@ -113,13 +114,9 @@ export default function TakeOfferContent({
     status?: string
     dexieStatus?: string
   } | null>(null)
-  const [isLoadingOfferString, setIsLoadingOfferString] = useState(false)
-
   // Refs to prevent infinite loops
   const isParsingRef = useRef(false)
   const lastParsedOfferRef = useRef<string>('')
-  const lastFetchedOrderIdRef = useRef<string | null>(null)
-  const isFetchingRef = useRef(false)
   const postOfferRef = useRef(postOffer)
   const getCatTokenInfoRef = useRef(getCatTokenInfo)
 
@@ -129,85 +126,140 @@ export default function TakeOfferContent({
     getCatTokenInfoRef.current = getCatTokenInfo
   }, [postOffer, getCatTokenInfo])
 
-  // Fetch offer string when order changes - ONLY ONCE per order
+  // Use TanStack Query to fetch offer details - shares cache with useOrderBookDetails
+  // Uses individual query key: ['orderBookDetails', orderId]
+  // This makes loading instant if the order was already fetched for the viewport
+  // TanStack Query automatically deduplicates - same order requested multiple times only fetches once
+  const offerDetailsQuery = useQuery<{
+    offerString: string
+    fullMakerAddress: string
+    offer: DexieOffer
+  } | null>({
+    queryKey: ['orderBookDetails', order?.id], // Individual key per order - same structure as useOrderBookDetails
+    queryFn: async () => {
+      if (!order?.id) return null
+      const response = await dexieDataService.inspectOffer(order.id)
+      if (response.success && response.offer) {
+        return {
+          offerString: response.offer.offer || '',
+          fullMakerAddress: response.offer.maker || '',
+          offer: response.offer,
+        }
+      }
+      throw new Error(response?.error_message || 'Failed to fetch offer details')
+    },
+    enabled: !!order?.id, // Only fetch if order is provided
+    staleTime: 5 * 60 * 1000, // 5 minutes - same as useOrderBookDetails
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2,
+    retryDelay: 1000,
+  })
+
+  // Extract offer string from query result
+  const fetchedOfferString = offerDetailsQuery.data?.offerString || ''
+  const isLoadingOfferString = offerDetailsQuery.isLoading
+
+  // Update offer string when query data changes
   useEffect(() => {
-    if (!order?.id) {
-      // Reset everything if no order
+    // Clear error message when order changes (clicking on another offer)
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    if (fetchedOfferString) {
+      setOfferString(fetchedOfferString)
+    } else if (!order?.id) {
+      // Reset if no order
       setOfferString('')
       setOfferPreview(null)
       setParseError('')
-      setErrorMessage('')
-      setSuccessMessage('')
       lastParsedOfferRef.current = ''
-      lastFetchedOrderIdRef.current = null
-      isFetchingRef.current = false
-      setIsLoadingOfferString(false)
-      return
     }
+  }, [fetchedOfferString, order?.id])
 
-    // Skip if we've already fetched for this order ID
-    if (lastFetchedOrderIdRef.current === order.id || isFetchingRef.current) {
-      return
+  // Handle query errors
+  useEffect(() => {
+    if (offerDetailsQuery.isError && order?.id) {
+      const errorMsg =
+        offerDetailsQuery.error instanceof Error
+          ? offerDetailsQuery.error.message
+          : 'Failed to fetch offer details'
+      setErrorMessage(errorMsg)
+      logger.error('Error fetching offer details:', offerDetailsQuery.error)
     }
+  }, [offerDetailsQuery.isError, offerDetailsQuery.error, order?.id])
 
-    // Reset form state when order changes
-    setOfferString('')
-    setOfferPreview(null)
-    setParseError('')
-    setErrorMessage('')
-    setSuccessMessage('')
-    lastParsedOfferRef.current = ''
-
-    // Mark that we're fetching for this order
-    lastFetchedOrderIdRef.current = order.id
-    isFetchingRef.current = true
-
-    // Fetch new offer string
-    setIsLoadingOfferString(true)
-
-    const fetchOffer = async () => {
-      try {
-        const response = await dexieDataService.inspectOffer(order.id)
-
-        // Check if order ID still matches (user might have clicked another order)
-        if (lastFetchedOrderIdRef.current !== order.id) {
-          return
-        }
-
-        if (response && response.success && response.offer?.offer) {
-          setOfferString(response.offer.offer)
-        } else {
-          const errorMsg = response?.error_message || 'Could not fetch offer string for this order'
-          setErrorMessage(errorMsg)
-          logger.warn('Failed to fetch offer string:', { orderId: order.id, response })
-        }
-      } catch (error) {
-        // Check if order ID still matches
-        if (lastFetchedOrderIdRef.current !== order.id) {
-          return
-        }
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
-        setErrorMessage(`Failed to fetch offer string: ${errorMsg}`)
-        logger.error('Error fetching offer string:', error)
-      } finally {
-        // Only update loading state if we're still on the same order
-        if (lastFetchedOrderIdRef.current === order.id) {
-          setIsLoadingOfferString(false)
-          isFetchingRef.current = false
-        }
-      }
-    }
-
-    fetchOffer()
-  }, [order?.id]) // Only depend on order.id
-
-  // Parse offer when string changes
+  // Parse offer when string changes or when we have offer data from query
   useEffect(() => {
     const parseOffer = async () => {
+      // Use offer data from query if available, otherwise use offerString state
+      const offerData = offerDetailsQuery.data?.offer
       const trimmedOffer = offerString.trim()
 
-      // Skip if empty, already parsing, or same as last parsed
-      if (!trimmedOffer || isParsingRef.current || lastParsedOfferRef.current === trimmedOffer) {
+      // Skip if empty, already parsing, or same as last parsed, or if offer string is still loading
+      if (
+        !trimmedOffer ||
+        isParsingRef.current ||
+        lastParsedOfferRef.current === trimmedOffer ||
+        isLoadingOfferString
+      ) {
+        return
+      }
+
+      // If we have offer data from query, use it directly instead of parsing
+      // This is much faster as we skip the POST request to inspect the offer
+      if (offerData) {
+        isParsingRef.current = true
+        lastParsedOfferRef.current = trimmedOffer
+        setParseError('')
+        setOfferPreview(null)
+
+        try {
+          const appOffer = convertDexieOfferToAppOffer({ offer: offerData })
+
+          // Enrich assets with ticker symbols
+          const enrichedAssetsOffered = await Promise.all(
+            appOffer.assetsOffered.map(async (asset) => {
+              if (asset.assetId) {
+                const tickerInfo = await getCatTokenInfoRef.current(asset.assetId)
+                return {
+                  ...asset,
+                  symbol: tickerInfo?.ticker || undefined,
+                }
+              }
+              return asset
+            })
+          )
+
+          const enrichedAssetsRequested = await Promise.all(
+            appOffer.assetsRequested.map(async (asset) => {
+              if (asset.assetId) {
+                const tickerInfo = await getCatTokenInfoRef.current(asset.assetId)
+                return {
+                  ...asset,
+                  symbol: tickerInfo?.ticker || undefined,
+                }
+              }
+              return asset
+            })
+          )
+
+          setOfferPreview({
+            assetsOffered: enrichedAssetsOffered,
+            assetsRequested: enrichedAssetsRequested,
+            creatorAddress: appOffer.creatorAddress,
+            fee: appOffer.fee,
+            status: appOffer.status,
+            dexieStatus: appOffer.dexieStatus,
+          })
+          setParseError('')
+        } catch (error) {
+          logger.error('Error processing offer data:', error)
+          setParseError('Error processing offer data')
+          setOfferPreview(null)
+          lastParsedOfferRef.current = ''
+        } finally {
+          isParsingRef.current = false
+        }
         return
       }
 
@@ -301,7 +353,7 @@ export default function TakeOfferContent({
       // Reset parsing flag if component unmounts or effect re-runs
       isParsingRef.current = false
     }
-  }, [offerString, isLoadingOfferString]) // Depend on offerString and loading state
+  }, [offerString, isLoadingOfferString, order?.id, fetchedOfferString]) // Depend on offerString, loading state, order ID, and fetched offer string
 
   // Handle fee input
   const handleFeeChange = useCallback((value: string) => {
@@ -499,11 +551,11 @@ export default function TakeOfferContent({
           </Button>
         </div>
 
-        {/* Loading indicator when fetching offer string */}
+        {/* Loading indicator when fetching offer details */}
         {isLoadingOfferString && (
           <div className="flex items-center justify-center py-4">
             <Loader2 size={16} className="animate-spin text-blue-600 dark:text-blue-400 mr-2" />
-            <span className={`text-xs ${t.textSecondary}`}>Loading offer string...</span>
+            <span className={`text-xs ${t.textSecondary}`}>Loading offer details...</span>
           </div>
         )}
 
@@ -585,7 +637,11 @@ export default function TakeOfferContent({
           </button>
           {isOrderDetailsExpanded && (
             <div className="p-3 border-t border-gray-200 dark:border-gray-700">
-              <OrderDetailsSection order={order} offerString={offerString} mode={mode} />
+              <OrderDetailsSection
+                order={order}
+                offerString={fetchedOfferString || offerString}
+                mode={mode}
+              />
             </div>
           )}
         </div>
