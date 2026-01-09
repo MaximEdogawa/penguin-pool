@@ -1,6 +1,6 @@
 'use client'
 
-import OrderBook from '../orderbook/OrderBook'
+import OrderBookContainer from '../orderbook/OrderBookContainer'
 import { useThemeClasses } from '@/shared/hooks'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
 
@@ -17,7 +17,7 @@ export default function TradingContent({ activeView, filters, onOrderClick }: Tr
   const { t } = useThemeClasses()
 
   if (activeView === 'orderbook') {
-    return <OrderBook filters={filters} onOrderClick={onOrderClick} />
+    return <OrderBookContainer filters={filters} onOrderClick={onOrderClick} />
   }
 
   // Placeholder for other views

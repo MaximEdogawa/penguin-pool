@@ -1,6 +1,5 @@
 'use client'
 
-import { useThemeClasses } from '@/shared/hooks'
 import { useEffect, useMemo, useRef } from 'react'
 import { useOrderBookFiltering } from '../../composables/useOrderBookFiltering'
 import { useOrderBookResize } from '../../composables/useOrderBookResize'
@@ -12,12 +11,11 @@ import { calculateAveragePrice } from '../../lib/services/priceCalculation'
 import { useOrderBookFilters } from '../../model/OrderBookFiltersProvider'
 import { useOrderBook } from '../../model/useOrderBook'
 import { useOrderBookDetails } from '../../model/useOrderBookDetails'
-import OrderBookHeader from './OrderBookHeader'
 import OrderBookResizeHandle from './OrderBookResizeHandle'
-import OrderBookSection from './OrderBookSection'
+import OrderBookTable, { OrderBookTableHeader } from './OrderBookTable'
 import OrderTooltip from './OrderTooltip'
 
-interface OrderBookProps {
+interface OrderBookContainerProps {
   filters?: {
     buyAsset?: string[]
     sellAsset?: string[]
@@ -25,8 +23,7 @@ interface OrderBookProps {
   onOrderClick: (order: OrderBookOrder) => void
 }
 
-export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
-  const { t } = useThemeClasses()
+export default function OrderBookContainer({ filters, onOrderClick }: OrderBookContainerProps) {
   const { filters: contextFilters } = useOrderBookFilters()
   const { orderBookData, orderBookLoading, orderBookHasMore, orderBookError } =
     useOrderBook(contextFilters)
@@ -113,32 +110,40 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
     <div className="h-full flex flex-col">
       {/* Order Book Display */}
       <div
-        className={`${t.card} rounded-lg overflow-hidden border ${t.border} mt-1 mb-6 order-book-container flex-1 flex flex-col`}
+        className="order-book-container flex-1 flex flex-col overflow-hidden rounded-xl backdrop-blur-2xl bg-white/5 dark:bg-black/5"
+        style={{
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          boxShadow:
+            '0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 30px rgba(255, 255, 255, 0.03), 0 2px 8px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        }}
       >
-        {/* Header */}
-        <OrderBookHeader filters={filters} />
+        {/* Header - Fixed at top, outside scrollable sections */}
+        <div>
+          <OrderBookTableHeader filters={filters} />
+        </div>
 
         {/* Sell Orders Section */}
         <div
           ref={sellScrollRef}
-          className="overflow-y-scroll sell-orders-section"
+          className="overflow-y-scroll sell-orders-section scrollbar-thin scrollbar-thumb-gray-300/30 dark:scrollbar-thumb-gray-600/30 scrollbar-track-transparent"
           style={{
             height: `${sellSectionHeight}%`,
           }}
         >
-          <OrderBookSection
+          <OrderBookTable
             orders={filteredSellOrders}
             orderType="sell"
             filters={filters}
-            isLoading={orderBookLoading}
-            error={orderBookError}
-            onOrderClick={handleOrderClick}
+            onClick={handleOrderClick}
             onHover={updateTooltipPosition}
             onMouseLeave={hideTooltip}
-            justifyEnd
             detailsMap={detailsMap}
-            registerOrderElement={registerOrderElement}
+            registerElement={registerOrderElement}
             isLoadingDetails={isLoadingDetails}
+            isLoading={orderBookLoading}
+            error={orderBookError}
+            justifyEnd
+            showHeader={false}
           />
         </div>
 
@@ -148,24 +153,25 @@ export default function OrderBook({ filters, onOrderClick }: OrderBookProps) {
         {/* Buy Orders Section */}
         <div
           ref={buyScrollRef}
-          className="overflow-y-scroll buy-orders-section"
+          className="overflow-y-scroll buy-orders-section scrollbar-thin scrollbar-thumb-gray-300/30 dark:scrollbar-thumb-gray-600/30 scrollbar-track-transparent"
           style={{ height: `${buySectionHeight}%` }}
         >
-          <OrderBookSection
+          <OrderBookTable
             orders={filteredBuyOrders}
             orderType="buy"
             filters={filters}
+            onClick={handleOrderClick}
+            onHover={updateTooltipPosition}
+            onMouseLeave={hideTooltip}
+            detailsMap={detailsMap}
+            registerElement={registerOrderElement}
+            isLoadingDetails={isLoadingDetails}
             isLoading={orderBookLoading}
             error={orderBookError}
             hasMore={orderBookHasMore}
             totalOrders={orderBookData.length}
-            onOrderClick={handleOrderClick}
-            onHover={updateTooltipPosition}
-            onMouseLeave={hideTooltip}
             emptyMessage={emptyMessage}
-            detailsMap={detailsMap}
-            registerOrderElement={registerOrderElement}
-            isLoadingDetails={isLoadingDetails}
+            showHeader={false}
           />
         </div>
       </div>
