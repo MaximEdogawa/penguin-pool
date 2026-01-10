@@ -77,8 +77,11 @@ export default function SleekPriceSlider({
   const formatPercentage = (val: number): string => {
     if (val === 0) return '0%'
     const decimals = effectiveFineTune ? 2 : 1
-    if (val > 0) return `+${val.toFixed(decimals)}%`
-    return `${val.toFixed(decimals)}%`
+    const formatted = val.toFixed(decimals)
+    // Remove trailing zeros and decimal point if not needed
+    const cleaned = formatted.replace(/\.?0+$/, '')
+    if (val > 0) return `+${cleaned}%`
+    return `${cleaned}%`
   }
 
   // Slider color based on value
@@ -160,8 +163,8 @@ export default function SleekPriceSlider({
 
       {/* Slider and Percentage Display row */}
       <div className="flex items-center gap-2">
-        {/* Slider - full width */}
-        <div className="flex-1 relative">
+        {/* Slider - fixed width, always same size */}
+        <div className="flex-1 relative min-w-0">
           <input
             id={sliderIdRef.current}
             type="range"
@@ -170,7 +173,7 @@ export default function SleekPriceSlider({
             step={effectiveFineTune ? 0.1 : snapInterval}
             value={clampedValue}
             onChange={handleSliderChange}
-            className="w-full h-0.5 bg-gray-200/50 dark:bg-gray-700/50 rounded-full appearance-none cursor-pointer"
+            className="w-full h-0.5 rounded-full appearance-none cursor-pointer"
             style={{
               background: `linear-gradient(to right,
                 rgba(156, 163, 175, 0.3) 0%,
@@ -179,10 +182,10 @@ export default function SleekPriceSlider({
           />
         </div>
 
-        {/* Percentage Display */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        {/* Percentage Display - fixed width area */}
+        <div className="flex items-center justify-end flex-shrink-0" style={{ minWidth: '2.5rem' }}>
           <span
-            className={`text-[10px] font-semibold font-mono tabular-nums ${
+            className={`text-[10px] font-semibold font-mono tabular-nums text-right ${
               clampedValue === 0
                 ? t.textSecondary
                 : clampedValue > 0
