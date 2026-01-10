@@ -36,9 +36,12 @@ export default function TradingLayout({
 
   const handleOrderClick = useCallback(
     (order: OrderBookOrder) => {
+      // Set the same order for both maker and taker tabs
+      setSelectedOrderForTaking(order)
+      setSelectedOrderForMaking(order)
+
       if (currentMode === 'taker') {
         // Taker mode: show take offer (responsive)
-        setSelectedOrderForTaking(order)
         if (isMobile) {
           // Mobile: always open modal
           setShowTakeOfferModal(true)
@@ -46,7 +49,6 @@ export default function TradingLayout({
         // Desktop: show inline (handled in render)
       } else {
         // Maker mode: show maker offer content
-        setSelectedOrderForMaking(order)
         if (isMobile) {
           // Mobile: open CreateOfferModal with order data
           useAsTemplate(order)
@@ -63,17 +65,13 @@ export default function TradingLayout({
     // via the query key dependency
   }, [])
 
-  const handleModeChange = useCallback(
-    (mode: 'maker' | 'taker') => {
-      setCurrentMode(mode)
-      resetForm()
-      setSelectedOrderForTaking(null)
-      setSelectedOrderForMaking(null)
-      setShowTakeOfferModal(false)
-      setShowCreateOfferModal(false)
-    },
-    [resetForm]
-  )
+  const handleModeChange = useCallback((mode: 'maker' | 'taker') => {
+    setCurrentMode(mode)
+    // Don't clear selected orders or reset form when switching modes
+    // Keep the state of each tab until a new offer is selected
+    setShowTakeOfferModal(false)
+    setShowCreateOfferModal(false)
+  }, [])
 
   const handleTakeOfferClose = useCallback(() => {
     setShowTakeOfferModal(false)
@@ -130,60 +128,69 @@ export default function TradingLayout({
         <MakerTakerTabs activeMode={currentMode} onModeChange={handleModeChange} />
         <div className={`${t.card} p-4 rounded-lg border ${t.border} flex-1 overflow-y-auto`}>
           {/* Show inline content on desktop when order is selected */}
-          {currentMode === 'taker' && selectedOrderForTaking ? (
-            <TakeOfferContent
-              order={selectedOrderForTaking}
-              onOfferTaken={handleOfferTaken}
-              mode="inline"
-            />
-          ) : currentMode === 'maker' && selectedOrderForMaking ? (
-            <CreateOfferForm
-              order={selectedOrderForMaking}
-              onOfferCreated={handleOfferCreated}
-              mode="inline"
-              onOpenModal={() => {
-                setShowCreateOfferModal(true)
-              }}
-            />
-          ) : currentMode === 'maker' ? (
-            <div className="space-y-4">
-              <div>
-                <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Create Offer</h3>
-                <p className={`text-xs ${t.textSecondary} mb-4`}>
-                  Create a new trading offer. Click an order from the order book to use it as a
-                  template.
-                </p>
-              </div>
+          {/* Keep both components mounted to preserve state when switching tabs */}
+          <div className={currentMode === 'taker' ? '' : 'hidden'}>
+            {selectedOrderForTaking ? (
+              <TakeOfferContent
+                key={`taker-${selectedOrderForTaking.id}`}
+                order={selectedOrderForTaking}
+                onOfferTaken={handleOfferTaken}
+                mode="inline"
+              />
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Take Offer</h3>
+                  <p className={`text-xs ${t.textSecondary} mb-4`}>
+                    Click an order from the order book to take it, or create a new offer manually.
+                  </p>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  // If there was a previously selected order, it will be passed to the modal
+                <button
+                  type="button"
+                  onClick={() => setShowCreateOfferModal(true)}
+                  className={`w-full px-4 py-2 rounded-lg ${t.card} border ${t.border} ${t.text} ${t.cardHover} transition-colors text-sm font-medium`}
+                >
+                  Take Offer
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className={currentMode === 'maker' ? '' : 'hidden'}>
+            {selectedOrderForMaking ? (
+              <CreateOfferForm
+                key={`maker-${selectedOrderForMaking.id}`}
+                order={selectedOrderForMaking}
+                onOfferCreated={handleOfferCreated}
+                mode="inline"
+                onOpenModal={() => {
                   setShowCreateOfferModal(true)
                 }}
-                className={`w-full px-4 py-2 rounded-lg ${t.card} border ${t.border} ${t.text} ${t.cardHover} transition-colors text-sm font-medium`}
-              >
-                Create New Offer
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Take Offer</h3>
-                <p className={`text-xs ${t.textSecondary} mb-4`}>
-                  Click an order from the order book to take it, or create a new offer manually.
-                </p>
-              </div>
+              />
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Create Offer</h3>
+                  <p className={`text-xs ${t.textSecondary} mb-4`}>
+                    Create a new trading offer. Click an order from the order book to use it as a
+                    template.
+                  </p>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => setShowCreateOfferModal(true)}
-                className={`w-full px-4 py-2 rounded-lg ${t.card} border ${t.border} ${t.text} ${t.cardHover} transition-colors text-sm font-medium`}
-              >
-                Take Offer
-              </button>
-            </div>
-          )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    // If there was a previously selected order, it will be passed to the modal
+                    setShowCreateOfferModal(true)
+                  }}
+                  className={`w-full px-4 py-2 rounded-lg ${t.card} border ${t.border} ${t.text} ${t.cardHover} transition-colors text-sm font-medium`}
+                >
+                  Create New Offer
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

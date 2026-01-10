@@ -553,82 +553,72 @@ export default function CreateOfferForm({
     <div className={containerClass}>
       <form onSubmit={handleSubmit} className={containerClass}>
         {/* Preview Section */}
-        <div
-          className="p-4 rounded-xl backdrop-blur-2xl bg-white/5 dark:bg-black/5 border border-white/10 dark:border-white/5"
-          style={{
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',
-          }}
-        >
-          <h4 className={`text-sm font-semibold ${t.text} mb-3`}>Offer Preview</h4>
-          <div className="space-y-2 text-xs">
+        <div className={`p-3 rounded-lg ${t.cardHover} backdrop-blur-xl border ${t.border}`}>
+          <h4 className={`text-xs font-medium ${t.text} mb-2`}>Offer Preview</h4>
+          <div className="space-y-1.5 text-xs">
             <div className="flex justify-between">
               <span className={t.textSecondary}>You will offer:</span>
-              <span className={`font-medium ${t.text}`}>{previewOffered || 'No assets'}</span>
+              <span className={t.text}>{previewOffered || 'No assets'}</span>
             </div>
             <div className="flex justify-between">
               <span className={t.textSecondary}>You will receive:</span>
-              <span className={`font-medium ${t.text}`}>{previewRequested || 'No assets'}</span>
+              <span className={t.text}>{previewRequested || 'No assets'}</span>
             </div>
-            <div className={`flex justify-between border-t ${t.border} pt-2 mt-2`}>
+            <div className={`flex justify-between border-t ${t.border} pt-1.5 mt-1.5`}>
               <span className={`font-medium ${t.text}`}>Fee:</span>
               <span className={`font-medium ${t.text}`}>{formatXchAmount(fee)} XCH</span>
             </div>
           </div>
+        </div>
 
-          {/* Transaction Fee Input */}
-          <div className="mt-4">
-            <label className={`block text-xs font-medium ${t.text} mb-1.5`}>
-              Transaction Fee (XCH)
-            </label>
-            <input
-              type="number"
-              value={feeInput}
-              onChange={(e) => handleFeeChange(e.target.value)}
-              step="0.000001"
-              min="0"
-              placeholder={getMinimumFeeInXch().toString()}
-              className={`w-full px-2 py-1.5 border rounded-lg text-xs ${t.input} ${t.border} backdrop-blur-xl`}
-              disabled={isSubmitting}
-            />
-            <p className={`mt-1 text-xs ${t.textSecondary}`}>
-              Fee can be 0 for free transactions (minimum: {formatXchAmount(getMinimumFeeInXch())}{' '}
-              XCH)
-            </p>
-          </div>
+        {/* Transaction Fee Input */}
+        <div>
+          <label className={`block text-xs font-medium ${t.text} mb-1.5`}>
+            Transaction Fee (XCH)
+          </label>
+          <input
+            type="number"
+            value={feeInput}
+            onChange={(e) => handleFeeChange(e.target.value)}
+            step="0.000001"
+            min="0"
+            placeholder={getMinimumFeeInXch().toString()}
+            className={`w-full px-2 py-1.5 border rounded-lg text-xs ${t.input} ${t.border} backdrop-blur-xl`}
+            disabled={isSubmitting}
+          />
+          <p className={`mt-1 text-xs ${t.textSecondary}`}>
+            Fee can be 0 for free transactions (minimum: {formatXchAmount(getMinimumFeeInXch())}{' '}
+            XCH)
+          </p>
+        </div>
 
-          {/* Create Offer Button */}
-          <div className="flex flex-wrap justify-end gap-2 mt-4">
-            {mode === 'modal' && onClose && (
-              <Button type="button" onClick={onClose} variant="secondary" disabled={isSubmitting}>
-                Cancel
-              </Button>
-            )}
-            {mode === 'inline' && order && onOpenModal && (
-              <Button
-                type="button"
-                onClick={onOpenModal}
-                variant="secondary"
-                disabled={isSubmitting}
-              >
-                Create New Offer
-              </Button>
-            )}
-            <Button
-              type="submit"
-              disabled={!isFormValid || isSubmitting || isUploadingToDexie}
-              variant="success"
-              icon={isSubmitting ? undefined : Plus}
-            >
-              {isSubmitting || isUploadingToDexie ? (
-                <>
-                  <Loader2 size={12} className="animate-spin" />
-                  {isUploadingToDexie ? 'Uploading...' : 'Creating...'}
-                </>
-              ) : (
-                'Create Offer'
-              )}
+        {/* Create Offer Button */}
+        <div className="flex flex-wrap justify-end gap-2">
+          {mode === 'modal' && onClose && (
+            <Button type="button" onClick={onClose} variant="secondary" disabled={isSubmitting}>
+              Cancel
             </Button>
-          </div>
+          )}
+          {mode === 'inline' && order && onOpenModal && (
+            <Button type="button" onClick={onOpenModal} variant="secondary" disabled={isSubmitting}>
+              Create New Offer
+            </Button>
+          )}
+          <Button
+            type="submit"
+            disabled={!isFormValid || isSubmitting || isUploadingToDexie}
+            variant="success"
+            icon={isSubmitting ? undefined : Plus}
+          >
+            {isSubmitting || isUploadingToDexie ? (
+              <>
+                <Loader2 size={12} className="animate-spin" />
+                {isUploadingToDexie ? 'Uploading...' : 'Creating...'}
+              </>
+            ) : (
+              'Create Offer'
+            )}
+          </Button>
         </div>
 
         {/* Offered/Requested Asset Sections - Only show in modal mode */}
