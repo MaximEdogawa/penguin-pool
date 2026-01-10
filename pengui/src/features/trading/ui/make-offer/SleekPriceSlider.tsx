@@ -1,46 +1,84 @@
 'use client'
 
 import { useThemeClasses } from '@/shared/hooks'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface SleekPriceSliderProps {
   value: number // Current adjustment percentage (-100 to +100)
   onChange: (value: number) => void
   label: string
-  snapInterval?: number // Default 10 (not used in simple version)
+  snapInterval?: number // Default 10
 }
 
 export default function SleekPriceSlider({
   value,
   onChange,
   label,
-  snapInterval = 10,
+  snapInterval = 5,
 }: SleekPriceSliderProps) {
   const { t } = useThemeClasses()
   const sliderIdRef = useRef(`sleek-slider-${Math.random().toString(36).substr(2, 9)}`)
   const styleIdRef = useRef(`sleek-slider-style-${Math.random().toString(36).substr(2, 9)}`)
+  const [isFineTune, setIsFineTune] = useState(false)
+  const [isShiftPressed, setIsShiftPressed] = useState(false)
+
+  // Handle Shift key for fine-tuning
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        setIsShiftPressed(true)
+      }
+    }
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        setIsShiftPressed(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [])
+
+  // Effective fine-tune mode: either toggle is on OR Shift is pressed
+  const effectiveFineTune = isFineTune || isShiftPressed
 
   // Ensure value is always a valid number
   const safeValue = typeof value === 'number' && !isNaN(value) && isFinite(value) ? value : 0
   const clampedValue = Math.max(-100, Math.min(100, safeValue))
 
-  // Simple onChange handler - no complex logic, no callbacks, no dependencies
+  // Handle slider change with snapping
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value
-    const newValue = parseFloat(rawValue)
+    let newValue = parseFloat(rawValue)
 
-    // Validate and clamp
-    if (!isNaN(newValue) && isFinite(newValue)) {
-      const clamped = Math.max(-100, Math.min(100, newValue))
-      onChange(clamped)
+    // Validate
+    if (isNaN(newValue) || !isFinite(newValue)) {
+      return
     }
+
+    // Apply snapping if not in fine-tune mode
+    if (!effectiveFineTune) {
+      // Snap to nearest interval
+      newValue = Math.round(newValue / snapInterval) * snapInterval
+    }
+
+    // Clamp to -100 to +100
+    newValue = Math.max(-100, Math.min(100, newValue))
+    onChange(newValue)
   }
 
   // Format percentage for display
   const formatPercentage = (val: number): string => {
     if (val === 0) return '0%'
-    if (val > 0) return `+${val.toFixed(1)}%`
-    return `${val.toFixed(1)}%`
+    const decimals = effectiveFineTune ? 2 : 1
+    if (val > 0) return `+${val.toFixed(decimals)}%`
+    return `${val.toFixed(decimals)}%`
   }
 
   // Slider color based on value
@@ -99,10 +137,28 @@ export default function SleekPriceSlider({
 
   return (
     <div className="flex flex-col gap-1 py-0">
-      {/* Label above */}
-      <label className={`text-[9px] ${t.textSecondary} font-normal`}>{label}</label>
+      {/* Label and Toggle on same row */}
+      <div className="flex items-center justify-between">
+        <label className={`text-[9px] ${t.textSecondary} font-normal`}>{label}</label>
+        <button
+          type="button"
+          onClick={() => setIsFineTune(!isFineTune)}
+          className={`text-[9px] px-1.5 py-0.5 rounded border transition-all ${
+            effectiveFineTune
+              ? 'bg-blue-500/10 border-blue-400/30 text-blue-600 dark:text-blue-400'
+              : `${t.border} ${t.textSecondary}`
+          }`}
+          title={
+            effectiveFineTune
+              ? 'Fine-tune mode (or hold Shift)'
+              : 'Click for fine-tune (or hold Shift)'
+          }
+        >
+          {effectiveFineTune ? 'Fine' : 'Snap'}
+        </button>
+      </div>
 
-      {/* Slider and controls row */}
+      {/* Slider and Percentage Display row */}
       <div className="flex items-center gap-2">
         {/* Slider - full width */}
         <div className="flex-1 relative">
@@ -111,15 +167,13 @@ export default function SleekPriceSlider({
             type="range"
             min="-100"
             max="100"
-            step="0.1"
+            step={effectiveFineTune ? 0.1 : snapInterval}
             value={clampedValue}
             onChange={handleSliderChange}
             className="w-full h-0.5 bg-gray-200/50 dark:bg-gray-700/50 rounded-full appearance-none cursor-pointer"
             style={{
               background: `linear-gradient(to right,
-                ${sliderColor} 0%,
-                ${sliderColor} ${50 + clampedValue / 2}%,
-                rgba(156, 163, 175, 0.3) ${50 + clampedValue / 2}%,
+                rgba(156, 163, 175, 0.3) 0%,
                 rgba(156, 163, 175, 0.3) 100%)`,
             }}
           />

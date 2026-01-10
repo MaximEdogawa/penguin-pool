@@ -16,7 +16,7 @@ import {
 import AssetSelector, { type ExtendedAsset as ExtendedOfferAsset } from '@/shared/ui/AssetSelector'
 import Button from '@/shared/ui/Button'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronRight, Loader2, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Loader2, Plus, RotateCcw } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
 import { useOrderBook } from '../../model/useOrderBook'
@@ -712,11 +712,26 @@ export default function CreateOfferForm({
                 boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
               }}
             >
-              <h4
-                className={`text-[10px] font-medium ${t.textSecondary} mb-1.5 uppercase tracking-wide`}
-              >
-                Price Adjustment
-              </h4>
+              <div className="flex items-center justify-between mb-1.5">
+                <h4
+                  className={`text-[10px] font-medium ${t.textSecondary} uppercase tracking-wide`}
+                >
+                  Price Adjustment
+                </h4>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setRequestedAdjustment(0)
+                    setOfferedAdjustment(0)
+                  }}
+                  className={`p-1 rounded hover:bg-white/10 dark:hover:bg-black/10 transition-colors ${t.textSecondary} hover:text-current`}
+                  title="Reset to original prices"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                </button>
+              </div>
               <div className="space-y-1.5">
                 <SleekPriceSlider
                   value={requestedAdjustment}
