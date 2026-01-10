@@ -28,7 +28,7 @@ export default function TakeOfferModal({ onClose, onOfferTaken, order }: TakeOff
           </button>
         </div>
 
-        {/* Take Offer Content */}
+        {/* Market Offer Content */}
         <MarketOfferTab order={order} onOfferTaken={onOfferTaken} onClose={onClose} mode="modal" />
       </div>
     </Modal>

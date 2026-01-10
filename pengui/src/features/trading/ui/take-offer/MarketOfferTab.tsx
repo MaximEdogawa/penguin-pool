@@ -599,11 +599,11 @@ export default function MarketOfferTab({
             }
           }, 1500)
         } else {
-          throw new Error('Failed to take offer')
+          throw new Error('Failed to take market offer')
         }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred'
-        setErrorMessage(`Failed to take offer: ${errorMsg}`)
+        setErrorMessage(`Failed to take market offer: ${errorMsg}`)
       } finally {
         setIsSubmitting(false)
       }
@@ -712,7 +712,7 @@ export default function MarketOfferTab({
           </p>
         </div>
 
-        {/* Take Offer Button - Moved to top */}
+        {/* Market Offer Button - Moved to top */}
         <div className="flex flex-wrap justify-end gap-2">
           {mode === 'modal' && onClose && (
             <Button type="button" onClick={onClose} variant="secondary" disabled={isSubmitting}>

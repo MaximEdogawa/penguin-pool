@@ -41,14 +41,14 @@ export default function TradingLayout({
       setSelectedOrderForMaking(order)
 
       if (currentMode === 'taker') {
-        // Taker mode: show take offer (responsive)
+        // Taker mode: show market offer (responsive)
         if (isMobile) {
           // Mobile: always open modal
           setShowTakeOfferModal(true)
         }
         // Desktop: show inline (handled in render)
       } else {
-        // Maker mode: show maker offer content
+        // Maker mode: show limit offer
         if (isMobile) {
           // Mobile: open CreateOfferModal with order data
           useAsTemplate(order)
@@ -215,7 +215,7 @@ export default function TradingLayout({
         />
       )}
 
-      {/* Take Offer Modal - Only shown on mobile */}
+      {/* Market Offer Modal - Only shown on mobile */}
       {showTakeOfferModal && (
         <TakeOfferModal
           order={selectedOrderForTaking || undefined}
