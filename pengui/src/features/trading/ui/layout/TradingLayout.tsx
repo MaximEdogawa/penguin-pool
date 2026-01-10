@@ -128,7 +128,7 @@ export default function TradingLayout({
         <MakerTakerTabs
           activeMode={currentMode}
           onModeChange={handleModeChange}
-          selectedOrder={currentMode === 'taker' ? selectedOrderForTaking : selectedOrderForMaking}
+          selectedOrder={selectedOrderForTaking}
           filters={filters}
         />
         <div className={`${t.card} p-4 rounded-lg border ${t.border} flex-1 overflow-y-auto`}>
@@ -141,7 +141,6 @@ export default function TradingLayout({
                 order={selectedOrderForTaking}
                 onOfferTaken={handleOfferTaken}
                 mode="inline"
-                filters={filters}
               />
             ) : (
               <div className="space-y-4">
@@ -177,7 +176,7 @@ export default function TradingLayout({
             ) : (
               <div className="space-y-4">
                 <div>
-                  <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Limit</h3>
+                  <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Create Offer</h3>
                   <p className={`text-xs ${t.textSecondary} mb-4`}>
                     Create a new trading offer. Click an order from the order book to use it as a
                     template.

@@ -17,11 +17,10 @@ import {
 } from '@/shared/lib/utils/chia-units'
 import { getDexieStatusDescription, validateOfferString } from '@/shared/lib/utils/offerUtils'
 import Button from '@/shared/ui/Button'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2, ShoppingCart } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { OrderBookOrder } from '../../lib/orderBookTypes'
-import type { OrderBookFilters } from '../../lib/orderBookTypes'
+import type { OrderBookFilters, OrderBookOrder } from '../../lib/orderBookTypes'
 import OrderDetailsSection from './OrderDetailsSection'
 
 interface TakeOfferContentProps {
@@ -99,6 +98,7 @@ export default function TakeOfferContent({
   const takeOfferMutation = useTakeOffer()
   const { getCatTokenInfo } = useCatTokens()
   const dexieDataService = useDexieDataService()
+  const queryClient = useQueryClient()
 
   // Determine if order is buy or sell (from taker's perspective)
   const orderType = useMemo(() => {
@@ -183,6 +183,96 @@ export default function TakeOfferContent({
     getCatTokenInfoRef.current = getCatTokenInfo
   }, [postOffer, getCatTokenInfo])
 
+  // Get cached data immediately for instant UI updates
+  const cachedOrderData = useMemo(() => {
+    if (!order?.id) return null
+    const cached = queryClient.getQueryData<{
+      orderId: string
+      offerString: string
+      fullMakerAddress: string
+      offer: DexieOffer
+    }>(['orderBookDetails', order.id])
+
+    if (cached) {
+      return {
+        offerString: cached.offerString,
+        fullMakerAddress: cached.fullMakerAddress,
+        offer: cached.offer,
+      }
+    }
+    return null
+  }, [order?.id, queryClient])
+
+  // Pre-populate offer preview from cached data immediately (no debounce, no delay)
+  useEffect(() => {
+    const populateFromCache = async () => {
+      if (!cachedOrderData?.offer || !order?.id) return
+
+      // Skip if we already have preview for this order
+      if (lastParsedOfferRef.current === cachedOrderData.offerString) {
+        return
+      }
+
+      // Mark as parsing to prevent duplicate processing
+      if (isParsingRef.current) return
+      isParsingRef.current = true
+
+      try {
+        const appOffer = convertDexieOfferToAppOffer({
+          success: true,
+          id: cachedOrderData.offer.id || '',
+          known: true,
+          offer: cachedOrderData.offer,
+        })
+
+        // Enrich assets with ticker symbols
+        const enrichedAssetsOffered = await Promise.all(
+          appOffer.assetsOffered.map(async (asset) => {
+            if (asset.assetId) {
+              const tickerInfo = await getCatTokenInfoRef.current(asset.assetId)
+              return {
+                ...asset,
+                symbol: tickerInfo?.ticker || undefined,
+              }
+            }
+            return asset
+          })
+        )
+
+        const enrichedAssetsRequested = await Promise.all(
+          appOffer.assetsRequested.map(async (asset) => {
+            if (asset.assetId) {
+              const tickerInfo = await getCatTokenInfoRef.current(asset.assetId)
+              return {
+                ...asset,
+                symbol: tickerInfo?.ticker || undefined,
+              }
+            }
+            return asset
+          })
+        )
+
+        setOfferPreview({
+          assetsOffered: enrichedAssetsOffered,
+          assetsRequested: enrichedAssetsRequested,
+          creatorAddress: appOffer.creatorAddress,
+          fee: appOffer.fee,
+          status: appOffer.status,
+          dexieStatus: appOffer.dexieStatus,
+        })
+        lastParsedOfferRef.current = cachedOrderData.offerString
+        setParseError('')
+      } catch (error) {
+        logger.error('Error processing cached offer data:', error)
+      } finally {
+        isParsingRef.current = false
+      }
+    }
+
+    // Populate immediately from cache (no debounce, no delay)
+    populateFromCache()
+  }, [cachedOrderData?.offer, cachedOrderData?.offerString, order?.id])
+
   // Use TanStack Query to fetch offer details - shares cache with useOrderBookDetails
   // Uses individual query key: ['orderBookDetails', orderId]
   // This makes loading instant if the order was already fetched for the viewport
@@ -210,11 +300,25 @@ export default function TakeOfferContent({
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
     retryDelay: 1000,
+    // Use initialData for instant display when cached data exists
+    initialData: cachedOrderData || undefined,
+    // Use placeholderData as fallback for smooth transitions
+    placeholderData: (previousData) => {
+      if (cachedOrderData) return cachedOrderData
+      return previousData
+    },
+    // Don't refetch if we have fresh cached data - prevents unnecessary requests
+    refetchOnMount: !cachedOrderData, // Only refetch on mount if no cached data
+    refetchOnWindowFocus: false, // Never refetch on window focus
+    refetchOnReconnect: false, // Never refetch on reconnect
   })
 
-  // Extract offer string from query result
-  const fetchedOfferString = offerDetailsQuery.data?.offerString || ''
-  const isLoadingOfferString = offerDetailsQuery.isLoading
+  // Extract offer string from query result - prefer cached data for instant display
+  const fetchedOfferString =
+    offerDetailsQuery.data?.offerString || cachedOrderData?.offerString || ''
+  // Only show loading if we don't have any data (neither cached nor fetched)
+  const isLoadingOfferString =
+    offerDetailsQuery.isLoading && !offerDetailsQuery.data && !cachedOrderData
 
   // Update offer string when query data changes
   useEffect(() => {
@@ -252,13 +356,9 @@ export default function TakeOfferContent({
       const offerData = offerDetailsQuery.data?.offer
       const trimmedOffer = offerString.trim()
 
-      // Skip if empty, already parsing, or same as last parsed, or if offer string is still loading
-      if (
-        !trimmedOffer ||
-        isParsingRef.current ||
-        lastParsedOfferRef.current === trimmedOffer ||
-        isLoadingOfferString
-      ) {
+      // Skip if empty, already parsing, or same as last parsed
+      // Don't skip if loading - we can use cached data
+      if (!trimmedOffer || isParsingRef.current || lastParsedOfferRef.current === trimmedOffer) {
         return
       }
 
@@ -268,7 +368,7 @@ export default function TakeOfferContent({
         isParsingRef.current = true
         lastParsedOfferRef.current = trimmedOffer
         setParseError('')
-        setOfferPreview(null)
+        // Don't clear preview - keep existing preview visible while updating
 
         try {
           const appOffer = convertDexieOfferToAppOffer({
@@ -335,7 +435,7 @@ export default function TakeOfferContent({
       isParsingRef.current = true
       lastParsedOfferRef.current = trimmedOffer
       setParseError('')
-      setOfferPreview(null)
+      // Don't clear preview - keep existing preview visible while fetching
 
       // Use Dexie to inspect the offer and get real asset details
       try {
@@ -405,17 +505,33 @@ export default function TakeOfferContent({
       }
     }
 
-    // Debounce parsing
+    // Only parse if we don't already have preview from cache
+    // If cached data was used, skip this parse to avoid duplicate work
+    if (cachedOrderData?.offer && lastParsedOfferRef.current === cachedOrderData.offerString) {
+      // Already processed from cache, skip
+      return
+    }
+
+    // Debounce parsing to avoid too many requests
+    // Reduced from 500ms to 200ms for faster updates
     const timeoutId = setTimeout(() => {
       parseOffer()
-    }, 500)
+    }, 200)
 
     return () => {
-      clearTimeout(timeoutId)
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
       // Reset parsing flag if component unmounts or effect re-runs
       isParsingRef.current = false
     }
-  }, [offerString, isLoadingOfferString, order?.id, fetchedOfferString]) // Depend on offerString, loading state, order ID, and fetched offer string
+  }, [
+    offerString,
+    order?.id,
+    fetchedOfferString,
+    offerDetailsQuery.data?.offer,
+    cachedOrderData?.offer,
+  ]) // Depend on offerString, order ID, fetched offer string, and query data
 
   // Handle fee input
   const handleFeeChange = useCallback((value: string) => {

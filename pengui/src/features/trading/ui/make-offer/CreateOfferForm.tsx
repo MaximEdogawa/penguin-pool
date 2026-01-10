@@ -97,6 +97,22 @@ export default function CreateOfferForm({
   )
 
   // Step 6: Fix integration - only update when order ID actually changes
+  // Use useMemo to compute base amounts immediately for instant UI updates
+  const baseAmountsFromOrder = useMemo(() => {
+    if (!order) return { requested: [], offered: [] }
+
+    const requestedBase = order.requesting.map((asset) => {
+      const amount = asset.amount || 0
+      return typeof amount === 'number' && isFinite(amount) ? amount : 0
+    })
+    const offeredBase = order.offering.map((asset) => {
+      const amount = asset.amount || 0
+      return typeof amount === 'number' && isFinite(amount) ? amount : 0
+    })
+
+    return { requested: requestedBase, offered: offeredBase }
+  }, [order?.id, order?.requesting, order?.offering])
+
   const prevOrderIdRef = useRef<string | undefined>(undefined)
 
   useEffect(() => {
@@ -109,20 +125,11 @@ export default function CreateOfferForm({
     }
 
     if (order) {
-      // Call useAsTemplate to populate form
+      // Call useAsTemplate to populate form - this updates state synchronously
       useAsTemplate(order)
 
-      // Store base amounts for sliders
-      const requestedBase = order.requesting.map((asset) => {
-        const amount = asset.amount || 0
-        return typeof amount === 'number' && isFinite(amount) ? amount : 0
-      })
-      const offeredBase = order.offering.map((asset) => {
-        const amount = asset.amount || 0
-        return typeof amount === 'number' && isFinite(amount) ? amount : 0
-      })
-
-      setBaseAmounts({ requested: requestedBase, offered: offeredBase })
+      // Store base amounts for sliders - use precomputed values for instant update
+      setBaseAmounts(baseAmountsFromOrder)
       setRequestedAdjustment(initialPriceAdjustments?.requested || 0)
       setOfferedAdjustment(initialPriceAdjustments?.offered || 0)
       setManuallyEdited({ requested: new Set(), offered: new Set() })
@@ -136,7 +143,7 @@ export default function CreateOfferForm({
       prevOrderIdRef.current = undefined
     }
     // Only depend on order ID - useAsTemplate is stable (useCallback from hook)
-  }, [order?.id, useAsTemplate])
+  }, [order?.id, useAsTemplate, baseAmountsFromOrder])
 
   // Calculate adjusted assets - calculate directly without useMemo to avoid infinite loops
   // Simple calculation that runs on each render - no memoization needed
