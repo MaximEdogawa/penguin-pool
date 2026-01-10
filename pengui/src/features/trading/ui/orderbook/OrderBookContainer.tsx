@@ -71,6 +71,18 @@ export default function OrderBookContainer({ filters, onOrderClick }: OrderBookC
     )
   }, [filters, filteredSellOrders, filteredBuyOrders, calculatePriceFn])
 
+  // Scroll sell side to bottom by default when orders load or change
+  useEffect(() => {
+    if (sellScrollRef.current && filteredSellOrders.length > 0 && !orderBookLoading) {
+      // Use requestAnimationFrame to ensure DOM is fully updated
+      requestAnimationFrame(() => {
+        if (sellScrollRef.current) {
+          sellScrollRef.current.scrollTop = sellScrollRef.current.scrollHeight
+        }
+      })
+    }
+  }, [filteredSellOrders, orderBookLoading])
+
   // Intersection Observer for infinite scrolling
   useEffect(() => {
     if (!buyScrollRef.current) return
