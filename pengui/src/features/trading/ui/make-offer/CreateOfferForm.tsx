@@ -6,6 +6,7 @@ import { useOfferStorage } from '@/features/offers/model/useOfferStorage'
 import { useOfferUpload } from '@/features/offers/model/useOfferUpload'
 import { useCreateOffer, useWalletAddress } from '@/features/wallet'
 import { useCatTokens, useThemeClasses } from '@/shared/hooks'
+import { getNativeTokenTicker } from '@/shared/lib/config/environment'
 import { logger } from '@/shared/lib/logger'
 import {
   convertToSmallestUnit,
@@ -18,7 +19,7 @@ import Button from '@/shared/ui/Button'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronRight, Loader2, Plus, RotateCcw } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { OrderBookOrder } from '../../lib/orderBookTypes'
+import type { OrderBookFilters, OrderBookOrder } from '../../lib/orderBookTypes'
 import { useOrderBook } from '../../model/useOrderBook'
 import { useOrderBookOfferSubmission } from '../../model/useOrderBookOfferSubmission'
 import SleekPriceSlider from './SleekPriceSlider'
@@ -30,6 +31,7 @@ interface CreateOfferFormProps {
   mode?: 'modal' | 'inline'
   initialPriceAdjustments?: { requested: number; offered: number }
   onOpenModal?: () => void
+  filters?: OrderBookFilters
 }
 
 export default function CreateOfferForm({
@@ -39,6 +41,7 @@ export default function CreateOfferForm({
   mode = 'inline',
   initialPriceAdjustments,
   onOpenModal,
+  filters,
 }: CreateOfferFormProps) {
   const { t } = useThemeClasses()
   const createOfferMutation = useCreateOffer()
@@ -47,6 +50,66 @@ export default function CreateOfferForm({
   const { data: walletAddress } = useWalletAddress()
   const queryClient = useQueryClient()
   const { getCatTokenInfo } = useCatTokens()
+
+  // Determine if order is buy or sell (from maker's perspective)
+  const orderType = useMemo(() => {
+    if (!order || !filters?.buyAsset || !filters?.sellAsset) {
+      return null
+    }
+
+    const buyAssets = filters.buyAsset || []
+    const sellAssets = filters.sellAsset || []
+
+    if (buyAssets.length === 0 || sellAssets.length === 0) {
+      return null
+    }
+
+    // Helper to get ticker symbol
+    const getTickerSymbol = (assetId: string, code?: string): string => {
+      if (code) return code
+      if (!assetId) return getNativeTokenTicker()
+      const tickerInfo = getCatTokenInfo(assetId)
+      return tickerInfo?.ticker || assetId.slice(0, 8)
+    }
+
+    // Check if requesting side matches buy asset
+    const requestingIsBuyAsset = order.requesting.some((asset) =>
+      buyAssets.some(
+        (filterAsset) =>
+          getTickerSymbol(asset.id, asset.code).toLowerCase() === filterAsset.toLowerCase() ||
+          asset.id.toLowerCase() === filterAsset.toLowerCase() ||
+          (asset.code && asset.code.toLowerCase() === filterAsset.toLowerCase())
+      )
+    )
+
+    // Check if offering side matches buy asset
+    const offeringIsBuyAsset = order.offering.some((asset) =>
+      buyAssets.some(
+        (filterAsset) =>
+          getTickerSymbol(asset.id, asset.code).toLowerCase() === filterAsset.toLowerCase() ||
+          asset.id.toLowerCase() === filterAsset.toLowerCase() ||
+          (asset.code && asset.code.toLowerCase() === filterAsset.toLowerCase())
+      )
+    )
+
+    // From maker's perspective (Limit tab):
+    // If maker is requesting buyAsset, maker is SELLING buyAsset
+    // If maker is offering buyAsset, maker is BUYING buyAsset
+    if (requestingIsBuyAsset && !offeringIsBuyAsset) {
+      return 'sell' // Maker is requesting buyAsset, so maker is selling it
+    } else if (offeringIsBuyAsset && !requestingIsBuyAsset) {
+      return 'buy' // Maker is offering buyAsset, so maker is buying it
+    }
+
+    return null
+  }, [
+    order?.id,
+    order?.requesting,
+    order?.offering,
+    filters?.buyAsset,
+    filters?.sellAsset,
+    getCatTokenInfo,
+  ])
 
   const { makerAssets, setMakerAssets, takerAssets, setTakerAssets, useAsTemplate, resetForm } =
     useOrderBookOfferSubmission()
@@ -614,7 +677,7 @@ export default function CreateOfferForm({
           <Button
             type="submit"
             disabled={!isFormValid || isSubmitting || isUploadingToDexie}
-            variant="success"
+            variant={orderType === 'sell' ? 'danger' : 'success'}
             icon={isSubmitting ? undefined : Plus}
           >
             {isSubmitting || isUploadingToDexie ? (

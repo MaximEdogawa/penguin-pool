@@ -63,24 +63,24 @@ export default function MakerTakerTabs({
     )
 
     // For Market tab (taker's perspective):
-    // If maker is requesting buyAsset (offering sellAsset), taker is SELLING buyAsset
-    // If maker is offering buyAsset (requesting sellAsset), taker is BUYING buyAsset
+    // If maker is requesting buyAsset (offering sellAsset), taker is BUYING buyAsset
+    // If maker is offering buyAsset (requesting sellAsset), taker is SELLING buyAsset
     // For Limit tab (maker's perspective - reversed):
-    // If maker is requesting buyAsset, maker is BUYING buyAsset
-    // If maker is offering buyAsset, maker is SELLING buyAsset
+    // If maker is requesting buyAsset, maker is SELLING buyAsset
+    // If maker is offering buyAsset, maker is BUYING buyAsset
     if (activeMode === 'taker') {
       // Market tab: taker's perspective
       if (requestingIsBuyAsset && !offeringIsBuyAsset) {
-        return 'sell' // Maker wants buyAsset, so taker is selling it
+        return 'buy' // Maker wants buyAsset, so taker is buying it
       } else if (offeringIsBuyAsset && !requestingIsBuyAsset) {
-        return 'buy' // Maker is giving buyAsset, so taker is buying it
+        return 'sell' // Maker is giving buyAsset, so taker is selling it
       }
     } else {
       // Limit tab: maker's perspective
       if (requestingIsBuyAsset && !offeringIsBuyAsset) {
-        return 'buy' // Maker is requesting buyAsset, so maker is buying it
+        return 'sell' // Maker is requesting buyAsset, so maker is selling it
       } else if (offeringIsBuyAsset && !requestingIsBuyAsset) {
-        return 'sell' // Maker is offering buyAsset, so maker is selling it
+        return 'buy' // Maker is offering buyAsset, so maker is buying it
       }
     }
 

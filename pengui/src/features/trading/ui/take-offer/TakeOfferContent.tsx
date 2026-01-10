@@ -142,16 +142,23 @@ export default function TakeOfferContent({
     )
 
     // From taker's perspective (Market tab):
-    // If maker is requesting buyAsset (offering sellAsset), taker is SELLING buyAsset
-    // If maker is offering buyAsset (requesting sellAsset), taker is BUYING buyAsset
+    // If maker is requesting buyAsset (offering sellAsset), taker is BUYING buyAsset
+    // If maker is offering buyAsset (requesting sellAsset), taker is SELLING buyAsset
     if (requestingIsBuyAsset && !offeringIsBuyAsset) {
-      return 'sell' // Maker wants buyAsset, so taker is selling it
+      return 'buy' // Maker wants buyAsset, so taker is buying it
     } else if (offeringIsBuyAsset && !requestingIsBuyAsset) {
-      return 'buy' // Maker is giving buyAsset, so taker is buying it
+      return 'sell' // Maker is giving buyAsset, so taker is selling it
     }
 
     return null
-  }, [order, filters, getCatTokenInfo])
+  }, [
+    order?.id,
+    order?.requesting,
+    order?.offering,
+    filters?.buyAsset,
+    filters?.sellAsset,
+    getCatTokenInfo,
+  ])
 
   // Form state
   const [offerString, setOfferString] = useState('')

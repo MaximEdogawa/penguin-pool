@@ -172,6 +172,7 @@ export default function TradingLayout({
                 onOpenModal={() => {
                   setShowCreateOfferModal(true)
                 }}
+                filters={filters}
               />
             ) : (
               <div className="space-y-4">
