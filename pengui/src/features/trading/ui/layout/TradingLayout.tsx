@@ -6,6 +6,7 @@ import { useCallback, useState } from 'react'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
 import { useOrderBookFilters } from '../../model/OrderBookFiltersProvider'
 import { useOrderBookOfferSubmission } from '../../model/useOrderBookOfferSubmission'
+import CreateOfferForm from '../make-offer/CreateOfferForm'
 import CreateOfferModal from '../modals/CreateOfferModal'
 import TakeOfferModal from '../modals/TakeOfferModal'
 import OrderBookFilters from '../orderbook/OrderBookFilters'
@@ -30,6 +31,7 @@ export default function TradingLayout({
   const [showCreateOfferModal, setShowCreateOfferModal] = useState(false)
   const [showTakeOfferModal, setShowTakeOfferModal] = useState(false)
   const [selectedOrderForTaking, setSelectedOrderForTaking] = useState<OrderBookOrder | null>(null)
+  const [selectedOrderForMaking, setSelectedOrderForMaking] = useState<OrderBookOrder | null>(null)
   const [currentMode, setCurrentMode] = useState<'maker' | 'taker'>(activeMode)
 
   const handleOrderClick = useCallback(
@@ -43,9 +45,14 @@ export default function TradingLayout({
         }
         // Desktop: show inline (handled in render)
       } else {
-        // Maker mode: use as template (keep as-is)
-        useAsTemplate(order)
-        setShowCreateOfferModal(true)
+        // Maker mode: show maker offer content
+        setSelectedOrderForMaking(order)
+        if (isMobile) {
+          // Mobile: open CreateOfferModal with order data
+          useAsTemplate(order)
+          setShowCreateOfferModal(true)
+        }
+        // Desktop: show inline (handled in render)
       }
     },
     [currentMode, useAsTemplate, isMobile]
@@ -61,7 +68,9 @@ export default function TradingLayout({
       setCurrentMode(mode)
       resetForm()
       setSelectedOrderForTaking(null)
+      setSelectedOrderForMaking(null)
       setShowTakeOfferModal(false)
+      setShowCreateOfferModal(false)
     },
     [resetForm]
   )
@@ -75,6 +84,14 @@ export default function TradingLayout({
   const handleOfferTaken = useCallback(() => {
     setShowTakeOfferModal(false)
     setSelectedOrderForTaking(null)
+    resetForm()
+    // Order book will auto-refresh via useOrderBook hook
+  }, [resetForm])
+
+  const handleOfferCreated = useCallback(() => {
+    setShowCreateOfferModal(false)
+    // Keep selectedOrderForMaking so it can be used for pre-filling next time
+    // Only clear it when mode changes or explicitly needed
     resetForm()
     // Order book will auto-refresh via useOrderBook hook
   }, [resetForm])
@@ -112,23 +129,49 @@ export default function TradingLayout({
       <div className="hidden lg:flex flex-col w-96 flex-shrink-0">
         <MakerTakerTabs activeMode={currentMode} onModeChange={handleModeChange} />
         <div className={`${t.card} p-4 rounded-lg border ${t.border} flex-1 overflow-y-auto`}>
-          {/* Show inline take offer content on desktop when order is selected */}
+          {/* Show inline content on desktop when order is selected */}
           {currentMode === 'taker' && selectedOrderForTaking ? (
             <TakeOfferContent
               order={selectedOrderForTaking}
               onOfferTaken={handleOfferTaken}
               mode="inline"
             />
+          ) : currentMode === 'maker' && selectedOrderForMaking ? (
+            <CreateOfferForm
+              order={selectedOrderForMaking}
+              onOfferCreated={handleOfferCreated}
+              mode="inline"
+              onOpenModal={() => {
+                setShowCreateOfferModal(true)
+              }}
+            />
+          ) : currentMode === 'maker' ? (
+            <div className="space-y-4">
+              <div>
+                <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Create Offer</h3>
+                <p className={`text-xs ${t.textSecondary} mb-4`}>
+                  Create a new trading offer. Click an order from the order book to use it as a
+                  template.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  // If there was a previously selected order, it will be passed to the modal
+                  setShowCreateOfferModal(true)
+                }}
+                className={`w-full px-4 py-2 rounded-lg ${t.card} border ${t.border} ${t.text} ${t.cardHover} transition-colors text-sm font-medium`}
+              >
+                Create New Offer
+              </button>
+            </div>
           ) : (
             <div className="space-y-4">
               <div>
-                <h3 className={`text-sm font-semibold ${t.text} mb-2`}>
-                  {currentMode === 'maker' ? 'Create Offer' : 'Take Offer'}
-                </h3>
+                <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Take Offer</h3>
                 <p className={`text-xs ${t.textSecondary} mb-4`}>
-                  {currentMode === 'maker'
-                    ? 'Create a new trading offer. Click an order from the order book to use it as a template.'
-                    : 'Click an order from the order book to take it, or create a new offer manually.'}
+                  Click an order from the order book to take it, or create a new offer manually.
                 </p>
               </div>
 
@@ -137,7 +180,7 @@ export default function TradingLayout({
                 onClick={() => setShowCreateOfferModal(true)}
                 className={`w-full px-4 py-2 rounded-lg ${t.card} border ${t.border} ${t.text} ${t.cardHover} transition-colors text-sm font-medium`}
               >
-                {currentMode === 'maker' ? 'Create New Offer' : 'Take Offer'}
+                Take Offer
               </button>
             </div>
           )}
@@ -147,15 +190,13 @@ export default function TradingLayout({
       {/* Create Offer Modal */}
       {showCreateOfferModal && (
         <CreateOfferModal
+          initialOrder={selectedOrderForMaking || undefined}
           onClose={() => {
             setShowCreateOfferModal(false)
+            // Don't clear selectedOrderForMaking here - keep it for pre-filling
             resetForm()
           }}
-          onOfferCreated={() => {
-            setShowCreateOfferModal(false)
-            resetForm()
-            // Order book will auto-refresh via useOrderBook hook
-          }}
+          onOfferCreated={handleOfferCreated}
         />
       )}
 

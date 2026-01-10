@@ -141,6 +141,22 @@ export function useOrderBookOfferSubmission() {
     [getTickerSymbol, isXchAsset]
   )
 
+  /**
+   * Apply price adjustment to asset amounts
+   * @param amounts - Array of assets to adjust
+   * @param adjustmentPercent - Percentage adjustment (-100 to +100)
+   * @returns New array with adjusted amounts
+   */
+  const applyPriceAdjustment = useCallback(
+    (amounts: AssetItem[], adjustmentPercent: number): AssetItem[] => {
+      return amounts.map((asset) => ({
+        ...asset,
+        amount: asset.amount * (1 + adjustmentPercent / 100),
+      }))
+    },
+    []
+  )
+
   const resetForm = useCallback(() => {
     setMakerAssets([
       {
@@ -181,6 +197,7 @@ export function useOrderBookOfferSubmission() {
     // Methods
     fillFromOrderBook,
     useAsTemplate,
+    applyPriceAdjustment,
     resetForm,
   }
 }

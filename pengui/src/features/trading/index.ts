@@ -18,6 +18,7 @@ export { default as TradingContent } from './ui/layout/TradingContent'
 export { default as FilterPanel } from './ui/layout/FilterPanel'
 export { default as MakerTakerTabs } from './ui/layout/MakerTakerTabs'
 export { default as CreateOfferModal } from './ui/modals/CreateOfferModal'
+export { default as CreateOfferForm } from './ui/make-offer/CreateOfferForm'
 export { default as TakeOfferModal } from './ui/modals/TakeOfferModal'
 
 // Type exports
