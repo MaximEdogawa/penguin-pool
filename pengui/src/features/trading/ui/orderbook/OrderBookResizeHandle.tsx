@@ -9,7 +9,7 @@ export default function OrderBookResizeHandle({
 }: OrderBookResizeHandleProps) {
   return (
     <div
-      className="resize-handle cursor-row-resize transition-all duration-200 flex items-center justify-end relative py-0 px-0 sm:px-3"
+      className="resize-handle cursor-row-resize transition-all duration-200 flex items-center justify-end relative py-0 px-0"
       onMouseDown={onMouseDown}
       title="Drag to resize sections"
     >
@@ -17,7 +17,7 @@ export default function OrderBookResizeHandle({
       <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent dark:via-white/10" />
 
       {/* Average price display */}
-      <div className="relative z-10 flex items-center pr-0.9 ">
+      <div className="relative z-10 flex items-center py-0 px-0 ">
         <div
           className="px-1 py-0 rounded-md backdrop-blur-md bg-blue-500/10 dark:bg-blue-400/10 border border-blue-400/20 dark:border-blue-300/20 transition-all duration-200 hover:bg-blue-500/15 dark:hover:bg-blue-400/15 hover:border-blue-400/30 dark:hover:border-blue-300/30 flex items-center mr-0 sm:mr-1"
           style={{
