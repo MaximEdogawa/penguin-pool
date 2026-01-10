@@ -8,6 +8,7 @@ import { calculateOfferState } from '@/features/offers/lib/dexieUtils'
 import { useOfferInspection } from '@/features/offers/model/useOfferInspection'
 import { useTakeOffer } from '@/features/wallet'
 import { useCatTokens, useThemeClasses } from '@/shared/hooks'
+import { getNativeTokenTicker } from '@/shared/lib/config/environment'
 import { logger } from '@/shared/lib/logger'
 import {
   formatAssetAmount,
@@ -18,8 +19,9 @@ import { getDexieStatusDescription, validateOfferString } from '@/shared/lib/uti
 import Button from '@/shared/ui/Button'
 import { useQuery } from '@tanstack/react-query'
 import { Loader2, ShoppingCart } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
+import type { OrderBookFilters } from '../../lib/orderBookTypes'
 import OrderDetailsSection from './OrderDetailsSection'
 
 interface TakeOfferContentProps {
@@ -27,6 +29,7 @@ interface TakeOfferContentProps {
   onOfferTaken?: (offer: OfferDetails) => void
   onClose?: () => void // Only used in modal mode
   mode?: 'modal' | 'inline' // Determines styling and layout
+  filters?: OrderBookFilters
 }
 
 /**
@@ -89,12 +92,66 @@ export default function TakeOfferContent({
   onOfferTaken,
   onClose,
   mode = 'inline',
+  filters,
 }: TakeOfferContentProps) {
   const { t } = useThemeClasses()
   const { postOffer, isPosting } = useOfferInspection()
   const takeOfferMutation = useTakeOffer()
   const { getCatTokenInfo } = useCatTokens()
   const dexieDataService = useDexieDataService()
+
+  // Determine if order is buy or sell (from taker's perspective)
+  const orderType = useMemo(() => {
+    if (!order || !filters?.buyAsset || !filters?.sellAsset) {
+      return null
+    }
+
+    const buyAssets = filters.buyAsset || []
+    const sellAssets = filters.sellAsset || []
+
+    if (buyAssets.length === 0 || sellAssets.length === 0) {
+      return null
+    }
+
+    // Helper to get ticker symbol
+    const getTickerSymbol = (assetId: string, code?: string): string => {
+      if (code) return code
+      if (!assetId) return getNativeTokenTicker()
+      const tickerInfo = getCatTokenInfo(assetId)
+      return tickerInfo?.ticker || assetId.slice(0, 8)
+    }
+
+    // Check if requesting side matches buy asset
+    const requestingIsBuyAsset = order.requesting.some((asset) =>
+      buyAssets.some(
+        (filterAsset) =>
+          getTickerSymbol(asset.id, asset.code).toLowerCase() === filterAsset.toLowerCase() ||
+          asset.id.toLowerCase() === filterAsset.toLowerCase() ||
+          (asset.code && asset.code.toLowerCase() === filterAsset.toLowerCase())
+      )
+    )
+
+    // Check if offering side matches buy asset
+    const offeringIsBuyAsset = order.offering.some((asset) =>
+      buyAssets.some(
+        (filterAsset) =>
+          getTickerSymbol(asset.id, asset.code).toLowerCase() === filterAsset.toLowerCase() ||
+          asset.id.toLowerCase() === filterAsset.toLowerCase() ||
+          (asset.code && asset.code.toLowerCase() === filterAsset.toLowerCase())
+      )
+    )
+
+    // From taker's perspective (Market tab):
+    // If maker is requesting buyAsset (offering sellAsset), taker is SELLING buyAsset
+    // If maker is offering buyAsset (requesting sellAsset), taker is BUYING buyAsset
+    if (requestingIsBuyAsset && !offeringIsBuyAsset) {
+      return 'sell' // Maker wants buyAsset, so taker is selling it
+    } else if (offeringIsBuyAsset && !requestingIsBuyAsset) {
+      return 'buy' // Maker is giving buyAsset, so taker is buying it
+    }
+
+    return null
+  }, [order, filters, getCatTokenInfo])
 
   // Form state
   const [offerString, setOfferString] = useState('')
@@ -542,7 +599,7 @@ export default function TakeOfferContent({
           <Button
             type="submit"
             disabled={!isFormValid || isSubmitting}
-            variant="success"
+            variant={orderType === 'sell' ? 'danger' : 'success'}
             icon={isSubmitting ? undefined : ShoppingCart}
           >
             {isSubmitting ? (

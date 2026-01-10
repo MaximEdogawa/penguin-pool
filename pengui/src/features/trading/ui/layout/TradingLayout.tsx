@@ -125,7 +125,12 @@ export default function TradingLayout({
 
       {/* Right Panel with Trading Form - Hidden on mobile/tablet, visible on desktop (lg+) */}
       <div className="hidden lg:flex flex-col w-96 flex-shrink-0">
-        <MakerTakerTabs activeMode={currentMode} onModeChange={handleModeChange} />
+        <MakerTakerTabs
+          activeMode={currentMode}
+          onModeChange={handleModeChange}
+          selectedOrder={currentMode === 'taker' ? selectedOrderForTaking : selectedOrderForMaking}
+          filters={filters}
+        />
         <div className={`${t.card} p-4 rounded-lg border ${t.border} flex-1 overflow-y-auto`}>
           {/* Show inline content on desktop when order is selected */}
           {/* Keep both components mounted to preserve state when switching tabs */}
@@ -136,11 +141,12 @@ export default function TradingLayout({
                 order={selectedOrderForTaking}
                 onOfferTaken={handleOfferTaken}
                 mode="inline"
+                filters={filters}
               />
             ) : (
               <div className="space-y-4">
                 <div>
-                  <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Take Offer</h3>
+                  <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Market</h3>
                   <p className={`text-xs ${t.textSecondary} mb-4`}>
                     Click an order from the order book to take it, or create a new offer manually.
                   </p>
@@ -151,7 +157,7 @@ export default function TradingLayout({
                   onClick={() => setShowCreateOfferModal(true)}
                   className={`w-full px-4 py-2 rounded-lg ${t.card} border ${t.border} ${t.text} ${t.cardHover} transition-colors text-sm font-medium`}
                 >
-                  Take Offer
+                  Market
                 </button>
               </div>
             )}
@@ -171,7 +177,7 @@ export default function TradingLayout({
             ) : (
               <div className="space-y-4">
                 <div>
-                  <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Create Offer</h3>
+                  <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Limit</h3>
                   <p className={`text-xs ${t.textSecondary} mb-4`}>
                     Create a new trading offer. Click an order from the order book to use it as a
                     template.

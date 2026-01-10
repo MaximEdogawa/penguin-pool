@@ -1,14 +1,91 @@
 'use client'
 
-import { useThemeClasses } from '@/shared/hooks'
+import { useCatTokens, useThemeClasses } from '@/shared/hooks'
+import { getNativeTokenTicker } from '@/shared/lib/config/environment'
+import { useMemo } from 'react'
+import type { OrderBookOrder } from '../../lib/orderBookTypes'
 
 interface MakerTakerTabsProps {
   activeMode: 'maker' | 'taker'
   onModeChange: (mode: 'maker' | 'taker') => void
+  selectedOrder?: OrderBookOrder | null
+  filters?: { buyAsset?: string[]; sellAsset?: string[] }
 }
 
-export default function MakerTakerTabs({ activeMode, onModeChange }: MakerTakerTabsProps) {
+export default function MakerTakerTabs({
+  activeMode,
+  onModeChange,
+  selectedOrder,
+  filters,
+}: MakerTakerTabsProps) {
   const { t, isDark } = useThemeClasses()
+  const { getCatTokenInfo } = useCatTokens()
+
+  // Determine if order is buy or sell
+  const orderType = useMemo(() => {
+    if (!selectedOrder || !filters?.buyAsset || !filters?.sellAsset) {
+      return null
+    }
+
+    const buyAssets = filters.buyAsset || []
+    const sellAssets = filters.sellAsset || []
+
+    if (buyAssets.length === 0 || sellAssets.length === 0) {
+      return null
+    }
+
+    // Helper to get ticker symbol
+    const getTickerSymbol = (assetId: string, code?: string): string => {
+      if (code) return code
+      if (!assetId) return getNativeTokenTicker()
+      const tickerInfo = getCatTokenInfo(assetId)
+      return tickerInfo?.ticker || assetId.slice(0, 8)
+    }
+
+    // Check if requesting side matches buy asset
+    const requestingIsBuyAsset = selectedOrder.requesting.some((asset) =>
+      buyAssets.some(
+        (filterAsset) =>
+          getTickerSymbol(asset.id, asset.code).toLowerCase() === filterAsset.toLowerCase() ||
+          asset.id.toLowerCase() === filterAsset.toLowerCase() ||
+          (asset.code && asset.code.toLowerCase() === filterAsset.toLowerCase())
+      )
+    )
+
+    // Check if offering side matches buy asset
+    const offeringIsBuyAsset = selectedOrder.offering.some((asset) =>
+      buyAssets.some(
+        (filterAsset) =>
+          getTickerSymbol(asset.id, asset.code).toLowerCase() === filterAsset.toLowerCase() ||
+          asset.id.toLowerCase() === filterAsset.toLowerCase() ||
+          (asset.code && asset.code.toLowerCase() === filterAsset.toLowerCase())
+      )
+    )
+
+    // For Market tab (taker's perspective):
+    // If maker is requesting buyAsset (offering sellAsset), taker is SELLING buyAsset
+    // If maker is offering buyAsset (requesting sellAsset), taker is BUYING buyAsset
+    // For Limit tab (maker's perspective - reversed):
+    // If maker is requesting buyAsset, maker is BUYING buyAsset
+    // If maker is offering buyAsset, maker is SELLING buyAsset
+    if (activeMode === 'taker') {
+      // Market tab: taker's perspective
+      if (requestingIsBuyAsset && !offeringIsBuyAsset) {
+        return 'sell' // Maker wants buyAsset, so taker is selling it
+      } else if (offeringIsBuyAsset && !requestingIsBuyAsset) {
+        return 'buy' // Maker is giving buyAsset, so taker is buying it
+      }
+    } else {
+      // Limit tab: maker's perspective
+      if (requestingIsBuyAsset && !offeringIsBuyAsset) {
+        return 'buy' // Maker is requesting buyAsset, so maker is buying it
+      } else if (offeringIsBuyAsset && !requestingIsBuyAsset) {
+        return 'sell' // Maker is offering buyAsset, so maker is selling it
+      }
+    }
+
+    return null
+  }, [selectedOrder, filters, getCatTokenInfo, activeMode])
 
   return (
     <div
@@ -42,7 +119,20 @@ export default function MakerTakerTabs({ activeMode, onModeChange }: MakerTakerT
               />
             </>
           )}
-          <span className="relative">Maker Order</span>
+          <span className="relative">
+            Limit
+            {orderType && (
+              <span
+                className={`ml-1.5 text-[10px] font-normal ${
+                  orderType === 'buy'
+                    ? 'text-green-500 dark:text-green-400'
+                    : 'text-red-500 dark:text-red-400'
+                }`}
+              >
+                ({orderType === 'buy' ? 'Buy' : 'Sell'})
+              </span>
+            )}
+          </span>
         </button>
 
         <button
@@ -70,7 +160,20 @@ export default function MakerTakerTabs({ activeMode, onModeChange }: MakerTakerT
               />
             </>
           )}
-          <span className="relative">Taker Order</span>
+          <span className="relative">
+            Market
+            {orderType && (
+              <span
+                className={`ml-1.5 text-[10px] font-normal ${
+                  orderType === 'buy'
+                    ? 'text-green-500 dark:text-green-400'
+                    : 'text-red-500 dark:text-red-400'
+                }`}
+              >
+                ({orderType === 'buy' ? 'Buy' : 'Sell'})
+              </span>
+            )}
+          </span>
         </button>
       </div>
     </div>
