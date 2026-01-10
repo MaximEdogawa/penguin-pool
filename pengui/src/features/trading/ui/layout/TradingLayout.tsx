@@ -10,8 +10,8 @@ import CreateOfferForm from '../make-offer/CreateOfferForm'
 import CreateOfferModal from '../modals/CreateOfferModal'
 import TakeOfferModal from '../modals/TakeOfferModal'
 import OrderBookFilters from '../orderbook/OrderBookFilters'
-import TakeOfferContent from '../take-offer/TakeOfferContent'
-import MakerTakerTabs from './MakerTakerTabs'
+import MarketOfferTab from '../take-offer/MarketOfferTab'
+import LimitOfferTab from './LimitOfferTab'
 import TradingContent from './TradingContent'
 
 interface TradingLayoutProps {
@@ -125,7 +125,7 @@ export default function TradingLayout({
 
       {/* Right Panel with Trading Form - Hidden on mobile/tablet, visible on desktop (lg+) */}
       <div className="hidden lg:flex flex-col w-96 flex-shrink-0">
-        <MakerTakerTabs
+        <LimitOfferTab
           activeMode={currentMode}
           onModeChange={handleModeChange}
           selectedOrder={selectedOrderForTaking}
@@ -136,11 +136,12 @@ export default function TradingLayout({
           {/* Keep both components mounted to preserve state when switching tabs */}
           <div className={currentMode === 'taker' ? '' : 'hidden'}>
             {selectedOrderForTaking ? (
-              <TakeOfferContent
+              <MarketOfferTab
                 key={`taker-${selectedOrderForTaking.id}`}
                 order={selectedOrderForTaking}
                 onOfferTaken={handleOfferTaken}
                 mode="inline"
+                filters={filters}
               />
             ) : (
               <div className="space-y-4">
@@ -210,6 +211,7 @@ export default function TradingLayout({
             resetForm()
           }}
           onOfferCreated={handleOfferCreated}
+          filters={filters}
         />
       )}
 

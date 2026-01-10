@@ -3,7 +3,7 @@ import { X } from 'lucide-react'
 import { useThemeClasses } from '@/shared/hooks'
 import type { OfferDetails } from '@/entities/offer'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
-import TakeOfferContent from '../take-offer/TakeOfferContent'
+import MarketOfferTab from '../take-offer/MarketOfferTab'
 
 interface TakeOfferModalProps {
   onClose: () => void
@@ -29,12 +29,7 @@ export default function TakeOfferModal({ onClose, onOfferTaken, order }: TakeOff
         </div>
 
         {/* Take Offer Content */}
-        <TakeOfferContent
-          order={order}
-          onOfferTaken={onOfferTaken}
-          onClose={onClose}
-          mode="modal"
-        />
+        <MarketOfferTab order={order} onOfferTaken={onOfferTaken} onClose={onClose} mode="modal" />
       </div>
     </Modal>
   )

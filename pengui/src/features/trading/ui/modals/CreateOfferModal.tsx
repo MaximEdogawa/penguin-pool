@@ -2,7 +2,7 @@
 
 import type { OfferDetails } from '@/entities/offer'
 import Modal from '@/shared/ui/Modal'
-import type { OrderBookOrder } from '../../lib/orderBookTypes'
+import type { OrderBookFilters, OrderBookOrder } from '../../lib/orderBookTypes'
 import CreateOfferForm from '../make-offer/CreateOfferForm'
 
 interface CreateOfferModalProps {
@@ -10,6 +10,7 @@ interface CreateOfferModalProps {
   onOfferCreated: (offer: OfferDetails) => void
   initialOrder?: OrderBookOrder
   initialPriceAdjustments?: { requested: number; offered: number }
+  filters?: OrderBookFilters
 }
 
 export default function CreateOfferModal({
@@ -17,6 +18,7 @@ export default function CreateOfferModal({
   onOfferCreated,
   initialOrder,
   initialPriceAdjustments,
+  filters,
 }: CreateOfferModalProps) {
   return (
     <Modal onClose={onClose} maxWidth="max-w-5xl">
@@ -27,6 +29,7 @@ export default function CreateOfferModal({
           onClose={onClose}
           mode="modal"
           initialPriceAdjustments={initialPriceAdjustments}
+          filters={filters}
         />
       </div>
     </Modal>

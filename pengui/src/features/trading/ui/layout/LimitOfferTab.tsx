@@ -5,19 +5,19 @@ import { getNativeTokenTicker } from '@/shared/lib/config/environment'
 import { useMemo } from 'react'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
 
-interface MakerTakerTabsProps {
+interface LimitOfferTabProps {
   activeMode: 'maker' | 'taker'
   onModeChange: (mode: 'maker' | 'taker') => void
   selectedOrder?: OrderBookOrder | null
   filters?: { buyAsset?: string[]; sellAsset?: string[] }
 }
 
-export default function MakerTakerTabs({
+export default function LimitOfferTab({
   activeMode,
   onModeChange,
   selectedOrder,
   filters,
-}: MakerTakerTabsProps) {
+}: LimitOfferTabProps) {
   const { t, isDark } = useThemeClasses()
   const { getCatTokenInfo } = useCatTokens()
 
@@ -63,17 +63,17 @@ export default function MakerTakerTabs({
     )
 
     // For Market tab (taker's perspective):
-    // If maker is requesting buyAsset (offering sellAsset), taker is BUYING buyAsset
-    // If maker is offering buyAsset (requesting sellAsset), taker is SELLING buyAsset
-    // For Limit tab (maker's perspective - reversed):
+    // If maker is requesting buyAsset (offering sellAsset), taker is SELLING buyAsset
+    // If maker is offering buyAsset (requesting sellAsset), taker is BUYING buyAsset
+    // For Limit tab (maker's perspective):
     // If maker is requesting buyAsset, maker is SELLING buyAsset
     // If maker is offering buyAsset, maker is BUYING buyAsset
     if (activeMode === 'taker') {
       // Market tab: taker's perspective
       if (requestingIsBuyAsset && !offeringIsBuyAsset) {
-        return 'buy' // Maker wants buyAsset, so taker is buying it
+        return 'sell' // Maker wants buyAsset, so taker is selling it
       } else if (offeringIsBuyAsset && !requestingIsBuyAsset) {
-        return 'sell' // Maker is giving buyAsset, so taker is selling it
+        return 'buy' // Maker is giving buyAsset, so taker is buying it
       }
     } else {
       // Limit tab: maker's perspective
