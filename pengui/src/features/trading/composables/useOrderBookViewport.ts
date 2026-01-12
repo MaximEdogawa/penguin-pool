@@ -21,6 +21,8 @@ export function useOrderBookViewport(
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const orderElementRefs = useRef<Map<string, HTMLElement>>(new Map())
+  // Persistent Set to track all visible orders across intersection changes
+  const visibleIdsRef = useRef<Set<string>>(new Set())
 
   // Create intersection observer
   useEffect(() => {
@@ -34,21 +36,29 @@ export function useOrderBookViewport(
         }
 
         scrollTimeoutRef.current = setTimeout(() => {
-          const visibleIds = new Set<string>()
-
+          // Update the persistent Set based on intersection state changes
           entries.forEach((entry) => {
             const orderId = entry.target.getAttribute('data-order-id')
-            if (orderId && entry.isIntersecting) {
-              visibleIds.add(orderId)
+            if (orderId) {
+              if (entry.isIntersecting) {
+                visibleIdsRef.current.add(orderId)
+              } else {
+                visibleIdsRef.current.delete(orderId)
+              }
             }
           })
 
+          // Create a new Set from the ref to trigger state update
+          const updatedVisibleIds = new Set(visibleIdsRef.current)
+
           // Limit to max 50 visible orders
-          if (visibleIds.size > MAX_VISIBLE_ORDERS) {
-            const limitedIds = Array.from(visibleIds).slice(0, MAX_VISIBLE_ORDERS)
+          if (updatedVisibleIds.size > MAX_VISIBLE_ORDERS) {
+            const limitedIds = Array.from(updatedVisibleIds).slice(0, MAX_VISIBLE_ORDERS)
             setVisibleOrderIds(new Set(limitedIds))
+            // Update ref to match the limited set
+            visibleIdsRef.current = new Set(limitedIds)
           } else {
-            setVisibleOrderIds(visibleIds)
+            setVisibleOrderIds(updatedVisibleIds)
           }
         }, SCROLL_DEBOUNCE_MS)
       },
@@ -68,6 +78,37 @@ export function useOrderBookViewport(
       }
     }
   }, [sellScrollRef, buyScrollRef])
+
+  // Clean up visible IDs when orders are removed from lists
+  useEffect(() => {
+    const allOrderIds = new Set([
+      ...sellOrders.map((order) => order.id),
+      ...buyOrders.map((order) => order.id),
+    ])
+
+    // Track if any IDs were removed
+    let hasRemovedIds = false
+
+    // Remove IDs from visible set that are no longer in the order lists
+    visibleIdsRef.current.forEach((orderId) => {
+      if (!allOrderIds.has(orderId)) {
+        visibleIdsRef.current.delete(orderId)
+        hasRemovedIds = true
+      }
+    })
+
+    // Update state only if IDs were removed
+    if (hasRemovedIds) {
+      const updatedVisibleIds = new Set(visibleIdsRef.current)
+      if (updatedVisibleIds.size > MAX_VISIBLE_ORDERS) {
+        const limitedIds = Array.from(updatedVisibleIds).slice(0, MAX_VISIBLE_ORDERS)
+        setVisibleOrderIds(new Set(limitedIds))
+        visibleIdsRef.current = new Set(limitedIds)
+      } else {
+        setVisibleOrderIds(updatedVisibleIds)
+      }
+    }
+  }, [sellOrders, buyOrders])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -92,6 +133,8 @@ export function useOrderBookViewport(
       if (existingElement) {
         observerRef.current?.unobserve(existingElement)
         orderElementRefs.current.delete(orderId)
+        // Remove from visible set when element is unregistered
+        visibleIdsRef.current.delete(orderId)
       }
     }
   }

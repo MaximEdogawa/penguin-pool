@@ -1,7 +1,7 @@
 'use client'
 
 import { useThemeClasses } from '@/shared/hooks'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 
 interface SleekPriceSliderProps {
   value: number // Current adjustment percentage (-100 to +100)
@@ -17,8 +17,8 @@ export default function SleekPriceSlider({
   snapInterval = 5,
 }: SleekPriceSliderProps) {
   const { t } = useThemeClasses()
-  const sliderIdRef = useRef(`sleek-slider-${Math.random().toString(36).substr(2, 9)}`)
-  const styleIdRef = useRef(`sleek-slider-style-${Math.random().toString(36).substr(2, 9)}`)
+  const sliderId = useId()
+  const styleId = useId()
   const [isFineTune, setIsFineTune] = useState(false)
   const [isShiftPressed, setIsShiftPressed] = useState(false)
 
@@ -89,7 +89,6 @@ export default function SleekPriceSlider({
 
   // Inject slider styles
   useEffect(() => {
-    const styleId = styleIdRef.current
     let styleElement = document.getElementById(styleId) as HTMLStyleElement | null
 
     if (!styleElement) {
@@ -99,7 +98,7 @@ export default function SleekPriceSlider({
     }
 
     styleElement.textContent = `
-      #${sliderIdRef.current}::-webkit-slider-thumb {
+      #${sliderId}::-webkit-slider-thumb {
         appearance: none;
         width: 10px;
         height: 10px;
@@ -110,11 +109,11 @@ export default function SleekPriceSlider({
         box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.15);
         transition: all 0.2s ease;
       }
-      #${sliderIdRef.current}::-webkit-slider-thumb:hover {
+      #${sliderId}::-webkit-slider-thumb:hover {
         transform: scale(1.2);
         box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.25);
       }
-      #${sliderIdRef.current}::-moz-range-thumb {
+      #${sliderId}::-moz-range-thumb {
         width: 10px;
         height: 10px;
         border-radius: 50%;
@@ -124,7 +123,7 @@ export default function SleekPriceSlider({
         box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.15);
         transition: all 0.2s ease;
       }
-      #${sliderIdRef.current}::-moz-range-thumb:hover {
+      #${sliderId}::-moz-range-thumb:hover {
         transform: scale(1.2);
         box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.25);
       }
@@ -166,7 +165,7 @@ export default function SleekPriceSlider({
         {/* Slider - fixed width, always same size */}
         <div className="flex-1 relative min-w-0">
           <input
-            id={sliderIdRef.current}
+            id={sliderId}
             type="range"
             min="-100"
             max="100"

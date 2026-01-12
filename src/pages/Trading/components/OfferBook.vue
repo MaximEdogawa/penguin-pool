@@ -197,13 +197,13 @@
   interface Order {
     id: string
     offering: Array<{ id: string; code: string; name: string; amount: number }>
-    receiving: Array<{ id: string; code: string; name: string; amount: number }>
+    requesting: Array<{ id: string; code: string; name: string; amount: number }>
     maker: string
     timestamp: string
     offeringUsdValue: number
-    receivingUsdValue: number
+    requestingUsdValue: number
     offeringXchValue: number
-    receivingXchValue: number
+    requestingXchValue: number
     pricePerUnit: number
   }
 
@@ -229,6 +229,7 @@
     'refresh-order-book': []
     'fill-from-order-book': [order: Order]
     'use-as-template': [order: Order]
+    'load-more': []
   }>()
 
   const { getTickerSymbol } = useTickerMapping()
@@ -339,8 +340,8 @@
       })
       .sort((a, b) => {
         // Sort sell orders by price (low to high - best asks first)
-        const priceA = a.receiving[0]?.amount / a.offering[0]?.amount || 0
-        const priceB = b.receiving[0]?.amount / b.offering[0]?.amount || 0
+        const priceA = a.requesting[0]?.amount / a.offering[0]?.amount || 0
+        const priceB = b.requesting[0]?.amount / b.offering[0]?.amount || 0
         return priceA - priceB
       })
   })
@@ -423,8 +424,8 @@
       })
       .sort((a, b) => {
         // Sort buy orders by price (high to low - best bids first)
-        const priceA = a.offering[0]?.amount / a.receiving[0]?.amount || 0
-        const priceB = b.offering[0]?.amount / b.receiving[0]?.amount || 0
+        const priceA = a.offering[0]?.amount / a.requesting[0]?.amount || 0
+        const priceB = b.offering[0]?.amount / b.requesting[0]?.amount || 0
         return priceB - priceA
       })
   })
@@ -523,13 +524,13 @@
     // Get best sell price (lowest ask)
     const bestSellOrder = filteredSellOrders.value[0]
     const bestSellPrice = bestSellOrder
-      ? bestSellorder.requesting[0]?.amount / bestSellOrder.offering[0]?.amount
+      ? bestSellOrder.requesting[0]?.amount / bestSellOrder.offering[0]?.amount
       : 0
 
     // Get best buy price (highest bid)
     const bestBuyOrder = filteredBuyOrders.value[0]
     const bestBuyPrice = bestBuyOrder
-      ? bestBuyOrder.offering[0]?.amount / bestBuyorder.requesting[0]?.amount
+      ? bestBuyOrder.offering[0]?.amount / bestBuyOrder.requesting[0]?.amount
       : 0
 
     // Calculate average if both prices exist

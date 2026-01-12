@@ -269,13 +269,7 @@ export function useOrderBook(filters?: OrderBookFilters) {
     const sellKey = [...sellAssets].sort().join(',')
 
     return ['orderBook', buyKey, sellKey, pagination]
-  }, [
-    // Depend on the actual array contents for proper change detection
-    // Use JSON.stringify to ensure deep equality
-    JSON.stringify(filters?.buyAsset || []),
-    JSON.stringify(filters?.sellAsset || []),
-    pagination,
-  ])
+  }, [filters?.buyAsset, filters?.sellAsset, pagination])
 
   // Main order book query
   const orderBookQuery = useQuery<OrderBookQueryResult>({

@@ -86,13 +86,13 @@
   interface Order {
     id: string
     offering: Array<{ id: string; code: string; name: string; amount: number }>
-    receiving: Array<{ id: string; code: string; name: string; amount: number }>
+    requesting: Array<{ id: string; code: string; name: string; amount: number }>
     maker: string
     timestamp: string
     offeringUsdValue: number
-    receivingUsdValue: number
+    requestingUsdValue: number
     offeringXchValue: number
-    receivingXchValue: number
+    requestingXchValue: number
     pricePerUnit: number
   }
 

@@ -1,17 +1,17 @@
 'use client'
 
 import { environment } from '@/shared/lib/config/environment'
+import { logger } from '@/shared/lib/logger'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
+  DexieHistoricalTradesResponse,
   DexieOfferSearchParams,
   DexieOfferSearchResponse,
   DexieOrderBookResponse,
   DexiePairsResponse,
   DexiePostOfferParams,
   DexiePostOfferResponse,
-  DexieHistoricalTradesResponse,
 } from '../lib/dexieTypes'
-import { logger } from '@/shared/lib/logger'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 const DEXIE_KEY = 'dexie'
 const PAIRS_KEY = 'pairs'
@@ -61,18 +61,24 @@ export function useDexieDataService() {
         if (!response.ok) {
           // Try to get error details from response
           let errorMessage = `HTTP error! status: ${response.status}`
-          try {
-            const errorData = await response.json()
-            if (errorData.message || errorData.error) {
-              errorMessage = `${errorMessage}: ${errorData.message || errorData.error}`
-            }
-          } catch {
-            // If response is not JSON, use default error message
-            const text = await response.text()
-            if (text) {
-              errorMessage = `${errorMessage}: ${text}`
+          // Read body as text first (can only be read once)
+          const responseText = await response.text()
+
+          if (responseText) {
+            try {
+              // Try to parse as JSON to extract structured error data
+              const errorData = JSON.parse(responseText)
+              if (errorData.message || errorData.error) {
+                errorMessage = `${errorMessage}: ${errorData.message || errorData.error}`
+              } else {
+                errorMessage = `${errorMessage}: ${responseText}`
+              }
+            } catch {
+              // If parsing fails, use the raw text as error message
+              errorMessage = `${errorMessage}: ${responseText}`
             }
           }
+
           logger.error('Dexie API error:', {
             status: response.status,
             url: `${DEXIE_API_BASE_URL}/v1/offers?${queryParams.toString()}`,

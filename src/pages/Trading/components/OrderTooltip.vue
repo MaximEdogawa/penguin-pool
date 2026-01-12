@@ -95,11 +95,11 @@
   interface Order {
     id: number
     offering: Array<{ asset: string; amount: string }>
-    receiving: Array<{ asset: string; amount: string }>
+    requesting: Array<{ asset: string; amount: string }>
     maker: string
     timestamp: string
     offeringUsdValue: number
-    receivingUsdValue: number
+    requestingUsdValue: number
     pricePerUnit: number
     assetPriceInUsdc: number
   }
