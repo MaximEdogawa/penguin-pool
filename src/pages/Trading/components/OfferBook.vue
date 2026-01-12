@@ -340,8 +340,8 @@
       })
       .sort((a, b) => {
         // Sort sell orders by price (low to high - best asks first)
-        const priceA = a.requesting[0]?.amount / a.offering[0]?.amount || 0
-        const priceB = b.requesting[0]?.amount / b.offering[0]?.amount || 0
+        const priceA = getSortPrice(a, true)
+        const priceB = getSortPrice(b, true)
         return priceA - priceB
       })
   })
@@ -424,8 +424,8 @@
       })
       .sort((a, b) => {
         // Sort buy orders by price (high to low - best bids first)
-        const priceA = a.offering[0]?.amount / a.requesting[0]?.amount || 0
-        const priceB = b.offering[0]?.amount / b.requesting[0]?.amount || 0
+        const priceA = getSortPrice(a, false)
+        const priceB = getSortPrice(b, false)
         return priceB - priceA
       })
   })
@@ -451,6 +451,34 @@
   const isSingleAssetPair = (order: Order): boolean => {
     // Check if both offering and receiving have only one asset each
     return order.offering.length === 1 && order.requesting.length === 1
+  }
+
+  // Helper function to safely get price for sorting
+  // Prefers pricePerUnit, falls back to ratio calculation for single-asset pairs, or Infinity for invalid orders
+  const getSortPrice = (order: Order, isSellOrder: boolean): number => {
+    // Prefer pricePerUnit when available and valid
+    if (order.pricePerUnit != null && order.pricePerUnit > 0 && isFinite(order.pricePerUnit)) {
+      return order.pricePerUnit
+    }
+
+    // Only compute ratio for single-asset pairs with valid amounts
+    if (isSingleAssetPair(order)) {
+      const requestingAmount = order.requesting[0]?.amount
+      const offeringAmount = order.offering[0]?.amount
+
+      if (
+        requestingAmount != null &&
+        offeringAmount != null &&
+        requestingAmount > 0 &&
+        offeringAmount > 0
+      ) {
+        // For sell orders: requesting/offering, for buy orders: offering/requesting
+        return isSellOrder ? requestingAmount / offeringAmount : offeringAmount / requestingAmount
+      }
+    }
+
+    // Invalid orders go to the end
+    return Number.POSITIVE_INFINITY
   }
 
   const calculateOrderPrice = (order: Order, _orderType: 'buy' | 'sell'): string => {

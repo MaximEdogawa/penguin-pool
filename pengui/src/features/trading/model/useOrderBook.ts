@@ -2,16 +2,16 @@
 
 import { useDexieDataService } from '@/features/offers/api/useDexieDataService'
 import type { DexieOffer } from '@/features/offers/lib/dexieTypes'
+import { getNativeTokenTicker } from '@/shared/lib/config/environment'
+import { logger } from '@/shared/lib/logger'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo } from 'react'
 import type {
   OrderBookFilters,
   OrderBookOrder,
   OrderBookPagination,
   OrderBookQueryResult,
 } from '../lib/orderBookTypes'
-import { logger } from '@/shared/lib/logger'
-import { useQuery } from '@tanstack/react-query'
-import { useEffect, useMemo } from 'react'
-import { getNativeTokenTicker } from '@/shared/lib/config/environment'
 
 const DEFAULT_PAGINATION: OrderBookPagination = 50
 
@@ -22,9 +22,15 @@ const DEFAULT_PAGINATION: OrderBookPagination = 50
 export function useOrderBook(filters?: OrderBookFilters) {
   const dexieDataService = useDexieDataService()
 
-  // Log filters on mount and when they change
+  // Log filters on mount and when they change (debug only, minimal data)
   useEffect(() => {
-    logger.info('useOrderBook filters changed:', filters)
+    logger.debug('useOrderBook filters changed:', {
+      hasBuyAsset: !!filters?.buyAsset?.length,
+      hasSellAsset: !!filters?.sellAsset?.length,
+      buyAssetCount: filters?.buyAsset?.length || 0,
+      sellAssetCount: filters?.sellAsset?.length || 0,
+      pagination: filters?.pagination || DEFAULT_PAGINATION,
+    })
   }, [filters])
 
   // Helper function to convert Dexie offer to OrderBookOrder format
@@ -41,7 +47,7 @@ export function useOrderBook(filters?: OrderBookFilters) {
 
     // Calculate USD values - for now set to 0 since we don't have real prices
     const offeringUsdValue = 0
-    const receivingUsdValue = 0
+    const requestingUsdValue = 0
 
     // Calculate XCH values - only count native token amounts
     const offeringXchValue = safeOffered.reduce((sum: number, item) => {
@@ -50,12 +56,18 @@ export function useOrderBook(filters?: OrderBookFilters) {
       }
       return sum
     }, 0)
-    const receivingXchValue = safeRequested.reduce((sum: number, item) => {
+    const requestingXchValue = safeRequested.reduce((sum: number, item) => {
       if (item.code === 'TXCH' || item.code === 'XCH' || !item.code) {
         return sum + item.amount
       }
       return sum
     }, 0)
+
+    // Calculate pricePerUnit from actual amounts when there's one asset on each side
+    const pricePerUnit =
+      safeOffered.length === 1 && safeRequested.length === 1 && safeOffered[0]?.amount > 0
+        ? safeRequested[0].amount / safeOffered[0].amount
+        : 0
 
     return {
       id: dexieOffer.id,
@@ -64,10 +76,10 @@ export function useOrderBook(filters?: OrderBookFilters) {
       maker: `0x${dexieOffer.id.substring(0, 8)}...${dexieOffer.id.substring(dexieOffer.id.length - 8)}`,
       timestamp: new Date(dexieOffer.date_found).toLocaleTimeString(),
       offeringUsdValue,
-      receivingUsdValue,
+      requestingUsdValue,
       offeringXchValue,
-      receivingXchValue,
-      pricePerUnit: offeringUsdValue > 0 ? receivingUsdValue / offeringUsdValue : 0,
+      requestingXchValue,
+      pricePerUnit,
       status: dexieOffer.status,
       date_found: dexieOffer.date_found,
       date_completed: dexieOffer.date_completed,
@@ -166,7 +178,10 @@ export function useOrderBook(filters?: OrderBookFilters) {
         .map(convertDexieOfferToOrderBookOrder)
 
       const newOrders = [...accumulatedOrders, ...orders]
-      const newTotal = accumulatedTotal + (response.total || orders.length)
+
+      // Use response.total as authoritative total if provided (preferably on page 0)
+      // Only accumulate orders.length when response.total is undefined
+      const newTotal = response.total != null ? response.total : accumulatedTotal + orders.length
 
       // If we got a full page (100 items), there might be more
       if (response.data.length === 100) {
@@ -234,22 +249,18 @@ export function useOrderBook(filters?: OrderBookFilters) {
     }
 
     // For buy/sell filtering, we need to determine which asset is being bought/sold
-    // If user wants to buy XCH (buyAsset), they're looking for offers where XCH is offered (buy side)
-    // If user wants to sell TDBX (sellAsset), they're looking for offers where TDBX is requested (sell side)
-
-    // When buyAsset is passed (even as null placeholder), use offered field
-    // When sellAsset is passed (even as null placeholder), use requested field
-    // This allows us to query for an asset in either field by passing it in the appropriate position
+    // If user wants to buy an asset (buyAsset), they're looking for offers where that asset is requested
+    // If user wants to sell an asset (sellAsset), they're looking for offers where that asset is offered
 
     if (targetBuyAsset && !targetSellAsset) {
-      // Only buyAsset: it should be in the offered field (buy side)
-      params.offered = targetBuyAsset
+      // Only buyAsset: user wants to buy, so look for offers where the asset is requested
+      params.requested = targetBuyAsset
     } else if (targetSellAsset && !targetBuyAsset) {
-      // Only sellAsset: it should be in the requested field (sell side)
-      params.requested = targetSellAsset
+      // Only sellAsset: user wants to sell, so look for offers where the asset is offered
+      params.offered = targetSellAsset
     } else if (targetBuyAsset && targetSellAsset) {
-      // Both filters set: bidirectional query (handled in queryFn)
-      // For the first query: buyAsset requested, sellAsset offered
+      // Both filters set: user wants to buy buyAsset and sell sellAsset
+      // Look for offers where buyAsset is requested and sellAsset is offered
       params.requested = targetBuyAsset
       params.offered = targetSellAsset
     }
@@ -275,7 +286,13 @@ export function useOrderBook(filters?: OrderBookFilters) {
   const orderBookQuery = useQuery<OrderBookQueryResult>({
     queryKey,
     queryFn: async () => {
-      logger.info('Fetching order book with filters:', filters)
+      logger.debug('Fetching order book', {
+        hasBuyAsset: !!filters?.buyAsset?.length,
+        hasSellAsset: !!filters?.sellAsset?.length,
+        buyAssetCount: filters?.buyAsset?.length || 0,
+        sellAssetCount: filters?.sellAsset?.length || 0,
+        pagination,
+      })
       const allOrders: OrderBookOrder[] = []
       let totalCount = 0
 
@@ -289,7 +306,7 @@ export function useOrderBook(filters?: OrderBookFilters) {
         const buyAsset = filters.buyAsset[0]
         const sellAsset = filters.sellAsset[0]
 
-        logger.info(`Fetching orders for pair: ${buyAsset}/${sellAsset}`)
+        logger.debug(`Fetching orders for pair (bidirectional)`)
 
         // Handle pagination for "all" case
         if (pagination === 'all') {
@@ -304,9 +321,14 @@ export function useOrderBook(filters?: OrderBookFilters) {
         } else {
           // Query 1: Original direction (buyAsset/sellAsset)
           const params1 = buildSearchParams(0, buyAsset, sellAsset)
-          logger.info('Query 1 params:', params1)
+          logger.debug('Query 1', {
+            page: params1.page,
+            pageSize: params1.page_size,
+            hasRequested: !!params1.requested,
+            hasOffered: !!params1.offered,
+          })
           const response1 = await dexieDataService.searchOffers(params1)
-          logger.info('Query 1 response:', {
+          logger.debug('Query 1 response', {
             success: response1.success,
             count: response1.data?.length || 0,
           })
@@ -317,14 +339,19 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders1)
             totalCount += response1.total || orders1.length
-            logger.info(`Query 1: Added ${orders1.length} orders`)
+            logger.debug(`Query 1: Added ${orders1.length} orders`)
           }
 
           // Query 2: Reverse direction (sellAsset/buyAsset)
           const params2 = buildSearchParams(0, sellAsset, buyAsset)
-          logger.info('Query 2 params:', params2)
+          logger.debug('Query 2', {
+            page: params2.page,
+            pageSize: params2.page_size,
+            hasRequested: !!params2.requested,
+            hasOffered: !!params2.offered,
+          })
           const response2 = await dexieDataService.searchOffers(params2)
-          logger.info('Query 2 response:', {
+          logger.debug('Query 2 response', {
             success: response2.success,
             count: response2.data?.length || 0,
           })
@@ -335,7 +362,7 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders2)
             totalCount += response2.total || orders2.length
-            logger.info(`Query 2: Added ${orders2.length} orders`)
+            logger.debug(`Query 2: Added ${orders2.length} orders`)
           }
         }
       } else if (
@@ -346,16 +373,20 @@ export function useOrderBook(filters?: OrderBookFilters) {
         const buyAsset = filters?.buyAsset?.[0]
         const sellAsset = filters?.sellAsset?.[0]
 
-        logger.info(`Fetching orders with single filter: buy=${buyAsset}, sell=${sellAsset}`)
+        logger.debug('Fetching orders with single filter')
 
-        // If only buyAsset is set: fetch orders where buyAsset is offered AND requested
-        // If only sellAsset is set: fetch orders where sellAsset is offered AND requested
+        // If only buyAsset is set: fetch orders where buyAsset is requested (user wants to buy) AND offered (to populate sell side)
+        // If only sellAsset is set: fetch orders where sellAsset is offered (user wants to sell) AND requested (to populate buy side)
         // This ensures we get both buy and sell sides populated
 
         if (buyAsset && !sellAsset) {
-          // Query 1: Orders where buyAsset is offered (buy side)
+          // Query 1: Orders where buyAsset is requested (user wants to buy it)
           const params1 = buildSearchParams(0, buyAsset, undefined)
-          logger.info('Query 1 params (offered):', params1)
+          logger.debug('Query 1 (offered)', {
+            page: params1.page,
+            pageSize: params1.page_size,
+            hasOffered: !!params1.offered,
+          })
           const response1 = await dexieDataService.searchOffers(params1)
           if (response1.success && Array.isArray(response1.data)) {
             const orders1 = (response1.data as DexieOffer[])
@@ -363,12 +394,16 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders1)
             totalCount += response1.total || orders1.length
-            logger.info(`Query 1: Added ${orders1.length} orders`)
+            logger.debug(`Query 1: Added ${orders1.length} orders`)
           }
 
-          // Query 2: Orders where buyAsset is requested (sell side - opposite)
+          // Query 2: Orders where buyAsset is offered (to populate sell side - opposite direction)
           const params2 = buildSearchParams(0, null, buyAsset)
-          logger.info('Query 2 params (requested):', params2)
+          logger.debug('Query 2 (requested)', {
+            page: params2.page,
+            pageSize: params2.page_size,
+            hasRequested: !!params2.requested,
+          })
           const response2 = await dexieDataService.searchOffers(params2)
           if (response2.success && Array.isArray(response2.data)) {
             const orders2 = (response2.data as DexieOffer[])
@@ -376,12 +411,16 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders2)
             totalCount += response2.total || orders2.length
-            logger.info(`Query 2: Added ${orders2.length} orders`)
+            logger.debug(`Query 2: Added ${orders2.length} orders`)
           }
         } else if (sellAsset && !buyAsset) {
-          // Query 1: Orders where sellAsset is requested (sell side)
+          // Query 1: Orders where sellAsset is offered (user wants to sell it)
           const params1 = buildSearchParams(0, undefined, sellAsset)
-          logger.info('Query 1 params (requested):', params1)
+          logger.debug('Query 1 (requested)', {
+            page: params1.page,
+            pageSize: params1.page_size,
+            hasRequested: !!params1.requested,
+          })
           const response1 = await dexieDataService.searchOffers(params1)
           if (response1.success && Array.isArray(response1.data)) {
             const orders1 = (response1.data as DexieOffer[])
@@ -389,12 +428,16 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders1)
             totalCount += response1.total || orders1.length
-            logger.info(`Query 1: Added ${orders1.length} orders`)
+            logger.debug(`Query 1: Added ${orders1.length} orders`)
           }
 
-          // Query 2: Orders where sellAsset is offered (buy side - opposite)
+          // Query 2: Orders where sellAsset is requested (to populate buy side - opposite direction)
           const params2 = buildSearchParams(0, sellAsset, null)
-          logger.info('Query 2 params (offered):', params2)
+          logger.debug('Query 2 (offered)', {
+            page: params2.page,
+            pageSize: params2.page_size,
+            hasOffered: !!params2.offered,
+          })
           const response2 = await dexieDataService.searchOffers(params2)
           if (response2.success && Array.isArray(response2.data)) {
             const orders2 = (response2.data as DexieOffer[])
@@ -402,12 +445,12 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders2)
             totalCount += response2.total || orders2.length
-            logger.info(`Query 2: Added ${orders2.length} orders`)
+            logger.debug(`Query 2: Added ${orders2.length} orders`)
           }
         }
       } else {
         // No filters - fetch all orders
-        logger.info('Fetching all orders (no filters)')
+        logger.debug('Fetching all orders (no filters)')
         if (pagination === 'all') {
           // Fetch all pages using recursive helper
           const result = await fetchAllPages(undefined, undefined)
@@ -415,9 +458,13 @@ export function useOrderBook(filters?: OrderBookFilters) {
           totalCount = result.total
         } else {
           const params = buildSearchParams(0)
-          logger.info('Query params:', params)
+          logger.debug('Query params', {
+            page: params.page,
+            pageSize: params.page_size,
+            status: params.status,
+          })
           const response = await dexieDataService.searchOffers(params)
-          logger.info('Query response:', {
+          logger.debug('Query response', {
             success: response.success,
             count: response.data?.length || 0,
           })
@@ -428,12 +475,12 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders)
             totalCount = response.total || orders.length
-            logger.info(`Added ${orders.length} orders`)
+            logger.debug(`Added ${orders.length} orders`)
           }
         }
       }
 
-      logger.info(`Total orders fetched: ${allOrders.length}`)
+      logger.debug(`Total orders fetched: ${allOrders.length}`)
 
       // Deduplicate orders by ID to prevent duplicate keys
       const uniqueOrdersMap = new Map<string, OrderBookOrder>()
@@ -443,7 +490,7 @@ export function useOrderBook(filters?: OrderBookFilters) {
         }
       })
       const deduplicatedOrders = Array.from(uniqueOrdersMap.values())
-      logger.info(`Orders after deduplication: ${deduplicatedOrders.length}`)
+      logger.debug(`Orders after deduplication: ${deduplicatedOrders.length}`)
 
       // Sort all orders by price before returning
       const sortedOrders = sortOrdersByPrice(deduplicatedOrders)

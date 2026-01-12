@@ -22,6 +22,23 @@ export default function SleekPriceSlider({
   const [isFineTune, setIsFineTune] = useState(false)
   const [isShiftPressed, setIsShiftPressed] = useState(false)
 
+  // Escape ID for use in CSS selectors (useId can produce IDs with colons)
+  const escapeCSSId = (id: string): string => {
+    if (typeof CSS !== 'undefined' && CSS.escape) {
+      return CSS.escape(id)
+    }
+    // Fallback: escape special characters manually
+    return id.replace(/[^a-zA-Z0-9_-]/g, (char) => {
+      const code = char.charCodeAt(0)
+      if (code <= 0xff) {
+        return `\\${code.toString(16).padStart(2, '0')} `
+      }
+      return `\\${code.toString(16)} `
+    })
+  }
+
+  const cssEscapedSliderId = escapeCSSId(sliderId)
+
   // Handle Shift key for fine-tuning
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -98,7 +115,7 @@ export default function SleekPriceSlider({
     }
 
     styleElement.textContent = `
-      #${sliderId}::-webkit-slider-thumb {
+      #${cssEscapedSliderId}::-webkit-slider-thumb {
         appearance: none;
         width: 10px;
         height: 10px;
@@ -109,11 +126,11 @@ export default function SleekPriceSlider({
         box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.15);
         transition: all 0.2s ease;
       }
-      #${sliderId}::-webkit-slider-thumb:hover {
+      #${cssEscapedSliderId}::-webkit-slider-thumb:hover {
         transform: scale(1.2);
         box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.25);
       }
-      #${sliderId}::-moz-range-thumb {
+      #${cssEscapedSliderId}::-moz-range-thumb {
         width: 10px;
         height: 10px;
         border-radius: 50%;
@@ -123,7 +140,7 @@ export default function SleekPriceSlider({
         box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.15);
         transition: all 0.2s ease;
       }
-      #${sliderId}::-moz-range-thumb:hover {
+      #${cssEscapedSliderId}::-moz-range-thumb:hover {
         transform: scale(1.2);
         box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.25);
       }
