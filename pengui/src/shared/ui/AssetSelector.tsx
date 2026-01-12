@@ -2,7 +2,7 @@
 
 import type { AssetType, BaseAsset } from '@/entities/offer'
 import { useCatTokens, useThemeClasses } from '@/shared/hooks'
-import { parseAmountInput } from '@/shared/lib/utils/chia-units'
+import { assetInputAmounts, formatAssetAmountForInput } from '@/shared/lib/utils/chia-units'
 import { useCallback, useRef, useState } from 'react'
 import AmountInput from './AssetSelector/AmountInput'
 import AssetIdInput from './AssetSelector/AssetIdInput'
@@ -221,11 +221,19 @@ export default function AssetSelector({
               })
             }}
             onBlur={() => {
-              const finalAmount = parseAmountInput(asset._amountInput || '')
+              const inputValue = asset._amountInput || ''
+              // Safely convert to number
+              const finalAmount = assetInputAmounts.parse(inputValue, asset.type)
+              // Preserve the input format if user typed something like "1.0" or "1.00"
+              // Only clear tempInput if the formatted value matches the input (no loss of precision)
+              const formatted = formatAssetAmountForInput(finalAmount, asset.type)
+              const shouldPreserveInput = inputValue.includes('.') && inputValue !== formatted
+
               onUpdate({
                 ...asset,
                 amount: finalAmount,
-                _amountInput: undefined,
+                // Keep tempInput if user typed a decimal format that would be lost
+                _amountInput: shouldPreserveInput ? inputValue : undefined,
               })
             }}
           />

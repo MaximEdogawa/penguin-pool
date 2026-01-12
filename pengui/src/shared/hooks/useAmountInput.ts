@@ -1,11 +1,10 @@
 'use client'
 
 import {
+  assetInputAmounts,
   formatAssetAmount,
   formatXchAmount,
   getAmountPlaceholder,
-  isValidAmountInput,
-  parseAmountInput,
 } from '@/shared/lib/utils/chia-units'
 import type { AssetAmount, AssetType } from '@/entities/offer'
 import { useCallback, useEffect, useState } from 'react'
@@ -56,23 +55,29 @@ export function useAmountInput({
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const inputVal = e.target.value
-      if (isValidAmountInput(inputVal)) {
+      // Validate based on asset type (NFT: integers only, tokens: floats allowed)
+      if (assetInputAmounts.isValid(inputVal, assetType)) {
         setInputValue(inputVal)
-        const parsed = parseAmountInput(inputVal)
+        // Safely convert to number
+        const parsed = assetInputAmounts.parse(inputVal, assetType)
         setNumericValue(parsed)
         onChange?.(parsed)
       }
     },
-    [onChange]
+    [onChange, assetType]
   )
 
   // Handle input blur
   const handleBlur = useCallback(() => {
-    const finalValue = parseAmountInput(inputValue !== undefined ? inputValue : '')
+    // Safely convert to number
+    const finalValue = assetInputAmounts.parse(
+      inputValue !== undefined ? inputValue : '',
+      assetType
+    )
     setNumericValue(finalValue)
     setInputValue(undefined)
     onBlur?.(finalValue)
-  }, [inputValue, onBlur])
+  }, [inputValue, onBlur, assetType])
 
   // Set value programmatically
   const setValue = useCallback((value: AssetAmount) => {

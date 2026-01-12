@@ -11,8 +11,11 @@ import { useCatTokens, useThemeClasses } from '@/shared/hooks'
 import { getNativeTokenTicker } from '@/shared/lib/config/environment'
 import { logger } from '@/shared/lib/logger'
 import {
+  assetInputAmounts,
   formatAssetAmount,
+  formatAssetAmountForInput,
   formatXchAmount,
+  getAmountPlaceholder,
   getMinimumFeeInXch,
 } from '@/shared/lib/utils/chia-units'
 import { getDexieStatusDescription, validateOfferString } from '@/shared/lib/utils/offerUtils'
@@ -234,7 +237,7 @@ export default function MarketOfferTab({
   // Form state
   const [offerString, setOfferString] = useState('')
   const [fee, setFee] = useState(getMinimumFeeInXch())
-  const [feeInput, setFeeInput] = useState(getMinimumFeeInXch().toString())
+  const [feeInput, setFeeInput] = useState<string | undefined>(undefined)
 
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -611,12 +614,13 @@ export default function MarketOfferTab({
     cachedOrderData?.offer,
   ]) // Depend on offerString, order ID, fetched offer string, and query data
 
-  // Handle fee input
+  // Handle fee input with standardized validation (XCH allows floats)
   const handleFeeChange = useCallback((value: string) => {
-    setFeeInput(value)
-    const numValue = parseFloat(value)
-    if (!isNaN(numValue) && numValue >= 0) {
-      setFee(numValue)
+    if (assetInputAmounts.isValid(value, 'xch')) {
+      setFeeInput(value)
+      // Safely convert to number
+      const parsed = assetInputAmounts.parse(value, 'xch')
+      setFee(parsed)
     }
   }, [])
 
@@ -662,7 +666,7 @@ export default function MarketOfferTab({
           setTimeout(() => {
             setOfferString('')
             setFee(getMinimumFeeInXch())
-            setFeeInput(getMinimumFeeInXch().toString())
+            setFeeInput(undefined)
             setOfferPreview(null)
             setSuccessMessage('')
             if (mode === 'modal' && onClose) {
@@ -768,12 +772,27 @@ export default function MarketOfferTab({
             Transaction Fee (XCH)
           </label>
           <input
-            type="number"
-            value={feeInput}
+            type="text"
+            inputMode="decimal"
+            pattern="[0-9]*\.?[0-9]*"
+            value={
+              feeInput !== undefined
+                ? feeInput
+                : fee && fee > 0
+                  ? formatAssetAmountForInput(fee, 'xch')
+                  : ''
+            }
             onChange={(e) => handleFeeChange(e.target.value)}
-            step="0.000001"
-            min="0"
-            placeholder={getMinimumFeeInXch().toString()}
+            onBlur={() => {
+              // Safely convert to number
+              const parsed = assetInputAmounts.parse(
+                feeInput !== undefined ? feeInput : fee?.toString() || '',
+                'xch'
+              )
+              setFee(parsed >= 0 ? parsed : getMinimumFeeInXch())
+              setFeeInput(undefined)
+            }}
+            placeholder={getAmountPlaceholder('xch')}
             className={`w-full px-2 py-1.5 border rounded-lg text-xs ${t.input} ${t.border} backdrop-blur-xl`}
             disabled={isSubmitting}
           />

@@ -3,10 +3,9 @@
 import type { AssetType } from '@/entities/offer'
 import { useThemeClasses } from '@/shared/hooks'
 import {
-  formatAssetAmount,
+  assetInputAmounts,
+  formatAssetAmountForInput,
   getAmountPlaceholder,
-  isValidAmountInput,
-  parseAmountInput,
 } from '@/shared/lib/utils/chia-units'
 
 interface AmountInputProps {
@@ -30,19 +29,29 @@ export default function AmountInput({
     tempInput !== undefined
       ? tempInput
       : value !== undefined && value !== 0
-        ? formatAssetAmount(value, type)
+        ? formatAssetAmountForInput(value, type)
         : ''
+
+  // NFT uses numeric input (integers only), tokens use decimal input (floats allowed)
+  const inputMode = type === 'nft' ? 'numeric' : 'decimal'
+  const pattern = type === 'nft' ? '[0-9]*' : '[0-9]*\.?[0-9]*'
 
   return (
     <input
       type="text"
-      inputMode="decimal"
-      pattern="[0-9]*\.?[0-9]*"
+      inputMode={inputMode}
+      pattern={pattern}
       value={displayValue}
       onChange={(e) => {
         const inputValue = e.target.value
-        if (isValidAmountInput(inputValue)) {
-          onChange(parseAmountInput(inputValue), inputValue)
+        // Validate based on asset type:
+        // - NFT: only natural numbers (1, 2, 3, etc.) - no decimals
+        // - Asset tokens (XCH, CAT): all float numbers allowed
+        // - Never allow negative numbers
+        if (assetInputAmounts.isValid(inputValue, type)) {
+          // Safely convert to number
+          const parsedAmount = assetInputAmounts.parse(inputValue, type)
+          onChange(parsedAmount, inputValue)
         }
       }}
       onBlur={onBlur}
