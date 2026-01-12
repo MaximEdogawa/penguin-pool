@@ -120,13 +120,4 @@
     "vitest": "^3.2.4",
     "vue-tsc": "^3.0.4"
   },
-  "lint-staged": {
-    "*.{vue,js,ts,jsx,tsx}": [
-      "eslint --fix",
-      "prettier --write --ignore-path .prettierignore"
-    ],
-    "*.{json,css,md,html,scss,sass,less}": [
-      "prettier --write --ignore-path .prettierignore"
-    ]
-  }
 }

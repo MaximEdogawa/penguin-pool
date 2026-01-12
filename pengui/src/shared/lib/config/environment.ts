@@ -59,4 +59,27 @@ export const environment = {
   },
 } as const
 
+/**
+ * Get the current Chia network (mainnet or testnet)
+ */
+export function getChiaNetwork(): 'mainnet' | 'testnet' {
+  const network = process.env.NEXT_PUBLIC_CHIA_NETWORK || 'testnet'
+  return network === 'mainnet' ? 'mainnet' : 'testnet'
+}
+
+/**
+ * Check if the current network is testnet
+ */
+export function isTestnet(): boolean {
+  return getChiaNetwork() === 'testnet'
+}
+
+/**
+ * Get the native token ticker based on the current network
+ * Returns 'TXCH' for testnet, 'XCH' for mainnet
+ */
+export function getNativeTokenTicker(): 'TXCH' | 'XCH' {
+  return isTestnet() ? 'TXCH' : 'XCH'
+}
+
 export type Environment = typeof environment

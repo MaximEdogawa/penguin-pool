@@ -1,11 +1,11 @@
 'use client'
 
 import {
+  assetInputAmounts,
+  formatAssetAmountForInput,
   formatXchAmount,
   getAmountPlaceholder,
   getMinimumFeeInXch,
-  isValidAmountInput,
-  parseAmountInput,
 } from '@/shared/lib/utils/chia-units'
 import { extractTransactionId } from '@/shared/lib/walletConnect/utils/transactionUtils'
 import { ConnectButton, useWalletConnectionState } from '@maximedogawa/chia-wallet-connect-react'
@@ -148,17 +148,23 @@ export default function SendTransactionForm({ availableBalance }: SendTransactio
         }
         onChange={(e) => {
           const inputValue = e.target.value
-          if (isValidAmountInput(inputValue)) {
+          if (assetInputAmounts.isValid(inputValue, 'xch')) {
             setAmountInput(inputValue)
-            const parsed = parseAmountInput(inputValue)
+            // Safely convert to number
+            const parsed = assetInputAmounts.parse(inputValue, 'xch')
             setAmount(parsed > 0 ? parsed.toString() : '')
             if (amountError) validateAmount()
           }
         }}
         onBlur={() => {
-          const parsed = parseAmountInput(amountInput !== undefined ? amountInput : amount || '')
+          const inputValue = amountInput !== undefined ? amountInput : amount || ''
+          // Safely convert to number
+          const parsed = assetInputAmounts.parse(inputValue, 'xch')
           setAmount(parsed > 0 ? parsed.toString() : '')
-          setAmountInput(undefined)
+          // Preserve input format if user typed something like "1.0"
+          const formatted = formatAssetAmountForInput(parsed, 'xch')
+          const shouldPreserveInput = inputValue.includes('.') && inputValue !== formatted
+          setAmountInput(shouldPreserveInput ? inputValue : undefined)
           validateAmount()
         }}
         placeholder={getAmountPlaceholder('xch')}
@@ -188,15 +194,20 @@ export default function SendTransactionForm({ availableBalance }: SendTransactio
         }
         onChange={(e) => {
           const inputValue = e.target.value
-          if (isValidAmountInput(inputValue)) {
+          if (assetInputAmounts.isValid(inputValue, 'xch')) {
             setFeeInput(inputValue)
-            const parsed = parseAmountInput(inputValue)
+            // Safely convert to number
+            const parsed = assetInputAmounts.parse(inputValue, 'xch')
             setFee(parsed > 0 ? parsed.toString() : '')
             if (feeError) validateFee()
           }
         }}
         onBlur={() => {
-          const parsed = parseAmountInput(feeInput !== undefined ? feeInput : fee || '')
+          // Safely convert to number
+          const parsed = assetInputAmounts.parse(
+            feeInput !== undefined ? feeInput : fee || '',
+            'xch'
+          )
           setFee(parsed > 0 ? parsed.toString() : '')
           setFeeInput(undefined)
           validateFee()

@@ -1,17 +1,17 @@
 'use client'
 
 import { environment } from '@/shared/lib/config/environment'
+import { logger } from '@/shared/lib/logger'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
+  DexieHistoricalTradesResponse,
   DexieOfferSearchParams,
   DexieOfferSearchResponse,
   DexieOrderBookResponse,
   DexiePairsResponse,
   DexiePostOfferParams,
   DexiePostOfferResponse,
-  DexieHistoricalTradesResponse,
 } from '../lib/dexieTypes'
-import { logger } from '@/shared/lib/logger'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 const DEXIE_KEY = 'dexie'
 const PAIRS_KEY = 'pairs'
@@ -59,7 +59,32 @@ export function useDexieDataService() {
         const response = await fetch(`${DEXIE_API_BASE_URL}/v1/offers?${queryParams.toString()}`)
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
+          // Try to get error details from response
+          let errorMessage = `HTTP error! status: ${response.status}`
+          // Read body as text first (can only be read once)
+          const responseText = await response.text()
+
+          if (responseText) {
+            try {
+              // Try to parse as JSON to extract structured error data
+              const errorData = JSON.parse(responseText)
+              if (errorData.message || errorData.error) {
+                errorMessage = `${errorMessage}: ${errorData.message || errorData.error}`
+              } else {
+                errorMessage = `${errorMessage}: ${responseText}`
+              }
+            } catch {
+              // If parsing fails, use the raw text as error message
+              errorMessage = `${errorMessage}: ${responseText}`
+            }
+          }
+
+          logger.error('Dexie API error:', {
+            status: response.status,
+            url: `${DEXIE_API_BASE_URL}/v1/offers?${queryParams.toString()}`,
+            error: errorMessage,
+          })
+          throw new Error(errorMessage)
         }
 
         const data = await response.json()

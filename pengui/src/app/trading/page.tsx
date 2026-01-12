@@ -1,9 +1,15 @@
 'use client'
 
 import { getThemeClasses } from '@/shared/lib/theme'
-import { TrendingUp, BookOpen, BarChart3, Activity } from 'lucide-react'
+import { TrendingUp, BookOpen, BarChart3, Activity, type LucideIcon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
+import TradingLayout from '@/features/trading/ui/layout/TradingLayout'
+import FilterPanel from '@/features/trading/ui/layout/FilterPanel'
+import {
+  OrderBookFiltersProvider,
+  useOrderBookFilters,
+} from '@/features/trading/model/OrderBookFiltersProvider'
 
 export default function TradingPage() {
   const [mounted, setMounted] = useState(false)
@@ -31,7 +37,35 @@ export default function TradingPage() {
   ]
 
   return (
-    <div className="w-full relative z-10">
+    <OrderBookFiltersProvider>
+      <TradingPageContent
+        activeView={activeView}
+        setActiveView={setActiveView}
+        views={views}
+        isDark={isDark}
+        t={t}
+      />
+    </OrderBookFiltersProvider>
+  )
+}
+
+function TradingPageContent({
+  activeView,
+  setActiveView,
+  views,
+  isDark,
+  t,
+}: {
+  activeView: 'orderbook' | 'chart' | 'depth' | 'trades'
+  setActiveView: (view: 'orderbook' | 'chart' | 'depth' | 'trades') => void
+  views: Array<{ id: 'orderbook' | 'chart' | 'depth' | 'trades'; icon: LucideIcon; label: string }>
+  isDark: boolean
+  t: ReturnType<typeof getThemeClasses>
+}) {
+  const { refreshOrderBook } = useOrderBookFilters()
+
+  return (
+    <div className="w-full h-full relative z-10 flex flex-col">
       {/* View Tabs */}
       <div
         className={`mb-2 backdrop-blur-[40px] ${t.card} rounded-xl p-1 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
@@ -80,74 +114,13 @@ export default function TradingPage() {
         </div>
       </div>
 
-      {/* Trading Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-        {/* Main Trading Panel */}
-        <div
-          className={`backdrop-blur-[40px] ${t.card} rounded-2xl p-4 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
-            isDark ? 'bg-white/[0.03]' : 'bg-white/30'
-          }`}
-        >
-          <h3 className={`${t.text} text-sm font-semibold mb-2`}>
-            {views.find((v) => v.id === activeView)?.label}
-          </h3>
-          <div className="flex flex-col items-center justify-center py-4">
-            <div
-              className={`p-4 rounded-2xl ${isDark ? 'bg-white/5' : 'bg-white/30'} backdrop-blur-xl mb-3`}
-            >
-              {(() => {
-                const activeViewData = views.find((v) => v.id === activeView)
-                if (!activeViewData) return null
-                const Icon = activeViewData.icon
-                return (
-                  <Icon
-                    className={`${isDark ? 'text-slate-400' : 'text-slate-600'}`}
-                    size={32}
-                    strokeWidth={1.5}
-                  />
-                )
-              })()}
-            </div>
-            <p className={`${t.textSecondary} text-center text-sm max-w-md`}>
-              {activeView === 'orderbook' && 'Order book data will be displayed here'}
-              {activeView === 'chart' && 'Trading charts will be displayed here'}
-              {activeView === 'depth' && 'Market depth visualization will be displayed here'}
-              {activeView === 'trades' && 'Recent trades will be displayed here'}
-            </p>
-          </div>
-        </div>
-
-        {/* Side Panel */}
-        <div
-          className={`backdrop-blur-[40px] ${t.card} rounded-2xl p-4 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
-            isDark ? 'bg-white/[0.03]' : 'bg-white/30'
-          }`}
-        >
-          <h3 className={`${t.text} text-sm font-semibold mb-2`}>Trading Tools</h3>
-          <div className="space-y-2">
-            <div
-              className={`backdrop-blur-xl ${
-                isDark ? 'bg-white/[0.03] border-white/5' : 'bg-white/50 border-cyan-200/30'
-              } rounded-xl p-3 border transition-all duration-200`}
-            >
-              <p className={`${t.text} font-medium text-xs mb-1`}>Create Offer</p>
-              <p className={`${t.textSecondary} text-[10px]`}>
-                Create a new trading offer from this panel
-              </p>
-            </div>
-            <div
-              className={`backdrop-blur-xl ${
-                isDark ? 'bg-white/[0.03] border-white/5' : 'bg-white/50 border-cyan-200/30'
-              } rounded-xl p-3 border transition-all duration-200`}
-            >
-              <p className={`${t.text} font-medium text-xs mb-1`}>Take Offer</p>
-              <p className={`${t.textSecondary} text-[10px]`}>
-                Browse and take available offers from the order book
-              </p>
-            </div>
-          </div>
-        </div>
+      {/* Trading Layout */}
+      <div className="flex-1 min-h-0">
+        <TradingLayout activeTradingView={activeView} />
       </div>
+
+      {/* Filter Panel */}
+      <FilterPanel onFiltersChange={refreshOrderBook} />
     </div>
   )
 }

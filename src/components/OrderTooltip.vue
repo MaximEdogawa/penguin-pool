@@ -47,7 +47,7 @@
         <span class="text-xs text-gray-500 dark:text-gray-400">Receiving:</span>
         <div class="mt-1 space-y-1">
           <div
-            v-for="(asset, idx) in order.receiving"
+            v-for="(asset, idx) in order.requesting"
             :key="idx"
             class="flex items-center justify-between text-xs"
           >
@@ -86,13 +86,13 @@
   interface Order {
     id: string
     offering: Array<{ id: string; code: string; name: string; amount: number }>
-    receiving: Array<{ id: string; code: string; name: string; amount: number }>
+    requesting: Array<{ id: string; code: string; name: string; amount: number }>
     maker: string
     timestamp: string
     offeringUsdValue: number
-    receivingUsdValue: number
+    requestingUsdValue: number
     offeringXchValue: number
-    receivingXchValue: number
+    requestingXchValue: number
     pricePerUnit: number
   }
 

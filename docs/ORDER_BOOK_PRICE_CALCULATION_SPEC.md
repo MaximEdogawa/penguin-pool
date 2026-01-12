@@ -63,13 +63,13 @@ When `isSingleAssetPair(order) === true`:
 #### Sell Orders
 
 ```typescript
-price = order.offering[0].amount / order.receiving[0].amount
+price = order.offering[0].amount / order.requesting[0].amount
 ```
 
 #### Buy Orders
 
 ```typescript
-price = order.receiving[0].amount / order.offering[0].amount
+price = order.requesting[0].amount / order.offering[0].amount
 ```
 
 ### Rule 2: Multiple Asset Pairs
@@ -178,7 +178,7 @@ if (orderType === 'sell') {
 ```typescript
 const memoizedPrice = useMemo(
   () => calculateOrderPrice(order, orderType),
-  [order.id, order.offering, order.receiving, orderType]
+  [order.id, order.offering, order.requesting, orderType]
 )
 ```
 
@@ -227,7 +227,7 @@ describe('calculateOrderPrice', () => {
 
 ```typescript
 // Old way (inconsistent)
-const price = order.receivingUsdValue / order.offeringUsdValue
+const price = order.requestingUsdValue / order.offeringUsdValue
 
 // New way (explicit and consistent)
 const price = calculateOrderPrice(order, 'sell')

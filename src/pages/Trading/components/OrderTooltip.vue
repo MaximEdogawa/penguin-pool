@@ -58,7 +58,7 @@
     <div class="border-t border-gray-300 dark:border-gray-600 pt-1">
       <div class="text-green-600 dark:text-green-400 mb-1 font-semibold">Buying:</div>
       <div
-        v-for="(item, idx) in order.receiving"
+        v-for="(item, idx) in order.requesting"
         :key="idx"
         class="flex justify-between ml-2 mb-0.5"
       >
@@ -78,7 +78,7 @@
         <span class="text-gray-500 dark:text-gray-400 font-semibold">Total Buying:</span>
         <span class="text-green-600 dark:text-green-400 font-mono font-semibold">
           ${{
-            order.receivingUsdValue.toLocaleString('en-US', {
+            order.requestingUsdValue.toLocaleString('en-US', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })
@@ -95,11 +95,11 @@
   interface Order {
     id: number
     offering: Array<{ asset: string; amount: string }>
-    receiving: Array<{ asset: string; amount: string }>
+    requesting: Array<{ asset: string; amount: string }>
     maker: string
     timestamp: string
     offeringUsdValue: number
-    receivingUsdValue: number
+    requestingUsdValue: number
     pricePerUnit: number
     assetPriceInUsdc: number
   }
@@ -112,7 +112,7 @@
   const props = defineProps<Props>()
 
   const uniqueAssets = computed(() => {
-    const allAssets = [...props.order.offering, ...props.order.receiving].map(a => a.asset)
+    const allAssets = [...props.order.offering, ...props.order.requesting].map(a => a.asset)
     return [...new Set(allAssets)]
   })
 
@@ -123,10 +123,10 @@
       // Calculate from the order
       const assetItem =
         props.order.offering.find(a => a.asset === asset) ||
-        props.order.receiving.find(a => a.asset === asset)
+        props.order.requesting.find(a => a.asset === asset)
       const usdcItem =
         props.order.offering.find(a => a.asset === 'USDC') ||
-        props.order.receiving.find(a => a.asset === 'USDC')
+        props.order.requesting.find(a => a.asset === 'USDC')
 
       if (assetItem && usdcItem) {
         // If asset is being sold for USDC

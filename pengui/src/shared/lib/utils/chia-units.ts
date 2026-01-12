@@ -70,23 +70,6 @@ export function formatMojosAsXch(
 }
 
 /**
- * Validate that an XCH amount is within valid range
- * @param xchAmount - Amount in XCH
- * @returns true if valid, false otherwise
- */
-export function isValidXchAmount(xchAmount: AssetAmount): boolean {
-  return xchAmount >= 0 && xchAmount <= Number.MAX_SAFE_INTEGER / MOJOS_PER_XCH
-}
-
-/**
- * Get the minimum fee in mojos (0.000001 XCH)
- * @returns Minimum fee in mojos
- */
-export function getMinimumFeeInMojos(): number {
-  return xchToMojos(0.000001)
-}
-
-/**
  * Get the minimum fee in XCH
  * @returns Minimum fee in XCH
  */
@@ -132,75 +115,6 @@ export function formatAssetAmount(
       return numAmount.toFixed(3)
     case 'nft':
       // NFTs are whole numbers
-      return Math.floor(numAmount).toString()
-    default:
-      // Default to 2 decimal places for unknown tokens
-      return numAmount.toFixed(2)
-  }
-}
-
-/**
- * Format asset amount with ticker symbol for display
- * @param amount - Amount to format
- * @param assetType - Type of asset ('xch', 'cat', 'nft')
- * @param ticker - Optional ticker symbol
- * @param precision - Number of decimal places for XCH (default: 6)
- * @returns Formatted string with ticker symbol
- */
-export function formatAssetAmountWithTicker(
-  amount: AssetAmount,
-  assetType: AssetType,
-  ticker?: string,
-  precision: number = 6
-): string {
-  const formattedAmount = formatAssetAmount(amount, assetType, precision)
-
-  // For XCH, always show XCH
-  if (assetType.toLowerCase() === 'xch') {
-    return `${formattedAmount} XCH`
-  }
-
-  // For other assets, use ticker if provided
-  if (ticker) {
-    return `${formattedAmount} ${ticker}`
-  }
-
-  return formattedAmount
-}
-
-/**
- * Format asset amount from smallest unit to display unit
- * @param amount - Amount in smallest unit (mojos for XCH, whole units for CAT/NFT)
- * @param assetType - Type of asset ('xch', 'cat', 'nft')
- * @param precision - Number of decimal places for XCH (default: 6)
- * @returns Formatted string
- */
-export function formatAssetAmountFromSmallestUnit(
-  amount: number | string | bigint,
-  assetType: AssetType,
-  precision: number = 6
-): string {
-  // Ensure amount is a number
-  const numAmount =
-    typeof amount === 'string'
-      ? parseFloat(amount)
-      : typeof amount === 'bigint'
-        ? Number(amount)
-        : amount
-
-  // Handle invalid numbers
-  if (isNaN(numAmount)) {
-    return '0'
-  }
-
-  switch (assetType.toLowerCase()) {
-    case 'xch':
-      return formatMojosAsXch(numAmount, precision)
-    case 'cat':
-      // CAT tokens can have decimal places, show 3 decimal places for precision
-      return numAmount.toFixed(3)
-    case 'nft':
-      // NFTs are already in whole units
       return Math.floor(numAmount).toString()
     default:
       // Default to 2 decimal places for unknown tokens
@@ -270,27 +184,133 @@ export function convertFromSmallestUnit(
 }
 
 /**
- * Validate input value for amount field
- * Allows empty string, numbers, and decimal point
- * @param value - Input value to validate
- * @returns true if valid input format
+ * Asset Input Amounts utilities
+ * Handles validation and parsing of amount inputs for different asset types
  */
-export function isValidAmountInput(value: string): boolean {
-  return value === '' || /^\d*\.?\d*$/.test(value)
+export const assetInputAmounts = {
+  /**
+   * Validate input value for amount field
+   * - For XCH (native token): allows up to 12 decimal places (mojo precision)
+   * - For CAT tokens: allows up to 3 decimal places
+   * - For NFT: only natural numbers (1, 2, 3, etc.) - no decimals
+   * - Never allows negative numbers
+   * @param value - Input value to validate
+   * @param assetType - Type of asset ('xch', 'cat', 'nft')
+   * @returns true if valid input format
+   */
+  isValid(value: string, assetType?: AssetType): boolean {
+    if (value === '') return true
+
+    // Never allow negative numbers (no minus sign)
+    if (value.includes('-')) return false
+
+    // For NFT: only allow natural numbers (integers, no decimals)
+    if (assetType?.toLowerCase() === 'nft') {
+      return /^\d+$/.test(value) // Only digits, no decimal point
+    }
+
+    // Check for valid number format: digits, single decimal point, digits after decimal
+    const decimalCount = (value.match(/\./g) || []).length
+    if (!/^\d*\.?\d*$/.test(value) || decimalCount > 1) {
+      return false
+    }
+
+    // Check decimal precision based on asset type
+    const type = assetType?.toLowerCase()
+    if (type === 'xch') {
+      // XCH: up to 12 decimal places (mojo precision: 1 XCH = 1,000,000,000,000 mojos)
+      const decimalPart = value.split('.')[1]
+      if (decimalPart && decimalPart.length > 12) {
+        return false
+      }
+    } else if (type === 'cat') {
+      // CAT tokens: up to 3 decimal places
+      const decimalPart = value.split('.')[1]
+      if (decimalPart && decimalPart.length > 3) {
+        return false
+      }
+    }
+    // For other types or undefined, allow any decimal precision (backward compatibility)
+
+    return true
+  },
+
+  /**
+   * Safely parse amount input value to number
+   * Handles empty string, decimal point, and invalid values
+   * For NFT: ensures only natural numbers (no decimals)
+   * @param value - Input value to parse
+   * @param assetType - Optional asset type to enforce NFT integer constraint
+   * @returns Parsed number or 0 if invalid (always a safe number)
+   */
+  parse(value: string, assetType?: AssetType): AssetAmount {
+    if (value === '' || value === '.') {
+      return 0
+    }
+
+    // For NFT: parse as integer (natural numbers only)
+    if (assetType?.toLowerCase() === 'nft') {
+      const parsed = parseInt(value, 10)
+      // Safely convert: ensure it's a valid number, non-negative, and finite
+      if (isNaN(parsed) || !isFinite(parsed) || parsed < 0) {
+        return 0
+      }
+      return Math.max(0, Math.floor(parsed)) // Ensure non-negative integer
+    }
+
+    // For tokens: parse as float
+    const parsed = parseFloat(value)
+    // Safely convert: ensure it's a valid number, non-negative, and finite
+    if (isNaN(parsed) || !isFinite(parsed) || parsed < 0) {
+      return 0
+    }
+    return parsed
+  },
 }
 
 /**
- * Parse amount input value to number
- * Handles empty string, decimal point, and invalid values
- * @param value - Input value to parse
- * @returns Parsed number or 0 if invalid
+ * Format asset amount for input display (preserves user input format)
+ * Only removes trailing zeros if the number is mathematically a whole number
+ * @param amount - Amount to format
+ * @param assetType - Type of asset ('xch', 'cat', 'nft')
+ * @returns Formatted string for input display
  */
-export function parseAmountInput(value: string): AssetAmount {
-  if (value === '' || value === '.') {
-    return 0
+export function formatAssetAmountForInput(amount: AssetAmount, assetType: AssetType): string {
+  // Ensure amount is a number
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount
+
+  // Handle invalid numbers
+  if (isNaN(numAmount) || numAmount === 0) {
+    return ''
   }
-  const parsed = parseFloat(value)
-  return isNaN(parsed) ? 0 : parsed
+
+  // Check if it's mathematically a whole number (not just an integer representation)
+  // Use a small epsilon to handle floating point precision issues
+  const isWholeNumber = Math.abs(numAmount - Math.round(numAmount)) < 0.0000001
+
+  // For whole numbers, return without decimals
+  if (isWholeNumber) {
+    return Math.round(numAmount).toString()
+  }
+
+  // For decimal numbers, format based on asset type but remove only trailing zeros
+  // This preserves significant decimal places like 1.01 and 1.0 (if user typed it)
+  switch (assetType.toLowerCase()) {
+    case 'xch':
+      // Format with up to 12 decimal places (mojo precision), remove only trailing zeros
+      // 1 XCH = 1,000,000,000,000 mojos (12 zeros)
+      return numAmount.toFixed(12).replace(/\.?0+$/, '')
+    case 'cat':
+      // Format with up to 3 decimal places, remove only trailing zeros
+      // But preserve format if user typed something like "1.0"
+      return numAmount.toFixed(3).replace(/\.?0+$/, '')
+    case 'nft':
+      // NFTs are whole numbers
+      return Math.floor(numAmount).toString()
+    default:
+      // Format with up to 2 decimal places, remove only trailing zeros
+      return numAmount.toFixed(2).replace(/\.?0+$/, '')
+  }
 }
 
 /**
@@ -308,23 +328,5 @@ export function getAmountPlaceholder(assetType: AssetType): string {
       return '0'
     default:
       return '0.00'
-  }
-}
-
-/**
- * Get step value for amount input based on asset type
- * @param assetType - Type of asset ('xch', 'cat', 'nft')
- * @returns Step value for input
- */
-export function getAmountStep(assetType: AssetType): string {
-  switch (assetType.toLowerCase()) {
-    case 'xch':
-      return '0.000001'
-    case 'cat':
-      return '0.001'
-    case 'nft':
-      return '1'
-    default:
-      return '0.01'
   }
 }

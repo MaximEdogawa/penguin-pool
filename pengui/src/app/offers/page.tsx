@@ -1,13 +1,9 @@
 'use client'
 
 import type { OfferDetails } from '@/entities/offer'
-import {
-  CreateOfferModal,
-  OfferDetailsModal,
-  OfferHistory,
-  TakeOfferModal,
-  useMyOffers,
-} from '@/features/offers'
+import { OfferDetailsModal, OfferHistory, useMyOffers } from '@/features/offers'
+import { CreateOfferModal, TakeOfferModal } from '@/features/trading'
+import { OrderBookFiltersProvider } from '@/features/trading/model/OrderBookFiltersProvider'
 import { useThemeClasses } from '@/shared/hooks'
 import Button from '@/shared/ui/Button'
 import Modal from '@/shared/ui/Modal'
@@ -192,13 +188,15 @@ export default function OffersPage() {
 
       {/* Take Offer Modal */}
       {showTakeOffer && (
-        <TakeOfferModal
-          onClose={() => setShowTakeOffer(false)}
-          onOfferTaken={() => {
-            // Offer was taken successfully, modal will close automatically
-            setShowTakeOffer(false)
-          }}
-        />
+        <OrderBookFiltersProvider>
+          <TakeOfferModal
+            onClose={() => setShowTakeOffer(false)}
+            onOfferTaken={() => {
+              // Offer was taken successfully, modal will close automatically
+              setShowTakeOffer(false)
+            }}
+          />
+        </OrderBookFiltersProvider>
       )}
 
       {/* Offer Details Modal */}

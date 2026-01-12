@@ -53,7 +53,7 @@ export function useTradingFilters() {
           orderBookAssets.add(tickerSymbol)
         }
       })
-      order.receiving.forEach(asset => {
+      order.requesting.forEach(asset => {
         const tickerSymbol = getTickerSymbol(asset.id)
         if (tickerSymbol) {
           orderBookAssets.add(tickerSymbol)

@@ -45,14 +45,14 @@
             <div class="relative grid grid-cols-10 gap-2 py-2 text-sm items-center">
               <!-- Count -->
               <div class="col-span-2 text-right text-gray-500 dark:text-gray-500 font-mono text-xs">
-                {{ order.offering.length + order.receiving.length }}
+                {{ order.offering.length + order.requesting.length }}
               </div>
 
               <!-- Receive -->
               <div class="col-span-3 text-right">
                 <div class="flex flex-col gap-1">
                   <div
-                    v-for="(item, idx) in order.receiving"
+                    v-for="(item, idx) in order.requesting"
                     :key="idx"
                     class="text-red-600 dark:text-red-400 font-mono text-xs"
                   >
@@ -125,14 +125,14 @@
             <div class="relative grid grid-cols-10 gap-2 py-2 text-sm items-center">
               <!-- Count -->
               <div class="col-span-2 text-right text-gray-500 dark:text-gray-500 font-mono text-xs">
-                {{ order.offering.length + order.receiving.length }}
+                {{ order.offering.length + order.requesting.length }}
               </div>
 
               <!-- Receive -->
               <div class="col-span-3 text-right">
                 <div class="flex flex-col gap-1">
                   <div
-                    v-for="(item, idx) in order.receiving"
+                    v-for="(item, idx) in order.requesting"
                     :key="idx"
                     class="text-green-600 dark:text-green-400 font-mono text-xs"
                   >
@@ -197,13 +197,13 @@
   interface Order {
     id: string
     offering: Array<{ id: string; code: string; name: string; amount: number }>
-    receiving: Array<{ id: string; code: string; name: string; amount: number }>
+    requesting: Array<{ id: string; code: string; name: string; amount: number }>
     maker: string
     timestamp: string
     offeringUsdValue: number
-    receivingUsdValue: number
+    requestingUsdValue: number
     offeringXchValue: number
-    receivingXchValue: number
+    requestingXchValue: number
     pricePerUnit: number
   }
 
@@ -229,6 +229,7 @@
     'refresh-order-book': []
     'fill-from-order-book': [order: Order]
     'use-as-template': [order: Order]
+    'load-more': []
   }>()
 
   const { getTickerSymbol } = useTickerMapping()
@@ -283,7 +284,7 @@
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
                   (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
               ) ||
-              order.receiving.some(
+              order.requesting.some(
                 orderAsset =>
                   getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
@@ -301,7 +302,7 @@
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
                   (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
               ) ||
-              order.receiving.some(
+              order.requesting.some(
                 orderAsset =>
                   getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
@@ -327,7 +328,7 @@
         const requestingSellAsset =
           props.filters.sellAsset.length === 0 ||
           props.filters.sellAsset.some(filterAsset =>
-            order.receiving.some(
+            order.requesting.some(
               orderAsset =>
                 getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
                 orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
@@ -339,8 +340,8 @@
       })
       .sort((a, b) => {
         // Sort sell orders by price (low to high - best asks first)
-        const priceA = a.receiving[0]?.amount / a.offering[0]?.amount || 0
-        const priceB = b.receiving[0]?.amount / b.offering[0]?.amount || 0
+        const priceA = getSortPrice(a, true)
+        const priceB = getSortPrice(b, true)
         return priceA - priceB
       })
   })
@@ -367,7 +368,7 @@
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
                   (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
               ) ||
-              order.receiving.some(
+              order.requesting.some(
                 orderAsset =>
                   getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
@@ -385,7 +386,7 @@
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
                   (orderAsset.code && orderAsset.code.toLowerCase() === filterAsset.toLowerCase())
               ) ||
-              order.receiving.some(
+              order.requesting.some(
                 orderAsset =>
                   getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
                   orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
@@ -411,7 +412,7 @@
         const requestingBuyAsset =
           props.filters.buyAsset.length === 0 ||
           props.filters.buyAsset.some(filterAsset =>
-            order.receiving.some(
+            order.requesting.some(
               orderAsset =>
                 getTickerSymbol(orderAsset.id).toLowerCase() === filterAsset.toLowerCase() ||
                 orderAsset.id.toLowerCase() === filterAsset.toLowerCase() ||
@@ -423,8 +424,8 @@
       })
       .sort((a, b) => {
         // Sort buy orders by price (high to low - best bids first)
-        const priceA = a.offering[0]?.amount / a.receiving[0]?.amount || 0
-        const priceB = b.offering[0]?.amount / b.receiving[0]?.amount || 0
+        const priceA = getSortPrice(a, false)
+        const priceB = getSortPrice(b, false)
         return priceB - priceA
       })
   })
@@ -449,12 +450,40 @@
 
   const isSingleAssetPair = (order: Order): boolean => {
     // Check if both offering and receiving have only one asset each
-    return order.offering.length === 1 && order.receiving.length === 1
+    return order.offering.length === 1 && order.requesting.length === 1
+  }
+
+  // Helper function to safely get price for sorting
+  // Prefers pricePerUnit, falls back to ratio calculation for single-asset pairs, or Infinity for invalid orders
+  const getSortPrice = (order: Order, isSellOrder: boolean): number => {
+    // Prefer pricePerUnit when available and valid
+    if (order.pricePerUnit != null && order.pricePerUnit > 0 && isFinite(order.pricePerUnit)) {
+      return order.pricePerUnit
+    }
+
+    // Only compute ratio for single-asset pairs with valid amounts
+    if (isSingleAssetPair(order)) {
+      const requestingAmount = order.requesting[0]?.amount
+      const offeringAmount = order.offering[0]?.amount
+
+      if (
+        requestingAmount != null &&
+        offeringAmount != null &&
+        requestingAmount > 0 &&
+        offeringAmount > 0
+      ) {
+        // For sell orders: requesting/offering, for buy orders: offering/requesting
+        return isSellOrder ? requestingAmount / offeringAmount : offeringAmount / requestingAmount
+      }
+    }
+
+    // Invalid orders go to the end
+    return Number.POSITIVE_INFINITY
   }
 
   const calculateOrderPrice = (order: Order, _orderType: 'buy' | 'sell'): string => {
     if (isSingleAssetPair(order)) {
-      const receivingAsset = order.receiving[0]
+      const receivingAsset = order.requesting[0]
       const offeringAsset = order.offering[0]
 
       if (
@@ -515,6 +544,124 @@
     })}`
   }
 
+  // Helper function to safely calculate price from an order
+  // Validates order shape, finds correct asset pair, and ensures safe division
+  const calculateOrderPriceRatio = (order: Order | undefined, isSellOrder: boolean): number => {
+    if (!order) {
+      return 0
+    }
+
+    // For single-asset pairs, use indices [0]
+    if (isSingleAssetPair(order)) {
+      const requestingAsset = order.requesting[0]
+      const offeringAsset = order.offering[0]
+
+      if (!requestingAsset || !offeringAsset) {
+        return 0
+      }
+
+      const requestingAmount = Number(requestingAsset.amount)
+      const offeringAmount = Number(offeringAsset.amount)
+
+      if (
+        !isFinite(requestingAmount) ||
+        !isFinite(offeringAmount) ||
+        requestingAmount <= 0 ||
+        offeringAmount <= 0
+      ) {
+        return 0
+      }
+
+      // For sell orders: requesting/offering, for buy orders: offering/requesting
+      const price = isSellOrder
+        ? requestingAmount / offeringAmount
+        : offeringAmount / requestingAmount
+
+      return isFinite(price) ? price : 0
+    }
+
+    // For multi-asset orders, find matching asset indices based on filters
+    if (props.filters.buyAsset.length > 0 && props.filters.sellAsset.length > 0) {
+      const buyAssetFilter = props.filters.buyAsset[0].toLowerCase()
+      const sellAssetFilter = props.filters.sellAsset[0].toLowerCase()
+
+      // Find the asset indices that match the filters
+      // Find requesting asset that matches buyAsset filter
+      const requestingIndex = order.requesting.findIndex(asset => {
+        if (!asset) return false
+        const ticker = getTickerSymbol(asset.id).toLowerCase()
+        const assetId = asset.id.toLowerCase()
+        const assetCode = asset.code?.toLowerCase() || ''
+
+        return (
+          ticker === buyAssetFilter || assetId === buyAssetFilter || assetCode === buyAssetFilter
+        )
+      })
+
+      // Find offering asset that matches sellAsset filter
+      const offeringIndex = order.offering.findIndex(asset => {
+        if (!asset) return false
+        const ticker = getTickerSymbol(asset.id).toLowerCase()
+        const assetId = asset.id.toLowerCase()
+        const assetCode = asset.code?.toLowerCase() || ''
+
+        return (
+          ticker === sellAssetFilter || assetId === sellAssetFilter || assetCode === sellAssetFilter
+        )
+      })
+
+      // If we found matching assets, calculate price
+      if (requestingIndex >= 0 && offeringIndex >= 0) {
+        const requestingAsset = order.requesting[requestingIndex]
+        const offeringAsset = order.offering[offeringIndex]
+
+        if (requestingAsset && offeringAsset) {
+          const requestingAmount = Number(requestingAsset.amount)
+          const offeringAmount = Number(offeringAsset.amount)
+
+          if (
+            isFinite(requestingAmount) &&
+            isFinite(offeringAmount) &&
+            requestingAmount > 0 &&
+            offeringAmount > 0
+          ) {
+            const price = isSellOrder
+              ? requestingAmount / offeringAmount
+              : offeringAmount / requestingAmount
+
+            return isFinite(price) ? price : 0
+          }
+        }
+      }
+    }
+
+    // Fallback: if we can't find matching assets, try [0] indices with validation
+    const requestingAsset = order.requesting[0]
+    const offeringAsset = order.offering[0]
+
+    if (!requestingAsset || !offeringAsset) {
+      return 0
+    }
+
+    const requestingAmount = Number(requestingAsset.amount)
+    const offeringAmount = Number(offeringAsset.amount)
+
+    if (
+      !isFinite(requestingAmount) ||
+      !isFinite(offeringAmount) ||
+      requestingAmount <= 0 ||
+      offeringAmount <= 0
+    ) {
+      return 0
+    }
+
+    const price = isSellOrder
+      ? requestingAmount / offeringAmount
+      : offeringAmount / requestingAmount
+
+    return isFinite(price) ? price : 0
+  }
+
   const calculateAveragePrice = (): string => {
     if (props.filters.buyAsset.length === 0 || props.filters.sellAsset.length === 0) {
       return 'N/A'
@@ -522,15 +669,11 @@
 
     // Get best sell price (lowest ask)
     const bestSellOrder = filteredSellOrders.value[0]
-    const bestSellPrice = bestSellOrder
-      ? bestSellOrder.receiving[0]?.amount / bestSellOrder.offering[0]?.amount
-      : 0
+    const bestSellPrice = calculateOrderPriceRatio(bestSellOrder, true)
 
     // Get best buy price (highest bid)
     const bestBuyOrder = filteredBuyOrders.value[0]
-    const bestBuyPrice = bestBuyOrder
-      ? bestBuyOrder.offering[0]?.amount / bestBuyOrder.receiving[0]?.amount
-      : 0
+    const bestBuyPrice = calculateOrderPriceRatio(bestBuyOrder, false)
 
     // Calculate average if both prices exist
     if (bestSellPrice > 0 && bestBuyPrice > 0) {

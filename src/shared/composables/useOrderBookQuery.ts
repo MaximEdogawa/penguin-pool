@@ -1,3 +1,4 @@
+import type { DexieAssetItem, OrderBookOrder } from '@/pages/Trading/types'
 import type { DexieOffer } from '@/shared/services/DexieDataService'
 import { useDexieDataService } from '@/shared/services/DexieDataService'
 import { logger } from '@/shared/services/logger'
@@ -9,33 +10,7 @@ export interface OrderBookFilters {
   sellAsset?: string[]
 }
 
-export interface DexieAssetItem {
-  id: string
-  code: string
-  name: string
-  amount: number
-}
-
-export interface OrderBookOrder {
-  id: string
-  offering: DexieAssetItem[]
-  receiving: DexieAssetItem[]
-  maker: string
-  timestamp: string
-  offeringUsdValue: number
-  receivingUsdValue: number
-  offeringXchValue: number
-  receivingXchValue: number
-  pricePerUnit: number
-  status: number
-  date_found: string
-  date_completed?: string | null
-  date_pending?: string | null
-  date_expiry?: string | null
-  known_taker?: unknown | null
-  offerString?: string
-  creatorAddress?: string
-}
+export type { DexieAssetItem, OrderBookOrder }
 
 /**
  * Composable for order book data using TanStack Query
@@ -76,7 +51,7 @@ export function useOrderBookQuery(filters?: Ref<OrderBookFilters>) {
       (sum: number, item: DexieAssetItem) => sum + item.amount * (usdPrices[item.code] || 0),
       0
     )
-    const receivingUsdValue = safeRequested.reduce(
+    const requestingUsdValue = safeRequested.reduce(
       (sum: number, item: DexieAssetItem) => sum + item.amount * (usdPrices[item.code] || 0),
       0
     )
@@ -88,7 +63,7 @@ export function useOrderBookQuery(filters?: Ref<OrderBookFilters>) {
         return sum + (item.amount * (usdPrices[item.code] || 0)) / usdPrices.TXCH
       }
     }, 0)
-    const receivingXchValue = safeRequested.reduce((sum: number, item: DexieAssetItem) => {
+    const requestingXchValue = safeRequested.reduce((sum: number, item: DexieAssetItem) => {
       if (item.code === 'TXCH') {
         return sum + item.amount
       } else {
@@ -99,14 +74,14 @@ export function useOrderBookQuery(filters?: Ref<OrderBookFilters>) {
     return {
       id: dexieOffer.id,
       offering: safeOffered,
-      receiving: safeRequested,
+      requesting: safeRequested,
       maker: `0x${dexieOffer.id.substring(0, 8)}...${dexieOffer.id.substring(-8)}`,
       timestamp: new Date(dexieOffer.date_found).toLocaleTimeString(),
       offeringUsdValue,
-      receivingUsdValue,
+      requestingUsdValue,
       offeringXchValue,
-      receivingXchValue,
-      pricePerUnit: receivingUsdValue / offeringUsdValue,
+      requestingXchValue,
+      pricePerUnit: requestingUsdValue / offeringUsdValue,
       status: dexieOffer.status,
       date_found: dexieOffer.date_found,
       date_completed: dexieOffer.date_completed,

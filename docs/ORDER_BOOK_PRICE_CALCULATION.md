@@ -85,7 +85,7 @@ calculateOrderPrice(order: Order, orderType: 'buy' | 'sell'): string
 
 ```typescript
 const isSingleAssetPair = (order: Order): boolean => {
-  return order.offering.length === 1 && order.receiving.length === 1
+  return order.offering.length === 1 && order.requesting.length === 1
 }
 ```
 
