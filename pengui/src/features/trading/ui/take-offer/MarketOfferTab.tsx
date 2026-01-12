@@ -24,6 +24,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2, ShoppingCart } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useOrderBookFiltering } from '../../composables/useOrderBookFiltering'
+import { formatPriceForDisplay } from '../../lib/formatAmount'
 import { calculateOrderPrice as calculateOrderPriceNumeric } from '../../lib/services/priceCalculation'
 import type { OrderBookFilters, OrderBookOrder } from '../../lib/orderBookTypes'
 import { useOrderBookFilters } from '../../model/OrderBookFiltersProvider'
@@ -233,6 +234,27 @@ export default function MarketOfferTab({
     // Cap at 100% and ensure non-negative
     return Math.max(0, Math.min(100, deviation))
   }, [order, filteredBuyOrders, filteredSellOrders, filters, getTickerSymbolForPrice])
+
+  // Calculate order price for display
+  const orderPrice = useMemo(() => {
+    if (!order || !filters) return null
+    const numericPrice = calculateOrderPriceNumeric(order, filters, {
+      getTickerSymbol: getTickerSymbolForPrice,
+    })
+    if (!isFinite(numericPrice) || numericPrice <= 0) return null
+    return numericPrice
+  }, [order, filters, getTickerSymbolForPrice])
+
+  // Get price header ticker
+  const getPriceHeaderTicker = useCallback((): string => {
+    if (filters?.buyAsset && filters.buyAsset.length > 0) {
+      return filters.buyAsset[0]
+    }
+    if (filters?.sellAsset && filters.sellAsset.length > 0) {
+      return filters.sellAsset[0]
+    }
+    return getNativeTokenTicker()
+  }, [filters])
 
   // Form state
   const [offerString, setOfferString] = useState('')
@@ -739,6 +761,14 @@ export default function MarketOfferTab({
                     : 'Assets to offer creator'}
                 </span>
               </div>
+              {orderPrice !== null && (
+                <div className={`flex justify-between border-t ${t.border} pt-1.5 mt-1.5`}>
+                  <span className={`text-xs ${t.textSecondary}`}>Price:</span>
+                  <span className={`text-xs font-mono ${t.text}`}>
+                    {formatPriceForDisplay(orderPrice)} {getPriceHeaderTicker()}
+                  </span>
+                </div>
+              )}
               <div className={`flex justify-between border-t ${t.border} pt-1.5 mt-1.5`}>
                 <span className={`font-medium ${t.text}`}>Fee:</span>
                 <span className={`font-medium ${t.text}`}>
