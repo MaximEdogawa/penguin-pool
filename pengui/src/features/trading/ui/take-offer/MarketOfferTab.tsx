@@ -20,7 +20,11 @@ import Button from '@/shared/ui/Button'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2, ShoppingCart } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useOrderBookFiltering } from '../../composables/useOrderBookFiltering'
+import { calculateOrderPrice as calculateOrderPriceNumeric } from '../../lib/services/priceCalculation'
 import type { OrderBookFilters, OrderBookOrder } from '../../lib/orderBookTypes'
+import { useOrderBookFilters } from '../../model/OrderBookFiltersProvider'
+import { useOrderBook } from '../../model/useOrderBook'
 import OrderDetailsSection from './OrderDetailsSection'
 
 interface MarketOfferTabProps {
@@ -100,6 +104,11 @@ export default function MarketOfferTab({
   const dexieDataService = useDexieDataService()
   const queryClient = useQueryClient()
 
+  // Get order book data for price deviation calculation
+  const { filters: contextFilters } = useOrderBookFilters()
+  const { orderBookData } = useOrderBook(contextFilters)
+  const { filteredBuyOrders, filteredSellOrders } = useOrderBookFiltering(orderBookData, filters)
+
   // Determine if order is buy or sell (from taker's perspective)
   const orderType = useMemo(() => {
     if (!order || !filters?.buyAsset || !filters?.sellAsset) {
@@ -159,6 +168,68 @@ export default function MarketOfferTab({
     filters?.sellAsset,
     getCatTokenInfo,
   ])
+
+  // Helper function to get ticker symbol (reused from orderType calculation)
+  const getTickerSymbolForPrice = useCallback(
+    (assetId: string, code?: string): string => {
+      if (code) return code
+      if (!assetId) return getNativeTokenTicker()
+      const tickerInfo = getCatTokenInfo(assetId)
+      return tickerInfo?.ticker || assetId.slice(0, 8)
+    },
+    [getCatTokenInfo]
+  )
+
+  // Calculate price deviation percentage for the order
+  const priceDeviationPercent = useMemo(() => {
+    if (!order) return null
+
+    // Determine which order list the order belongs to
+    const isBuyOrder = filteredBuyOrders.some((o) => o.id === order.id)
+    const orderList = isBuyOrder ? filteredBuyOrders : filteredSellOrders
+    const orderTypeForPrice = isBuyOrder ? 'buy' : 'sell'
+
+    if (orderList.length === 0) return null
+
+    // Calculate numeric price for all orders
+    const getNumericPrice = (o: OrderBookOrder) => {
+      return calculateOrderPriceNumeric(o, filters, { getTickerSymbol: getTickerSymbolForPrice })
+    }
+
+    // Calculate best price (lowest for sell, highest for buy)
+    const prices = orderList.map(getNumericPrice).filter((p) => p > 0 && isFinite(p))
+    if (prices.length === 0) return null
+
+    const bestPrice =
+      orderTypeForPrice === 'sell'
+        ? Math.min(...prices) // Lowest price is best for sell
+        : Math.max(...prices) // Highest price is best for buy
+
+    if (!bestPrice || bestPrice <= 0 || !isFinite(bestPrice)) return null
+
+    // Calculate current price of the order
+    const currentPrice = getNumericPrice(order)
+    if (!currentPrice || currentPrice <= 0 || !isFinite(currentPrice)) return null
+
+    // If prices are equal (or very close), return 0% deviation
+    if (Math.abs(currentPrice - bestPrice) < 0.000001) return 0
+
+    // Calculate deviation percentage
+    let deviation: number
+    if (orderTypeForPrice === 'sell') {
+      // For sell orders: ((currentPrice - bestPrice) / bestPrice) * 100
+      deviation = ((currentPrice - bestPrice) / bestPrice) * 100
+    } else {
+      // For buy orders: ((bestPrice - currentPrice) / bestPrice) * 100
+      deviation = ((bestPrice - currentPrice) / bestPrice) * 100
+    }
+
+    // Handle NaN or Infinity results
+    if (!isFinite(deviation) || isNaN(deviation)) return null
+
+    // Cap at 100% and ensure non-negative
+    return Math.max(0, Math.min(100, deviation))
+  }, [order, filteredBuyOrders, filteredSellOrders, filters, getTickerSymbolForPrice])
 
   // Form state
   const [offerString, setOfferString] = useState('')
@@ -829,6 +900,7 @@ export default function MarketOfferTab({
                 order={order}
                 offerString={fetchedOfferString || offerString}
                 mode={mode}
+                priceDeviationPercent={priceDeviationPercent}
               />
             </div>
           )}

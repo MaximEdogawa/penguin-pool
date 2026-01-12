@@ -11,9 +11,16 @@ interface OrderTooltipProps {
   visible: boolean
   position: { x: number; y: number }
   direction: 'top' | 'bottom'
+  priceDeviationPercent?: number | null
 }
 
-export default function OrderTooltip({ order, visible, position, direction }: OrderTooltipProps) {
+export default function OrderTooltip({
+  order,
+  visible,
+  position,
+  direction,
+  priceDeviationPercent,
+}: OrderTooltipProps) {
   const { getCatTokenInfo } = useCatTokens()
 
   const getTickerSymbol = (assetId: string, code?: string): string => {
@@ -126,6 +133,16 @@ export default function OrderTooltip({ order, visible, position, direction }: Or
             ))}
           </div>
         </div>
+
+        {/* Price Range Percentage */}
+        {priceDeviationPercent !== null && priceDeviationPercent !== undefined && (
+          <div>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Price Range:</span>
+            <span className="text-xs font-mono text-gray-900 dark:text-white ml-1">
+              {priceDeviationPercent.toFixed(2)}%
+            </span>
+          </div>
+        )}
 
         <div className="text-xs text-gray-500 dark:text-gray-400">
           {new Date(order.timestamp).toLocaleString()}

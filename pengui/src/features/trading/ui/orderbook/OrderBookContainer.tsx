@@ -1,13 +1,18 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useCatTokens } from '@/shared/hooks/useTickers'
+import { getNativeTokenTicker } from '@/shared/lib/config/environment'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useOrderBookFiltering } from '../../composables/useOrderBookFiltering'
 import { useOrderBookResize } from '../../composables/useOrderBookResize'
 import { useOrderBookTooltip } from '../../composables/useOrderBookTooltip'
 import { useOrderBookViewport } from '../../composables/useOrderBookViewport'
 import { formatPriceForDisplay } from '../../lib/formatAmount'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
-import { calculateAveragePrice } from '../../lib/services/priceCalculation'
+import {
+  calculateAveragePrice,
+  calculateOrderPrice as calculateOrderPriceNumeric,
+} from '../../lib/services/priceCalculation'
 import { useOrderBookFilters } from '../../model/OrderBookFiltersProvider'
 import { useOrderBook } from '../../model/useOrderBook'
 import { useOrderBookDetails } from '../../model/useOrderBookDetails'
@@ -28,6 +33,8 @@ export default function OrderBookContainer({ filters, onOrderClick }: OrderBookC
   const { orderBookData, orderBookLoading, orderBookHasMore, orderBookError } =
     useOrderBook(contextFilters)
 
+  const { getCatTokenInfo } = useCatTokens()
+
   // Use composables for filtering, resize, and tooltip
   const { filteredBuyOrders, filteredSellOrders, calculatePriceFn } = useOrderBookFiltering(
     orderBookData,
@@ -38,6 +45,68 @@ export default function OrderBookContainer({ filters, onOrderClick }: OrderBookC
 
   const { hoveredOrder, tooltipPosition, tooltipVisible, updateTooltipPosition, hideTooltip } =
     useOrderBookTooltip()
+
+  // Helper function to get ticker symbol
+  const getTickerSymbol = useCallback(
+    (assetId: string, code?: string): string => {
+      if (code) return code
+      if (!assetId) return getNativeTokenTicker()
+      const tickerInfo = getCatTokenInfo(assetId)
+      return tickerInfo?.ticker || assetId.slice(0, 8)
+    },
+    [getCatTokenInfo]
+  )
+
+  // Calculate price deviation percentage for hovered order
+  const priceDeviationPercent = useMemo(() => {
+    if (!hoveredOrder) return null
+
+    // Determine which order list the hovered order belongs to
+    const isBuyOrder = filteredBuyOrders.includes(hoveredOrder)
+    const orderList = isBuyOrder ? filteredBuyOrders : filteredSellOrders
+    const orderType = isBuyOrder ? 'buy' : 'sell'
+
+    if (orderList.length === 0) return null
+
+    // Calculate numeric price for all orders
+    const getNumericPrice = (order: OrderBookOrder) => {
+      return calculateOrderPriceNumeric(order, filters, { getTickerSymbol })
+    }
+
+    // Calculate best price (lowest for sell, highest for buy)
+    const prices = orderList.map(getNumericPrice).filter((p) => p > 0 && isFinite(p))
+    if (prices.length === 0) return null
+
+    const bestPrice =
+      orderType === 'sell'
+        ? Math.min(...prices) // Lowest price is best for sell
+        : Math.max(...prices) // Highest price is best for buy
+
+    if (!bestPrice || bestPrice <= 0 || !isFinite(bestPrice)) return null
+
+    // Calculate current price of hovered order
+    const currentPrice = getNumericPrice(hoveredOrder)
+    if (!currentPrice || currentPrice <= 0 || !isFinite(currentPrice)) return null
+
+    // If prices are equal (or very close), return 0% deviation
+    if (Math.abs(currentPrice - bestPrice) < 0.000001) return 0
+
+    // Calculate deviation percentage
+    let deviation: number
+    if (orderType === 'sell') {
+      // For sell orders: ((currentPrice - bestPrice) / bestPrice) * 100
+      deviation = ((currentPrice - bestPrice) / bestPrice) * 100
+    } else {
+      // For buy orders: ((bestPrice - currentPrice) / bestPrice) * 100
+      deviation = ((bestPrice - currentPrice) / bestPrice) * 100
+    }
+
+    // Handle NaN or Infinity results
+    if (!isFinite(deviation) || isNaN(deviation)) return null
+
+    // Cap at 100% and ensure non-negative
+    return Math.max(0, Math.min(100, deviation))
+  }, [hoveredOrder, filteredBuyOrders, filteredSellOrders, filters, getTickerSymbol])
 
   // Refs for scrolling
   const sellScrollRef = useRef<HTMLDivElement>(null)
@@ -194,6 +263,7 @@ export default function OrderBookContainer({ filters, onOrderClick }: OrderBookC
         visible={tooltipVisible}
         position={tooltipPosition}
         direction={hoveredOrder && filteredBuyOrders.includes(hoveredOrder) ? 'top' : 'bottom'}
+        priceDeviationPercent={priceDeviationPercent}
       />
     </div>
   )

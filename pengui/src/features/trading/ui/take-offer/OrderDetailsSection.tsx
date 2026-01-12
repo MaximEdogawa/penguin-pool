@@ -12,12 +12,14 @@ interface OrderDetailsSectionProps {
   order: OrderBookOrder
   offerString?: string
   mode?: 'modal' | 'inline'
+  priceDeviationPercent?: number | null
 }
 
 export default function OrderDetailsSection({
   order,
   offerString,
   mode = 'inline',
+  priceDeviationPercent,
 }: OrderDetailsSectionProps) {
   const { getCatTokenInfo } = useCatTokens()
   const [copiedId, setCopiedId] = useState(false)
@@ -158,6 +160,16 @@ export default function OrderDetailsSection({
           ))}
         </div>
       </div>
+
+      {/* Price Range Percentage */}
+      {priceDeviationPercent !== null && priceDeviationPercent !== undefined && (
+        <div>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Price Range:</span>
+          <span className="text-xs font-mono text-gray-900 dark:text-white ml-1">
+            {priceDeviationPercent.toFixed(2)}%
+          </span>
+        </div>
+      )}
 
       {/* Timestamp */}
       <div className="text-xs text-gray-500 dark:text-gray-400">

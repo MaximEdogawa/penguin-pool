@@ -11,6 +11,7 @@ import {
   formatPriceForDisplay,
 } from '../../lib/formatAmount'
 import type { OrderBookOrder } from '../../lib/orderBookTypes'
+import { calculateOrderPrice as calculateOrderPriceNumeric } from '../../lib/services/priceCalculation'
 
 interface OrderBookTableProps {
   orders: OrderBookOrder[]
@@ -159,6 +160,41 @@ export default function OrderBookTable({
   const textColorClass =
     orderType === 'sell' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
 
+  // Calculate numeric price for an order (for comparison)
+  const getNumericPrice = useCallback(
+    (order: OrderBookOrder): number => {
+      return calculateOrderPriceNumeric(order, filters, { getTickerSymbol })
+    },
+    [filters, getTickerSymbol]
+  )
+
+  // Calculate best price for this side
+  const bestPrice = useMemo(() => {
+    // Handle edge case: empty orders array
+    if (orders.length === 0) return null
+
+    // Get all valid prices (positive and finite)
+    const prices = orders
+      .map(getNumericPrice)
+      .filter((price) => price > 0 && isFinite(price) && !isNaN(price))
+
+    // Handle edge case: no valid prices
+    if (prices.length === 0) return null
+
+    // Handle edge case: only one order (it's the best)
+    if (prices.length === 1) return prices[0]
+
+    if (orderType === 'sell') {
+      // For sell orders, best price is the lowest (most competitive for buyers)
+      const minPrice = Math.min(...prices)
+      return isFinite(minPrice) && !isNaN(minPrice) ? minPrice : null
+    } else {
+      // For buy orders, best price is the highest (most competitive for sellers)
+      const maxPrice = Math.max(...prices)
+      return isFinite(maxPrice) && !isNaN(maxPrice) ? maxPrice : null
+    }
+  }, [orders, orderType, getNumericPrice])
+
   return (
     <div className={`w-full ${className}`}>
       <div className={`${justifyEnd ? 'flex flex-col justify-end min-h-full' : ''}`}>
@@ -214,7 +250,7 @@ export default function OrderBookTable({
                 {emptyMessage}
               </div>
             ) : (
-              <div>
+              <div className="relative">
                 {orders.map((order) => (
                   <OrderBookTableRow
                     key={order.id}
@@ -230,6 +266,8 @@ export default function OrderBookTable({
                     calculateOrderPrice={calculateOrderPrice}
                     getTickerSymbol={getTickerSymbol}
                     textColorClass={textColorClass}
+                    bestPrice={bestPrice}
+                    getNumericPrice={getNumericPrice}
                   />
                 ))}
               </div>
@@ -316,6 +354,8 @@ interface OrderBookTableRowProps {
   calculateOrderPrice: (order: OrderBookOrder) => string
   getTickerSymbol: (assetId: string, code?: string) => string
   textColorClass: string
+  bestPrice: number | null
+  getNumericPrice: (order: OrderBookOrder) => number
 }
 
 function OrderBookTableRow({
@@ -331,16 +371,40 @@ function OrderBookTableRow({
   calculateOrderPrice,
   getTickerSymbol,
   textColorClass,
+  bestPrice,
+  getNumericPrice,
 }: OrderBookTableRowProps) {
-  const depthWidth = useMemo(() => {
-    // Calculate depth indicator width (0-100%)
-    return `${Math.min(100, (parseInt(order.id) % 8) * 15)}%`
-  }, [order.id])
+  // Calculate price deviation percentage from best price
+  const priceDeviationPercent = useMemo(() => {
+    // Handle edge cases: no best price, invalid prices
+    if (!bestPrice || bestPrice <= 0 || !isFinite(bestPrice)) return 0
 
-  const bgColorClass =
-    orderType === 'sell'
-      ? 'bg-red-500/8 dark:bg-red-500/15 backdrop-blur-sm group-hover:bg-red-500/12 dark:group-hover:bg-red-500/20'
-      : 'bg-green-500/8 dark:bg-green-500/15 backdrop-blur-sm group-hover:bg-green-500/12 dark:group-hover:bg-green-500/20'
+    const currentPrice = getNumericPrice(order)
+
+    // Handle edge cases: invalid current price
+    if (!currentPrice || currentPrice <= 0 || !isFinite(currentPrice)) return 0
+
+    // If prices are equal (or very close), return 0% deviation
+    if (Math.abs(currentPrice - bestPrice) < 0.000001) return 0
+
+    let deviation: number
+
+    if (orderType === 'sell') {
+      // For sell orders: ((currentPrice - bestPrice) / bestPrice) * 100
+      // Best price is lowest, so higher prices have higher deviation
+      deviation = ((currentPrice - bestPrice) / bestPrice) * 100
+    } else {
+      // For buy orders: ((bestPrice - currentPrice) / bestPrice) * 100
+      // Best price is highest, so lower prices have higher deviation
+      deviation = ((bestPrice - currentPrice) / bestPrice) * 100
+    }
+
+    // Handle NaN or Infinity results
+    if (!isFinite(deviation) || isNaN(deviation)) return 0
+
+    // Cap at 100% and ensure non-negative
+    return Math.max(0, Math.min(100, deviation))
+  }, [order, bestPrice, orderType, getNumericPrice])
 
   // Register element for viewport detection
   const rowRef = useRef<HTMLDivElement | null>(null)
@@ -356,6 +420,19 @@ function OrderBookTableRow({
     }
   }, [order.id, registerElement])
 
+  // Calculate background width based on price deviation (0% = no background, 100% = full width)
+  // This uses the same approach as the previous depthWidth but with price-based calculation
+  const backgroundWidth = useMemo(() => {
+    // Ensure width is between 0% and 100%
+    return `${Math.max(0, Math.min(100, priceDeviationPercent))}%`
+  }, [priceDeviationPercent])
+
+  // Background color classes - red for sell, green for buy
+  const bgColorClass =
+    orderType === 'sell'
+      ? 'bg-red-500/8 dark:bg-red-500/15 backdrop-blur-sm group-hover:bg-red-500/12 dark:group-hover:bg-red-500/20'
+      : 'bg-green-500/8 dark:bg-green-500/15 backdrop-blur-sm group-hover:bg-green-500/12 dark:group-hover:bg-green-500/20'
+
   return (
     <div
       ref={rowRef}
@@ -364,9 +441,15 @@ function OrderBookTableRow({
       onMouseMove={(e) => onHover(e, order, orderType)}
       onMouseLeave={onMouseLeave}
     >
+      {/* Dynamic background based on price deviation - width scales from 0% to 100%, fills from right to left */}
       <div
-        className={`absolute inset-0 ${bgColorClass} transition-all duration-300`}
-        style={{ width: depthWidth, right: 0 }}
+        className={`absolute ${bgColorClass} transition-all duration-300`}
+        style={{
+          width: backgroundWidth,
+          right: 0,
+          top: 0,
+          bottom: 0,
+        }}
       />
 
       <div className="relative grid grid-cols-12 gap-2 px-2 py-1.5 items-center">
