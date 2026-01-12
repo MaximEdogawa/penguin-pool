@@ -215,8 +215,8 @@ export default function MarketOfferTab({
     const currentPrice = getNumericPrice(order)
     if (!currentPrice || currentPrice <= 0 || !isFinite(currentPrice)) return null
 
-    // If prices are equal (or very close), return 0% deviation
-    if (Math.abs(currentPrice - bestPrice) < 0.000001) return 0
+    // If prices are exactly equal, return 0% deviation
+    if (currentPrice === bestPrice) return 0
 
     // Calculate deviation percentage
     let deviation: number
@@ -766,6 +766,25 @@ export default function MarketOfferTab({
                   <span className={`text-xs ${t.textSecondary}`}>Price:</span>
                   <span className={`text-xs font-mono ${t.text}`}>
                     {formatPriceForDisplay(orderPrice)} {getPriceHeaderTicker()}
+                  </span>
+                </div>
+              )}
+              {priceDeviationPercent !== null && priceDeviationPercent !== undefined && (
+                <div className={`flex justify-between border-t ${t.border} pt-1.5 mt-1.5`}>
+                  <span className={`text-xs ${t.textSecondary}`}>Price Range:</span>
+                  <span
+                    className={`text-xs font-mono ${t.text} cursor-help`}
+                    title={`${priceDeviationPercent.toFixed(10)}%`}
+                  >
+                    {priceDeviationPercent < 0.01
+                      ? (() => {
+                          // Show full precision up to 10 decimal places, remove trailing zeros
+                          const formatted = priceDeviationPercent.toFixed(10)
+                          // Remove trailing zeros after decimal point, but keep at least .0
+                          const trimmed = formatted.replace(/0+$/, '')
+                          return `${trimmed.endsWith('.') ? `${trimmed}0` : trimmed}%`
+                        })()
+                      : `${priceDeviationPercent.toFixed(2)}%`}
                   </span>
                 </div>
               )}

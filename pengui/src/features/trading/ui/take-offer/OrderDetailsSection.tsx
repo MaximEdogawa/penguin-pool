@@ -166,7 +166,15 @@ export default function OrderDetailsSection({
         <div>
           <span className="text-xs text-gray-500 dark:text-gray-400">Price Range:</span>
           <span className="text-xs font-mono text-gray-900 dark:text-white ml-1">
-            {priceDeviationPercent.toFixed(2)}%
+            {priceDeviationPercent < 0.01
+              ? (() => {
+                  // Show full precision up to 10 decimal places, remove trailing zeros
+                  const formatted = priceDeviationPercent.toFixed(10)
+                  // Remove trailing zeros after decimal point, but keep at least .0
+                  const trimmed = formatted.replace(/0+$/, '')
+                  return `${trimmed.endsWith('.') ? `${trimmed}0` : trimmed}%`
+                })()
+              : `${priceDeviationPercent.toFixed(2)}%`}
           </span>
         </div>
       )}
@@ -179,7 +187,7 @@ export default function OrderDetailsSection({
       {/* Status */}
       {order.status !== undefined && (
         <div>
-          <span className="text-xs text-gray-500 dark:text-gray-400">Status:</span>
+          ∫<span className="text-xs text-gray-500 dark:text-gray-400">Status:</span>
           <span className="text-xs text-gray-900 dark:text-white ml-1">{order.status}</span>
         </div>
       )}

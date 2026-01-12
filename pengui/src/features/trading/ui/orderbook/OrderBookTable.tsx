@@ -411,8 +411,8 @@ function OrderBookTableRow({
     // Handle edge cases: invalid current price
     if (!currentPrice || currentPrice <= 0 || !isFinite(currentPrice)) return 0
 
-    // If prices are equal (or very close), return 0% deviation
-    if (Math.abs(currentPrice - bestPrice) < 0.000001) return 0
+    // If prices are exactly equal, return 0% deviation
+    if (currentPrice === bestPrice) return 0
 
     let deviation: number
 
