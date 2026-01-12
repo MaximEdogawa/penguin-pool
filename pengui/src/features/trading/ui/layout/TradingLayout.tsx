@@ -132,27 +132,32 @@ export default function TradingLayout({
           filters={filters}
         />
         <div
-          className={`${t.card} p-4 rounded-lg border ${t.border} flex-1 overflow-y-auto`}
+          className={`${t.card} rounded-lg border ${t.border} flex-1 overflow-y-auto`}
           style={{ scrollbarGutter: 'stable' }}
         >
           {/* Show inline content on desktop when order is selected */}
           {/* Keep both components mounted to preserve state when switching tabs */}
-          <div className={`flex flex-col ${currentMode === 'taker' ? '' : 'hidden'}`}>
-            {selectedOrderForTaking ? (
-              <div className="flex justify-center">
-                <div className="w-full max-w-full">
-                  <MarketOfferTab
-                    key={`taker-${selectedOrderForTaking.id}`}
-                    order={selectedOrderForTaking}
-                    onOfferTaken={handleOfferTaken}
-                    mode="inline"
-                    filters={filters}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="flex justify-center">
-                <div className="w-full max-w-full space-y-4">
+          <div className={`${currentMode === 'taker' ? '' : 'hidden'}`}>
+            <div
+              className="w-full py-4"
+              style={{
+                // Match top/bottom padding (1rem) while accounting for scrollbar-gutter on right
+                // Scrollbar gutter is typically ~15-17px, using 16px as approximation
+                // Visual spacing: left = 1rem, right = 1rem (padding) + scrollbar gutter = 1rem visually
+                paddingLeft: '1rem',
+                paddingRight: '0.25rem',
+              }}
+            >
+              {selectedOrderForTaking ? (
+                <MarketOfferTab
+                  key={`taker-${selectedOrderForTaking.id}`}
+                  order={selectedOrderForTaking}
+                  onOfferTaken={handleOfferTaken}
+                  mode="inline"
+                  filters={filters}
+                />
+              ) : (
+                <div className="space-y-4">
                   <div>
                     <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Market</h3>
                     <p className={`text-xs ${t.textSecondary} mb-4`}>
@@ -168,29 +173,34 @@ export default function TradingLayout({
                     Market
                   </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          <div className={`flex flex-col ${currentMode === 'maker' ? '' : 'hidden'}`}>
-            {selectedOrderForMaking ? (
-              <div className="flex justify-center">
-                <div className="w-full max-w-full">
-                  <CreateOfferForm
-                    key={`maker-${selectedOrderForMaking.id}`}
-                    order={selectedOrderForMaking}
-                    onOfferCreated={handleOfferCreated}
-                    mode="inline"
-                    onOpenModal={() => {
-                      setShowCreateOfferModal(true)
-                    }}
-                    filters={filters}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="flex justify-center">
-                <div className="w-full max-w-full space-y-4">
+          <div className={`${currentMode === 'maker' ? '' : 'hidden'}`}>
+            <div
+              className="w-full py-4"
+              style={{
+                // Match top/bottom padding (1rem) while accounting for scrollbar-gutter on right
+                // Scrollbar gutter is typically ~15-17px, using 16px as approximation
+                // Visual spacing: left = 1rem, right = 1rem (padding) + scrollbar gutter = 1rem visually
+                paddingLeft: '1rem',
+                paddingRight: '0.25rem',
+              }}
+            >
+              {selectedOrderForMaking ? (
+                <CreateOfferForm
+                  key={`maker-${selectedOrderForMaking.id}`}
+                  order={selectedOrderForMaking}
+                  onOfferCreated={handleOfferCreated}
+                  mode="inline"
+                  onOpenModal={() => {
+                    setShowCreateOfferModal(true)
+                  }}
+                  filters={filters}
+                />
+              ) : (
+                <div className="space-y-4">
                   <div>
                     <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Create Offer</h3>
                     <p className={`text-xs ${t.textSecondary} mb-4`}>
@@ -210,8 +220,8 @@ export default function TradingLayout({
                     Create New Offer
                   </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
