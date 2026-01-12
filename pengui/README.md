@@ -174,7 +174,7 @@ npm start
 
 ## 📁 Project Structure
 
-```
+```text
 pengui/
 ├── src/
 │   ├── app/                    # Next.js App Router pages
