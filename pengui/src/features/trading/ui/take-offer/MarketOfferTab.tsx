@@ -730,6 +730,24 @@ export default function MarketOfferTab({
     <div className={containerClass}>
       {/* Form */}
       <form onSubmit={handleSubmit} className={containerClass}>
+        {/* Offer String Input - Show when no order is provided */}
+        {!order && (
+          <div>
+            <label className={`block text-xs font-medium ${t.text} mb-1.5`}>Offer String</label>
+            <textarea
+              value={offerString}
+              onChange={(e) => setOfferString(e.target.value)}
+              placeholder="Paste offer string here..."
+              rows={6}
+              className={`w-full px-2 py-1.5 border rounded-lg text-xs ${t.input} ${t.border} backdrop-blur-xl font-mono`}
+              disabled={isSubmitting}
+            />
+            <p className={`mt-1 text-xs ${t.textSecondary}`}>
+              Paste an offer string to take an offer from the marketplace.
+            </p>
+          </div>
+        )}
+
         {/* Offer Preview - Moved to top */}
         {offerPreview && (
           <div className={`p-3 rounded-lg ${t.cardHover} backdrop-blur-xl border ${t.border}`}>

@@ -89,15 +89,15 @@ export default function LimitOfferTab({
 
   return (
     <div
-      className={`mb-2 backdrop-blur-[40px] ${t.card} rounded-xl p-1 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
+      className={`mb-1 backdrop-blur-[40px] ${t.card} rounded-lg p-0.5 border ${t.border} transition-all duration-300 shadow-lg shadow-black/5 ${
         isDark ? 'bg-white/[0.03]' : 'bg-white/30'
       }`}
     >
-      <div className="flex gap-1">
+      <div className="flex gap-0.5">
         <button
           type="button"
           onClick={() => onModeChange('maker')}
-          className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm relative overflow-hidden ${
+          className={`flex-1 px-2 py-1 rounded-md transition-all duration-200 font-medium text-xs relative overflow-hidden ${
             activeMode === 'maker'
               ? isDark
                 ? 'bg-white/10 text-white backdrop-blur-xl'
@@ -110,12 +110,12 @@ export default function LimitOfferTab({
               <div
                 className={`absolute inset-0 backdrop-blur-xl ${
                   isDark ? 'bg-white/10' : 'bg-white/30'
-                } rounded-lg`}
+                } rounded-md`}
               />
               <div
                 className={`absolute inset-0 bg-gradient-to-b ${
                   isDark ? 'from-white/5' : 'from-white/20'
-                } to-transparent rounded-lg`}
+                } to-transparent rounded-md`}
               />
             </>
           )}
@@ -123,7 +123,7 @@ export default function LimitOfferTab({
             Limit
             {orderType && (
               <span
-                className={`ml-1.5 text-[10px] font-normal ${
+                className={`ml-1 text-[9px] font-normal ${
                   orderType === 'buy'
                     ? 'text-green-500 dark:text-green-400'
                     : 'text-red-500 dark:text-red-400'
@@ -138,7 +138,7 @@ export default function LimitOfferTab({
         <button
           type="button"
           onClick={() => onModeChange('taker')}
-          className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 font-medium text-sm relative overflow-hidden ${
+          className={`flex-1 px-2 py-1 rounded-md transition-all duration-200 font-medium text-xs relative overflow-hidden ${
             activeMode === 'taker'
               ? isDark
                 ? 'bg-white/10 text-white backdrop-blur-xl'
@@ -151,12 +151,12 @@ export default function LimitOfferTab({
               <div
                 className={`absolute inset-0 backdrop-blur-xl ${
                   isDark ? 'bg-white/10' : 'bg-white/30'
-                } rounded-lg`}
+                } rounded-md`}
               />
               <div
                 className={`absolute inset-0 bg-gradient-to-b ${
                   isDark ? 'from-white/5' : 'from-white/20'
-                } to-transparent rounded-lg`}
+                } to-transparent rounded-md`}
               />
             </>
           )}
@@ -164,7 +164,7 @@ export default function LimitOfferTab({
             Market
             {orderType && (
               <span
-                className={`ml-1.5 text-[10px] font-normal ${
+                className={`ml-1 text-[9px] font-normal ${
                   orderType === 'buy'
                     ? 'text-green-500 dark:text-green-400'
                     : 'text-red-500 dark:text-red-400'

@@ -94,6 +94,21 @@ export default function TradingLayout({
     // Order book will auto-refresh via useOrderBook hook
   }, [resetForm])
 
+  const handleMobileModeToggle = useCallback((mode: 'maker' | 'taker') => {
+    setCurrentMode(mode)
+    if (mode === 'maker') {
+      // Limit: open Create Offer modal
+      setShowCreateOfferModal(true)
+      setShowTakeOfferModal(false)
+    } else {
+      // Market: open Take Offer modal
+      // Clear selected order so offer string field is shown
+      setSelectedOrderForTaking(null)
+      setShowTakeOfferModal(true)
+      setShowCreateOfferModal(false)
+    }
+  }, [])
+
   return (
     <div className="flex h-full">
       {/* Order Book - Full width on mobile/tablet, left panel on desktop (lg+) */}
@@ -102,6 +117,17 @@ export default function TradingLayout({
         <div className="mb-2">
           <OrderBookFilters onFiltersChange={handleFiltersChange} />
         </div>
+        {/* Mobile Toggle - Limit/Market - Only show on mobile */}
+        {isMobile && (
+          <div className="mb-2">
+            <LimitOfferTab
+              activeMode={currentMode}
+              onModeChange={handleMobileModeToggle}
+              selectedOrder={null}
+              filters={filters}
+            />
+          </div>
+        )}
         <div className="flex-1 min-h-0">
           <TradingContent
             activeView={activeTradingView}

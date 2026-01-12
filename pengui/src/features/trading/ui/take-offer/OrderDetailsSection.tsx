@@ -187,7 +187,7 @@ export default function OrderDetailsSection({
       {/* Status */}
       {order.status !== undefined && (
         <div>
-          ∫<span className="text-xs text-gray-500 dark:text-gray-400">Status:</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Status:</span>
           <span className="text-xs text-gray-900 dark:text-white ml-1">{order.status}</span>
         </div>
       )}
