@@ -195,6 +195,30 @@ export default function OrderBookTable({
     }
   }, [orders, orderType, getNumericPrice])
 
+  // Group orders by price and calculate count for each price level
+  const priceCountMap = useMemo(() => {
+    const countMap = new Map<string, number>()
+
+    // Helper to normalize price for grouping (round to 8 decimal places to handle floating point differences)
+    const normalizePrice = (price: number): string => {
+      if (!isFinite(price) || isNaN(price) || price <= 0) return ''
+      // Round to 8 decimal places for grouping
+      return price.toFixed(8)
+    }
+
+    orders.forEach((order) => {
+      const numericPrice = getNumericPrice(order)
+      const normalizedPrice = normalizePrice(numericPrice)
+
+      if (normalizedPrice) {
+        const currentCount = countMap.get(normalizedPrice) || 0
+        countMap.set(normalizedPrice, currentCount + 1)
+      }
+    })
+
+    return countMap
+  }, [orders, getNumericPrice])
+
   return (
     <div className={`w-full ${className}`}>
       <div className={`${justifyEnd ? 'flex flex-col justify-end min-h-full' : ''}`}>
@@ -268,6 +292,7 @@ export default function OrderBookTable({
                     textColorClass={textColorClass}
                     bestPrice={bestPrice}
                     getNumericPrice={getNumericPrice}
+                    priceCountMap={priceCountMap}
                   />
                 ))}
               </div>
@@ -356,6 +381,7 @@ interface OrderBookTableRowProps {
   textColorClass: string
   bestPrice: number | null
   getNumericPrice: (order: OrderBookOrder) => number
+  priceCountMap: Map<string, number>
 }
 
 function OrderBookTableRow({
@@ -373,6 +399,7 @@ function OrderBookTableRow({
   textColorClass,
   bestPrice,
   getNumericPrice,
+  priceCountMap,
 }: OrderBookTableRowProps) {
   // Calculate price deviation percentage from best price
   const priceDeviationPercent = useMemo(() => {
@@ -455,7 +482,16 @@ function OrderBookTableRow({
       <div className="relative grid grid-cols-12 gap-2 px-2 py-1.5 items-center">
         {/* Count - smallest, left aligned */}
         <div className="col-span-1 text-left text-gray-600 dark:text-gray-400 font-mono text-[10px]">
-          {order.offering.length + order.requesting.length}
+          {(() => {
+            const numericPrice = getNumericPrice(order)
+            // Normalize price for lookup (round to 8 decimal places)
+            const normalizedPrice =
+              isFinite(numericPrice) && !isNaN(numericPrice) && numericPrice > 0
+                ? numericPrice.toFixed(8)
+                : ''
+            const count = normalizedPrice ? priceCountMap.get(normalizedPrice) || 1 : 1
+            return count
+          })()}
         </div>
 
         {/* Buy */}
