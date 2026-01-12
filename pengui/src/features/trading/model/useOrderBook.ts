@@ -295,6 +295,8 @@ export function useOrderBook(filters?: OrderBookFilters) {
       })
       const allOrders: OrderBookOrder[] = []
       let totalCount = 0
+      // Track per-query "hasMore" indicators (whether each query returned a full page)
+      const queryHasMoreFlags: boolean[] = []
 
       // If we have both buy and sell assets, fetch both directions
       if (
@@ -339,6 +341,8 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders1)
             totalCount += response1.total || orders1.length
+            // Check if this query returned a full page (indicating more data available)
+            queryHasMoreFlags.push(orders1.length >= params1.page_size)
             logger.debug(`Query 1: Added ${orders1.length} orders`)
           }
 
@@ -362,6 +366,8 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders2)
             totalCount += response2.total || orders2.length
+            // Check if this query returned a full page (indicating more data available)
+            queryHasMoreFlags.push(orders2.length >= params2.page_size)
             logger.debug(`Query 2: Added ${orders2.length} orders`)
           }
         }
@@ -394,6 +400,8 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders1)
             totalCount += response1.total || orders1.length
+            // Check if this query returned a full page (indicating more data available)
+            queryHasMoreFlags.push(orders1.length >= params1.page_size)
             logger.debug(`Query 1: Added ${orders1.length} orders`)
           }
 
@@ -411,6 +419,8 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders2)
             totalCount += response2.total || orders2.length
+            // Check if this query returned a full page (indicating more data available)
+            queryHasMoreFlags.push(orders2.length >= params2.page_size)
             logger.debug(`Query 2: Added ${orders2.length} orders`)
           }
         } else if (sellAsset && !buyAsset) {
@@ -428,6 +438,8 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders1)
             totalCount += response1.total || orders1.length
+            // Check if this query returned a full page (indicating more data available)
+            queryHasMoreFlags.push(orders1.length >= params1.page_size)
             logger.debug(`Query 1: Added ${orders1.length} orders`)
           }
 
@@ -445,6 +457,8 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders2)
             totalCount += response2.total || orders2.length
+            // Check if this query returned a full page (indicating more data available)
+            queryHasMoreFlags.push(orders2.length >= params2.page_size)
             logger.debug(`Query 2: Added ${orders2.length} orders`)
           }
         }
@@ -475,12 +489,16 @@ export function useOrderBook(filters?: OrderBookFilters) {
               .map(convertDexieOfferToOrderBookOrder)
             allOrders.push(...orders)
             totalCount = response.total || orders.length
+            // Check if this query returned a full page (indicating more data available)
+            queryHasMoreFlags.push(orders.length >= params.page_size)
             logger.debug(`Added ${orders.length} orders`)
           }
         }
       }
 
-      logger.debug(`Total orders fetched: ${allOrders.length}`)
+      // Capture raw count before deduplication for hasMore calculation
+      const rawOrdersCount = allOrders.length
+      logger.debug(`Total orders fetched: ${rawOrdersCount}`)
 
       // Deduplicate orders by ID to prevent duplicate keys
       const uniqueOrdersMap = new Map<string, OrderBookOrder>()
@@ -495,9 +513,12 @@ export function useOrderBook(filters?: OrderBookFilters) {
       // Sort all orders by price before returning
       const sortedOrders = sortOrdersByPrice(deduplicatedOrders)
 
-      // Determine hasMore based on pagination
+      // Determine hasMore based on pre-deduplication count or per-query indicators
       const pageSize = pagination === 'all' ? 100 : pagination
-      const hasMore = sortedOrders.length >= pageSize && pagination !== 'all'
+      // Use OR of per-query flags if available, otherwise use raw count vs pageSize
+      const hasMore =
+        pagination !== 'all' &&
+        (queryHasMoreFlags.some((flag) => flag) || rawOrdersCount >= pageSize)
 
       return {
         orders: sortedOrders,

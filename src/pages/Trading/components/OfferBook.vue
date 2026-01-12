@@ -544,6 +544,124 @@
     })}`
   }
 
+  // Helper function to safely calculate price from an order
+  // Validates order shape, finds correct asset pair, and ensures safe division
+  const calculateOrderPriceRatio = (order: Order | undefined, isSellOrder: boolean): number => {
+    if (!order) {
+      return 0
+    }
+
+    // For single-asset pairs, use indices [0]
+    if (isSingleAssetPair(order)) {
+      const requestingAsset = order.requesting[0]
+      const offeringAsset = order.offering[0]
+
+      if (!requestingAsset || !offeringAsset) {
+        return 0
+      }
+
+      const requestingAmount = Number(requestingAsset.amount)
+      const offeringAmount = Number(offeringAsset.amount)
+
+      if (
+        !isFinite(requestingAmount) ||
+        !isFinite(offeringAmount) ||
+        requestingAmount <= 0 ||
+        offeringAmount <= 0
+      ) {
+        return 0
+      }
+
+      // For sell orders: requesting/offering, for buy orders: offering/requesting
+      const price = isSellOrder
+        ? requestingAmount / offeringAmount
+        : offeringAmount / requestingAmount
+
+      return isFinite(price) ? price : 0
+    }
+
+    // For multi-asset orders, find matching asset indices based on filters
+    if (props.filters.buyAsset.length > 0 && props.filters.sellAsset.length > 0) {
+      const buyAssetFilter = props.filters.buyAsset[0].toLowerCase()
+      const sellAssetFilter = props.filters.sellAsset[0].toLowerCase()
+
+      // Find the asset indices that match the filters
+      // Find requesting asset that matches buyAsset filter
+      const requestingIndex = order.requesting.findIndex(asset => {
+        if (!asset) return false
+        const ticker = getTickerSymbol(asset.id).toLowerCase()
+        const assetId = asset.id.toLowerCase()
+        const assetCode = asset.code?.toLowerCase() || ''
+
+        return (
+          ticker === buyAssetFilter || assetId === buyAssetFilter || assetCode === buyAssetFilter
+        )
+      })
+
+      // Find offering asset that matches sellAsset filter
+      const offeringIndex = order.offering.findIndex(asset => {
+        if (!asset) return false
+        const ticker = getTickerSymbol(asset.id).toLowerCase()
+        const assetId = asset.id.toLowerCase()
+        const assetCode = asset.code?.toLowerCase() || ''
+
+        return (
+          ticker === sellAssetFilter || assetId === sellAssetFilter || assetCode === sellAssetFilter
+        )
+      })
+
+      // If we found matching assets, calculate price
+      if (requestingIndex >= 0 && offeringIndex >= 0) {
+        const requestingAsset = order.requesting[requestingIndex]
+        const offeringAsset = order.offering[offeringIndex]
+
+        if (requestingAsset && offeringAsset) {
+          const requestingAmount = Number(requestingAsset.amount)
+          const offeringAmount = Number(offeringAsset.amount)
+
+          if (
+            isFinite(requestingAmount) &&
+            isFinite(offeringAmount) &&
+            requestingAmount > 0 &&
+            offeringAmount > 0
+          ) {
+            const price = isSellOrder
+              ? requestingAmount / offeringAmount
+              : offeringAmount / requestingAmount
+
+            return isFinite(price) ? price : 0
+          }
+        }
+      }
+    }
+
+    // Fallback: if we can't find matching assets, try [0] indices with validation
+    const requestingAsset = order.requesting[0]
+    const offeringAsset = order.offering[0]
+
+    if (!requestingAsset || !offeringAsset) {
+      return 0
+    }
+
+    const requestingAmount = Number(requestingAsset.amount)
+    const offeringAmount = Number(offeringAsset.amount)
+
+    if (
+      !isFinite(requestingAmount) ||
+      !isFinite(offeringAmount) ||
+      requestingAmount <= 0 ||
+      offeringAmount <= 0
+    ) {
+      return 0
+    }
+
+    const price = isSellOrder
+      ? requestingAmount / offeringAmount
+      : offeringAmount / requestingAmount
+
+    return isFinite(price) ? price : 0
+  }
+
   const calculateAveragePrice = (): string => {
     if (props.filters.buyAsset.length === 0 || props.filters.sellAsset.length === 0) {
       return 'N/A'
@@ -551,15 +669,11 @@
 
     // Get best sell price (lowest ask)
     const bestSellOrder = filteredSellOrders.value[0]
-    const bestSellPrice = bestSellOrder
-      ? bestSellOrder.requesting[0]?.amount / bestSellOrder.offering[0]?.amount
-      : 0
+    const bestSellPrice = calculateOrderPriceRatio(bestSellOrder, true)
 
     // Get best buy price (highest bid)
     const bestBuyOrder = filteredBuyOrders.value[0]
-    const bestBuyPrice = bestBuyOrder
-      ? bestBuyOrder.offering[0]?.amount / bestBuyOrder.requesting[0]?.amount
-      : 0
+    const bestBuyPrice = calculateOrderPriceRatio(bestBuyOrder, false)
 
     // Calculate average if both prices exist
     if (bestSellPrice > 0 && bestBuyPrice > 0) {
