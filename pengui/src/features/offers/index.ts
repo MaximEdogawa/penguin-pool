@@ -9,4 +9,3 @@ export { useDexieDataService } from './api/useDexieDataService'
 // UI Components
 export { default as OfferDetailsModal } from './ui/OfferDetailsModal'
 export { default as OfferHistory } from './ui/OfferHistory'
-export { default as AssetSelector } from './ui/AssetSelector'
