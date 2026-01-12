@@ -721,7 +721,7 @@ export default function MarketOfferTab({
   const [isOrderDetailsExpanded, setIsOrderDetailsExpanded] = useState(false)
   const containerClass = mode === 'modal' ? 'space-y-4' : 'space-y-3'
 
-  // Reset order details expanded state when order changes
+  // Reset offer details expanded state when order changes
   useEffect(() => {
     setIsOrderDetailsExpanded(false)
   }, [order?.id])
@@ -950,7 +950,7 @@ export default function MarketOfferTab({
         )}
       </form>
 
-      {/* Order Details Section - Collapsible, only show if order is provided */}
+      {/* Offer Details Section - Collapsible, only show if order is provided */}
       {order && (
         <div
           className={`rounded-lg ${t.cardHover} backdrop-blur-xl border ${t.border} overflow-hidden`}
@@ -960,7 +960,7 @@ export default function MarketOfferTab({
             onClick={() => setIsOrderDetailsExpanded(!isOrderDetailsExpanded)}
             className={`w-full p-3 flex items-center justify-between ${t.cardHover} transition-colors`}
           >
-            <span className={`text-sm font-medium ${t.text}`}>Order Details</span>
+            <span className={`text-sm font-medium ${t.text}`}>Offer Details</span>
             <svg
               className={`w-4 h-4 ${t.textSecondary} transition-transform ${
                 isOrderDetailsExpanded ? 'rotate-180' : ''

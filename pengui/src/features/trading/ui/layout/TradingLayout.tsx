@@ -187,7 +187,7 @@ export default function TradingLayout({
                   <div>
                     <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Market</h3>
                     <p className={`text-xs ${t.textSecondary} mb-4`}>
-                      Click an order from the order book to take it, or create a new offer manually.
+                      Click an offer from the order book to take it, or create a new offer manually.
                     </p>
                   </div>
 
@@ -230,7 +230,7 @@ export default function TradingLayout({
                   <div>
                     <h3 className={`text-sm font-semibold ${t.text} mb-2`}>Create Offer</h3>
                     <p className={`text-xs ${t.textSecondary} mb-4`}>
-                      Create a new trading offer. Click an order from the order book to use it as a
+                      Create a new trading offer. Click an offer from the order book to use it as a
                       template.
                     </p>
                   </div>

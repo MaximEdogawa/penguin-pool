@@ -24,6 +24,7 @@ export default function OrderDetailsSection({
   const { getCatTokenInfo } = useCatTokens()
   const [copiedId, setCopiedId] = useState(false)
   const [copiedOfferString, setCopiedOfferString] = useState(false)
+  const [copiedMakerId, setCopiedMakerId] = useState(false)
 
   const getTickerSymbol = useCallback(
     (assetId: string, code?: string): string => {
@@ -52,16 +53,25 @@ export default function OrderDetailsSection({
     }
   }, [offerString])
 
+  const handleCopyMakerId = useCallback(async () => {
+    if (!order.maker) return
+    const result = await copyToClipboard(order.maker)
+    if (result.success) {
+      setCopiedMakerId(true)
+      setTimeout(() => setCopiedMakerId(false), 2000)
+    }
+  }, [order.maker])
+
   const containerClass = mode === 'modal' ? 'space-y-4' : 'space-y-3'
 
   return (
     <div className={containerClass}>
-      <div className="text-sm font-semibold text-gray-900 dark:text-white">Order Details</div>
+      <div className="text-sm font-semibold text-gray-900 dark:text-white">Offer Details</div>
 
-      {/* Order ID */}
+      {/* Offer ID */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Order ID:</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Offer ID:</span>
           <button
             type="button"
             onClick={handleCopyId}
@@ -120,8 +130,27 @@ export default function OrderDetailsSection({
       {/* Maker Address */}
       {order.maker && (
         <div>
-          <span className="text-xs text-gray-500 dark:text-gray-400">Maker:</span>
-          <div className="text-xs font-mono text-gray-900 dark:text-white break-all mt-1">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Trade ID Hash:</span>
+            <button
+              type="button"
+              onClick={handleCopyMakerId}
+              className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+            >
+              {copiedMakerId ? (
+                <>
+                  <Check className="w-3 h-3" />
+                  <span>Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3 h-3" />
+                  <span>Copy</span>
+                </>
+              )}
+            </button>
+          </div>
+          <div className="text-xs font-mono text-gray-900 dark:text-white break-all bg-gray-50 dark:bg-gray-800/50 p-2 rounded">
             {order.maker}
           </div>
         </div>
