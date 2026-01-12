@@ -27,7 +27,7 @@ Pengui provides a comprehensive suite of financial tools for the Chia ecosystem,
 ### 📊 Trading
 
 - **Order Book** - View buy/sell orders with real-time updates
-- **Price Discovery** - Advanced filtering by asset pairs
+- **Price Discovery** - Advanced filtering b y asset pairs
 - **Market & Limit Orders** - Create and execute trades
 - **Order History** - Track your trading activity
 - **Price Charts** - Visualize market trends (coming soon)
